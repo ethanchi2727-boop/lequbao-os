@@ -1,0 +1,19 @@
+{
+  "initialized": false,
+  "projectName": "",
+  "techStack": [],
+  "modules": [
+    {
+      "name": "root",
+      "path": ".",
+      "commands": {
+        "lint": { "cmd": "", "applicable": true, "reason": "" },
+        "typecheck": { "cmd": "", "applicable": true, "reason": "" },
+        "test": { "cmd": "", "applicable": true, "reason": "" },
+        "build": { "cmd": "", "applicable": true, "reason": "" }
+      }
+    }
+  ],
+  "p0TestsRequired": true,
+  "notes": "项目尚未初始化。请由 TRAE 按 docs/PROJECT_INITIALIZATION.md 完成初始化，填写真实模块和命令。initialized 为 false 时质量门禁必须失败。"
+}
