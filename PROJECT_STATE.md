@@ -26,6 +26,7 @@ Rebuild the repository around the V6.1 `乐趣宝 + 乐趣生活` baseline. Pres
 - Implemented frozen subscription policy V1 (`70/10/20`) with deterministic minor-unit allocation that never loses a cent.
 - Implemented statement math for receipts, refunds, actual/provisional/reversed direct costs, zero-floor loss handling and exact multi-party allocation.
 - Added migration `0003` with deferred PostgreSQL constraints that reject locked statements unless shares total 100% and allocations reconcile to the cent; distribution entries remain append-only.
+- Audited the package's distribution inputs and added migration `0004`: an immutable, provider-event-idempotent subscription receipt/refund ledger. The target now has 74 tables while the vendored source remains checksum-accounted at 73.
 - Published a deliberately implementation-bounded OpenAPI document and added syntax/reference drift checks.
 
 ## Verified package facts
@@ -45,7 +46,8 @@ Rebuild the repository around the V6.1 `乐趣宝 + 乐趣生活` baseline. Pres
 - Local formatting, lint, contract counts, OpenAPI, TypeScript, 34 unit tests and production builds pass.
 - GitHub Actions run `32039457455` passed clean PostgreSQL 15 schema application and RLS isolation for commit `8da963b`.
 - GitHub Actions run `32040005789` passed the revenue-right and frozen-policy PostgreSQL constraint test for commit `cb98f7b`.
-- The exact distribution reconciliation and immutable-ledger PostgreSQL test is added locally and awaits the next pushed CI run.
+- GitHub Actions run `32040375789` passed exact distribution reconciliation and immutable-ledger tests for commit `b88903f`.
+- The subscription cash-source ledger and incremental 73→74-table migration tests are added locally and await the next pushed CI run.
 - Payment sandbox, WeCom callbacks, backup recovery, migration dry-run/rollback and browser/WeChat acceptance remain unverified.
 
 ## Exact next step

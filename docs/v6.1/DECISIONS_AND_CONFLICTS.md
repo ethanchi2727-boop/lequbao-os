@@ -33,6 +33,7 @@
 | C-004 | `开发主指令` versus `开发唯一主指令` | The unique instruction and external baseline take precedence | None after repository import |
 | C-005 | npm/Vue/UniApp/SQLite versus pnpm/React/native/PostgreSQL recommendation | PostgreSQL and tenant architecture are mandatory; frontend and package-manager migration require an ADR and one active implementation | Blocks app scaffolding until ADR |
 | C-006 | Delivered migration contains literal `+` patch markers | Repair generator and regenerate migration; never hand-edit only the generated output | Blocks database gate |
+| C-007 | The 73-table package stores distribution totals but has no subscription receipt/refund source ledger | Add an immutable, provider-event-idempotent subscription cash ledger in migration 0004; locking must derive amounts from it | Blocks trustworthy statement locking without the repair |
 
 ## Two signed financial gates
 

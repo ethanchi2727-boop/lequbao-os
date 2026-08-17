@@ -5,6 +5,9 @@ const root = process.cwd();
 const read = (relativePath) => readFile(path.join(root, relativePath), 'utf8');
 
 const schema = await read('database/schema.sql');
+const sourceSchema = await read(
+  'docs/v6.1/source-package/05_数据API事件权限与安全/database/schema.sql',
+);
 const migration = await read('database/migrations/0002_v6_1_永久收益权与AI对话建档.sql');
 const pageStats = JSON.parse(
   await read('docs/v6.1/source-package/02_完整PRD页面树与状态机/页面树与页面契约/页面树统计.json'),
@@ -15,7 +18,11 @@ const events = await read(
 
 const failures = [];
 const tableCount = [...schema.matchAll(/^CREATE TABLE\s+([a-z_][a-z0-9_]*)\s*\(/gim)].length;
-if (tableCount !== 73) failures.push(`expected 73 tables, found ${tableCount}`);
+const sourceTableCount = [...sourceSchema.matchAll(/^CREATE TABLE\s+([a-z_][a-z0-9_]*)\s*\(/gim)]
+  .length;
+if (sourceTableCount !== 73)
+  failures.push(`expected 73 source-package tables, found ${sourceTableCount}`);
+if (tableCount !== 74) failures.push(`expected 74 audited target tables, found ${tableCount}`);
 if (pageStats.total_nodes !== 307)
   failures.push(`expected 307 page nodes, found ${pageStats.total_nodes}`);
 if (pageStats.leaf_pages !== 197)
@@ -31,6 +38,6 @@ if (failures.length > 0) {
   process.exitCode = 1;
 } else {
   console.log(
-    'V6 contracts verified: 73 tables, 307 nodes, 197 leaves, 46 domain events, RLS and audit guards.',
+    'V6 contracts verified: 73 source tables, 74 audited target tables, 307 nodes, 197 leaves, 46 domain events, RLS and audit guards.',
   );
 }

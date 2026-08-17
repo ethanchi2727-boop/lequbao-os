@@ -1184,6 +1184,60 @@ AFTER INSERT OR UPDATE OF status ON revenue_share_policies
 DEFERRABLE INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION app.assert_active_policy_total();
 
+CREATE TABLE subscription_cash_ledger_entries (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id uuid NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+  subscription_id uuid NOT NULL,
+  bucket text NOT NULL CHECK (bucket IN ('RECEIPT','REFUND')),
+  entry_type text NOT NULL CHECK (entry_type IN ('CONFIRMATION','CORRECTION')),
+  amount_cents bigint NOT NULL CHECK (amount_cents <> 0),
+  currency char(3) NOT NULL DEFAULT 'CNY',
+  provider text NOT NULL,
+  external_event_id text NOT NULL,
+  provider_reference_hash text NOT NULL,
+  original_entry_id uuid,
+  occurred_at timestamptz NOT NULL,
+  recorded_by uuid REFERENCES users(id),
+  created_at timestamptz NOT NULL DEFAULT now(),
+  UNIQUE (tenant_id, provider, external_event_id),
+  UNIQUE (tenant_id, id),
+  FOREIGN KEY (tenant_id, subscription_id) REFERENCES tenant_subscriptions(tenant_id, id),
+  FOREIGN KEY (tenant_id, original_entry_id) REFERENCES subscription_cash_ledger_entries(tenant_id, id),
+  CHECK (
+    (entry_type = 'CONFIRMATION' AND amount_cents > 0 AND original_entry_id IS NULL)
+    OR (entry_type = 'CORRECTION' AND original_entry_id IS NOT NULL)
+  )
+);
+
+CREATE INDEX subscription_cash_ledger_period_idx
+ON subscription_cash_ledger_entries(tenant_id, subscription_id, occurred_at, bucket);
+
+CREATE OR REPLACE FUNCTION app.assert_subscription_cash_correction_scope()
+RETURNS trigger
+LANGUAGE plpgsql
+AS $$
+DECLARE
+  original_subscription uuid;
+  original_bucket text;
+BEGIN
+  IF NEW.entry_type = 'CORRECTION' THEN
+    SELECT subscription_id, bucket INTO original_subscription, original_bucket
+      FROM subscription_cash_ledger_entries
+     WHERE tenant_id = NEW.tenant_id AND id = NEW.original_entry_id;
+    IF original_subscription IS NULL
+       OR original_subscription <> NEW.subscription_id
+       OR original_bucket <> NEW.bucket THEN
+      RAISE EXCEPTION 'cash correction must retain original tenant, subscription and bucket';
+    END IF;
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+CREATE TRIGGER subscription_cash_correction_scope_check
+BEFORE INSERT ON subscription_cash_ledger_entries
+FOR EACH ROW EXECUTE FUNCTION app.assert_subscription_cash_correction_scope();
+
 CREATE TABLE direct_cost_catalog (
   cost_code text PRIMARY KEY,
   cost_name text NOT NULL,
@@ -1484,6 +1538,10 @@ CREATE TRIGGER revenue_distribution_entries_immutable
 BEFORE UPDATE OR DELETE ON revenue_distribution_entries
 FOR EACH ROW EXECUTE FUNCTION app.reject_mutation();
 
+CREATE TRIGGER subscription_cash_ledger_entries_immutable
+BEFORE UPDATE OR DELETE ON subscription_cash_ledger_entries
+FOR EACH ROW EXECUTE FUNCTION app.reject_mutation();
+
 -- 为所有租户业务表启用行级隔离。应用每个事务开始时必须 SET LOCAL app.tenant_id。
 DO $$
 DECLARE
@@ -1499,6 +1557,7 @@ BEGIN
     'settlement_batches','settlement_items','tenant_plugin_installations','tenant_plugin_grants','workflow_runs',
     'idempotency_keys','outbox_events','inbox_receipts','audit_logs','tracking_events','migration_jobs','data_export_jobs',
     'merchant_revenue_right_groups','merchant_revenue_right_holders','revenue_share_policies','revenue_share_policy_splits',
+    'subscription_cash_ledger_entries',
     'direct_cost_entries','revenue_distribution_statements','revenue_distribution_allocations','revenue_distribution_entries',
     'revenue_right_transfers','merchant_intake_sessions','merchant_intake_assets','merchant_intake_field_candidates',
     'merchant_intake_confirmations'
@@ -1561,6 +1620,10 @@ ON CONFLICT (version) DO NOTHING;
 
 INSERT INTO schema_migrations(version, checksum)
 VALUES ('0003_revenue_distribution_invariants', encode(digest('lequbao-v6.1-0003', 'sha256'), 'hex'))
+ON CONFLICT (version) DO NOTHING;
+
+INSERT INTO schema_migrations(version, checksum)
+VALUES ('0004_subscription_cash_ledger', encode(digest('lequbao-v6.1-0004', 'sha256'), 'hex'))
 ON CONFLICT (version) DO NOTHING;
 
 COMMIT;
