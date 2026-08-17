@@ -20,3 +20,47 @@ export const EventEnvelopeSchema = z.object({
 
 export type EventEnvelope = z.infer<typeof EventEnvelopeSchema>;
 export type TenantId = z.infer<typeof TenantIdSchema>;
+
+export const RevenueRightHolderInputSchema = z.object({
+  beneficiaryId: UuidSchema,
+  shareBps: z.int().min(1).max(7000),
+});
+
+export const CreateRevenueRightRequestSchema = z
+  .object({
+    sourceContractRef: z.string().min(1).max(255),
+    startsAt: z.iso.datetime({ offset: true }),
+    createdBy: UuidSchema,
+    evidence: z.record(z.string(), z.unknown()).default({}),
+    holders: z.array(RevenueRightHolderInputSchema).min(1),
+  })
+  .superRefine((value, context) => {
+    const total = value.holders.reduce((sum, holder) => sum + holder.shareBps, 0);
+    if (total !== 7000) {
+      context.addIssue({
+        code: 'custom',
+        path: ['holders'],
+        message: `active business revenue right must total 7000 bps, got ${total}`,
+      });
+    }
+    if (
+      new Set(value.holders.map((holder) => holder.beneficiaryId)).size !== value.holders.length
+    ) {
+      context.addIssue({
+        code: 'custom',
+        path: ['holders'],
+        message: 'beneficiary IDs must be unique within a revenue right',
+      });
+    }
+  });
+
+export const RevenueRightResponseSchema = z.object({
+  id: UuidSchema,
+  merchantProfileId: UuidSchema,
+  status: z.literal('ACTIVE'),
+  startsAt: z.iso.datetime({ offset: true }),
+  holders: z.array(RevenueRightHolderInputSchema),
+});
+
+export type CreateRevenueRightRequest = z.infer<typeof CreateRevenueRightRequestSchema>;
+export type RevenueRightResponse = z.infer<typeof RevenueRightResponseSchema>;

@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { FastifyInstance } from 'fastify';
 import { buildApp } from './app.js';
 
@@ -41,5 +41,34 @@ describe('platform API shell', () => {
     });
     expect(response.statusCode).toBe(200);
     expect(response.json()).toEqual({ tenantId });
+  });
+
+  it('creates an active revenue right through the injected transactional service', async () => {
+    const create = vi.fn().mockResolvedValue({
+      id: '00000000-0000-4000-8000-000000000010',
+      merchantProfileId: '00000000-0000-4000-8000-000000000011',
+      status: 'ACTIVE',
+      startsAt: '2026-08-17T12:00:00+08:00',
+      holders: [{ beneficiaryId: '00000000-0000-4000-8000-000000000012', shareBps: 7000 }],
+    });
+    app = await buildApp({ revenueRights: { create } });
+    const response = await app.inject({
+      method: 'POST',
+      url: '/api/v1/merchants/00000000-0000-4000-8000-000000000011/revenue-rights',
+      headers: {
+        'x-tenant-id': '00000000-0000-4000-8000-000000000003',
+        'idempotency-key': 'merchant-11-original-right',
+      },
+      payload: {
+        sourceContractRef: 'contract-11',
+        startsAt: '2026-08-17T12:00:00+08:00',
+        createdBy: '00000000-0000-4000-8000-000000000013',
+        holders: [{ beneficiaryId: '00000000-0000-4000-8000-000000000012', shareBps: 7000 }],
+      },
+    });
+    expect(response.statusCode).toBe(201);
+    expect(create).toHaveBeenCalledWith(
+      expect.objectContaining({ idempotencyKey: 'merchant-11-original-right' }),
+    );
   });
 });

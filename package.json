@@ -12,10 +12,11 @@
     "format:check": "prettier --check .",
     "lint": "eslint .",
     "contracts:check": "node tooling/verify-v6-contracts.mjs",
+    "openapi:check": "node tooling/verify-openapi.mjs",
     "typecheck": "pnpm --filter @lequ/contracts build && pnpm -r --if-present run typecheck",
     "test": "pnpm --filter @lequ/contracts build && pnpm -r --if-present run test",
     "build": "pnpm -r --if-present run build",
-    "check": "pnpm format:check && pnpm lint && pnpm contracts:check && pnpm typecheck && pnpm test && pnpm build"
+    "check": "pnpm format:check && pnpm lint && pnpm contracts:check && pnpm openapi:check && pnpm typecheck && pnpm test && pnpm build"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",
@@ -26,6 +27,7 @@
     "tsx": "4.23.12",
     "typescript": "6.0.3",
     "typescript-eslint": "8.67.0",
-    "vitest": "4.1.10"
+    "vitest": "4.1.10",
+    "yaml": "2.9.0"
   }
 }

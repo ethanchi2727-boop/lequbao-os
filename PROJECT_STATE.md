@@ -22,6 +22,9 @@ Rebuild the repository around the V6.1 `乐趣宝 + 乐趣生活` baseline. Pres
 - Replaced the V5 workspace with a pnpm modular-monolith foundation: shared contracts, Fastify API and RLS-safe Outbox Worker.
 - Imported the 73-table PostgreSQL 15+ schema and added a real-database CI gate that attempts cross-tenant reads and writes.
 - Added immutable audit/ledger checks, strict money/event contracts, deterministic builds, exact dependency locking, lint, type, unit-test and build gates.
+- Implemented the first revenue vertical slice: unique merchant permanent-right activation, multi-holder 70% validation, transactional idempotency, audit and `revenue_right.activated.v1` Outbox publication.
+- Implemented frozen subscription policy V1 (`70/10/20`) with deterministic minor-unit allocation that never loses a cent.
+- Published a deliberately implementation-bounded OpenAPI document and added syntax/reference drift checks.
 
 ## Verified package facts
 
@@ -37,10 +40,11 @@ Rebuild the repository around the V6.1 `乐趣宝 + 乐趣生活` baseline. Pres
 - The frozen `70/10/20` distributable-income policy conflicts with a separate `25%` channel-distribution statement. V6.1 development uses the frozen versioned policy; production payout needs written business and finance resolution.
 - Current material mixes `商务人员` and `商务推广人员`, and mixes `生活消费` and `生活`. The external unique baseline wins pending formal amendment.
 - The target stack recommendation differs from the V5 implementation. The rebuild must use architecture decision records and must not mix package managers or duplicate long-lived app implementations.
-- Local formatting, lint, contract counts, TypeScript, 19 unit tests and production builds pass.
-- This workstation has no PostgreSQL client/server. Schema execution and RLS isolation are implemented in GitHub Actions but remain unverified until the pushed workflow passes.
+- Local formatting, lint, contract counts, OpenAPI, TypeScript, 30 unit tests and production builds pass.
+- GitHub Actions run `32039457455` passed clean PostgreSQL 15 schema application and RLS isolation for commit `8da963b`.
+- The revenue-right and frozen-policy PostgreSQL constraint test is added locally and awaits the next pushed CI run.
 - Payment sandbox, WeCom callbacks, backup recovery, migration dry-run/rollback and browser/WeChat acceptance remain unverified.
 
 ## Exact next step
 
-Commit and push the green platform foundation, observe the PostgreSQL CI result, then implement the first vertical slice: merchant permanent revenue-right creation, versioned `70/10/20` policy, append-only distribution ledger, idempotent outbox event and API tests.
+Commit and push the green revenue-right slice, observe its real PostgreSQL constraint test, then implement statement calculation and locking: actual receipt minus refunds and actual direct costs, exact beneficiary allocations, append-only accrual entries, one-cent reconciliation gate and reversal flow.
