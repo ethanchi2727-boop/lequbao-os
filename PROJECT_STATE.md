@@ -38,6 +38,12 @@ Rebuild the repository around the V6.1 `乐趣宝 + 乐趣生活` baseline. Pres
 - Added migration `0006` and the immutable `merchant_intake_commits` snapshot. Candidate inserts now require a same-session asset whose security and processing states are `SAFE/SUCCEEDED`; confirmations and commits are append-only. The audited target now has 77 tables.
 - Implemented the trusted AI merchant-intake domain slice: idempotent session creation, immutable asset metadata, security rejection, safe extraction results, multi-source conflict retention, typed human confirmation and atomic formal merchant-profile commit with audit and Outbox.
 - Expanded the implementation-bounded OpenAPI from nine to fourteen paths.
+- Added migration `0007` and tenant-scoped upload tickets. Object keys, SHA-256, MIME type, byte ceiling and expiry are signed; completion trusts only storage-side HEAD evidence and consumes a ticket exactly once. The audited target now has 78 tables.
+- Added the ordered intake processing boundary: malware verdict precedes OCR/document/ASR extraction, unsafe material never reaches a model, and structured candidates can only be persisted through the trusted application service. HTTP adapters validate upstream responses and turn extraction outages into retryable failed assets without deleting raw material.
+- Added text-message ingestion through deterministic tenant object keys and the same immutable asset queue.
+- Added verified enterprise WeCom internal-app callbacks: callback freshness, SHA-1 signature, AES-CBC/PKCS#7 decryption, corp identity, member binding, message/payload idempotency and expired-media retry evidence. It does not read or answer employee personal WeChat contacts.
+- Replaced the old client-supplied object-key endpoint with upload authorization and completion endpoints. The implementation-bounded OpenAPI now has seventeen paths.
+- Accepted ADR-0004 and added the only active 乐趣宝 Web runtime for PAGE-014 and PAGE-175–178. PC and mobile H5 share state and confirmation rules, with explicit loading, empty, recoverable error, denied, stopped and success presentations.
 
 ## Verified package facts
 
@@ -55,9 +61,10 @@ Rebuild the repository around the V6.1 `乐趣宝 + 乐趣生活` baseline. Pres
 - The target stack recommendation differs from the V5 implementation. The rebuild must use architecture decision records and must not mix package managers or duplicate long-lived app implementations.
 - The current API foundation has no signed session-token authentication. Settlement actor IDs are checked against active platform-finance membership but still arrive as command input; the new settlement endpoints must not be production-exposed before token-derived actor identity and permission middleware exist.
 - Failed provider attempts and callback-driven retry orchestration are not yet implemented. Successful payouts are evidence-bound and immutable, but a payment connector sandbox remains required.
-- Merchant-intake binary upload, tenant object-storage policy, malware scanner, OCR, speech transcription, model extraction and WeCom callback verification are not connected. The trusted processing-result service and PostgreSQL guards are implemented; external AI processing is not yet integration-tested.
-- No 乐趣宝 PC/H5 merchant-intake UI exists in the rebuild yet, so browser acceptance for PAGE-014 and PAGE-175–178 remains pending.
-- Local formatting, lint, contract counts, fourteen implemented OpenAPI paths, TypeScript, 42 unit tests and production builds pass.
+- Object storage, malware, OCR, speech and structured-extraction adapter contracts are implemented and fault-tested, but no production provider credentials were supplied; real provider calls remain an integration gate.
+- Enterprise WeCom cryptography, tenant/member binding and receipt idempotency are implemented and simulated with official message framing. A real enterprise application callback and expired-media download still require controlled credentials.
+- PAGE-014 and PAGE-175–178 are implemented and their shared state tests/build pass. The local page server responds, but the Codex in-app browser control runtime failed to initialize with a missing internal asset path, so visual browser acceptance is not yet evidence-backed.
+- Local formatting, lint, 78-table contract counts, seventeen implemented OpenAPI paths, TypeScript, 57 unit tests and all production builds pass.
 - GitHub Actions run `32039457455` passed clean PostgreSQL 15 schema application and RLS isolation for commit `8da963b`.
 - GitHub Actions run `32040005789` passed the revenue-right and frozen-policy PostgreSQL constraint test for commit `cb98f7b`.
 - GitHub Actions run `32040375789` passed exact distribution reconciliation and immutable-ledger tests for commit `b88903f`.
@@ -65,8 +72,8 @@ Rebuild the repository around the V6.1 `乐趣宝 + 乐趣生活` baseline. Pres
 - GitHub Actions run `32041550030` passed the statement-locking PostgreSQL fixture for commit `cee60da`, including exact allocations, one statement/event/audit set and identical idempotent replay.
 - GitHub Actions run `32042648486` passed commit `b5b3612`: clean and incremental PostgreSQL 15 schemas, dual-control constraints, provider-evidenced payout, linked paid-statement reversal and identical command replays.
 - GitHub Actions run `32047162811` passed commit `c8236a5`: clean and incremental 73→77-table PostgreSQL 15 schemas, intake safety/immutability guards, signed-role service flow, rejected-file blocking, conflict retention, explicit confirmation, formal commit and idempotent replays.
-- Payment sandbox, WeCom callbacks, backup recovery, migration dry-run/rollback and browser/WeChat acceptance remain unverified.
+- Payment sandbox, real WeCom/provider callbacks, backup recovery, migration rollback drill and browser/WeChat acceptance remain unverified.
 
 ## Exact next step
 
-Connect tenant-scoped object upload and the asynchronous intake processing chain: malware scanner, OCR/document extraction, speech transcription and structured candidate adapter. Add text-message ingestion and verified, idempotent WeCom intake callbacks before building the PAGE-014 and PAGE-175–178 PC/H5 experience and running browser acceptance.
+Run PAGE-014 and PAGE-175–178 visual acceptance once the in-app browser runtime is available, then connect controlled object-storage/scanner/OCR/ASR and enterprise WeCom sandboxes. Keep production enablement blocked until provider, backup/restore and rollback evidence is attached.

@@ -14,4 +14,10 @@ export default tseslint.config(
       globals: globals.node,
     },
   },
+  {
+    files: ['apps/workbench-web/src/**/*.{js,mjs}'],
+    languageOptions: {
+      globals: globals.browser,
+    },
+  },
 );
