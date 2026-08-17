@@ -1,19 +1,19 @@
 {
-  "initialized": false,
-  "projectName": "",
-  "techStack": [],
+  "initialized": true,
+  "projectName": "lequ-life-platform",
+  "techStack": ["node-22", "typescript", "fastify", "vue-3", "vite", "uni-app", "sqlite"],
   "modules": [
     {
       "name": "root",
       "path": ".",
       "commands": {
-        "lint": { "cmd": "", "applicable": true, "reason": "" },
-        "typecheck": { "cmd": "", "applicable": true, "reason": "" },
-        "test": { "cmd": "", "applicable": true, "reason": "" },
-        "build": { "cmd": "", "applicable": true, "reason": "" }
+        "lint": { "cmd": "", "applicable": false, "reason": "当前 Monorepo 尚未配置统一 lint 脚本；类型检查、测试与正式构建为现行阻断门禁" },
+        "typecheck": { "cmd": "npm run typecheck", "applicable": true, "reason": "" },
+        "test": { "cmd": "npm test", "applicable": true, "reason": "" },
+        "build": { "cmd": "npm run build", "applicable": true, "reason": "" }
       }
     }
   ],
   "p0TestsRequired": true,
-  "notes": "项目尚未初始化。请由 TRAE 按 docs/PROJECT_INITIALIZATION.md 完成初始化，填写真实模块和命令。initialized 为 false 时质量门禁必须失败。"
+  "notes": "已按乐趣生活 Node 22 Monorepo 初始化；微信小程序构建由 GitHub Actions 的独立步骤执行。"
 }

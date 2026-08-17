@@ -1,0 +1,74 @@
+{
+  "pages": [
+    {
+      "path": "pages/index/index",
+      "style": {
+        "navigationStyle": "custom",
+        "backgroundColor": "#F4F5F8",
+        "enablePullDownRefresh": true
+      }
+    },
+    {
+      "path": "pages/module/index",
+      "style": {
+        "navigationStyle": "custom",
+        "backgroundColor": "#090E21",
+        "enablePullDownRefresh": false
+      }
+    },
+    {
+      "path": "pages/onboarding/index",
+      "style": {
+        "navigationStyle": "custom",
+        "backgroundColor": "#F5F7FB",
+        "enablePullDownRefresh": false
+      }
+    },
+    {
+      "path": "pages/crm/index",
+      "style": {
+        "navigationStyle": "custom",
+        "backgroundColor": "#F4F5F8",
+        "enablePullDownRefresh": true
+      }
+    },
+    {
+      "path": "pages/ownership/index",
+      "style": {
+        "navigationStyle": "custom",
+        "backgroundColor": "#F3F4F8",
+        "enablePullDownRefresh": true
+      }
+    },
+    {
+      "path": "pages/performance/index",
+      "style": {
+        "navigationStyle": "custom",
+        "backgroundColor": "#F2F3F7",
+        "enablePullDownRefresh": true
+      }
+    },
+    {
+      "path": "pages/team/index",
+      "style": {
+        "navigationStyle": "custom",
+        "backgroundColor": "#F2F3F7",
+        "enablePullDownRefresh": true
+      }
+    },
+    {
+      "path": "pages/copilot/index",
+      "style": {
+        "navigationStyle": "custom",
+        "backgroundColor": "#F2F3F7",
+        "enablePullDownRefresh": true
+      }
+    }
+  ],
+  "globalStyle": {
+    "navigationBarTextStyle": "white",
+    "navigationBarTitleText": "销售宝",
+    "navigationBarBackgroundColor": "#090E21",
+    "backgroundColor": "#F5F7FB"
+  }
+}

@@ -1,0 +1,106 @@
+{
+  "pages": [
+    {
+      "path": "pages/index/index",
+      "style": {
+        "navigationStyle": "custom",
+        "backgroundColor": "#F5F7FB",
+        "enablePullDownRefresh": false
+      }
+    },
+    {
+      "path": "pages/module/index",
+      "style": {
+        "navigationStyle": "custom",
+        "backgroundColor": "#090E21",
+        "enablePullDownRefresh": false
+      }
+    },
+    {
+      "path": "pages/growth/index",
+      "style": {
+        "navigationStyle": "custom",
+        "backgroundColor": "#F2F5F9",
+        "enablePullDownRefresh": false
+      }
+    },
+    {
+      "path": "pages/delivery/index",
+      "style": {
+        "navigationStyle": "custom",
+        "backgroundColor": "#F1F4F8",
+        "enablePullDownRefresh": false
+      }
+    },
+    {
+      "path": "pages/work-orders/index",
+      "style": {
+        "navigationStyle": "custom",
+        "backgroundColor": "#F1F4F8",
+        "enablePullDownRefresh": false
+      }
+    },
+    {
+      "path": "pages/sla/index",
+      "style": {
+        "navigationStyle": "custom",
+        "backgroundColor": "#F1F4F8",
+        "enablePullDownRefresh": false
+      }
+    },
+    {
+      "path": "pages/renewals/index",
+      "style": {
+        "navigationStyle": "custom",
+        "backgroundColor": "#F0F4F2",
+        "enablePullDownRefresh": false
+      }
+    },
+    {
+      "path": "pages/city-metrics/index",
+      "style": {
+        "navigationStyle": "custom",
+        "backgroundColor": "#EDF2F0",
+        "enablePullDownRefresh": false
+      }
+    },
+    {
+      "path": "pages/settlements/index",
+      "style": {
+        "navigationStyle": "custom",
+        "backgroundColor": "#EDF2F0",
+        "enablePullDownRefresh": false
+      }
+    },
+    {
+      "path": "pages/factory/index",
+      "style": {
+        "navigationStyle": "custom",
+        "backgroundColor": "#F5F7FB",
+        "enablePullDownRefresh": false
+      }
+    },
+    {
+      "path": "pages/geo/index",
+      "style": {
+        "navigationStyle": "custom",
+        "backgroundColor": "#F3F6F8",
+        "enablePullDownRefresh": false
+      }
+    },
+    {
+      "path": "pages/skills/index",
+      "style": {
+        "navigationStyle": "custom",
+        "backgroundColor": "#F5F5FA",
+        "enablePullDownRefresh": false
+      }
+    }
+  ],
+  "globalStyle": {
+    "navigationBarTextStyle": "white",
+    "navigationBarTitleText": "城市服务商工作台",
+    "navigationBarBackgroundColor": "#090E21",
+    "backgroundColor": "#F5F7FB"
+  }
+}

@@ -6,55 +6,34 @@ on:
   pull_request:
     branches: [main]
 
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   quality-gate:
     name: Quality Gate
     runs-on: ubuntu-latest
+    timeout-minutes: 40
     steps:
       - uses: actions/checkout@v4
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22.5.0
           cache: 'npm'
-          cache-dependency-path: |
-            package-lock.json
-            **/package-lock.json
+          cache-dependency-path: package-lock.json
 
-      - name: Install root dependencies
-        run: |
-          if [ -f package.json ]; then
-            if [ -f package-lock.json ]; then
-              npm ci
-            else
-              npm install
-            fi
-          fi
+      - name: Install dependencies
+        run: npm ci
 
-      - name: Install nested module dependencies
-        run: |
-          find . -name package.json -not -path "*/node_modules/*" | while read f; do
-            dir=$(dirname "$f")
-            if [ "$dir" = "." ]; then continue; fi
-            echo "Installing dependencies in $dir"
-            cd "$dir"
-            if [ -f package-lock.json ]; then
-              npm ci
-            else
-              npm install
-            fi
-            cd -
-          done
+      - name: Run project quality gate
+        run: node scripts/quality-gate.mjs
 
-      - name: Run Quality Gate (template self-test)
-        run: |
-          # 模板仓库自身验证：使用 examples/demo-app 的已初始化配置
-          if [ -f examples/demo-app/quality-gate.config.json ]; then
-            echo "检测到示例项目，使用 demo-app 配置验证质量门禁..."
-            cp examples/demo-app/quality-gate.config.json quality-gate.config.json
-            node scripts/quality-gate.mjs
-          else
-            # 新项目从模板创建后，正常执行质量门禁
-            node scripts/quality-gate.mjs
+      - name: Build WeChat mini programs
+        run: npm run build:weixin
           fi

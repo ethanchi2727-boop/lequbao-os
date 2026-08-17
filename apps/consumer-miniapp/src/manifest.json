@@ -1,0 +1,21 @@
+{
+  "name": "乐趣生活",
+  "appid": "",
+  "description": "AI 原生家庭生活消费平台",
+  "versionName": "5.0.0",
+  "versionCode": "500",
+  "transformPx": false,
+  "app-plus": { "usingComponents": true, "compilerVersion": 3, "modules": {} },
+  "quickapp": {},
+  "mp-weixin": {
+    "appid": "",
+    "setting": { "urlCheck": true },
+    "usingComponents": true
+  },
+  "mp-alipay": { "usingComponents": true },
+  "mp-baidu": { "usingComponents": true },
+  "mp-toutiao": { "usingComponents": true },
+  "uniStatistics": { "enable": false },
+  "vueVersion": "3"
+}
+

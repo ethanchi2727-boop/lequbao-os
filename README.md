@@ -1,112 +1,56 @@
-# AI 开发质量门禁模板
+# 乐趣生活 V5.0
 
-一个可复用的 GitHub 模板仓库，为任何项目提供 AI 开发质量门禁基础设施。从本模板创建新项目后，TRAE 只需读取模板、识别技术栈并完成一次初始化，即可获得完整的测试规范和质量门禁能力。
+乐趣生活 V5.0 全平台 Monorepo。当前包含四个可独立发布的小程序、五角色端到端验收台、模块化单体 API、SQLite 本地适配器、RBAC/数据权限、Aurora Living 设计系统和 1-6 级产品目录。
 
-## 包含什么
+运行环境要求 Node.js `>=22.5.0`。仓库不包含本地 `.env`、SQLite 运行数据、依赖目录或构建产物；首次在云端工作区打开后先执行 `npm ci`。
 
-- **AI 质量守门员 Skill**：TRAE 在开发时自动遵守的质量流程
-- **测试规范**：单元测试、接口测试、端到端测试、回归测试标准
-- **测试矩阵模板**：通用高风险用例模板（支付、退款、余额、并发、幂等等）
-- **CI/CD**：GitHub Actions 自动执行 lint、类型检查、测试、构建
-- **质量门禁运行器**：`scripts/quality-gate.mjs`，按配置执行真实检查
-- **项目初始化指引**：TRAE 自动识别技术栈并配置质量门禁
+完整完成度以 [全量需求追踪矩阵](./docs/TRACEABILITY.md) 为准；未标记为 `[x]` 的业务不得视为已开发完成。
 
-## 如何从模板创建新项目
+## 工程入口
 
-1. 点击本仓库右上角 **Use this template** → **Create a new repository**
-2. 填写新仓库名称，创建
-3. 在 TRAE 中打开新项目
-4. 发送下方的一句初始化指令给 TRAE
+| 产品 | Workspace | H5 端口 | 微信构建目录 |
+| --- | --- | ---: | --- |
+| 乐趣生活 | `@lequ/consumer-miniapp` | 43216 | `apps/consumer-miniapp/dist/build/mp-weixin` |
+| 经营宝 | `@lequ/merchant-miniapp` | 43217 | `apps/merchant-miniapp/dist/build/mp-weixin` |
+| 销售宝 | `@lequ/sales-miniapp` | 43218 | `apps/sales-miniapp/dist/build/mp-weixin` |
+| 城市服务商 | `@lequ/provider-miniapp` | 43219 | `apps/provider-miniapp/dist/build/mp-weixin` |
+| 五角色验收台 | `@lequ/mobile` | 43215 | `apps/mobile/dist/build/mp-weixin` |
+| API | `@lequ/api` | 8787 | `apps/api/dist/server.js` |
+| 统一 PC 后台 | `@lequ/admin-web` | 43220 | `apps/admin-web/dist` |
 
-## 一句话初始化指令（直接发给 TRAE）
+## 常用命令
 
-```
-请按 docs/PROJECT_INITIALIZATION.md 初始化质量门禁：识别项目技术栈，安装对应测试工具，配置测试环境隔离，填写 quality-gate.config.json（initialized 设为 true），然后执行 node scripts/quality-gate.mjs 验证全部通过。
-```
-
-## 日常使用
-
-### 开发新功能 / 修复 Bug 时
-TRAE 会自动调用 `.trae/skills/ai-quality-gate/SKILL.md` 中的质量守门员流程，包括影响分析、测试编写、回归验证和结果报告。
-
-### 提交前验证
 ```bash
+npm install
+npm run typecheck
+npm test
+npm run build:miniapps
+npm run build:weixin
+npm run check
 node scripts/quality-gate.mjs
 ```
 
-### Bug 修复要求
-- 先编写能稳定复现 Bug 的失败测试
-- 修复代码使测试通过
-- 该复现测试作为永久回归测试保留，不得删除
+## 云端开发
 
-### 发布前检查
-- 确认所有 P0 测试通过
-- 确认类型检查和构建通过
-- 确认 lint 无错误
-- 确认 CI 全部通过
-
-## 质量门禁配置
-
-配置文件 `quality-gate.config.json` 登记项目模块和实际执行命令：
-
-```json
-{
-  "initialized": true,
-  "projectName": "my-app",
-  "techStack": ["typescript", "express"],
-  "modules": [
-    {
-      "name": "backend",
-      "path": "backend",
-      "commands": {
-        "lint": { "cmd": "npm run lint", "applicable": true, "reason": "" },
-        "typecheck": { "cmd": "npm run typecheck", "applicable": true, "reason": "" },
-        "test": { "cmd": "npm run test", "applicable": true, "reason": "" },
-        "build": { "cmd": "npm run build", "applicable": true, "reason": "" }
-      }
-    }
-  ]
-}
+```bash
+git clone https://github.com/ethanchi2727-boop/lequbao-os.git
+cd lequbao-os
+npm ci
+npm run typecheck
 ```
 
-**关键规则**：
-- 未初始化（`initialized: false`）时质量门禁必须失败
-- 某项检查不适用时必须写明理由，不能省略
-- 禁止用 `--if-present` 让缺失命令静默通过
-- 禁止把"没有测试"显示为"测试通过"
+GitHub Actions 会在 `main` / `develop` 推送及面向 `main` 的 Pull Request 上执行真实类型检查、自动化测试、全仓构建和四端微信小程序构建。质量门禁配置见 [`quality-gate.config.json`](./quality-gate.config.json)，测试规范见 [`docs/TESTING_STANDARD.md`](./docs/TESTING_STANDARD.md)。
 
-## 适配已有项目
+启动指定产品：
 
-将本模板的文件复制到已有项目根目录，然后执行初始化指令即可。详见 [docs/PROJECT_INITIALIZATION.md](docs/PROJECT_INITIALIZATION.md)。
-
-## 目录结构
-
-```
-.
-├── .trae/skills/ai-quality-gate/SKILL.md   # TRAE 质量守门员 Skill
-├── .github/workflows/ci.yml                 # GitHub Actions CI
-├── docs/
-│   ├── TESTING_STANDARD.md                  # 测试规范
-│   └── PROJECT_INITIALIZATION.md            # 初始化指引
-├── tests/
-│   └── TEST_MATRIX_TEMPLATE.md              # 测试矩阵模板
-├── scripts/
-│   └── quality-gate.mjs                     # 质量门禁运行器
-├── quality-gate.config.json                 # 质量门禁配置
-├── .gitignore
-└── README.md
+```bash
+npm run dev:h5 -w @lequ/consumer-miniapp
+npm run dev:h5 -w @lequ/merchant-miniapp
+npm run dev:h5 -w @lequ/sales-miniapp
+npm run dev:h5 -w @lequ/provider-miniapp
+npm run dev:admin
 ```
 
-## 支持的技术栈
+API 默认只监听 `127.0.0.1`。开发会话令牌仅用于本地适配器，生产环境必须接入 OAuth 2.1/OIDC；详见 [平台架构](./docs/ARCHITECTURE.md) 与 [安全说明](./SECURITY.md)。
 
-- Node.js / TypeScript / JavaScript
-- Vue / Vite / UniApp
-- Express / Koa / Fastify
-- React / Next.js
-- Java（基本支持）
-- Go（基本支持）
-- Python（基本支持）
-
-## 许可
-
-MIT
+当前已完成 E1 商家入网业务域，以及 E2 MiniApp Factory、E3 GEO OS、E4 Skill Network 的首个垂直切片。启动 API 后，可在销售宝完成入网资料闭环，再从城市服务商工作台依次完成模板建站、分级发布、GEO 九维扫描、渠道修复、内容确认、Skill 生成测试、认证上线与受控调用。未完成边界仍以追踪矩阵为准。

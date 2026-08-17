@@ -89,7 +89,7 @@ for (const mod of config.modules) {
     // 检查项不存在于配置
     if (!check) {
       const msg = `[${mod.name}] ${checkName}: 配置缺失`;
-      console.log(color(`  ✗ ${checkName}: ${color('配置缺失', C.red)}`));
+      console.log(`  ✗ ${checkName}: ${color('配置缺失', C.red)}`);
       results.push({ module: mod.name, check: checkName, status: 'missing', exitCode: -1, msg, isP0 });
       if (isP0) hasP0Failure = true;
       hasAnyFailure = true;
@@ -107,7 +107,7 @@ for (const mod of config.modules) {
     // 命令为空
     if (!check.cmd || check.cmd.trim() === '') {
       const msg = `[${mod.name}] ${checkName}: 命令为空`;
-      console.log(color(`  ✗ ${checkName}: ${color('命令为空，不得静默通过', C.red)}`));
+      console.log(`  ✗ ${checkName}: ${color('命令为空，不得静默通过', C.red)}`);
       results.push({ module: mod.name, check: checkName, status: 'empty-cmd', exitCode: -1, msg, isP0 });
       if (isP0) hasP0Failure = true;
       hasAnyFailure = true;
@@ -119,7 +119,13 @@ for (const mod of config.modules) {
     console.log(color(`  ▷ ${checkName}: ${check.cmd}`, C.gray));
 
     const startTime = Date.now();
-    const result = spawnSync('bash', ['-c', check.cmd], {
+    const commandShell = process.platform === 'win32'
+      ? (process.env.ComSpec || 'cmd.exe')
+      : 'bash';
+    const commandArgs = process.platform === 'win32'
+      ? ['/d', '/s', '/c', check.cmd]
+      : ['-lc', check.cmd];
+    const result = spawnSync(commandShell, commandArgs, {
       cwd,
       encoding: 'utf-8',
       stdio: ['ignore', 'pipe', 'pipe'],
@@ -132,13 +138,13 @@ for (const mod of config.modules) {
     const stderr = (result.stderr || '').trim().slice(-500);
 
     if (exitCode === 0) {
-      console.log(color(`  ✓ ${checkName}: ${color('PASS', C.green)} (${elapsed}s)`));
+      console.log(`  ✓ ${checkName}: ${color('PASS', C.green)} (${elapsed}s)`);
       results.push({ module: mod.name, check: checkName, status: 'pass', exitCode, msg: '', isP0 });
     } else {
       // 区分"命令不存在"和"命令执行失败"
       const isCmdNotFound = result.stderr && (result.stderr.includes('command not found') || result.stderr.includes('not recognized'));
       const statusLabel = isCmdNotFound ? '命令不存在' : `失败(exit=${exitCode})`;
-      console.log(color(`  ✗ ${checkName}: ${color(statusLabel, C.red)} (${elapsed}s)`));
+      console.log(`  ✗ ${checkName}: ${color(statusLabel, C.red)} (${elapsed}s)`);
       if (stdout) console.log(color(`    stdout: ${stdout.slice(0, 200)}`, C.gray));
       if (stderr) console.log(color(`    stderr: ${stderr.slice(0, 200)}`, C.gray));
       results.push({ module: mod.name, check: checkName, status: isCmdNotFound ? 'cmd-not-found' : 'fail', exitCode, msg: statusLabel, isP0 });

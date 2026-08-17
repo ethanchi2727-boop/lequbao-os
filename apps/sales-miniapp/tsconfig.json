@@ -1,0 +1,16 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "types": ["@dcloudio/types", "vite/client"],
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "allowJs": false,
+    "jsx": "preserve",
+    "baseUrl": "."
+  },
+  "include": [
+    "src/**/*.ts", "src/**/*.d.ts", "src/**/*.tsx", "src/**/*.vue",
+    "../../packages/product-catalog/src/**/*.ts",
+    "../../packages/mobile-ui/src/**/*.vue"
+  ]
+}
+
