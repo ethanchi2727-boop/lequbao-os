@@ -22,7 +22,7 @@ const sourceTableCount = [...sourceSchema.matchAll(/^CREATE TABLE\s+([a-z_][a-z0
   .length;
 if (sourceTableCount !== 73)
   failures.push(`expected 73 source-package tables, found ${sourceTableCount}`);
-if (tableCount !== 77) failures.push(`expected 77 audited target tables, found ${tableCount}`);
+if (tableCount !== 78) failures.push(`expected 78 audited target tables, found ${tableCount}`);
 if (pageStats.total_nodes !== 307)
   failures.push(`expected 307 page nodes, found ${pageStats.total_nodes}`);
 if (pageStats.leaf_pages !== 197)
@@ -38,6 +38,6 @@ if (failures.length > 0) {
   process.exitCode = 1;
 } else {
   console.log(
-    'V6 contracts verified: 73 source tables, 77 audited target tables, 307 nodes, 197 leaves, 46 domain events, RLS and audit guards.',
+    'V6 contracts verified: 73 source tables, 78 audited target tables, 307 nodes, 197 leaves, 46 domain events, RLS and audit guards.',
   );
 }

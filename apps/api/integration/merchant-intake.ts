@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import pg from 'pg';
 import { createMerchantIntakeService } from '../src/merchant-intake-service.js';
+import { createMerchantIntakeUploadService } from '../src/merchant-intake-upload-service.js';
 import type { SessionIdentity } from '../src/session-identity.js';
 
 const connectionString = process.env.DATABASE_URL;
@@ -42,6 +43,23 @@ try {
   );
 
   const service = createMerchantIntakeService(pool);
+  const uploadEvidence = new Map<
+    string,
+    { sha256: string; sizeBytes: number; contentType: string }
+  >();
+  const uploads = createMerchantIntakeUploadService(pool, {
+    authorizePut: ({ objectKey, expiresAt }) => ({
+      uploadUrl: `https://objects.integration.invalid/${encodeURIComponent(objectKey)}`,
+      headers: {},
+      expiresAt,
+    }),
+    stat: async (objectKey) => {
+      const evidence = uploadEvidence.get(objectKey);
+      if (!evidence) throw new Error('object evidence missing');
+      return evidence;
+    },
+    putText: async () => undefined,
+  });
   const createCommand = {
     identity,
     idempotencyKey: 'intake:create:happy',
@@ -52,28 +70,40 @@ try {
   assert.deepEqual(await service.createSession(createCommand), created);
   assert.equal(created.status, 'COLLECTING');
 
-  const assetCommand = {
+  const uploadCommand = {
     identity,
-    idempotencyKey: 'intake:asset:license',
-    traceId: 'trace-intake-asset-license',
+    idempotencyKey: 'intake:upload:license',
+    traceId: 'trace-intake-upload-license',
     body: {
       sessionId: created.id,
       assetType: 'IMAGE',
       sha256: sha('license-image'),
-      objectKey: `${tenantId}/intake/${created.id}/license.jpg`,
-      originalFilename: '营业执照.jpg',
-      mimeType: 'image/jpeg',
+      contentType: 'image/jpeg',
+      maxBytes: 1024,
     },
   };
-  const asset = await service.addAsset(assetCommand);
-  assert.deepEqual(await service.addAsset(assetCommand), asset);
+  const upload = await uploads.create(uploadCommand);
+  assert.deepEqual(await uploads.create(uploadCommand), upload);
+  uploadEvidence.set(upload.objectKey, {
+    sha256: sha('license-image'),
+    sizeBytes: 512,
+    contentType: 'image/jpeg',
+  });
+  const completeCommand = {
+    identity,
+    idempotencyKey: 'intake:upload:license:complete',
+    traceId: 'trace-intake-upload-license-complete',
+    body: { uploadId: upload.id },
+  };
+  const asset = await uploads.complete(completeCommand);
+  assert.deepEqual(await uploads.complete(completeCommand), asset);
   const processCommand = {
     tenantId,
     idempotencyKey: 'intake:process:license',
     traceId: 'trace-intake-process-license',
     processorId,
     body: {
-      assetId: asset.id,
+      assetId: asset.assetId,
       securityStatus: 'SAFE' as const,
       candidates: [
         {
@@ -88,7 +118,7 @@ try {
         },
         {
           fieldPath: 'merchant.business_license_object_key',
-          candidateValue: `${tenantId}/intake/${created.id}/license.jpg`,
+          candidateValue: upload.objectKey,
           confidence: 1,
         },
       ],
@@ -237,6 +267,7 @@ try {
     profiles: string;
     outbox: string;
     audits: string;
+    uploads: string;
   }>(
     `SELECT
        (SELECT count(*) FROM merchant_intake_sessions WHERE tenant_id = $1)::text AS sessions,
@@ -246,7 +277,8 @@ try {
        (SELECT count(*) FROM merchant_intake_commits WHERE tenant_id = $1)::text AS commits,
        (SELECT count(*) FROM merchant_profiles WHERE tenant_id = $1)::text AS profiles,
        (SELECT count(*) FROM outbox_events WHERE tenant_id = $1 AND event_name LIKE 'merchant.intake_%')::text AS outbox,
-       (SELECT count(*) FROM audit_logs WHERE tenant_id = $1 AND permission_code LIKE 'merchant.intake.%')::text AS audits`,
+       (SELECT count(*) FROM audit_logs WHERE tenant_id = $1 AND permission_code LIKE 'merchant.intake.%')::text AS audits,
+       (SELECT count(*) FROM merchant_intake_uploads WHERE tenant_id = $1 AND status = 'CONSUMED')::text AS uploads`,
     [tenantId],
   );
   assert.deepEqual(evidence.rows[0], {
@@ -257,7 +289,8 @@ try {
     commits: '1',
     profiles: '1',
     outbox: '12',
-    audits: '13',
+    audits: '14',
+    uploads: '1',
   });
   console.log(
     'Merchant intake PostgreSQL integration passed: signed actor roles, safe extraction, conflict retention, explicit confirmation, immutable commit and idempotent replay.',

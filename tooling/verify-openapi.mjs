@@ -16,9 +16,12 @@ for (const path of [
   '/api/v1/distribution-statements/{statementId}/actions/reverse',
   '/api/v1/merchant-intake/sessions',
   '/api/v1/merchant-intake/sessions/{sessionId}',
-  '/api/v1/merchant-intake/sessions/{sessionId}/assets',
+  '/api/v1/merchant-intake/sessions/{sessionId}/uploads',
+  '/api/v1/merchant-intake/uploads/{uploadId}/actions/complete',
+  '/api/v1/merchant-intake/sessions/{sessionId}/messages',
   '/api/v1/merchant-intake/sessions/{sessionId}/confirmations',
   '/api/v1/merchant-intake/sessions/{sessionId}/actions/commit',
+  '/api/v1/webhooks/wecom/intake',
 ]) {
   if (!specification.paths?.[path]) failures.push(`implemented endpoint is missing: ${path}`);
 }

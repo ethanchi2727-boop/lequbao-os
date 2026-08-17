@@ -10,6 +10,26 @@ INSERT INTO users(id, display_name) VALUES
 
 INSERT INTO merchant_intake_sessions(id, tenant_id, channel, created_by)
 VALUES ('92000000-0000-4000-8000-000000000004', '92000000-0000-4000-8000-000000000001', 'WEB', '92000000-0000-4000-8000-000000000002');
+INSERT INTO merchant_intake_uploads(
+  id, tenant_id, session_id, asset_type, object_key, expected_sha256,
+  content_type, max_bytes, expires_at, created_by
+) VALUES (
+  '92000000-0000-4000-8000-000000000010', '92000000-0000-4000-8000-000000000001',
+  '92000000-0000-4000-8000-000000000004', 'IMAGE', 'tenant/upload/license', repeat('c', 64),
+  'image/jpeg', 1024, now() + interval '15 minutes', '92000000-0000-4000-8000-000000000002'
+);
+
+DO $$
+BEGIN
+  BEGIN
+    UPDATE merchant_intake_uploads SET object_key = 'tenant/upload/replaced'
+     WHERE id = '92000000-0000-4000-8000-000000000010';
+    RAISE EXCEPTION 'upload authorization unexpectedly changed';
+  EXCEPTION WHEN raise_exception THEN
+    IF SQLERRM = 'merchant intake upload authorization is immutable' THEN NULL; ELSE RAISE; END IF;
+  END;
+END
+$$;
 INSERT INTO merchant_intake_assets(
   id, tenant_id, session_id, source_channel, asset_type, object_key, sha256,
   security_status, processing_status, error_code, created_by

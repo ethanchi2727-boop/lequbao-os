@@ -72,6 +72,7 @@ jobs:
           psql -d lequ_v6_migration -v ON_ERROR_STOP=1 -f database/migrations/0004_subscription_cash_ledger.sql
           psql -d lequ_v6_migration -v ON_ERROR_STOP=1 -f database/migrations/0005_distribution_payout_and_reversal.sql
           psql -d lequ_v6_migration -v ON_ERROR_STOP=1 -f database/migrations/0006_merchant_intake_commit_guards.sql
+          psql -d lequ_v6_migration -v ON_ERROR_STOP=1 -f database/migrations/0007_merchant_intake_upload_tickets.sql
       - uses: actions/setup-node@v4
         with:
           node-version-file: .node-version

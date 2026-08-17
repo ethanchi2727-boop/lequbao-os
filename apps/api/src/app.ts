@@ -23,6 +23,12 @@ import {
   type MerchantIntakeService,
 } from './merchant-intake-service.js';
 import {
+  IntakeObjectStoreUnavailableError,
+  IntakeUploadEvidenceError,
+  type MerchantIntakeUploadService,
+} from './merchant-intake-upload-service.js';
+import type { MerchantIntakeMessageService } from './merchant-intake-message-service.js';
+import {
   IdempotencyConflictError,
   InactiveBeneficiaryError,
   RevenueRightConflictError,
@@ -33,6 +39,11 @@ import {
   type SessionIdentity,
   type SessionIdentityVerifier,
 } from './session-identity.js';
+import {
+  WeComCallbackAuthenticationError,
+  WeComCallbackConflictError,
+  type WeComIntakeCallbackService,
+} from './wecom-intake-callback.js';
 
 export interface AppOptions {
   databaseCheck?: () => Promise<void>;
@@ -41,12 +52,18 @@ export interface AppOptions {
   distributionLocks?: DistributionLockService;
   distributionSettlements?: DistributionSettlementService;
   merchantIntake?: MerchantIntakeService;
+  merchantIntakeUploads?: MerchantIntakeUploadService;
+  merchantIntakeMessages?: MerchantIntakeMessageService;
+  wecomIntakeCallback?: WeComIntakeCallbackService;
   sessionIdentity?: SessionIdentityVerifier;
 }
 
 export async function buildApp(options: AppOptions = {}): Promise<FastifyInstance> {
   const app = Fastify({ logger: options.logger ?? false });
   await app.register(cors, { origin: false });
+  app.addContentTypeParser('application/xml', { parseAs: 'string' }, (_request, body, done) =>
+    done(null, body),
+  );
 
   app.get('/health', async () => ({ status: 'ok', version: '6.1.0' }));
 
@@ -243,25 +260,97 @@ export async function buildApp(options: AppOptions = {}): Promise<FastifyInstanc
   );
 
   app.post<{ Params: { sessionId: string } }>(
-    '/api/v1/merchant-intake/sessions/:sessionId/assets',
+    '/api/v1/merchant-intake/sessions/:sessionId/uploads',
     async (request, reply) => {
       const identity = authenticatedIdentity(options, request.headers.authorization, reply);
       if (!identity) return;
       const idempotencyKey = headerValue(request.headers['idempotency-key']);
       if (!idempotencyKey || idempotencyKey.length > 255)
         return reply.code(400).send({ code: 'INVALID_REQUEST_CONTEXT' });
-      if (!options.merchantIntake) return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+      if (!options.merchantIntakeUploads)
+        return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
       return handleIntake(reply, async () => {
-        const result = await options.merchantIntake!.addAsset({
+        const result = await options.merchantIntakeUploads!.create({
           identity,
           idempotencyKey,
           traceId: request.id,
           body: objectBody(request.body, { sessionId: request.params.sessionId }),
         });
+        return reply.code(201).send(result);
+      });
+    },
+  );
+
+  app.post<{ Params: { uploadId: string } }>(
+    '/api/v1/merchant-intake/uploads/:uploadId/actions/complete',
+    async (request, reply) => {
+      const identity = authenticatedIdentity(options, request.headers.authorization, reply);
+      if (!identity) return;
+      const idempotencyKey = headerValue(request.headers['idempotency-key']);
+      if (!idempotencyKey || idempotencyKey.length > 255)
+        return reply.code(400).send({ code: 'INVALID_REQUEST_CONTEXT' });
+      if (!options.merchantIntakeUploads)
+        return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+      return handleIntake(reply, async () => {
+        const result = await options.merchantIntakeUploads!.complete({
+          identity,
+          idempotencyKey,
+          traceId: request.id,
+          body: objectBody(request.body, { uploadId: request.params.uploadId }),
+        });
         return reply.code(202).send(result);
       });
     },
   );
+
+  app.post<{ Params: { sessionId: string } }>(
+    '/api/v1/merchant-intake/sessions/:sessionId/messages',
+    async (request, reply) => {
+      const identity = authenticatedIdentity(options, request.headers.authorization, reply);
+      if (!identity) return;
+      const idempotencyKey = headerValue(request.headers['idempotency-key']);
+      if (!idempotencyKey || idempotencyKey.length > 255)
+        return reply.code(400).send({ code: 'INVALID_REQUEST_CONTEXT' });
+      if (!options.merchantIntakeMessages)
+        return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+      return handleIntake(reply, async () =>
+        reply.code(202).send(
+          await options.merchantIntakeMessages!.add({
+            identity,
+            idempotencyKey,
+            traceId: request.id,
+            body: objectBody(request.body, { sessionId: request.params.sessionId }),
+          }),
+        ),
+      );
+    },
+  );
+
+  app.post<{
+    Querystring: { msg_signature?: string; timestamp?: string; nonce?: string };
+  }>('/api/v1/webhooks/wecom/intake', async (request, reply) => {
+    const { msg_signature: signature, timestamp, nonce } = request.query;
+    if (!signature || !timestamp || !nonce || typeof request.body !== 'string')
+      return reply.code(400).send({ code: 'INVALID_WECOM_CALLBACK' });
+    if (!options.wecomIntakeCallback) return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+    try {
+      return reply.send(
+        await options.wecomIntakeCallback.receive({
+          signature,
+          timestamp,
+          nonce,
+          xml: request.body,
+          traceId: request.id,
+        }),
+      );
+    } catch (error) {
+      if (error instanceof WeComCallbackAuthenticationError)
+        return reply.code(401).send({ code: 'INVALID_WECOM_SIGNATURE' });
+      if (error instanceof WeComCallbackConflictError)
+        return reply.code(409).send({ code: 'WECOM_EVENT_CONFLICT' });
+      throw error;
+    }
+  });
 
   app.post<{ Params: { sessionId: string } }>(
     '/api/v1/merchant-intake/sessions/:sessionId/confirmations',
@@ -391,6 +480,10 @@ async function handleIntake(
       return reply.code(409).send({ code: 'INVALID_MERCHANT_INTAKE_STATE' });
     if (error instanceof MerchantIntakeConfirmationError)
       return reply.code(422).send({ code: 'MERCHANT_INTAKE_CONFIRMATION_REQUIRED' });
+    if (error instanceof IntakeUploadEvidenceError)
+      return reply.code(422).send({ code: 'INVALID_UPLOAD_EVIDENCE' });
+    if (error instanceof IntakeObjectStoreUnavailableError)
+      return reply.code(503).send({ code: 'OBJECT_STORE_UNAVAILABLE' });
     throw error;
   }
 }

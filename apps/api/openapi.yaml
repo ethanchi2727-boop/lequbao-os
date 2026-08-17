@@ -217,11 +217,10 @@ paths:
         '401': { description: 会话令牌无效 }
         '403': { description: 无读取权限 }
         '409': { description: 会话不存在或状态无效 }
-  /api/v1/merchant-intake/sessions/{sessionId}/assets:
+  /api/v1/merchant-intake/sessions/{sessionId}/uploads:
     post:
-      operationId: addMerchantIntakeAsset
-      summary: 登记已保存到租户对象空间的图片、文件、语音或文字材料
-      description: 二进制上传由对象存储入口完成；本接口只接受不可变对象键和 SHA-256，随后进入安全扫描与异步识别。
+      operationId: createMerchantIntakeUpload
+      summary: 申请受租户、摘要、类型、大小和时效约束的对象上传授权
       security: [{ EmployeeBearer: [] }]
       x-required-permission: merchant.intake.write
       parameters:
@@ -231,16 +230,57 @@ paths:
         required: true
         content:
           application/json:
-            schema: { $ref: '#/components/schemas/AddMerchantIntakeAsset' }
+            schema: { $ref: '#/components/schemas/CreateMerchantIntakeUpload' }
       responses:
-        '202':
-          description: 原材料已留存并等待安全扫描
+        '201':
+          description: 返回十五分钟有效的签名 PUT 授权
           content:
             application/json:
-              schema: { $ref: '#/components/schemas/MerchantIntakeAssetReceipt' }
+              schema: { $ref: '#/components/schemas/MerchantIntakeUploadAuthorization' }
         '401': { description: 会话令牌无效 }
         '403': { description: 无写入权限 }
-        '409': { description: 状态、重复材料或幂等冲突 }
+        '409': { description: 状态或幂等冲突 }
+  /api/v1/merchant-intake/uploads/{uploadId}/actions/complete:
+    post:
+      operationId: completeMerchantIntakeUpload
+      summary: 用对象存储侧摘要、类型和长度证据消费上传票据
+      description: 只有校验完全一致的对象才会登记为原材料并进入安全扫描队列。
+      security: [{ EmployeeBearer: [] }]
+      x-required-permission: merchant.intake.write
+      parameters:
+        - $ref: '#/components/parameters/IntakeUploadId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '202':
+          description: 票据已原子消费，原材料等待安全扫描
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/MerchantIntakeUploadCompletion' }
+        '401': { description: 会话令牌无效 }
+        '403': { description: 无写入权限 }
+        '409': { description: 票据已消费、已过期、会话状态或幂等冲突 }
+        '422': { description: 对象存储证据与授权不一致 }
+        '503': { description: 对象存储证据服务暂不可用 }
+  /api/v1/merchant-intake/sessions/{sessionId}/messages:
+    post:
+      operationId: addMerchantIntakeMessage
+      summary: 保存文字补充材料并进入统一安全处理链
+      security: [{ EmployeeBearer: [] }]
+      x-required-permission: merchant.intake.write
+      parameters:
+        - $ref: '#/components/parameters/IntakeSessionId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/AddMerchantIntakeMessage' }
+      responses:
+        '202':
+          description: 文字原文已持久保存并登记为可追溯原材料
+        '401': { description: 会话令牌无效 }
+        '403': { description: 无写入权限 }
+        '409': { description: 会话状态或幂等冲突 }
   /api/v1/merchant-intake/sessions/{sessionId}/confirmations:
     post:
       operationId: confirmMerchantIntakeFields
@@ -289,6 +329,26 @@ paths:
         '403': { description: 无确认权限 }
         '409': { description: 乐观版本、状态或幂等冲突 }
         '422': { description: 存在未确认、冲突或缺失的正式字段 }
+  /api/v1/webhooks/wecom/intake:
+    post:
+      operationId: receiveWeComIntakeCallback
+      summary: 企业微信内部应用加密消息回调
+      description: 校验 SHA-1 消息签名、时间窗、AES-CBC 密文和企业 ID 后，按 MsgId 与密文摘要去重；不接收消费者私聊。
+      security: []
+      parameters:
+        - { name: msg_signature, in: query, required: true, schema: { type: string } }
+        - { name: timestamp, in: query, required: true, schema: { type: string } }
+        - { name: nonce, in: query, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/xml:
+            schema: { type: string }
+      responses:
+        '200': { description: 已验签、解密、去重并进入统一建档链 }
+        '400': { description: 回调参数或 XML 无效 }
+        '401': { description: 签名、时间窗、密文或企业 ID 无效 }
+        '409': { description: 相同 MsgId 对应不同密文 }
 components:
   securitySchemes:
     EmployeeBearer:
@@ -319,6 +379,11 @@ components:
       schema: { type: string, format: uuid }
     IntakeSessionId:
       name: sessionId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    IntakeUploadId:
+      name: uploadId
       in: path
       required: true
       schema: { type: string, format: uuid }
@@ -551,29 +616,46 @@ components:
         version: { type: integer, minimum: 1 }
         createdAt: { type: string, format: date-time }
         updatedAt: { type: string, format: date-time }
-    AddMerchantIntakeAsset:
+    CreateMerchantIntakeUpload:
       type: object
       additionalProperties: false
-      required: [assetType, sha256, objectKey]
+      required: [assetType, sha256, contentType, maxBytes]
       properties:
-        assetType: { type: string, enum: [IMAGE, DOCUMENT, AUDIO, TEXT] }
+        assetType: { type: string, enum: [IMAGE, DOCUMENT, AUDIO] }
         sha256: { type: string, pattern: '^[a-fA-F0-9]{64}$' }
-        objectKey: { type: string, minLength: 1, maxLength: 1000 }
-        originalFilename:
-          oneOf: [{ type: string, maxLength: 255 }, { type: 'null' }]
-        mimeType:
-          oneOf: [{ type: string, maxLength: 255 }, { type: 'null' }]
-        sourceMessageId:
-          oneOf: [{ type: string, maxLength: 255 }, { type: 'null' }]
-    MerchantIntakeAssetReceipt:
+        contentType: { type: string, minLength: 1, maxLength: 255 }
+        maxBytes: { type: integer, minimum: 1, maximum: 52428800 }
+    MerchantIntakeUploadAuthorization:
       type: object
       additionalProperties: false
-      required: [id, sessionId, securityStatus, processingStatus]
+      required: [id, sessionId, objectKey, uploadUrl, headers, expiresAt]
       properties:
         id: { type: string, format: uuid }
         sessionId: { type: string, format: uuid }
+        objectKey: { type: string }
+        uploadUrl: { type: string, format: uri }
+        headers:
+          type: object
+          additionalProperties: { type: string }
+        expiresAt: { type: string, format: date-time }
+    MerchantIntakeUploadCompletion:
+      type: object
+      additionalProperties: false
+      required: [uploadId, assetId, sessionId, securityStatus, processingStatus]
+      properties:
+        uploadId: { type: string, format: uuid }
+        assetId: { type: string, format: uuid }
+        sessionId: { type: string, format: uuid }
         securityStatus: { type: string, const: PENDING }
         processingStatus: { type: string, const: QUEUED }
+    AddMerchantIntakeMessage:
+      type: object
+      additionalProperties: false
+      required: [content]
+      properties:
+        content: { type: string, minLength: 1, maxLength: 4000 }
+        sourceMessageId:
+          oneOf: [{ type: string, minLength: 1, maxLength: 255 }, { type: 'null' }]
     ConfirmMerchantIntakeFields:
       type: object
       additionalProperties: false

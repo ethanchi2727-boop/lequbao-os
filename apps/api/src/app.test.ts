@@ -176,7 +176,7 @@ describe('platform API shell', () => {
     );
   });
 
-  it('requires signed identity and keeps intake session IDs authoritative from paths', async () => {
+  it('requires signed identity and keeps intake upload IDs authoritative from paths', async () => {
     const identity = {
       tenantId: '00000000-0000-4000-8000-000000000003',
       userId: '00000000-0000-4000-8000-000000000040',
@@ -184,8 +184,17 @@ describe('platform API shell', () => {
       storeIds: [],
       sessionId: 'signed-session',
     };
-    const addAsset = vi.fn().mockResolvedValue({
+    const create = vi.fn().mockResolvedValue({
       id: '00000000-0000-4000-8000-000000000041',
+      sessionId: '00000000-0000-4000-8000-000000000042',
+      objectKey: 'tenant/intake/upload',
+      uploadUrl: 'https://objects.example/v1/upload',
+      headers: { 'x-content-sha256': 'a'.repeat(64) },
+      expiresAt: '2026-08-18T12:00:00.000Z',
+    });
+    const complete = vi.fn().mockResolvedValue({
+      uploadId: '00000000-0000-4000-8000-000000000041',
+      assetId: '00000000-0000-4000-8000-000000000043',
       sessionId: '00000000-0000-4000-8000-000000000042',
       securityStatus: 'PENDING',
       processingStatus: 'QUEUED',
@@ -197,38 +206,83 @@ describe('platform API shell', () => {
           return identity;
         },
       },
-      merchantIntake: {
-        addAsset,
-        createSession: vi.fn(),
-        getSession: vi.fn(),
-        recordProcessingResult: vi.fn(),
-        confirm: vi.fn(),
-        commit: vi.fn(),
-      },
+      merchantIntakeUploads: { create, complete },
     });
     const sessionId = '00000000-0000-4000-8000-000000000042';
     const unsigned = await app.inject({
       method: 'POST',
-      url: `/api/v1/merchant-intake/sessions/${sessionId}/assets`,
-      headers: { 'idempotency-key': 'asset-42' },
+      url: `/api/v1/merchant-intake/sessions/${sessionId}/uploads`,
+      headers: { 'idempotency-key': 'upload-42' },
       payload: {},
     });
     expect(unsigned.statusCode).toBe(401);
 
     const response = await app.inject({
       method: 'POST',
-      url: `/api/v1/merchant-intake/sessions/${sessionId}/assets`,
-      headers: { authorization: 'Bearer signed', 'idempotency-key': 'asset-42' },
+      url: `/api/v1/merchant-intake/sessions/${sessionId}/uploads`,
+      headers: { authorization: 'Bearer signed', 'idempotency-key': 'upload-42' },
       payload: {
         sessionId: '00000000-0000-4000-8000-999999999999',
         assetType: 'IMAGE',
         sha256: 'a'.repeat(64),
-        objectKey: 'tenant/intake/license.jpg',
+        contentType: 'image/jpeg',
+        maxBytes: 1024,
       },
     });
-    expect(response.statusCode).toBe(202);
-    expect(addAsset).toHaveBeenCalledWith(
+    expect(response.statusCode).toBe(201);
+    expect(create).toHaveBeenCalledWith(
       expect.objectContaining({ identity, body: expect.objectContaining({ sessionId }) }),
+    );
+
+    const uploadId = '00000000-0000-4000-8000-000000000041';
+    const completion = await app.inject({
+      method: 'POST',
+      url: `/api/v1/merchant-intake/uploads/${uploadId}/actions/complete`,
+      headers: { authorization: 'Bearer signed', 'idempotency-key': 'complete-41' },
+      payload: { uploadId: '00000000-0000-4000-8000-999999999999' },
+    });
+    expect(completion.statusCode).toBe(202);
+    expect(complete).toHaveBeenCalledWith(
+      expect.objectContaining({ identity, body: expect.objectContaining({ uploadId }) }),
+    );
+  });
+
+  it('accepts authenticated text messages and delegates verified WeCom XML callbacks', async () => {
+    const identity = {
+      tenantId: '00000000-0000-4000-8000-000000000003',
+      userId: '00000000-0000-4000-8000-000000000040',
+      roleCodes: ['MERCHANT_OWNER'],
+      storeIds: [],
+      sessionId: 'signed-session',
+    };
+    const add = vi.fn().mockResolvedValue({ id: 'asset' });
+    const receive = vi.fn().mockResolvedValue({ accepted: true, replayed: false });
+    app = await buildApp({
+      sessionIdentity: { verify: () => identity },
+      merchantIntakeMessages: { add },
+      wecomIntakeCallback: { receive },
+    });
+    const sessionId = '00000000-0000-4000-8000-000000000042';
+    const message = await app.inject({
+      method: 'POST',
+      url: `/api/v1/merchant-intake/sessions/${sessionId}/messages`,
+      headers: { authorization: 'Bearer signed', 'idempotency-key': 'message-42' },
+      payload: { content: '补充营业时间' },
+    });
+    expect(message.statusCode).toBe(202);
+    expect(add).toHaveBeenCalledWith(
+      expect.objectContaining({ body: expect.objectContaining({ sessionId }) }),
+    );
+
+    const callback = await app.inject({
+      method: 'POST',
+      url: '/api/v1/webhooks/wecom/intake?msg_signature=sig&timestamp=1&nonce=n',
+      headers: { 'content-type': 'application/xml' },
+      payload: '<xml/>',
+    });
+    expect(callback.statusCode).toBe(200);
+    expect(receive).toHaveBeenCalledWith(
+      expect.objectContaining({ signature: 'sig', timestamp: '1', nonce: 'n', xml: '<xml/>' }),
     );
   });
 });
