@@ -34,6 +34,10 @@ Rebuild the repository around the V6.1 `乐趣宝 + 乐趣生活` baseline. Pres
 - Implemented separate request, different-person approval, payout and reversal commands. Every command has its own idempotency scope; finance membership is revalidated at approval and execution; payment requires one unique provider-reference hash per positive allocation.
 - Implemented `ACCRUAL -> PAYMENT -> REVERSAL` linkage for paid statements and `ACCRUAL -> REVERSAL` for unpaid statements, with audit and financial Outbox events committed in the same transaction.
 - Expanded the implementation-bounded OpenAPI from five to nine paths.
+- Added a signed session identity boundary for the new merchant-intake APIs. Tenant, actor and roles come from an HS256 Bearer token and active database membership is revalidated on every command.
+- Added migration `0006` and the immutable `merchant_intake_commits` snapshot. Candidate inserts now require a same-session asset whose security and processing states are `SAFE/SUCCEEDED`; confirmations and commits are append-only. The audited target now has 77 tables.
+- Implemented the trusted AI merchant-intake domain slice: idempotent session creation, immutable asset metadata, security rejection, safe extraction results, multi-source conflict retention, typed human confirmation and atomic formal merchant-profile commit with audit and Outbox.
+- Expanded the implementation-bounded OpenAPI from nine to fourteen paths.
 
 ## Verified package facts
 
@@ -51,15 +55,18 @@ Rebuild the repository around the V6.1 `乐趣宝 + 乐趣生活` baseline. Pres
 - The target stack recommendation differs from the V5 implementation. The rebuild must use architecture decision records and must not mix package managers or duplicate long-lived app implementations.
 - The current API foundation has no signed session-token authentication. Settlement actor IDs are checked against active platform-finance membership but still arrive as command input; the new settlement endpoints must not be production-exposed before token-derived actor identity and permission middleware exist.
 - Failed provider attempts and callback-driven retry orchestration are not yet implemented. Successful payouts are evidence-bound and immutable, but a payment connector sandbox remains required.
-- Local formatting, lint, contract counts, nine implemented OpenAPI paths, TypeScript, 39 unit tests and production builds pass.
+- Merchant-intake binary upload, tenant object-storage policy, malware scanner, OCR, speech transcription, model extraction and WeCom callback verification are not connected. The trusted processing-result service and PostgreSQL guards are implemented; external AI processing is not yet integration-tested.
+- No 乐趣宝 PC/H5 merchant-intake UI exists in the rebuild yet, so browser acceptance for PAGE-014 and PAGE-175–178 remains pending.
+- Local formatting, lint, contract counts, fourteen implemented OpenAPI paths, TypeScript, 42 unit tests and production builds pass.
 - GitHub Actions run `32039457455` passed clean PostgreSQL 15 schema application and RLS isolation for commit `8da963b`.
 - GitHub Actions run `32040005789` passed the revenue-right and frozen-policy PostgreSQL constraint test for commit `cb98f7b`.
 - GitHub Actions run `32040375789` passed exact distribution reconciliation and immutable-ledger tests for commit `b88903f`.
 - GitHub Actions run `32040722489` passed the subscription cash-source ledger and incremental 73→74-table migrations for commit `8a03bda`.
 - GitHub Actions run `32041550030` passed the statement-locking PostgreSQL fixture for commit `cee60da`, including exact allocations, one statement/event/audit set and identical idempotent replay.
 - GitHub Actions run `32042648486` passed commit `b5b3612`: clean and incremental PostgreSQL 15 schemas, dual-control constraints, provider-evidenced payout, linked paid-statement reversal and identical command replays.
+- GitHub Actions run `32047162811` passed commit `c8236a5`: clean and incremental 73→77-table PostgreSQL 15 schemas, intake safety/immutability guards, signed-role service flow, rejected-file blocking, conflict retention, explicit confirmation, formal commit and idempotent replays.
 - Payment sandbox, WeCom callbacks, backup recovery, migration dry-run/rollback and browser/WeChat acceptance remain unverified.
 
 ## Exact next step
 
-Implement the AI conversation intake vertical slice from asset ingestion through extraction candidates, explicit high-risk field confirmation and committed merchant profile output. Keep AI proposals non-authoritative and derive actor identity from the authentication boundary rather than request bodies.
+Connect tenant-scoped object upload and the asynchronous intake processing chain: malware scanner, OCR/document extraction, speech transcription and structured candidate adapter. Add text-message ingestion and verified, idempotent WeCom intake callbacks before building the PAGE-014 and PAGE-175–178 PC/H5 experience and running browser acceptance.
