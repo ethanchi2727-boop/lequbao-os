@@ -47,3 +47,5 @@ corepack pnpm --filter @lequ/workbench-web dev
 ```
 
 打开 `http://127.0.0.1:4173/bao/page-014?demo=1`。`demo=1` 仅用于视觉验收，不代表真实供应商或生产数据联调。
+
+不带 `demo=1` 时页面进入生产模式，从同源 API 或 `apiBase` 查询参数指定的 API 读取数据。员工签名会话必须由登录壳写入当前标签页的 `sessionStorage['lequbao.employee-session']`；不得把 Bearer 会话放入 URL。可通过 `sessionId` 恢复已有建档会话，否则页面会新建会话。

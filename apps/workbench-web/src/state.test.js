@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { canCommit, resolvePage, statusCopy, viewFor } from './state.mjs';
+import { canCommit, escapeHtml, resolvePage, statusCopy, viewFor } from './state.mjs';
 
 describe('乐趣宝建档页面状态', () => {
   it('只接受已实现页面路由', () => {
@@ -17,5 +17,10 @@ describe('乐趣宝建档页面状态', () => {
   });
   it('可恢复错误明确承诺不丢原材料', () => {
     expect(statusCopy('error')?.[1]).toContain('原材料已保留');
+  });
+  it('服务端候选值进入模板前必须转义', () => {
+    expect(escapeHtml('<img src=x onerror="steal()">')).toBe(
+      '&lt;img src=x onerror=&quot;steal()&quot;&gt;',
+    );
   });
 });

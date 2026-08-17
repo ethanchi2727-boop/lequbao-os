@@ -1,5 +1,12 @@
 export const allowedPages = new Set(['page-014', 'page-175', 'page-176', 'page-177', 'page-178']);
 
+export const escapeHtml = (value) =>
+  String(value).replace(
+    /[&<>"']/gu,
+    (character) =>
+      ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' })[character],
+  );
+
 export function resolvePage(pathname) {
   const page = pathname.split('/').filter(Boolean).at(-1) ?? 'page-014';
   return allowedPages.has(page) ? page : 'page-014';

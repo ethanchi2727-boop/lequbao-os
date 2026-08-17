@@ -44,6 +44,7 @@ Rebuild the repository around the V6.1 `乐趣宝 + 乐趣生活` baseline. Pres
 - Added verified enterprise WeCom internal-app callbacks: callback freshness, SHA-1 signature, AES-CBC/PKCS#7 decryption, corp identity, member binding, message/payload idempotency and expired-media retry evidence. It does not read or answer employee personal WeChat contacts.
 - Replaced the old client-supplied object-key endpoint with upload authorization and completion endpoints. The implementation-bounded OpenAPI now has seventeen paths.
 - Accepted ADR-0004 and added the only active 乐趣宝 Web runtime for PAGE-014 and PAGE-175–178. PC and mobile H5 share state and confirmation rules, with explicit loading, empty, recoverable error, denied, stopped and success presentations.
+- Connected the Web runtime to the implementation-bounded APIs in non-demo mode: signed employee session bootstrap, existing/new intake loading, text ingestion, SHA-256 upload-ticket flow, storage PUT completion, candidate rendering with HTML escaping, legal confirmation and guarded commit. Demo mode remains explicit and cannot be mistaken for a live API session.
 
 ## Verified package facts
 
@@ -64,7 +65,7 @@ Rebuild the repository around the V6.1 `乐趣宝 + 乐趣生活` baseline. Pres
 - Object storage, malware, OCR, speech and structured-extraction adapter contracts are implemented and fault-tested, but no production provider credentials were supplied; real provider calls remain an integration gate.
 - Enterprise WeCom cryptography, tenant/member binding and receipt idempotency are implemented and simulated with official message framing. A real enterprise application callback and expired-media download still require controlled credentials.
 - PAGE-014 and PAGE-175–178 are implemented and their shared state tests/build pass. The local page server responds, but the Codex in-app browser control runtime failed to initialize with a missing internal asset path, so visual browser acceptance is not yet evidence-backed.
-- Local formatting, lint, 78-table contract counts, seventeen implemented OpenAPI paths, TypeScript, 57 unit tests and all production builds pass.
+- Local formatting, lint, 78-table contract counts, seventeen implemented OpenAPI paths, TypeScript, 61 unit tests and all production builds pass.
 - GitHub Actions run `32039457455` passed clean PostgreSQL 15 schema application and RLS isolation for commit `8da963b`.
 - GitHub Actions run `32040005789` passed the revenue-right and frozen-policy PostgreSQL constraint test for commit `cb98f7b`.
 - GitHub Actions run `32040375789` passed exact distribution reconciliation and immutable-ledger tests for commit `b88903f`.
