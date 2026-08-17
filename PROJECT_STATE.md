@@ -49,9 +49,9 @@ Rebuild the repository around the V6.1 `乐趣宝 + 乐趣生活` baseline. Pres
 - GitHub Actions run `32040005789` passed the revenue-right and frozen-policy PostgreSQL constraint test for commit `cb98f7b`.
 - GitHub Actions run `32040375789` passed exact distribution reconciliation and immutable-ledger tests for commit `b88903f`.
 - GitHub Actions run `32040722489` passed the subscription cash-source ledger and incremental 73→74-table migrations for commit `8a03bda`.
-- The statement-locking service has mock-transaction coverage plus a real PostgreSQL fixture that checks exact allocations, one statement/event/audit set and identical idempotent replay; the fixture awaits its pushed CI run.
+- GitHub Actions run `32041550030` passed the statement-locking PostgreSQL fixture for commit `cee60da`, including exact allocations, one statement/event/audit set and identical idempotent replay.
 - Payment sandbox, WeCom callbacks, backup recovery, migration dry-run/rollback and browser/WeChat acceptance remain unverified.
 
 ## Exact next step
 
-Push and observe the statement-locking PostgreSQL fixture. After that, implement reversal and payout state transitions before moving to the AI conversation intake vertical slice.
+Implement reversal and payout state transitions, including original-entry linkage, full idempotency, dual-control approval boundaries and provider payment evidence, before moving to the AI conversation intake vertical slice.
