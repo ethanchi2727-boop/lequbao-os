@@ -72,6 +72,7 @@ Rebuild the repository around the V6.1 `乐趣宝 + 乐趣生活` baseline. Pres
 - GitHub Actions run `32041550030` passed the statement-locking PostgreSQL fixture for commit `cee60da`, including exact allocations, one statement/event/audit set and identical idempotent replay.
 - GitHub Actions run `32042648486` passed commit `b5b3612`: clean and incremental PostgreSQL 15 schemas, dual-control constraints, provider-evidenced payout, linked paid-statement reversal and identical command replays.
 - GitHub Actions run `32047162811` passed commit `c8236a5`: clean and incremental 73→77-table PostgreSQL 15 schemas, intake safety/immutability guards, signed-role service flow, rejected-file blocking, conflict retention, explicit confirmation, formal commit and idempotent replays.
+- GitHub Actions run `32055811314` passed commit `fd29d49`: all code-quality gates plus clean and incremental 73→78-table PostgreSQL 15 schemas, upload-ticket immutability, object-evidence completion, signed internal WeCom/text boundaries and the trusted merchant-intake integration replay.
 - Payment sandbox, real WeCom/provider callbacks, backup recovery, migration rollback drill and browser/WeChat acceptance remain unverified.
 
 ## Exact next step
