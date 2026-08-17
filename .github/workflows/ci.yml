@@ -75,4 +75,6 @@ jobs:
       - name: Execute trusted statement locking against PostgreSQL
         env:
           DATABASE_URL: postgres://postgres:postgres@127.0.0.1:5432/lequ_v6
-        run: pnpm --filter @lequ/api exec tsx integration/distribution-lock.ts
+        run: |
+          pnpm --filter @lequ/contracts build
+          pnpm --filter @lequ/api exec tsx integration/distribution-lock.ts
