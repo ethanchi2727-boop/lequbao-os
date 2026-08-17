@@ -35,6 +35,5 @@ coverage/
 test-tmp/
 *.test.tmp
 yarn.lock
-pnpm-lock.yaml
 *.lockb
 quality-gate-report.txt

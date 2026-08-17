@@ -17,6 +17,11 @@ Rebuild the repository around the V6.1 `乐趣宝 + 乐趣生活` baseline. Pres
 - Inspected the product boundaries, commercial rules, page tree, state machines, UI overview, PostgreSQL schema, OpenAPI, events, RBAC, test gates, repository strategy, and development instructions.
 - Created the V6.1 rebuild branch.
 - Recorded frozen development rules and known package conflicts.
+- Vendored the verified `00`–`07` source package and repaired the generated migration's literal diff markers.
+- Completed the V5→V6 keep/rewrite/migrate matrix; V5 remains recoverable from `main` and Git history.
+- Replaced the V5 workspace with a pnpm modular-monolith foundation: shared contracts, Fastify API and RLS-safe Outbox Worker.
+- Imported the 73-table PostgreSQL 15+ schema and added a real-database CI gate that attempts cross-tenant reads and writes.
+- Added immutable audit/ledger checks, strict money/event contracts, deterministic builds, exact dependency locking, lint, type, unit-test and build gates.
 
 ## Verified package facts
 
@@ -28,12 +33,14 @@ Rebuild the repository around the V6.1 `乐趣宝 + 乐趣生活` baseline. Pres
 
 ## Current blockers and risks
 
-- The generated `0002_v6_1_永久收益权与AI对话建档.sql` contains literal `+` patch markers and cannot be executed as delivered.
+- The delivered migration contained literal `+` patch markers. The repository copy and generator are repaired and guarded against recurrence.
 - The frozen `70/10/20` distributable-income policy conflicts with a separate `25%` channel-distribution statement. V6.1 development uses the frozen versioned policy; production payout needs written business and finance resolution.
 - Current material mixes `商务人员` and `商务推广人员`, and mixes `生活消费` and `生活`. The external unique baseline wins pending formal amendment.
 - The target stack recommendation differs from the V5 implementation. The rebuild must use architecture decision records and must not mix package managers or duplicate long-lived app implementations.
-- PostgreSQL schema execution, RLS isolation, payment sandbox, WeCom callbacks, backup recovery, and migration rollback have not yet been verified in a real environment.
+- Local formatting, lint, contract counts, TypeScript, 19 unit tests and production builds pass.
+- This workstation has no PostgreSQL client/server. Schema execution and RLS isolation are implemented in GitHub Actions but remain unverified until the pushed workflow passes.
+- Payment sandbox, WeCom callbacks, backup recovery, migration dry-run/rollback and browser/WeChat acceptance remain unverified.
 
 ## Exact next step
 
-Import the current V6.1 contract sources into the repository, repair their reproducibility defects, create the V5-to-V6.1 keep/rewrite/migrate matrix, then scaffold the PostgreSQL modular-monolith foundation and its first real database/RLS quality gate.
+Commit and push the green platform foundation, observe the PostgreSQL CI result, then implement the first vertical slice: merchant permanent revenue-right creation, versioned `70/10/20` policy, append-only distribution ledger, idempotent outbox event and API tests.

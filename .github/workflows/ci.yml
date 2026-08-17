@@ -1,45 +1,56 @@
-name: CI
+name: V6.1 quality gate
 
 on:
   push:
-    branches: [main, develop]
   pull_request:
-    branches: [main]
 
 permissions:
   contents: read
 
 concurrency:
-  group: ci-${{ github.workflow }}-${{ github.ref }}
+  group: v6-quality-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  quality-gate:
-    name: Quality Gate
+  code-quality:
     runs-on: ubuntu-latest
-    timeout-minutes: 40
+    timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v5
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v5
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
-          node-version: 22
-          cache: 'npm'
-          cache-dependency-path: package-lock.json
+          node-version-file: .node-version
+      - name: Enable pinned pnpm
+        run: corepack enable && corepack prepare pnpm@11.19.0 --activate
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm check
 
-      - name: Install dependencies
-        run: |
-          node --version
-          npm --version
-          npm ci --include=dev
-          test -x node_modules/.bin/vitest
-          test -x node_modules/.bin/vue-tsc
-          test -x node_modules/.bin/esbuild
-
-      - name: Run project quality gate
-        run: node scripts/quality-gate.mjs
-
-      - name: Build WeChat mini programs
-        run: npm run build:weixin
-          fi
+  postgres-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_DB: lequ_v6
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d lequ_v6"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    env:
+      PGHOST: 127.0.0.1
+      PGPORT: 5432
+      PGDATABASE: lequ_v6
+      PGUSER: postgres
+      PGPASSWORD: postgres
+    steps:
+      - uses: actions/checkout@v4
+      - name: Apply clean schema
+        run: psql -v ON_ERROR_STOP=1 -f database/schema.sql
+      - name: Prove tenant RLS isolation
+        run: psql -v ON_ERROR_STOP=1 -f database/tests/rls.sql

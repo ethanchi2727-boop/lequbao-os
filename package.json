@@ -1,28 +1,31 @@
 {
-  "name": "lequ-life-platform",
-  "version": "5.0.0",
+  "name": "lequbao-v6-platform",
+  "version": "6.1.0",
   "private": true,
-  "description": "乐趣生活 V5.0 全平台 Monorepo",
-  "workspaces": [
-    "apps/*",
-    "packages/*"
-  ],
+  "type": "module",
+  "packageManager": "pnpm@11.19.0",
+  "engines": {
+    "node": ">=22.20.0"
+  },
   "scripts": {
-    "dev": "concurrently -k -n API,H5 -c blue,magenta \"npm:dev:api\" \"npm:dev:h5\"",
-    "dev:api": "npm run dev -w @lequ/api",
-    "dev:h5": "npm run dev:h5 -w @lequ/mobile",
-    "dev:admin": "npm run dev -w @lequ/admin-web",
-    "build": "npm run build -w @lequ/api && npm run build:h5 -w @lequ/mobile && npm run build:miniapps && npm run build -w @lequ/admin-web",
-    "build:miniapps": "npm run build:h5 -w @lequ/consumer-miniapp && npm run build:h5 -w @lequ/merchant-miniapp && npm run build:h5 -w @lequ/sales-miniapp && npm run build:h5 -w @lequ/provider-miniapp",
-    "build:weixin": "npm run build:mp-weixin -w @lequ/consumer-miniapp && npm run build:mp-weixin -w @lequ/merchant-miniapp && npm run build:mp-weixin -w @lequ/sales-miniapp && npm run build:mp-weixin -w @lequ/provider-miniapp",
-    "typecheck": "npm run typecheck -w @lequ/auth && npm run typecheck -w @lequ/product-catalog && npm run typecheck -w @lequ/api && npm run typecheck -w @lequ/mobile && npm run typecheck -w @lequ/consumer-miniapp && npm run typecheck -w @lequ/merchant-miniapp && npm run typecheck -w @lequ/sales-miniapp && npm run typecheck -w @lequ/provider-miniapp && npm run typecheck -w @lequ/admin-web",
-    "test": "npm run test -w @lequ/auth && npm run test -w @lequ/product-catalog && npm run test -w @lequ/api && npm run test -w @lequ/merchant-miniapp && npm run test -w @lequ/admin-web",
-    "check": "npm run typecheck && npm test && npm run build"
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "lint": "eslint .",
+    "contracts:check": "node tooling/verify-v6-contracts.mjs",
+    "typecheck": "pnpm --filter @lequ/contracts build && pnpm -r --if-present run typecheck",
+    "test": "pnpm --filter @lequ/contracts build && pnpm -r --if-present run test",
+    "build": "pnpm -r --if-present run build",
+    "check": "pnpm format:check && pnpm lint && pnpm contracts:check && pnpm typecheck && pnpm test && pnpm build"
   },
   "devDependencies": {
-    "concurrently": "^9.2.1"
-  },
-  "engines": {
-    "node": ">=22.5.0"
+    "@eslint/js": "10.0.1",
+    "@types/node": "26.2.0",
+    "eslint": "10.8.1",
+    "globals": "17.11.0",
+    "prettier": "3.9.6",
+    "tsx": "4.23.12",
+    "typescript": "6.0.3",
+    "typescript-eslint": "8.67.0",
+    "vitest": "4.1.10"
   }
 }
