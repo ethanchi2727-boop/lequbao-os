@@ -49,19 +49,36 @@ describe('revenue distribution calculation', () => {
       refundMinorUnits: 0n,
       directCosts: [],
     });
-    const allocations = allocateExactly(statement.distributableMinorUnits, [
-      { key: 'business-a', shareBps: 4000 },
-      { key: 'business-b', shareBps: 3000 },
-      { key: 'shangzhi', shareBps: 1000 },
-      { key: 'lequ-life', shareBps: 2000 },
-    ]);
+    const allocations = allocateExactly(
+      statement.distributableMinorUnits,
+      [
+        { key: 'business-a', shareBps: 4000 },
+        { key: 'business-b', shareBps: 3000 },
+        { key: 'shangzhi', shareBps: 1000 },
+        { key: 'lequ-life', shareBps: 2000 },
+      ],
+      'lequ-life',
+    );
     expect(allocations.map((allocation) => allocation.allocatedMinorUnits)).toEqual([
       39n,
-      30n,
-      10n,
-      20n,
+      29n,
+      9n,
+      22n,
     ]);
     expect(() => assertLockableAndReconciled(statement, allocations)).not.toThrow();
+  });
+
+  it('rejects a residual recipient outside the allocation', () => {
+    expect(() =>
+      allocateExactly(
+        99n,
+        [
+          { key: 'business', shareBps: 7000 },
+          { key: 'platform', shareBps: 3000 },
+        ],
+        'missing',
+      ),
+    ).toThrow('residual recipient');
   });
 
   it('rejects non-100-percent shares, duplicate keys and a one-cent mismatch', () => {

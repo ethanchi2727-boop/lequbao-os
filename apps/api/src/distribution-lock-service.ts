@@ -215,7 +215,11 @@ export function createDistributionLockService(
             shareBps: 2000,
           },
         ];
-        const exact = allocateExactly(statement.distributableMinorUnits, targets);
+        const exact = allocateExactly(
+          statement.distributableMinorUnits,
+          targets,
+          `platform:${platformMap.get('LEQU_LIFE_ENTITY')!}`,
+        );
         assertLockableAndReconciled(statement, exact);
 
         const insertedStatement = await client.query<{ id: string }>(

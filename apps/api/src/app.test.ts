@@ -104,4 +104,74 @@ describe('platform API shell', () => {
       expect.objectContaining({ body: expect.objectContaining({ subscriptionId }) }),
     );
   });
+
+  it('keeps approval and payout resource IDs authoritative from their paths', async () => {
+    const requestApproval = vi.fn().mockResolvedValue({
+      id: '00000000-0000-4000-8000-000000000030',
+      statementId: '00000000-0000-4000-8000-000000000031',
+      actionType: 'PAY',
+      reasonCode: 'OBSERVATION_COMPLETE',
+      status: 'PENDING',
+      requestedBy: '00000000-0000-4000-8000-000000000032',
+      approvedBy: null,
+      expiresAt: '2026-08-18T12:00:00+08:00',
+    });
+    const pay = vi.fn().mockResolvedValue({
+      statementId: '00000000-0000-4000-8000-000000000031',
+      status: 'PAID',
+      entryIds: ['00000000-0000-4000-8000-000000000033'],
+    });
+    app = await buildApp({
+      distributionSettlements: {
+        requestApproval,
+        pay,
+        approve: vi.fn(),
+        reverse: vi.fn(),
+      },
+    });
+    const headers = {
+      'x-tenant-id': '00000000-0000-4000-8000-000000000003',
+      'idempotency-key': 'distribution-action-31',
+    };
+    const statementId = '00000000-0000-4000-8000-000000000031';
+    const approvalResponse = await app.inject({
+      method: 'POST',
+      url: `/api/v1/distribution-statements/${statementId}/action-approvals`,
+      headers,
+      payload: {
+        statementId: '00000000-0000-4000-8000-999999999999',
+        actionType: 'PAY',
+        reasonCode: 'OBSERVATION_COMPLETE',
+        requestedBy: '00000000-0000-4000-8000-000000000032',
+        expiresAt: '2026-08-18T12:00:00+08:00',
+      },
+    });
+    expect(approvalResponse.statusCode).toBe(201);
+    expect(requestApproval).toHaveBeenCalledWith(
+      expect.objectContaining({ body: expect.objectContaining({ statementId }) }),
+    );
+
+    const payResponse = await app.inject({
+      method: 'POST',
+      url: `/api/v1/distribution-statements/${statementId}/actions/pay`,
+      headers: { ...headers, 'idempotency-key': 'distribution-pay-31' },
+      payload: {
+        statementId: '00000000-0000-4000-8000-999999999999',
+        approvalId: '00000000-0000-4000-8000-000000000030',
+        executedBy: '00000000-0000-4000-8000-000000000034',
+        provider: 'WECHAT',
+        completedAt: '2026-08-18T10:00:00+08:00',
+        payments: [
+          {
+            allocationId: '00000000-0000-4000-8000-000000000035',
+            providerPaymentRefHash: 'a'.repeat(64),
+          },
+        ],
+      },
+    });
+    expect(payResponse.statusCode).toBe(200);
+    expect(pay).toHaveBeenCalledWith(
+      expect.objectContaining({ body: expect.objectContaining({ statementId }) }),
+    );
+  });
 });

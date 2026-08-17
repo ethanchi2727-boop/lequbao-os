@@ -92,6 +92,94 @@ paths:
           description: 幂等冲突或直接成本仍为暂估
         '422':
           description: 现金来源、策略、收益权或平台受益人配置无效
+  /api/v1/distribution-statements/{statementId}/action-approvals:
+    post:
+      operationId: requestDistributionActionApproval
+      summary: 请求另一名平台财务人员审批付款或冲回
+      x-required-permission: distribution.pay|distribution.reverse
+      parameters:
+        - $ref: '#/components/parameters/TenantId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+        - $ref: '#/components/parameters/StatementId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/RequestDistributionApproval' }
+      responses:
+        '201':
+          description: 待另一名合格人员审批
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/DistributionApproval' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '409': { description: 状态或幂等冲突 }
+  /api/v1/distribution-action-approvals/{approvalId}/actions/approve:
+    post:
+      operationId: approveDistributionAction
+      summary: 由不同于请求人的平台财务人员审批
+      parameters:
+        - $ref: '#/components/parameters/TenantId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+        - $ref: '#/components/parameters/ApprovalId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ApproveDistributionAction' }
+      responses:
+        '200':
+          description: 审批已通过且内容指纹保持不变
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/DistributionApproval' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '409': { description: 审批无效、过期、同人审批或幂等冲突 }
+  /api/v1/distribution-statements/{statementId}/actions/pay:
+    post:
+      operationId: payDistributionStatement
+      summary: 使用已批准动作与逐受益人渠道凭证完成付款
+      x-required-permission: distribution.pay
+      parameters:
+        - $ref: '#/components/parameters/TenantId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+        - $ref: '#/components/parameters/StatementId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/PayDistributionStatement' }
+      responses:
+        '200':
+          description: 所有非零分配均有唯一付款凭证并生成不可变付款分录
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/DistributionSettlementResult' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '409': { description: 审批、状态或幂等冲突 }
+        '422': { description: 付款凭证缺失、重复或与冻结分配不一致 }
+  /api/v1/distribution-statements/{statementId}/actions/reverse:
+    post:
+      operationId: reverseDistributionStatement
+      summary: 按原分配及原付款链路新增冲回分录
+      x-required-permission: distribution.reverse
+      parameters:
+        - $ref: '#/components/parameters/TenantId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+        - $ref: '#/components/parameters/StatementId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ReverseDistributionStatement' }
+      responses:
+        '200':
+          description: 历史分录未改写，冲回分录已追加
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/DistributionSettlementResult' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '409': { description: 审批、原因、状态或幂等冲突 }
 components:
   parameters:
     TenantId:
@@ -104,6 +192,16 @@ components:
       in: header
       required: true
       schema: { type: string, minLength: 1, maxLength: 255 }
+    StatementId:
+      name: statementId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    ApprovalId:
+      name: approvalId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
   responses:
     BadRequest:
       description: 请求或租户上下文无效
@@ -187,3 +285,73 @@ components:
           minItems: 3
           items:
             $ref: '#/components/schemas/DistributionAllocation'
+    RequestDistributionApproval:
+      type: object
+      additionalProperties: false
+      required: [actionType, reasonCode, requestedBy, expiresAt]
+      properties:
+        actionType: { type: string, enum: [PAY, REVERSE] }
+        reasonCode: { type: string, minLength: 1, maxLength: 80 }
+        requestedBy: { type: string, format: uuid }
+        expiresAt: { type: string, format: date-time }
+    ApproveDistributionAction:
+      type: object
+      additionalProperties: false
+      required: [approvedBy]
+      properties:
+        approvedBy: { type: string, format: uuid }
+    DistributionApproval:
+      type: object
+      additionalProperties: false
+      required:
+        [id, statementId, actionType, reasonCode, status, requestedBy, approvedBy, expiresAt]
+      properties:
+        id: { type: string, format: uuid }
+        statementId: { type: string, format: uuid }
+        actionType: { type: string, enum: [PAY, REVERSE] }
+        reasonCode: { type: string }
+        status: { type: string, enum: [PENDING, APPROVED] }
+        requestedBy: { type: string, format: uuid }
+        approvedBy:
+          oneOf:
+            - { type: string, format: uuid }
+            - { type: 'null' }
+        expiresAt: { type: string, format: date-time }
+    DistributionPaymentProof:
+      type: object
+      additionalProperties: false
+      required: [allocationId, providerPaymentRefHash]
+      properties:
+        allocationId: { type: string, format: uuid }
+        providerPaymentRefHash: { type: string, pattern: '^[a-fA-F0-9]{64}$' }
+    PayDistributionStatement:
+      type: object
+      additionalProperties: false
+      required: [approvalId, executedBy, provider, completedAt, payments]
+      properties:
+        approvalId: { type: string, format: uuid }
+        executedBy: { type: string, format: uuid }
+        provider: { type: string, minLength: 1, maxLength: 80 }
+        completedAt: { type: string, format: date-time }
+        payments:
+          type: array
+          minItems: 1
+          items: { $ref: '#/components/schemas/DistributionPaymentProof' }
+    ReverseDistributionStatement:
+      type: object
+      additionalProperties: false
+      required: [approvalId, executedBy, reasonCode]
+      properties:
+        approvalId: { type: string, format: uuid }
+        executedBy: { type: string, format: uuid }
+        reasonCode: { type: string, minLength: 1, maxLength: 80 }
+    DistributionSettlementResult:
+      type: object
+      additionalProperties: false
+      required: [statementId, status, entryIds]
+      properties:
+        statementId: { type: string, format: uuid }
+        status: { type: string, enum: [PAID, REVERSED] }
+        entryIds:
+          type: array
+          items: { type: string, format: uuid }

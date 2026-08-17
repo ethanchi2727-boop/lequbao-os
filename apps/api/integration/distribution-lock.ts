@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
 import pg from 'pg';
 import { createDistributionLockService } from '../src/distribution-lock-service.js';
+import { createDistributionSettlementService } from '../src/distribution-settlement-service.js';
 
 const connectionString = process.env.DATABASE_URL;
 if (!connectionString) throw new Error('DATABASE_URL is required');
@@ -17,6 +19,7 @@ const shangzhi = '70000000-0000-4000-8000-000000000009';
 const lequLife = '70000000-0000-4000-8000-000000000010';
 const rightGroup = '70000000-0000-4000-8000-000000000011';
 const policyId = '70000000-0000-4000-8000-000000000012';
+const financeApprover = '70000000-0000-4000-8000-000000000013';
 
 const pool = new pg.Pool({ connectionString });
 try {
@@ -27,8 +30,18 @@ try {
   );
   await pool.query(
     `INSERT INTO users(id, display_name) VALUES
-       ($1, 'Finance'), ($2, 'Business A'), ($3, 'Business B')`,
-    [financeUser, businessUserA, businessUserB],
+       ($1, 'Finance Requester'), ($2, 'Business A'), ($3, 'Business B'), ($4, 'Finance Approver')`,
+    [financeUser, businessUserA, businessUserB, financeApprover],
+  );
+  await pool.query(
+    `INSERT INTO tenant_memberships(tenant_id, user_id, membership_status) VALUES
+       ($1, $2, 'ACTIVE'), ($1, $3, 'ACTIVE')`,
+    [tenantId, financeUser, financeApprover],
+  );
+  await pool.query(
+    `INSERT INTO member_role_assignments(tenant_id, user_id, role_code) VALUES
+       ($1, $2, 'PLATFORM_FINANCE'), ($1, $3, 'PLATFORM_FINANCE')`,
+    [tenantId, financeUser, financeApprover],
   );
   await pool.query(
     `INSERT INTO tenant_subscriptions(
@@ -119,30 +132,118 @@ try {
     ['280', '210', '70', '140'],
   );
 
+  const settlement = createDistributionSettlementService(pool);
+  const expiresAt = new Date(Date.now() + 60 * 60 * 1000).toISOString();
+  const paymentApproval = await settlement.requestApproval({
+    tenantId,
+    idempotencyKey: 'integration-payment-approval-request',
+    traceId: 'integration-trace-payment-request',
+    body: {
+      statementId: first.id,
+      actionType: 'PAY',
+      reasonCode: 'OBSERVATION_COMPLETE',
+      requestedBy: financeUser,
+      expiresAt,
+    },
+  });
+  const approvedPayment = await settlement.approve({
+    tenantId,
+    idempotencyKey: 'integration-payment-approval-approve',
+    traceId: 'integration-trace-payment-approve',
+    body: { approvalId: paymentApproval.id, approvedBy: financeApprover },
+  });
+  assert.equal(approvedPayment.status, 'APPROVED');
+  const allocationIds = await pool.query<{ id: string }>(
+    `SELECT id FROM revenue_distribution_allocations
+      WHERE tenant_id = $1 AND statement_id = $2 ORDER BY id`,
+    [tenantId, first.id],
+  );
+  const completedAt = new Date().toISOString();
+  const payCommand = {
+    tenantId,
+    idempotencyKey: 'integration-payment-execute',
+    traceId: 'integration-trace-payment-execute',
+    body: {
+      statementId: first.id,
+      approvalId: paymentApproval.id,
+      executedBy: financeApprover,
+      provider: 'WECHAT',
+      completedAt,
+      payments: allocationIds.rows.map(({ id }) => ({
+        allocationId: id,
+        providerPaymentRefHash: createHash('sha256').update(`provider:${id}`).digest('hex'),
+      })),
+    },
+  };
+  const paid = await settlement.pay(payCommand);
+  assert.deepEqual(await settlement.pay(payCommand), paid);
+  assert.equal(paid.status, 'PAID');
+  assert.equal(paid.entryIds.length, 4);
+
+  const reversalApproval = await settlement.requestApproval({
+    tenantId,
+    idempotencyKey: 'integration-reversal-approval-request',
+    traceId: 'integration-trace-reversal-request',
+    body: {
+      statementId: first.id,
+      actionType: 'REVERSE',
+      reasonCode: 'SUBSCRIPTION_REFUND',
+      requestedBy: financeUser,
+      expiresAt,
+    },
+  });
+  await settlement.approve({
+    tenantId,
+    idempotencyKey: 'integration-reversal-approval-approve',
+    traceId: 'integration-trace-reversal-approve',
+    body: { approvalId: reversalApproval.id, approvedBy: financeApprover },
+  });
+  const reverseCommand = {
+    tenantId,
+    idempotencyKey: 'integration-reversal-execute',
+    traceId: 'integration-trace-reversal-execute',
+    body: {
+      statementId: first.id,
+      approvalId: reversalApproval.id,
+      executedBy: financeApprover,
+      reasonCode: 'SUBSCRIPTION_REFUND',
+    },
+  };
+  const reversed = await settlement.reverse(reverseCommand);
+  assert.deepEqual(await settlement.reverse(reverseCommand), reversed);
+  assert.equal(reversed.status, 'REVERSED');
+  assert.equal(reversed.entryIds.length, 4);
+
   const evidence = await pool.query<{
     statements: string;
     allocations: string;
     entries: string;
     outbox: string;
     audits: string;
+    payout_attempts: string;
+    approvals: string;
   }>(
     `SELECT
        (SELECT count(*) FROM revenue_distribution_statements WHERE tenant_id = $1)::text AS statements,
        (SELECT count(*) FROM revenue_distribution_allocations WHERE tenant_id = $1)::text AS allocations,
        (SELECT count(*) FROM revenue_distribution_entries WHERE tenant_id = $1)::text AS entries,
        (SELECT count(*) FROM outbox_events WHERE tenant_id = $1 AND event_name = 'distribution.statement_locked.v1')::text AS outbox,
-       (SELECT count(*) FROM audit_logs WHERE tenant_id = $1 AND action = 'LOCK')::text AS audits`,
+       (SELECT count(*) FROM audit_logs WHERE tenant_id = $1)::text AS audits,
+       (SELECT count(*) FROM revenue_payout_attempts WHERE tenant_id = $1)::text AS payout_attempts,
+       (SELECT count(*) FROM revenue_distribution_action_approvals WHERE tenant_id = $1)::text AS approvals`,
     [tenantId],
   );
   assert.deepEqual(evidence.rows[0], {
     statements: '1',
     allocations: '4',
-    entries: '4',
+    entries: '12',
     outbox: '1',
-    audits: '1',
+    audits: '7',
+    payout_attempts: '4',
+    approvals: '2',
   });
   console.log(
-    'Distribution lock PostgreSQL integration passed, including exact allocations and idempotent replay.',
+    'Distribution PostgreSQL integration passed: exact lock, dual approval, provider-evidenced payout, linked reversal and idempotent replay.',
   );
 } finally {
   await pool.end();

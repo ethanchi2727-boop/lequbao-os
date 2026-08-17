@@ -53,6 +53,7 @@ export function calculateStatement(input: StatementCalculationInput): StatementC
 export function allocateExactly(
   distributableMinorUnits: bigint,
   participants: readonly AllocationParticipant[],
+  residualRecipientKey?: string,
 ): ExactAllocation[] {
   if (distributableMinorUnits < 0n) throw new RangeError('distributable amount cannot be negative');
   if (participants.length === 0) throw new RangeError('at least one participant is required');
@@ -82,13 +83,23 @@ export function allocateExactly(
   let remaining =
     distributableMinorUnits -
     provisional.reduce((sum, allocation) => sum + allocation.allocatedMinorUnits, 0n);
-  const remainderOrder = [...provisional].sort(
-    (left, right) => Number(right.remainder - left.remainder) || left.key.localeCompare(right.key),
-  );
-  for (const allocation of remainderOrder) {
-    if (remaining === 0n) break;
-    allocation.allocatedMinorUnits += 1n;
-    remaining -= 1n;
+  if (residualRecipientKey) {
+    const residualRecipient = provisional.find(
+      (allocation) => allocation.key === residualRecipientKey,
+    );
+    if (!residualRecipient)
+      throw new RangeError('residual recipient must be an allocation participant');
+    residualRecipient.allocatedMinorUnits += remaining;
+  } else {
+    const remainderOrder = [...provisional].sort(
+      (left, right) =>
+        Number(right.remainder - left.remainder) || left.key.localeCompare(right.key),
+    );
+    for (const allocation of remainderOrder) {
+      if (remaining === 0n) break;
+      allocation.allocatedMinorUnits += 1n;
+      remaining -= 1n;
+    }
   }
 
   return provisional.map(({ key, shareBps, allocatedMinorUnits }) => ({

@@ -60,12 +60,15 @@ jobs:
         run: psql -v ON_ERROR_STOP=1 -f database/tests/revenue-distribution.sql
       - name: Prove immutable subscription receipt and refund source ledger
         run: psql -v ON_ERROR_STOP=1 -f database/tests/subscription-cash-ledger.sql
+      - name: Prove dual approval, payout evidence and reversal linkage
+        run: psql -v ON_ERROR_STOP=1 -f database/tests/distribution-payout-and-reversal.sql
       - name: Prove incremental migrations from the 73-table package baseline
         run: |
           createdb lequ_v6_migration
           psql -d lequ_v6_migration -v ON_ERROR_STOP=1 -f docs/v6.1/source-package/05_数据API事件权限与安全/database/schema.sql
           psql -d lequ_v6_migration -v ON_ERROR_STOP=1 -f database/migrations/0003_revenue_distribution_invariants.sql
           psql -d lequ_v6_migration -v ON_ERROR_STOP=1 -f database/migrations/0004_subscription_cash_ledger.sql
+          psql -d lequ_v6_migration -v ON_ERROR_STOP=1 -f database/migrations/0005_distribution_payout_and_reversal.sql
       - uses: actions/setup-node@v4
         with:
           node-version-file: .node-version

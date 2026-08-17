@@ -1,6 +1,7 @@
 import { buildApp } from './app.js';
 import { createPool } from './database.js';
 import { createDistributionLockService } from './distribution-lock-service.js';
+import { createDistributionSettlementService } from './distribution-settlement-service.js';
 import { createRevenueRightService } from './revenue-right-service.js';
 
 const databaseUrl = process.env.DATABASE_URL;
@@ -11,6 +12,7 @@ const app = await buildApp({
   logger: true,
   revenueRights: createRevenueRightService(pool),
   distributionLocks: createDistributionLockService(pool),
+  distributionSettlements: createDistributionSettlementService(pool),
   databaseCheck: async () => {
     await pool.query('SELECT 1');
   },

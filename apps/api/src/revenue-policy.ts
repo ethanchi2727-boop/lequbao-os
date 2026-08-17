@@ -25,6 +25,7 @@ export function allocateSubscriptionRevenue(distributableMinorUnits: bigint): Re
       key: split.beneficiaryRole,
       shareBps: split.shareBps,
     })),
+    'LEQU_LIFE',
   ).map(({ key, shareBps, allocatedMinorUnits }) => ({
     beneficiaryRole: key as SubscriptionBeneficiaryRole,
     shareBps,

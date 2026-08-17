@@ -9,6 +9,14 @@ if (specification.openapi !== '3.1.0') failures.push('OpenAPI version must be 3.
 if (!specification.paths?.['/api/v1/merchants/{merchantProfileId}/revenue-rights']?.post) {
   failures.push('implemented revenue-right endpoint is missing');
 }
+for (const path of [
+  '/api/v1/distribution-statements/{statementId}/action-approvals',
+  '/api/v1/distribution-action-approvals/{approvalId}/actions/approve',
+  '/api/v1/distribution-statements/{statementId}/actions/pay',
+  '/api/v1/distribution-statements/{statementId}/actions/reverse',
+]) {
+  if (!specification.paths?.[path]?.post) failures.push(`implemented endpoint is missing: ${path}`);
+}
 
 const operationIds = [];
 for (const [path, pathItem] of Object.entries(specification.paths ?? {})) {

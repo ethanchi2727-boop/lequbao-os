@@ -15,8 +15,8 @@ describe('frozen subscription revenue policy v1', () => {
 
   it.each([
     [100n, [70n, 10n, 20n]],
-    [99n, [69n, 10n, 20n]],
-    [1n, [1n, 0n, 0n]],
+    [99n, [69n, 9n, 21n]],
+    [1n, [0n, 0n, 1n]],
     [0n, [0n, 0n, 0n]],
   ])('allocates %s minor units without losing a cent', (amount, expected) => {
     const allocations = allocateSubscriptionRevenue(amount);
