@@ -19,36 +19,16 @@ export interface RevenueAllocation {
 }
 
 export function allocateSubscriptionRevenue(distributableMinorUnits: bigint): RevenueAllocation[] {
-  if (distributableMinorUnits < 0n)
-    throw new RangeError('distributable revenue cannot be negative');
-
-  const denominator = 10_000n;
-  const provisional = SUBSCRIPTION_POLICY_V1.splits.map((split) => {
-    const numerator = distributableMinorUnits * BigInt(split.shareBps);
-    return {
-      ...split,
-      allocatedMinorUnits: numerator / denominator,
-      remainder: numerator % denominator,
-    };
-  });
-  let undistributed =
-    distributableMinorUnits -
-    provisional.reduce((sum, allocation) => sum + allocation.allocatedMinorUnits, 0n);
-
-  const remainderOrder = [...provisional].sort(
-    (left, right) =>
-      Number(right.remainder - left.remainder) ||
-      left.beneficiaryRole.localeCompare(right.beneficiaryRole),
-  );
-  for (const allocation of remainderOrder) {
-    if (undistributed === 0n) break;
-    allocation.allocatedMinorUnits += 1n;
-    undistributed -= 1n;
-  }
-
-  return provisional.map(({ beneficiaryRole, shareBps, allocatedMinorUnits }) => ({
-    beneficiaryRole,
+  return allocateExactly(
+    distributableMinorUnits,
+    SUBSCRIPTION_POLICY_V1.splits.map((split) => ({
+      key: split.beneficiaryRole,
+      shareBps: split.shareBps,
+    })),
+  ).map(({ key, shareBps, allocatedMinorUnits }) => ({
+    beneficiaryRole: key as SubscriptionBeneficiaryRole,
     shareBps,
     allocatedMinorUnits,
   }));
 }
+import { allocateExactly } from './revenue-distribution.js';

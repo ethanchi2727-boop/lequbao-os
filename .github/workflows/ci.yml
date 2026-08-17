@@ -56,3 +56,5 @@ jobs:
         run: psql -v ON_ERROR_STOP=1 -f database/tests/rls.sql
       - name: Prove revenue-right and 70/10/20 constraints
         run: psql -v ON_ERROR_STOP=1 -f database/tests/revenue-rights.sql
+      - name: Prove exact distribution reconciliation and immutable ledger
+        run: psql -v ON_ERROR_STOP=1 -f database/tests/revenue-distribution.sql
