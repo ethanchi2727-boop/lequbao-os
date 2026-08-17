@@ -3,6 +3,12 @@ import Fastify, { type FastifyInstance } from 'fastify';
 import { TenantIdSchema } from '@lequ/contracts';
 import { ZodError } from 'zod';
 import {
+  DistributionConfigurationError,
+  DistributionSourceError,
+  ProvisionalCostError,
+  type DistributionLockService,
+} from './distribution-lock-service.js';
+import {
   IdempotencyConflictError,
   InactiveBeneficiaryError,
   RevenueRightConflictError,
@@ -13,6 +19,7 @@ export interface AppOptions {
   databaseCheck?: () => Promise<void>;
   logger?: boolean;
   revenueRights?: RevenueRightService;
+  distributionLocks?: DistributionLockService;
 }
 
 export async function buildApp(options: AppOptions = {}): Promise<FastifyInstance> {
@@ -74,6 +81,52 @@ export async function buildApp(options: AppOptions = {}): Promise<FastifyInstanc
         }
         if (error instanceof InactiveBeneficiaryError) {
           return reply.code(422).send({ code: 'INVALID_REVENUE_BENEFICIARY' });
+        }
+        throw error;
+      }
+    },
+  );
+
+  app.post<{ Params: { subscriptionId: string } }>(
+    '/api/v1/subscriptions/:subscriptionId/distribution-statements:lock',
+    async (request, reply) => {
+      const tenantHeader = request.headers['x-tenant-id'];
+      const tenant = TenantIdSchema.safeParse(
+        Array.isArray(tenantHeader) ? tenantHeader[0] : tenantHeader,
+      );
+      const idempotencyHeader = request.headers['idempotency-key'];
+      const idempotencyKey = Array.isArray(idempotencyHeader)
+        ? idempotencyHeader[0]
+        : idempotencyHeader;
+      if (!tenant.success || !idempotencyKey || idempotencyKey.length > 255) {
+        return reply.code(400).send({ code: 'INVALID_REQUEST_CONTEXT' });
+      }
+      if (!options.distributionLocks) return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+      const body =
+        request.body && typeof request.body === 'object'
+          ? { ...request.body, subscriptionId: request.params.subscriptionId }
+          : { subscriptionId: request.params.subscriptionId };
+      try {
+        const result = await options.distributionLocks.lock({
+          tenantId: tenant.data,
+          idempotencyKey,
+          traceId: request.id,
+          body,
+        });
+        return reply.code(201).send(result);
+      } catch (error) {
+        if (error instanceof ZodError) return reply.code(400).send({ code: 'INVALID_REQUEST' });
+        if (error instanceof IdempotencyConflictError) {
+          return reply.code(409).send({ code: 'IDEMPOTENCY_CONFLICT' });
+        }
+        if (error instanceof ProvisionalCostError) {
+          return reply.code(409).send({ code: 'DIRECT_COSTS_NOT_ACTUAL' });
+        }
+        if (error instanceof DistributionSourceError) {
+          return reply.code(422).send({ code: 'INVALID_DISTRIBUTION_SOURCE' });
+        }
+        if (error instanceof DistributionConfigurationError) {
+          return reply.code(422).send({ code: 'INVALID_DISTRIBUTION_CONFIGURATION' });
         }
         throw error;
       }

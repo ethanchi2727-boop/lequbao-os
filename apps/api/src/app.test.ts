@@ -71,4 +71,37 @@ describe('platform API shell', () => {
       expect.objectContaining({ idempotencyKey: 'merchant-11-original-right' }),
     );
   });
+
+  it('locks a distribution using the subscription path as the source of truth', async () => {
+    const lock = vi.fn().mockResolvedValue({
+      id: '00000000-0000-4000-8000-000000000020',
+      status: 'LOCKED',
+      policyVersion: 1,
+      actualReceiptMinorUnits: '1000',
+      refundMinorUnits: '100',
+      directCostMinorUnits: '100',
+      distributableMinorUnits: '800',
+      allocations: [],
+    });
+    app = await buildApp({ distributionLocks: { lock } });
+    const subscriptionId = '00000000-0000-4000-8000-000000000021';
+    const response = await app.inject({
+      method: 'POST',
+      url: `/api/v1/subscriptions/${subscriptionId}/distribution-statements:lock`,
+      headers: {
+        'x-tenant-id': '00000000-0000-4000-8000-000000000003',
+        'idempotency-key': 'lock-subscription-21-2026-08',
+      },
+      payload: {
+        subscriptionId: '00000000-0000-4000-8000-999999999999',
+        periodStart: '2026-08-01',
+        periodEnd: '2026-08-31',
+        lockedBy: '00000000-0000-4000-8000-000000000022',
+      },
+    });
+    expect(response.statusCode).toBe(201);
+    expect(lock).toHaveBeenCalledWith(
+      expect.objectContaining({ body: expect.objectContaining({ subscriptionId }) }),
+    );
+  });
 });

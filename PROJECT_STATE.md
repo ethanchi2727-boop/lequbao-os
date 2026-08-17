@@ -27,6 +27,7 @@ Rebuild the repository around the V6.1 `乐趣宝 + 乐趣生活` baseline. Pres
 - Implemented statement math for receipts, refunds, actual/provisional/reversed direct costs, zero-floor loss handling and exact multi-party allocation.
 - Added migration `0003` with deferred PostgreSQL constraints that reject locked statements unless shares total 100% and allocations reconcile to the cent; distribution entries remain append-only.
 - Audited the package's distribution inputs and added migration `0004`: an immutable, provider-event-idempotent subscription receipt/refund ledger. The target now has 74 tables while the vendored source remains checksum-accounted at 73.
+- Implemented transactional subscription statement locking. It derives amounts from the cash ledger and cost entries, resolves the active policy/right holders, allocates exactly, writes accruals/audit/Outbox/idempotency atomically, and never accepts client-supplied money.
 - Published a deliberately implementation-bounded OpenAPI document and added syntax/reference drift checks.
 
 ## Verified package facts
@@ -43,13 +44,14 @@ Rebuild the repository around the V6.1 `乐趣宝 + 乐趣生活` baseline. Pres
 - The frozen `70/10/20` distributable-income policy conflicts with a separate `25%` channel-distribution statement. V6.1 development uses the frozen versioned policy; production payout needs written business and finance resolution.
 - Current material mixes `商务人员` and `商务推广人员`, and mixes `生活消费` and `生活`. The external unique baseline wins pending formal amendment.
 - The target stack recommendation differs from the V5 implementation. The rebuild must use architecture decision records and must not mix package managers or duplicate long-lived app implementations.
-- Local formatting, lint, contract counts, OpenAPI, TypeScript, 34 unit tests and production builds pass.
+- Local formatting, lint, contract counts, five implemented OpenAPI paths, TypeScript, 37 unit tests and production builds pass.
 - GitHub Actions run `32039457455` passed clean PostgreSQL 15 schema application and RLS isolation for commit `8da963b`.
 - GitHub Actions run `32040005789` passed the revenue-right and frozen-policy PostgreSQL constraint test for commit `cb98f7b`.
 - GitHub Actions run `32040375789` passed exact distribution reconciliation and immutable-ledger tests for commit `b88903f`.
-- The subscription cash-source ledger and incremental 73→74-table migration tests are added locally and await the next pushed CI run.
+- GitHub Actions run `32040722489` passed the subscription cash-source ledger and incremental 73→74-table migrations for commit `8a03bda`.
+- The statement-locking service has mock-transaction coverage; a real PostgreSQL end-to-end API fixture remains to be added.
 - Payment sandbox, WeCom callbacks, backup recovery, migration dry-run/rollback and browser/WeChat acceptance remain unverified.
 
 ## Exact next step
 
-Commit and push the distribution invariant, observe its real PostgreSQL test, then implement the transactional statement-locking service and API: source amount verification, actual-cost query, active policy/right lookup, allocation/accrual insertion, audit and Outbox event.
+Commit and push the statement-locking API, then add its real PostgreSQL end-to-end fixture. After that, implement reversal and payout state transitions before moving to the AI conversation intake vertical slice.

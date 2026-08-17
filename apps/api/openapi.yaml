@@ -61,6 +61,37 @@ paths:
           description: 幂等键冲突或商户已有有效原始收益权
         '422':
           description: 受益人不是有效商务人员
+  /api/v1/subscriptions/{subscriptionId}/distribution-statements:lock:
+    post:
+      operationId: lockSubscriptionDistributionStatement
+      summary: 从已验证现金账本与实际成本生成并锁定月结单
+      x-required-permission: distribution.lock
+      parameters:
+        - $ref: '#/components/parameters/TenantId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+        - name: subscriptionId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LockDistributionRequest'
+      responses:
+        '201':
+          description: 结算单已经过逐分钱校验并锁定
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LockedDistribution'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '409':
+          description: 幂等冲突或直接成本仍为暂估
+        '422':
+          description: 现金来源、策略、收益权或平台受益人配置无效
 components:
   parameters:
     TenantId:
@@ -112,3 +143,47 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/RevenueRightHolder'
+    LockDistributionRequest:
+      type: object
+      additionalProperties: false
+      required: [periodStart, periodEnd, lockedBy]
+      properties:
+        periodStart: { type: string, format: date }
+        periodEnd: { type: string, format: date }
+        lockedBy: { type: string, format: uuid }
+    DistributionAllocation:
+      type: object
+      additionalProperties: false
+      required: [beneficiaryId, beneficiaryRole, shareBps, allocatedMinorUnits]
+      properties:
+        beneficiaryId: { type: string, format: uuid }
+        beneficiaryRole:
+          type: string
+          enum: [ORIGINATING_BUSINESS, SHANGZHI, LEQU_LIFE]
+        shareBps: { type: integer, minimum: 1, maximum: 10000 }
+        allocatedMinorUnits: { type: string, pattern: '^(0|[1-9][0-9]*)$' }
+    LockedDistribution:
+      type: object
+      additionalProperties: false
+      required:
+        - id
+        - status
+        - policyVersion
+        - actualReceiptMinorUnits
+        - refundMinorUnits
+        - directCostMinorUnits
+        - distributableMinorUnits
+        - allocations
+      properties:
+        id: { type: string, format: uuid }
+        status: { type: string, const: LOCKED }
+        policyVersion: { type: integer, minimum: 1 }
+        actualReceiptMinorUnits: { type: string, pattern: '^(0|[1-9][0-9]*)$' }
+        refundMinorUnits: { type: string, pattern: '^(0|[1-9][0-9]*)$' }
+        directCostMinorUnits: { type: string, pattern: '^(0|[1-9][0-9]*)$' }
+        distributableMinorUnits: { type: string, pattern: '^(0|[1-9][0-9]*)$' }
+        allocations:
+          type: array
+          minItems: 3
+          items:
+            $ref: '#/components/schemas/DistributionAllocation'
