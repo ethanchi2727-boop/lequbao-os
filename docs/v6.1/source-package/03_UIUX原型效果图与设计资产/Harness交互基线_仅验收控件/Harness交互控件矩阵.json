@@ -1,0 +1,546 @@
+[
+  {
+    "control_id": "NAV-01",
+    "category": "导航",
+    "control": "新建对话",
+    "behavior": "首屏固定；Ctrl/Cmd+N",
+    "visible_mode": "empty",
+    "risk": "P1"
+  },
+  {
+    "control_id": "NAV-02",
+    "category": "导航",
+    "control": "收起侧栏",
+    "behavior": "保留图标轨道",
+    "visible_mode": "all",
+    "risk": "P2"
+  },
+  {
+    "control_id": "NAV-03",
+    "category": "导航",
+    "control": "移动端侧栏",
+    "behavior": "抽屉；Esc/遮罩关闭",
+    "visible_mode": "all",
+    "risk": "P2"
+  },
+  {
+    "control_id": "NAV-04",
+    "category": "导航",
+    "control": "搜索",
+    "behavior": "对话、文件、项目、人员、业务对象；Ctrl/Cmd+K",
+    "visible_mode": "all",
+    "risk": "P1"
+  },
+  {
+    "control_id": "NAV-05",
+    "category": "导航",
+    "control": "我的工作",
+    "behavior": "默认空间",
+    "visible_mode": "all",
+    "risk": "P1"
+  },
+  {
+    "control_id": "NAV-06",
+    "category": "导航",
+    "control": "团队空间",
+    "behavior": "仅显示授权空间",
+    "visible_mode": "all",
+    "risk": "P0"
+  },
+  {
+    "control_id": "NAV-07",
+    "category": "导航",
+    "control": "业务插件",
+    "behavior": "按角色与数据域过滤",
+    "visible_mode": "all",
+    "risk": "P0"
+  },
+  {
+    "control_id": "NAV-08",
+    "category": "导航",
+    "control": "成果文件",
+    "behavior": "按权限搜索、预览、版本化",
+    "visible_mode": "all",
+    "risk": "P0"
+  },
+  {
+    "control_id": "SES-01",
+    "category": "会话",
+    "control": "历史分组",
+    "behavior": "今天/昨天/7天/更早",
+    "visible_mode": "all",
+    "risk": "P1"
+  },
+  {
+    "control_id": "SES-02",
+    "category": "会话",
+    "control": "重命名",
+    "behavior": "保留审计",
+    "visible_mode": "chat",
+    "risk": "P1"
+  },
+  {
+    "control_id": "SES-03",
+    "category": "会话",
+    "control": "置顶收藏",
+    "behavior": "个人偏好",
+    "visible_mode": "chat",
+    "risk": "P2"
+  },
+  {
+    "control_id": "SES-04",
+    "category": "会话",
+    "control": "移动到项目",
+    "behavior": "校验目标空间权限",
+    "visible_mode": "chat",
+    "risk": "P0"
+  },
+  {
+    "control_id": "SES-05",
+    "category": "会话",
+    "control": "分享",
+    "behavior": "默认关闭外部访问",
+    "visible_mode": "chat",
+    "risk": "P0"
+  },
+  {
+    "control_id": "SES-06",
+    "category": "会话",
+    "control": "导出",
+    "behavior": "PDF/DOCX/Markdown及来源",
+    "visible_mode": "chat",
+    "risk": "P1"
+  },
+  {
+    "control_id": "SES-07",
+    "category": "会话",
+    "control": "归档",
+    "behavior": "可恢复",
+    "visible_mode": "chat",
+    "risk": "P1"
+  },
+  {
+    "control_id": "SES-08",
+    "category": "会话",
+    "control": "删除",
+    "behavior": "二次确认并遵守保留策略",
+    "visible_mode": "chat",
+    "risk": "P0"
+  },
+  {
+    "control_id": "SES-09",
+    "category": "会话",
+    "control": "对话分支",
+    "behavior": "从选定消息创建分支",
+    "visible_mode": "chat",
+    "risk": "P1"
+  },
+  {
+    "control_id": "SES-10",
+    "category": "会话",
+    "control": "恢复未完成任务",
+    "behavior": "从检查点恢复、禁止重复写",
+    "visible_mode": "task",
+    "risk": "P0"
+  },
+  {
+    "control_id": "TOP-01",
+    "category": "顶部",
+    "control": "标题自动生成",
+    "behavior": "可重命名",
+    "visible_mode": "all",
+    "risk": "P2"
+  },
+  {
+    "control_id": "TOP-02",
+    "category": "顶部",
+    "control": "执行模式",
+    "behavior": "快速问答/深度执行/仅检索",
+    "visible_mode": "all",
+    "risk": "P1"
+  },
+  {
+    "control_id": "TOP-03",
+    "category": "顶部",
+    "control": "后台任务",
+    "behavior": "显示数量、状态和切换",
+    "visible_mode": "task",
+    "risk": "P1"
+  },
+  {
+    "control_id": "TOP-04",
+    "category": "顶部",
+    "control": "共享",
+    "behavior": "人员、期限、权限范围",
+    "visible_mode": "chat",
+    "risk": "P0"
+  },
+  {
+    "control_id": "TOP-05",
+    "category": "顶部",
+    "control": "更多",
+    "behavior": "收藏、导出、归档等",
+    "visible_mode": "chat",
+    "risk": "P1"
+  },
+  {
+    "control_id": "TOP-06",
+    "category": "顶部",
+    "control": "保存状态",
+    "behavior": "保存中/已保存/离线",
+    "visible_mode": "all",
+    "risk": "P1"
+  },
+  {
+    "control_id": "MSG-01",
+    "category": "消息",
+    "control": "复制",
+    "behavior": "保留格式",
+    "visible_mode": "chat",
+    "risk": "P2"
+  },
+  {
+    "control_id": "MSG-02",
+    "category": "消息",
+    "control": "重新生成",
+    "behavior": "从同一输入重跑",
+    "visible_mode": "chat",
+    "risk": "P1"
+  },
+  {
+    "control_id": "MSG-03",
+    "category": "消息",
+    "control": "继续生成",
+    "behavior": "断点继续",
+    "visible_mode": "chat",
+    "risk": "P1"
+  },
+  {
+    "control_id": "MSG-04",
+    "category": "消息",
+    "control": "停止执行",
+    "behavior": "保存检查点并停止后续工具",
+    "visible_mode": "task",
+    "risk": "P0"
+  },
+  {
+    "control_id": "MSG-05",
+    "category": "消息",
+    "control": "编辑后重试",
+    "behavior": "创建新分支，不覆盖审计",
+    "visible_mode": "chat",
+    "risk": "P1"
+  },
+  {
+    "control_id": "MSG-06",
+    "category": "消息",
+    "control": "反馈",
+    "behavior": "有帮助/无帮助/原因",
+    "visible_mode": "chat",
+    "risk": "P2"
+  },
+  {
+    "control_id": "MSG-07",
+    "category": "消息",
+    "control": "引用来源",
+    "behavior": "来源、时间、权限与不确定性",
+    "visible_mode": "chat",
+    "risk": "P0"
+  },
+  {
+    "control_id": "MSG-08",
+    "category": "消息",
+    "control": "执行轨迹",
+    "behavior": "理解/检索/工具/确认/成果",
+    "visible_mode": "task",
+    "risk": "P1"
+  },
+  {
+    "control_id": "MSG-09",
+    "category": "消息",
+    "control": "工具详情",
+    "behavior": "参数脱敏、结果摘要、耗时",
+    "visible_mode": "task",
+    "risk": "P0"
+  },
+  {
+    "control_id": "MSG-10",
+    "category": "消息",
+    "control": "失败重试",
+    "behavior": "错误可理解、可恢复",
+    "visible_mode": "task",
+    "risk": "P0"
+  },
+  {
+    "control_id": "CMP-01",
+    "category": "输入",
+    "control": "多行输入",
+    "behavior": "Enter发送/Shift+Enter换行",
+    "visible_mode": "all",
+    "risk": "P1"
+  },
+  {
+    "control_id": "CMP-02",
+    "category": "输入",
+    "control": "附件",
+    "behavior": "文件、图片、表格、合同、PPT",
+    "visible_mode": "all",
+    "risk": "P0"
+  },
+  {
+    "control_id": "CMP-03",
+    "category": "输入",
+    "control": "上传进度",
+    "behavior": "扫描、解析、失败重试、取消",
+    "visible_mode": "all",
+    "risk": "P0"
+  },
+  {
+    "control_id": "CMP-04",
+    "category": "输入",
+    "control": "联网",
+    "behavior": "显示来源与检索时间",
+    "visible_mode": "all",
+    "risk": "P0"
+  },
+  {
+    "control_id": "CMP-05",
+    "category": "输入",
+    "control": "技能",
+    "behavior": "只显示预置和授权技能",
+    "visible_mode": "all",
+    "risk": "P0"
+  },
+  {
+    "control_id": "CMP-06",
+    "category": "输入",
+    "control": "插件",
+    "behavior": "业务插件及风险提示",
+    "visible_mode": "all",
+    "risk": "P0"
+  },
+  {
+    "control_id": "CMP-07",
+    "category": "输入",
+    "control": "语音",
+    "behavior": "按住说话/转写确认/取消",
+    "visible_mode": "all",
+    "risk": "P1"
+  },
+  {
+    "control_id": "CMP-08",
+    "category": "输入",
+    "control": "斜杠命令",
+    "behavior": "预置命令与模糊搜索",
+    "visible_mode": "all",
+    "risk": "P1"
+  },
+  {
+    "control_id": "CMP-09",
+    "category": "输入",
+    "control": "@引用",
+    "behavior": "人员、知识空间、文件、业务对象",
+    "visible_mode": "all",
+    "risk": "P0"
+  },
+  {
+    "control_id": "CMP-10",
+    "category": "输入",
+    "control": "发送/排队",
+    "behavior": "运行中可排队或停止",
+    "visible_mode": "all",
+    "risk": "P1"
+  },
+  {
+    "control_id": "PNL-01",
+    "category": "任务成果",
+    "control": "动态展开",
+    "behavior": "普通聊天隐藏；复杂任务展开",
+    "visible_mode": "task",
+    "risk": "P2"
+  },
+  {
+    "control_id": "PNL-02",
+    "category": "任务成果",
+    "control": "任务页签",
+    "behavior": "步骤、进度、检查点、责任人",
+    "visible_mode": "task",
+    "risk": "P1"
+  },
+  {
+    "control_id": "PNL-03",
+    "category": "任务成果",
+    "control": "成果页签",
+    "behavior": "文件、版本、预览、编辑、下载",
+    "visible_mode": "task",
+    "risk": "P1"
+  },
+  {
+    "control_id": "PNL-04",
+    "category": "任务成果",
+    "control": "来源页签",
+    "behavior": "来源、时间、引用位置、权限",
+    "visible_mode": "task",
+    "risk": "P0"
+  },
+  {
+    "control_id": "PNL-05",
+    "category": "任务成果",
+    "control": "关闭面板",
+    "behavior": "关闭不停止任务",
+    "visible_mode": "task",
+    "risk": "P1"
+  },
+  {
+    "control_id": "PNL-06",
+    "category": "任务成果",
+    "control": "移动端底部抽屉",
+    "behavior": "半屏/全屏/下滑关闭",
+    "visible_mode": "task",
+    "risk": "P2"
+  },
+  {
+    "control_id": "PNL-07",
+    "category": "任务成果",
+    "control": "人工确认",
+    "behavior": "对象、影响、依据、幂等键",
+    "visible_mode": "task",
+    "risk": "P0"
+  },
+  {
+    "control_id": "PNL-08",
+    "category": "任务成果",
+    "control": "可编辑成果",
+    "behavior": "PPT/DOCX/XLSX/代码/图片/PDF",
+    "visible_mode": "task",
+    "risk": "P1"
+  },
+  {
+    "control_id": "USR-01",
+    "category": "用户",
+    "control": "身份摘要",
+    "behavior": "姓名+公司/组织+当前角色",
+    "visible_mode": "all",
+    "risk": "P0"
+  },
+  {
+    "control_id": "USR-02",
+    "category": "用户",
+    "control": "身份卡",
+    "behavior": "组织、部门、角色、数据范围",
+    "visible_mode": "all",
+    "risk": "P0"
+  },
+  {
+    "control_id": "USR-03",
+    "category": "用户",
+    "control": "身份切换",
+    "behavior": "双身份/多组织明确切换并重载权限",
+    "visible_mode": "all",
+    "risk": "P0"
+  },
+  {
+    "control_id": "USR-04",
+    "category": "用户",
+    "control": "企业微信绑定",
+    "behavior": "显示绑定状态与解绑确认",
+    "visible_mode": "all",
+    "risk": "P0"
+  },
+  {
+    "control_id": "USR-05",
+    "category": "用户",
+    "control": "长期记忆",
+    "behavior": "查看、更正、删除、导出、关闭",
+    "visible_mode": "all",
+    "risk": "P0"
+  },
+  {
+    "control_id": "USR-06",
+    "category": "用户",
+    "control": "主题",
+    "behavior": "浅色/深色/跟随系统",
+    "visible_mode": "all",
+    "risk": "P2"
+  },
+  {
+    "control_id": "USR-07",
+    "category": "用户",
+    "control": "通知",
+    "behavior": "系统内/企业微信/移动推送",
+    "visible_mode": "all",
+    "risk": "P1"
+  },
+  {
+    "control_id": "USR-08",
+    "category": "用户",
+    "control": "安全设备",
+    "behavior": "登录设备、退出其他设备、MFA",
+    "visible_mode": "all",
+    "risk": "P0"
+  },
+  {
+    "control_id": "USR-09",
+    "category": "用户",
+    "control": "设置",
+    "behavior": "个人偏好、隐私、帮助反馈",
+    "visible_mode": "all",
+    "risk": "P1"
+  },
+  {
+    "control_id": "USR-10",
+    "category": "用户",
+    "control": "退出登录",
+    "behavior": "清理本机敏感缓存",
+    "visible_mode": "all",
+    "risk": "P0"
+  },
+  {
+    "control_id": "STA-01",
+    "category": "状态",
+    "control": "流式生成",
+    "behavior": "逐段显示并可停止",
+    "visible_mode": "task",
+    "risk": "P1"
+  },
+  {
+    "control_id": "STA-02",
+    "category": "状态",
+    "control": "离线重连",
+    "behavior": "不丢输入与未提交附件",
+    "visible_mode": "all",
+    "risk": "P1"
+  },
+  {
+    "control_id": "STA-03",
+    "category": "状态",
+    "control": "权限拒绝",
+    "behavior": "不泄露对象存在性",
+    "visible_mode": "all",
+    "risk": "P0"
+  },
+  {
+    "control_id": "STA-04",
+    "category": "状态",
+    "control": "空状态",
+    "behavior": "新对话与能力建议",
+    "visible_mode": "empty",
+    "risk": "P2"
+  },
+  {
+    "control_id": "STA-05",
+    "category": "状态",
+    "control": "限流降级",
+    "behavior": "429/5xx退避与模型回退",
+    "visible_mode": "task",
+    "risk": "P0"
+  },
+  {
+    "control_id": "STA-06",
+    "category": "状态",
+    "control": "完成回执",
+    "behavior": "成果、来源、执行和审批回执",
+    "visible_mode": "task",
+    "risk": "P0"
+  }
+]

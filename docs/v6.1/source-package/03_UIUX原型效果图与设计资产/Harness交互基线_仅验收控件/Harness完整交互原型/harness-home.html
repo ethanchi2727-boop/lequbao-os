@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <title>尚智小满｜Harness完整交互原型</title>
+  <link rel="stylesheet" href="harness-home.css">
+</head>
+<body data-product="shangzhi" data-mode="empty">
+  <aside class="sidebar" aria-label="空间与历史导航">
+    <header class="brand"><span class="brand-mark">满</span><span><b>尚智小满</b><small>企业智能工作 OS</small></span><button data-action="collapse" aria-label="收起侧栏">‹</button></header>
+    <button class="new-chat" data-mode-target="empty"><span>＋</span>新建对话<kbd>Ctrl N</kbd></button>
+    <button class="search" data-action="search"><span>搜</span>搜索对话、文件或项目<kbd>Ctrl K</kbd></button>
+    <section class="nav-group"><h3>空间</h3>
+      <button class="active"><i>工</i>我的工作</button><button><i>团</i>团队空间<em>3</em></button><button data-action="plugins"><i>插</i>业务插件<em>12</em></button><button><i>果</i>成果文件<em>28</em></button>
+    </section>
+    <section class="nav-group conversations"><h3>今天</h3>
+      <button data-mode-target="task"><span>本周经营汇报PPT</span><small>刚刚</small><i data-action="conversation-menu">···</i></button>
+      <button data-mode-target="chat"><span>启动材料整理</span><small>26分钟</small><i data-action="conversation-menu">···</i></button>
+      <button data-mode-target="chat"><span>会议纪要与待办</span><small>1小时</small><i data-action="conversation-menu">···</i></button>
+    </section>
+    <footer class="account-area">
+      <div class="utility"><button data-action="help">?</button><button data-action="theme">明暗</button><button data-action="settings">设置</button></div>
+      <button class="account" data-action="profile"><span class="avatar">林</span><span><b>林晓</b><small>尚智总部 · 运营管理员</small></span><i>⌄</i></button>
+    </footer>
+  </aside>
+  <main class="main">
+    <header class="topbar"><button class="mobile-menu" data-action="mobile-sidebar">栏</button><div><b data-title>新对话</b><small>私密空间 · 已自动保存</small></div><div class="top-actions"><button data-action="mode">深度执行⌄</button><button data-action="share">共享</button><button data-action="more">···</button><button class="mobile-new" data-mode-target="empty">＋</button></div></header>
+    <section class="screen empty-screen" data-screen="empty">
+      <div class="welcome"><span class="hero-mark">满</span><h1>你好，我是小满</h1><p>把工作交给我，我会调用公司知识、工具和业务插件完成它。</p>
+        <div class="hero-composer"><textarea aria-label="向小满发送消息" placeholder="告诉小满你想完成什么……"></textarea><div class="composer-actions"><div><button data-action="upload">附件</button><button data-action="web">联网</button><button data-action="skills">技能</button><button data-action="plugins">插件</button><button data-action="voice">语音</button></div><button class="send" data-mode-target="chat">↑</button></div></div>
+        <div class="suggestions"><button data-mode-target="task"><b>做一份管理层汇报PPT</b><small>读取数据、生成结构与可编辑文件</small></button><button data-mode-target="chat"><b>整理会议和待办</b><small>识别决策、责任人和截止时间</small></button><button data-mode-target="chat"><b>分析一份业务表格</b><small>清洗数据、生成图表与结论</small></button><button data-action="plugins"><b>进入业务插件</b><small>按权限调用企业业务能力</small></button></div>
+      </div>
+    </section>
+    <section class="screen chat-screen" data-screen="chat">
+      <article class="message user">整理这批启动材料，列出缺失项并写一条提醒消息。</article>
+      <article class="assistant"><span class="assistant-mark">满</span><div><b>小满</b><p>已经整理完成。共收到18份材料，其中3项需要补充。我没有发送消息，先给你确认。</p>
+        <div class="result-card"><header><b>材料检查结果</b><button data-action="sources">来源 18</button></header><dl><div><dt>营业执照</dt><dd>完整</dd></div><div><dt>负责人身份证明</dt><dd class="warning">缺1份</dd></div><div><dt>场地与团队材料</dt><dd class="warning">缺2份</dd></div></dl></div>
+        <div class="draft-card"><small>待发送消息草稿</small><p>您好，请在本周五前补齐缺失材料。如需帮助可直接回复本消息。</p><button>编辑</button><button class="primary" data-action="confirm">确认发送</button></div>
+        <div class="message-tools"><button data-action="copy">复制</button><button data-action="regenerate">重新生成</button><button data-action="feedback">有帮助</button><button data-action="sources">查看来源</button></div>
+      </div></article>
+    </section>
+    <section class="screen task-screen" data-screen="task">
+      <article class="message user">请把本周经营数据做成管理层汇报PPT，重点说明增长、风险和下周动作。</article>
+      <article class="assistant"><span class="assistant-mark">满</span><div><b>小满 <em>正在执行</em></b><p>我已读取你有权限的数据，正在核对口径并生成可编辑汇报。</p>
+        <details class="trace" open><summary>执行轨迹 <span>收起</span></summary><ol><li class="done">读取经营数据与周环比 <small>完成</small></li><li class="done">识别增长点与风险项 <small>完成</small></li><li class="running">生成12页管理层PPT <small>78%</small></li><li>校验数字与引用来源 <small>等待</small></li></ol></details>
+        <div class="artifact"><span>PPT</span><div><b>本周经营复盘｜管理层汇报</b><small>12页 · 可编辑 · 数据已绑定</small><p><button data-action="preview">预览</button><button data-action="download">下载</button><button data-action="edit">继续编辑</button></p></div></div>
+        <div class="message-tools"><button data-action="copy">复制</button><button data-action="stop">停止</button><button data-action="sources">来源</button><button data-action="trajectory">完整轨迹</button></div>
+      </div></article>
+    </section>
+    <form class="dock-composer" data-composer><textarea placeholder="继续告诉小满要调整什么……"></textarea><div><button type="button" data-action="add">＋</button><button type="button" data-action="upload">附件</button><button type="button" data-action="web">联网</button><button type="button" data-action="skills">技能</button><button type="button" data-action="plugins">插件</button><button type="button" data-action="voice">语音</button><button class="send" type="submit">↑</button></div></form>
+  </main>
+  <aside class="task-panel" aria-label="任务与成果面板"><header><b>任务与成果</b><button data-action="close-panel">×</button></header><nav><button>任务</button><button class="active">成果</button><button>来源</button></nav><section class="progress"><small>正在生成</small><h2>管理层经营汇报</h2><p>12页 · 已完成9页</p><i><span></span></i><b>78%</b><button data-action="preview">打开实时预览</button></section><h3>本次成果</h3><ul><li><i>P</i><span>经营汇报_v1.pptx<small>生成中</small></span></li><li><i>表</i><span>经营数据核验表.xlsx<small>已完成</small></span></li><li><i>稿</i><span>演讲备注.md<small>已完成</small></span></li></ul><section class="approval"><small>需要你的确认</small><b>完成后发送给管理层群</b><p>小满不会自动外发。请核验最终稿后确认接收人和时间。</p><button>稍后确认</button><button class="primary" data-action="confirm">核验并发送</button></section></aside>
+  <div class="popover profile-popover" data-popover="profile"><header><span class="avatar">林</span><span><b>林晓</b><small>尚智</small></span></header><dl><div><dt>当前身份</dt><dd>尚智总部 · 运营管理员</dd></div><div><dt>数据范围</dt><dd>本人及授权业务域</dd></div><div><dt>企业微信</dt><dd>已绑定</dd></div><div><dt>长期记忆</dt><dd>已开启</dd></div></dl><button>切换组织或身份</button><button>个人设置与记忆</button><button>安全与登录设备</button><button>退出登录</button></div>
+  <div class="popover tool-popover" data-popover="tools"><b data-popover-title>可用工具</b><button>上传文件或图片</button><button>联网研究并展示来源</button><button>选择预置技能</button><button>打开业务插件</button><button>语音输入</button></div>
+  <div class="popover menu-popover" data-popover="conversation"><button>重命名</button><button>置顶或收藏</button><button>移动到项目</button><button>分享或导出</button><button>归档</button><button class="danger">删除</button></div>
+  <div class="toast" role="status"></div><input type="file" hidden multiple data-upload>
+  <script src="harness-home.js"></script>
+</body></html>
