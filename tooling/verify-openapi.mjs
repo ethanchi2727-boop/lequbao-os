@@ -14,8 +14,13 @@ for (const path of [
   '/api/v1/distribution-action-approvals/{approvalId}/actions/approve',
   '/api/v1/distribution-statements/{statementId}/actions/pay',
   '/api/v1/distribution-statements/{statementId}/actions/reverse',
+  '/api/v1/merchant-intake/sessions',
+  '/api/v1/merchant-intake/sessions/{sessionId}',
+  '/api/v1/merchant-intake/sessions/{sessionId}/assets',
+  '/api/v1/merchant-intake/sessions/{sessionId}/confirmations',
+  '/api/v1/merchant-intake/sessions/{sessionId}/actions/commit',
 ]) {
-  if (!specification.paths?.[path]?.post) failures.push(`implemented endpoint is missing: ${path}`);
+  if (!specification.paths?.[path]) failures.push(`implemented endpoint is missing: ${path}`);
 }
 
 const operationIds = [];

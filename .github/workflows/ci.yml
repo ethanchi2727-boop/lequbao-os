@@ -62,6 +62,8 @@ jobs:
         run: psql -v ON_ERROR_STOP=1 -f database/tests/subscription-cash-ledger.sql
       - name: Prove dual approval, payout evidence and reversal linkage
         run: psql -v ON_ERROR_STOP=1 -f database/tests/distribution-payout-and-reversal.sql
+      - name: Prove merchant intake safety and confirmation guards
+        run: psql -v ON_ERROR_STOP=1 -f database/tests/merchant-intake.sql
       - name: Prove incremental migrations from the 73-table package baseline
         run: |
           createdb lequ_v6_migration
@@ -69,6 +71,7 @@ jobs:
           psql -d lequ_v6_migration -v ON_ERROR_STOP=1 -f database/migrations/0003_revenue_distribution_invariants.sql
           psql -d lequ_v6_migration -v ON_ERROR_STOP=1 -f database/migrations/0004_subscription_cash_ledger.sql
           psql -d lequ_v6_migration -v ON_ERROR_STOP=1 -f database/migrations/0005_distribution_payout_and_reversal.sql
+          psql -d lequ_v6_migration -v ON_ERROR_STOP=1 -f database/migrations/0006_merchant_intake_commit_guards.sql
       - uses: actions/setup-node@v4
         with:
           node-version-file: .node-version
@@ -81,3 +84,7 @@ jobs:
         run: |
           pnpm --filter @lequ/contracts build
           pnpm --filter @lequ/api exec tsx integration/distribution-lock.ts
+      - name: Execute trusted AI merchant intake against PostgreSQL
+        env:
+          DATABASE_URL: postgres://postgres:postgres@127.0.0.1:5432/lequ_v6
+        run: pnpm --filter @lequ/api exec tsx integration/merchant-intake.ts

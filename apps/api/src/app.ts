@@ -16,11 +16,23 @@ import {
   type DistributionSettlementService,
 } from './distribution-settlement-service.js';
 import {
+  MerchantIntakeAuthorizationError,
+  MerchantIntakeConfirmationError,
+  MerchantIntakeConflictError,
+  MerchantIntakeStateError,
+  type MerchantIntakeService,
+} from './merchant-intake-service.js';
+import {
   IdempotencyConflictError,
   InactiveBeneficiaryError,
   RevenueRightConflictError,
   type RevenueRightService,
 } from './revenue-right-service.js';
+import {
+  SessionAuthenticationError,
+  type SessionIdentity,
+  type SessionIdentityVerifier,
+} from './session-identity.js';
 
 export interface AppOptions {
   databaseCheck?: () => Promise<void>;
@@ -28,6 +40,8 @@ export interface AppOptions {
   revenueRights?: RevenueRightService;
   distributionLocks?: DistributionLockService;
   distributionSettlements?: DistributionSettlementService;
+  merchantIntake?: MerchantIntakeService;
+  sessionIdentity?: SessionIdentityVerifier;
 }
 
 export async function buildApp(options: AppOptions = {}): Promise<FastifyInstance> {
@@ -198,7 +212,126 @@ export async function buildApp(options: AppOptions = {}): Promise<FastifyInstanc
     );
   }
 
+  app.post('/api/v1/merchant-intake/sessions', async (request, reply) => {
+    const identity = authenticatedIdentity(options, request.headers.authorization, reply);
+    if (!identity) return;
+    const idempotencyKey = headerValue(request.headers['idempotency-key']);
+    if (!idempotencyKey || idempotencyKey.length > 255)
+      return reply.code(400).send({ code: 'INVALID_REQUEST_CONTEXT' });
+    if (!options.merchantIntake) return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+    return handleIntake(reply, async () => {
+      const result = await options.merchantIntake!.createSession({
+        identity,
+        idempotencyKey,
+        traceId: request.id,
+        body: request.body,
+      });
+      return reply.code(201).send(result);
+    });
+  });
+
+  app.get<{ Params: { sessionId: string } }>(
+    '/api/v1/merchant-intake/sessions/:sessionId',
+    async (request, reply) => {
+      const identity = authenticatedIdentity(options, request.headers.authorization, reply);
+      if (!identity) return;
+      if (!options.merchantIntake) return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+      return handleIntake(reply, async () =>
+        reply.send(await options.merchantIntake!.getSession(identity, request.params.sessionId)),
+      );
+    },
+  );
+
+  app.post<{ Params: { sessionId: string } }>(
+    '/api/v1/merchant-intake/sessions/:sessionId/assets',
+    async (request, reply) => {
+      const identity = authenticatedIdentity(options, request.headers.authorization, reply);
+      if (!identity) return;
+      const idempotencyKey = headerValue(request.headers['idempotency-key']);
+      if (!idempotencyKey || idempotencyKey.length > 255)
+        return reply.code(400).send({ code: 'INVALID_REQUEST_CONTEXT' });
+      if (!options.merchantIntake) return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+      return handleIntake(reply, async () => {
+        const result = await options.merchantIntake!.addAsset({
+          identity,
+          idempotencyKey,
+          traceId: request.id,
+          body: objectBody(request.body, { sessionId: request.params.sessionId }),
+        });
+        return reply.code(202).send(result);
+      });
+    },
+  );
+
+  app.post<{ Params: { sessionId: string } }>(
+    '/api/v1/merchant-intake/sessions/:sessionId/confirmations',
+    async (request, reply) => {
+      const identity = authenticatedIdentity(options, request.headers.authorization, reply);
+      if (!identity) return;
+      const idempotencyKey = headerValue(request.headers['idempotency-key']);
+      if (!idempotencyKey || idempotencyKey.length > 255)
+        return reply.code(400).send({ code: 'INVALID_REQUEST_CONTEXT' });
+      if (!options.merchantIntake) return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+      return handleIntake(reply, async () =>
+        reply.send(
+          await options.merchantIntake!.confirm({
+            identity,
+            idempotencyKey,
+            traceId: request.id,
+            body: objectBody(request.body, { sessionId: request.params.sessionId }),
+          }),
+        ),
+      );
+    },
+  );
+
+  app.post<{ Params: { sessionId: string } }>(
+    '/api/v1/merchant-intake/sessions/:sessionId/actions/commit',
+    async (request, reply) => {
+      const identity = authenticatedIdentity(options, request.headers.authorization, reply);
+      if (!identity) return;
+      const idempotencyKey = headerValue(request.headers['idempotency-key']);
+      if (!idempotencyKey || idempotencyKey.length > 255)
+        return reply.code(400).send({ code: 'INVALID_REQUEST_CONTEXT' });
+      if (!options.merchantIntake) return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+      return handleIntake(reply, async () =>
+        reply.send(
+          await options.merchantIntake!.commit({
+            identity,
+            idempotencyKey,
+            traceId: request.id,
+            body: objectBody(request.body, { sessionId: request.params.sessionId }),
+          }),
+        ),
+      );
+    },
+  );
+
   return app;
+}
+
+function headerValue(value: string | string[] | undefined): string | undefined {
+  return Array.isArray(value) ? value[0] : value;
+}
+
+function authenticatedIdentity(
+  options: AppOptions,
+  authorization: string | undefined,
+  reply: { code(statusCode: number): { send(payload: unknown): unknown } },
+): SessionIdentity | undefined {
+  if (!options.sessionIdentity) {
+    reply.code(503).send({ code: 'AUTHENTICATION_UNAVAILABLE' });
+    return undefined;
+  }
+  try {
+    return options.sessionIdentity.verify(authorization);
+  } catch (error) {
+    if (error instanceof SessionAuthenticationError) {
+      reply.code(401).send({ code: 'INVALID_SESSION' });
+      return undefined;
+    }
+    throw error;
+  }
 }
 
 function objectBody(body: unknown, authoritative: Record<string, string>): Record<string, unknown> {
@@ -236,6 +369,28 @@ async function handleSettlement(
       return reply.code(409).send({ code: 'INVALID_DISTRIBUTION_APPROVAL' });
     if (error instanceof DistributionPaymentEvidenceError)
       return reply.code(422).send({ code: 'INVALID_PAYMENT_EVIDENCE' });
+    throw error;
+  }
+}
+
+async function handleIntake(
+  reply: { code(statusCode: number): { send(payload: unknown): unknown } },
+  work: () => Promise<unknown>,
+) {
+  try {
+    return await work();
+  } catch (error) {
+    if (error instanceof ZodError) return reply.code(400).send({ code: 'INVALID_REQUEST' });
+    if (error instanceof IdempotencyConflictError)
+      return reply.code(409).send({ code: 'IDEMPOTENCY_CONFLICT' });
+    if (error instanceof MerchantIntakeAuthorizationError)
+      return reply.code(403).send({ code: 'MERCHANT_INTAKE_PERMISSION_DENIED' });
+    if (error instanceof MerchantIntakeConflictError)
+      return reply.code(409).send({ code: 'MERCHANT_INTAKE_VERSION_CONFLICT' });
+    if (error instanceof MerchantIntakeStateError)
+      return reply.code(409).send({ code: 'INVALID_MERCHANT_INTAKE_STATE' });
+    if (error instanceof MerchantIntakeConfirmationError)
+      return reply.code(422).send({ code: 'MERCHANT_INTAKE_CONFIRMATION_REQUIRED' });
     throw error;
   }
 }

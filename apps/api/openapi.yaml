@@ -180,7 +180,122 @@ paths:
               schema: { $ref: '#/components/schemas/DistributionSettlementResult' }
         '400': { $ref: '#/components/responses/BadRequest' }
         '409': { description: 审批、原因、状态或幂等冲突 }
+  /api/v1/merchant-intake/sessions:
+    post:
+      operationId: createMerchantIntakeSession
+      summary: 使用签名会话身份开始统一商户资料对话
+      security: [{ EmployeeBearer: [] }]
+      x-required-permission: merchant.intake.create
+      parameters: [{ $ref: '#/components/parameters/IdempotencyKey' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreateMerchantIntakeSession' }
+      responses:
+        '201':
+          description: 会话已创建，操作者与租户来自签名令牌
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/MerchantIntakeSession' }
+        '401': { description: 会话令牌缺失、失效或签名错误 }
+        '403': { description: 当前角色无建档权限或已被撤销 }
+        '409': { description: 幂等冲突 }
+  /api/v1/merchant-intake/sessions/{sessionId}:
+    get:
+      operationId: getMerchantIntakeSession
+      summary: 查看带原材料来源、冲突和确认状态的建档会话
+      security: [{ EmployeeBearer: [] }]
+      x-required-permission: merchant.intake.read
+      parameters: [{ $ref: '#/components/parameters/IntakeSessionId' }]
+      responses:
+        '200':
+          description: 当前租户可见的建档会话
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/MerchantIntakeSession' }
+        '401': { description: 会话令牌无效 }
+        '403': { description: 无读取权限 }
+        '409': { description: 会话不存在或状态无效 }
+  /api/v1/merchant-intake/sessions/{sessionId}/assets:
+    post:
+      operationId: addMerchantIntakeAsset
+      summary: 登记已保存到租户对象空间的图片、文件、语音或文字材料
+      description: 二进制上传由对象存储入口完成；本接口只接受不可变对象键和 SHA-256，随后进入安全扫描与异步识别。
+      security: [{ EmployeeBearer: [] }]
+      x-required-permission: merchant.intake.write
+      parameters:
+        - $ref: '#/components/parameters/IntakeSessionId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/AddMerchantIntakeAsset' }
+      responses:
+        '202':
+          description: 原材料已留存并等待安全扫描
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/MerchantIntakeAssetReceipt' }
+        '401': { description: 会话令牌无效 }
+        '403': { description: 无写入权限 }
+        '409': { description: 状态、重复材料或幂等冲突 }
+  /api/v1/merchant-intake/sessions/{sessionId}/confirmations:
+    post:
+      operationId: confirmMerchantIntakeFields
+      summary: 由商户负责人逐类确认法律主体及其他高风险候选
+      security: [{ EmployeeBearer: [] }]
+      x-required-permission: merchant.intake.confirm
+      parameters:
+        - $ref: '#/components/parameters/IntakeSessionId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ConfirmMerchantIntakeFields' }
+      responses:
+        '200':
+          description: 确认记录与候选来源已不可变保存
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/MerchantIntakeSession' }
+        '401': { description: 会话令牌无效 }
+        '403': { description: 不是可确认的负责人或角色已撤销 }
+        '409': { description: 乐观版本或幂等冲突 }
+        '422': { description: 确认类型与候选不匹配 }
+  /api/v1/merchant-intake/sessions/{sessionId}/actions/commit:
+    post:
+      operationId: commitMerchantIntakeSession
+      summary: 将已确认且无冲突的候选提交为正式商户档案
+      security: [{ EmployeeBearer: [] }]
+      x-required-permission: merchant.intake.confirm
+      parameters:
+        - $ref: '#/components/parameters/IntakeSessionId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CommitMerchantIntakeSession' }
+      responses:
+        '200':
+          description: 正式档案、不可变提交快照、审计与 Outbox 已原子提交
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/MerchantIntakeCommitResult' }
+        '401': { description: 会话令牌无效 }
+        '403': { description: 无确认权限 }
+        '409': { description: 乐观版本、状态或幂等冲突 }
+        '422': { description: 存在未确认、冲突或缺失的正式字段 }
 components:
+  securitySchemes:
+    EmployeeBearer:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: HS256 签名会话，必须包含 tenant_id、user_id、role_codes、store_ids、session_id 和 exp。
   parameters:
     TenantId:
       name: x-tenant-id
@@ -199,6 +314,11 @@ components:
       schema: { type: string, format: uuid }
     ApprovalId:
       name: approvalId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    IntakeSessionId:
+      name: sessionId
       in: path
       required: true
       schema: { type: string, format: uuid }
@@ -355,3 +475,140 @@ components:
         entryIds:
           type: array
           items: { type: string, format: uuid }
+    CreateMerchantIntakeSession:
+      type: object
+      additionalProperties: false
+      required: [channel]
+      properties:
+        merchantProfileId:
+          oneOf: [{ type: string, format: uuid }, { type: 'null' }]
+        deliveryProjectId:
+          oneOf: [{ type: string, format: uuid }, { type: 'null' }]
+        channel: { type: string, enum: [WEB, MOBILE_H5, WECOM] }
+        initialText:
+          oneOf: [{ type: string, minLength: 1, maxLength: 4000 }, { type: 'null' }]
+    MerchantIntakeField:
+      type: object
+      additionalProperties: false
+      required: [id, fieldPath, candidateValue, confidence, decisionStatus, sourceAssetId]
+      properties:
+        id: { type: string, format: uuid }
+        fieldPath: { type: string }
+        candidateValue: {}
+        confidence:
+          oneOf: [{ type: number, minimum: 0, maximum: 1 }, { type: 'null' }]
+        decisionStatus: { type: string, enum: [PROPOSED, CONFIRMED, CORRECTED, REJECTED, CONFLICT] }
+        sourceAssetId: { type: string, format: uuid }
+    MerchantIntakeSession:
+      type: object
+      additionalProperties: false
+      required:
+        [
+          id,
+          merchantProfileId,
+          deliveryProjectId,
+          channel,
+          status,
+          fields,
+          missingItems,
+          impactTargets,
+          version,
+          createdAt,
+          updatedAt,
+        ]
+      properties:
+        id: { type: string, format: uuid }
+        merchantProfileId:
+          oneOf: [{ type: string, format: uuid }, { type: 'null' }]
+        deliveryProjectId:
+          oneOf: [{ type: string, format: uuid }, { type: 'null' }]
+        channel: { type: string, enum: [WEB, MOBILE_H5, WECOM] }
+        status:
+          {
+            type: string,
+            enum:
+              [
+                COLLECTING,
+                EXTRACTING,
+                WAITING_ANSWERS,
+                WAITING_CONFIRMATION,
+                CONFIRMED,
+                PUBLISHING,
+                COMPLETED,
+                FAILED,
+                CANCELLED,
+              ],
+          }
+        fields:
+          type: array
+          items: { $ref: '#/components/schemas/MerchantIntakeField' }
+        missingItems:
+          type: array
+          items: { type: string }
+        impactTargets:
+          type: array
+          items: { type: string, enum: [MINI_PROGRAM, GEO, AI_SERVICE, PRODUCT, GROUP_BUY] }
+        version: { type: integer, minimum: 1 }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    AddMerchantIntakeAsset:
+      type: object
+      additionalProperties: false
+      required: [assetType, sha256, objectKey]
+      properties:
+        assetType: { type: string, enum: [IMAGE, DOCUMENT, AUDIO, TEXT] }
+        sha256: { type: string, pattern: '^[a-fA-F0-9]{64}$' }
+        objectKey: { type: string, minLength: 1, maxLength: 1000 }
+        originalFilename:
+          oneOf: [{ type: string, maxLength: 255 }, { type: 'null' }]
+        mimeType:
+          oneOf: [{ type: string, maxLength: 255 }, { type: 'null' }]
+        sourceMessageId:
+          oneOf: [{ type: string, maxLength: 255 }, { type: 'null' }]
+    MerchantIntakeAssetReceipt:
+      type: object
+      additionalProperties: false
+      required: [id, sessionId, securityStatus, processingStatus]
+      properties:
+        id: { type: string, format: uuid }
+        sessionId: { type: string, format: uuid }
+        securityStatus: { type: string, const: PENDING }
+        processingStatus: { type: string, const: QUEUED }
+    ConfirmMerchantIntakeFields:
+      type: object
+      additionalProperties: false
+      required:
+        [confirmationType, confirmedPayload, candidateIds, confirmationChannel, expectedVersion]
+      properties:
+        confirmationType:
+          {
+            type: string,
+            enum: [LEGAL_SUBJECT, PAYMENT, PRICE, REFUND_RULE, PUBLIC_CONTACT, PUBLISH_IMPACT],
+          }
+        confirmedPayload: { type: object, additionalProperties: true }
+        candidateIds:
+          type: array
+          minItems: 1
+          items: { type: string, format: uuid }
+        confirmationChannel: { type: string, enum: [WEB_CLICK, MOBILE_CLICK, WECOM_SECURE_CARD] }
+        expectedVersion: { type: integer, minimum: 1 }
+    CommitMerchantIntakeSession:
+      type: object
+      additionalProperties: false
+      required: [expectedVersion]
+      properties:
+        expectedVersion: { type: integer, minimum: 1 }
+    MerchantIntakeCommitResult:
+      type: object
+      additionalProperties: false
+      required: [sessionId, merchantProfileId, status, changedFieldPaths, impactTargets]
+      properties:
+        sessionId: { type: string, format: uuid }
+        merchantProfileId: { type: string, format: uuid }
+        status: { type: string, const: CONFIRMED }
+        changedFieldPaths:
+          type: array
+          items: { type: string }
+        impactTargets:
+          type: array
+          items: { type: string, enum: [MINI_PROGRAM, GEO, AI_SERVICE, PRODUCT, GROUP_BUY] }

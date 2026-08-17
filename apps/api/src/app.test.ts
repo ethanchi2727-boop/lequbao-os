@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { FastifyInstance } from 'fastify';
 import { buildApp } from './app.js';
+import { SessionAuthenticationError } from './session-identity.js';
 
 let app: FastifyInstance | undefined;
 
@@ -172,6 +173,62 @@ describe('platform API shell', () => {
     expect(payResponse.statusCode).toBe(200);
     expect(pay).toHaveBeenCalledWith(
       expect.objectContaining({ body: expect.objectContaining({ statementId }) }),
+    );
+  });
+
+  it('requires signed identity and keeps intake session IDs authoritative from paths', async () => {
+    const identity = {
+      tenantId: '00000000-0000-4000-8000-000000000003',
+      userId: '00000000-0000-4000-8000-000000000040',
+      roleCodes: ['MERCHANT_OWNER'],
+      storeIds: [],
+      sessionId: 'signed-session',
+    };
+    const addAsset = vi.fn().mockResolvedValue({
+      id: '00000000-0000-4000-8000-000000000041',
+      sessionId: '00000000-0000-4000-8000-000000000042',
+      securityStatus: 'PENDING',
+      processingStatus: 'QUEUED',
+    });
+    app = await buildApp({
+      sessionIdentity: {
+        verify: (authorization) => {
+          if (authorization !== 'Bearer signed') throw new SessionAuthenticationError();
+          return identity;
+        },
+      },
+      merchantIntake: {
+        addAsset,
+        createSession: vi.fn(),
+        getSession: vi.fn(),
+        recordProcessingResult: vi.fn(),
+        confirm: vi.fn(),
+        commit: vi.fn(),
+      },
+    });
+    const sessionId = '00000000-0000-4000-8000-000000000042';
+    const unsigned = await app.inject({
+      method: 'POST',
+      url: `/api/v1/merchant-intake/sessions/${sessionId}/assets`,
+      headers: { 'idempotency-key': 'asset-42' },
+      payload: {},
+    });
+    expect(unsigned.statusCode).toBe(401);
+
+    const response = await app.inject({
+      method: 'POST',
+      url: `/api/v1/merchant-intake/sessions/${sessionId}/assets`,
+      headers: { authorization: 'Bearer signed', 'idempotency-key': 'asset-42' },
+      payload: {
+        sessionId: '00000000-0000-4000-8000-999999999999',
+        assetType: 'IMAGE',
+        sha256: 'a'.repeat(64),
+        objectKey: 'tenant/intake/license.jpg',
+      },
+    });
+    expect(response.statusCode).toBe(202);
+    expect(addAsset).toHaveBeenCalledWith(
+      expect.objectContaining({ identity, body: expect.objectContaining({ sessionId }) }),
     );
   });
 });
