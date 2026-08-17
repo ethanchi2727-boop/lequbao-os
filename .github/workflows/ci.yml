@@ -66,3 +66,13 @@ jobs:
           psql -d lequ_v6_migration -v ON_ERROR_STOP=1 -f docs/v6.1/source-package/05_数据API事件权限与安全/database/schema.sql
           psql -d lequ_v6_migration -v ON_ERROR_STOP=1 -f database/migrations/0003_revenue_distribution_invariants.sql
           psql -d lequ_v6_migration -v ON_ERROR_STOP=1 -f database/migrations/0004_subscription_cash_ledger.sql
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .node-version
+      - name: Enable pinned pnpm
+        run: corepack enable && corepack prepare pnpm@11.19.0 --activate
+      - run: pnpm install --frozen-lockfile
+      - name: Execute trusted statement locking against PostgreSQL
+        env:
+          DATABASE_URL: postgres://postgres:postgres@127.0.0.1:5432/lequ_v6
+        run: pnpm --filter @lequ/api exec tsx integration/distribution-lock.ts
