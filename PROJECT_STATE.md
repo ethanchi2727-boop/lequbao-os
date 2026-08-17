@@ -29,6 +29,11 @@ Rebuild the repository around the V6.1 `乐趣宝 + 乐趣生活` baseline. Pres
 - Audited the package's distribution inputs and added migration `0004`: an immutable, provider-event-idempotent subscription receipt/refund ledger. The target now has 74 tables while the vendored source remains checksum-accounted at 73.
 - Implemented transactional subscription statement locking. It derives amounts from the cash ledger and cost entries, resolves the active policy/right holders, allocates exactly, writes accruals/audit/Outbox/idempotency atomically, and never accepts client-supplied money.
 - Published a deliberately implementation-bounded OpenAPI document and added syntax/reference drift checks.
+- Corrected minor-unit residual handling so subscription rounding tails always enter the `LEQU_LIFE` allocation rather than a generic largest-remainder recipient.
+- Added migration `0005` with dual-control distribution approvals, immutable provider payout evidence, exact original-entry linkage and append-only payout/reversal ledger constraints. The audited target now has 76 tables.
+- Implemented separate request, different-person approval, payout and reversal commands. Every command has its own idempotency scope; finance membership is revalidated at approval and execution; payment requires one unique provider-reference hash per positive allocation.
+- Implemented `ACCRUAL -> PAYMENT -> REVERSAL` linkage for paid statements and `ACCRUAL -> REVERSAL` for unpaid statements, with audit and financial Outbox events committed in the same transaction.
+- Expanded the implementation-bounded OpenAPI from five to nine paths.
 
 ## Verified package facts
 
@@ -44,14 +49,17 @@ Rebuild the repository around the V6.1 `乐趣宝 + 乐趣生活` baseline. Pres
 - The frozen `70/10/20` distributable-income policy conflicts with a separate `25%` channel-distribution statement. V6.1 development uses the frozen versioned policy; production payout needs written business and finance resolution.
 - Current material mixes `商务人员` and `商务推广人员`, and mixes `生活消费` and `生活`. The external unique baseline wins pending formal amendment.
 - The target stack recommendation differs from the V5 implementation. The rebuild must use architecture decision records and must not mix package managers or duplicate long-lived app implementations.
-- Local formatting, lint, contract counts, five implemented OpenAPI paths, TypeScript, 37 unit tests and production builds pass.
+- The current API foundation has no signed session-token authentication. Settlement actor IDs are checked against active platform-finance membership but still arrive as command input; the new settlement endpoints must not be production-exposed before token-derived actor identity and permission middleware exist.
+- Failed provider attempts and callback-driven retry orchestration are not yet implemented. Successful payouts are evidence-bound and immutable, but a payment connector sandbox remains required.
+- Local formatting, lint, contract counts, nine implemented OpenAPI paths, TypeScript, 39 unit tests and production builds pass.
 - GitHub Actions run `32039457455` passed clean PostgreSQL 15 schema application and RLS isolation for commit `8da963b`.
 - GitHub Actions run `32040005789` passed the revenue-right and frozen-policy PostgreSQL constraint test for commit `cb98f7b`.
 - GitHub Actions run `32040375789` passed exact distribution reconciliation and immutable-ledger tests for commit `b88903f`.
 - GitHub Actions run `32040722489` passed the subscription cash-source ledger and incremental 73→74-table migrations for commit `8a03bda`.
 - GitHub Actions run `32041550030` passed the statement-locking PostgreSQL fixture for commit `cee60da`, including exact allocations, one statement/event/audit set and identical idempotent replay.
+- GitHub Actions run `32042648486` passed commit `b5b3612`: clean and incremental PostgreSQL 15 schemas, dual-control constraints, provider-evidenced payout, linked paid-statement reversal and identical command replays.
 - Payment sandbox, WeCom callbacks, backup recovery, migration dry-run/rollback and browser/WeChat acceptance remain unverified.
 
 ## Exact next step
 
-Implement reversal and payout state transitions, including original-entry linkage, full idempotency, dual-control approval boundaries and provider payment evidence, before moving to the AI conversation intake vertical slice.
+Implement the AI conversation intake vertical slice from asset ingestion through extraction candidates, explicit high-risk field confirmation and committed merchant profile output. Keep AI proposals non-authoritative and derive actor identity from the authentication boundary rather than request bodies.
