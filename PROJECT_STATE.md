@@ -45,6 +45,7 @@ Rebuild the repository around the V6.1 `乐趣宝 + 乐趣生活` baseline. Pres
 - Replaced the old client-supplied object-key endpoint with upload authorization and completion endpoints. The implementation-bounded OpenAPI now has seventeen paths.
 - Accepted ADR-0004 and added the only active 乐趣宝 Web runtime for PAGE-014 and PAGE-175–178. PC and mobile H5 share state and confirmation rules, with explicit loading, empty, recoverable error, denied, stopped and success presentations.
 - Connected the Web runtime to the implementation-bounded APIs in non-demo mode: signed employee session bootstrap, existing/new intake loading, text ingestion, SHA-256 upload-ticket flow, storage PUT completion, candidate rendering with HTML escaping, legal confirmation and guarded commit. Demo mode remains explicit and cannot be mistaken for a live API session.
+- Completed browser acceptance for PAGE-014 and PAGE-175–178 across 1440×900, 1024×768 and 390×844, including the six state presentations and the send, field-review, voice-toggle, retry and legally gated commit interactions. Fixed the 1024×768 composer visibility defect and recorded the evidence in `docs/acceptance/2026-08-18-merchant-intake-browser.md`.
 
 ## Verified package facts
 
@@ -60,11 +61,11 @@ Rebuild the repository around the V6.1 `乐趣宝 + 乐趣生活` baseline. Pres
 - The frozen `70/10/20` distributable-income policy conflicts with a separate `25%` channel-distribution statement. V6.1 development uses the frozen versioned policy; production payout needs written business and finance resolution.
 - Current material mixes `商务人员` and `商务推广人员`, and mixes `生活消费` and `生活`. The external unique baseline wins pending formal amendment.
 - The target stack recommendation differs from the V5 implementation. The rebuild must use architecture decision records and must not mix package managers or duplicate long-lived app implementations.
-- The current API foundation has no signed session-token authentication. Settlement actor IDs are checked against active platform-finance membership but still arrive as command input; the new settlement endpoints must not be production-exposed before token-derived actor identity and permission middleware exist.
+- The merchant-intake APIs have signed session-token authentication. Settlement actor IDs are still checked against active platform-finance membership but arrive as command input; settlement endpoints must not be production-exposed before token-derived actor identity and permission middleware cover that boundary too.
 - Failed provider attempts and callback-driven retry orchestration are not yet implemented. Successful payouts are evidence-bound and immutable, but a payment connector sandbox remains required.
 - Object storage, malware, OCR, speech and structured-extraction adapter contracts are implemented and fault-tested, but no production provider credentials were supplied; real provider calls remain an integration gate.
 - Enterprise WeCom cryptography, tenant/member binding and receipt idempotency are implemented and simulated with official message framing. A real enterprise application callback and expired-media download still require controlled credentials.
-- PAGE-014 and PAGE-175–178 are implemented and their shared state tests/build pass. The local page server responds, but the Codex in-app browser control runtime failed to initialize with a missing internal asset path, so visual browser acceptance is not yet evidence-backed.
+- PAGE-014 and PAGE-175–178 passed evidence-backed browser acceptance on PC and mobile viewports, including loading, empty, recoverable error, denied, stopped and success states. No browser console warning/error or horizontal overflow was observed.
 - Local formatting, lint, 78-table contract counts, seventeen implemented OpenAPI paths, TypeScript, 61 unit tests and all production builds pass.
 - GitHub Actions run `32039457455` passed clean PostgreSQL 15 schema application and RLS isolation for commit `8da963b`.
 - GitHub Actions run `32040005789` passed the revenue-right and frozen-policy PostgreSQL constraint test for commit `cb98f7b`.
@@ -75,8 +76,9 @@ Rebuild the repository around the V6.1 `乐趣宝 + 乐趣生活` baseline. Pres
 - GitHub Actions run `32047162811` passed commit `c8236a5`: clean and incremental 73→77-table PostgreSQL 15 schemas, intake safety/immutability guards, signed-role service flow, rejected-file blocking, conflict retention, explicit confirmation, formal commit and idempotent replays.
 - GitHub Actions run `32055811314` passed commit `fd29d49`: all code-quality gates plus clean and incremental 73→78-table PostgreSQL 15 schemas, upload-ticket immutability, object-evidence completion, signed internal WeCom/text boundaries and the trusted merchant-intake integration replay.
 - GitHub Actions run `32056896317` passed commit `8583984`: 61 unit tests, the live Web API client/build, all code-quality gates and both clean/incremental PostgreSQL contract jobs.
-- Payment sandbox, real WeCom/provider callbacks, backup recovery, migration rollback drill and browser/WeChat acceptance remain unverified.
+- GitHub Actions run `32057022551` passed commit `482ba9d`: the documented live-workbench checkpoint retained both code-quality and PostgreSQL contract gates.
+- Payment sandbox, real WeCom/provider callbacks, backup recovery, migration rollback drill and real WeChat acceptance remain unverified.
 
 ## Exact next step
 
-Run PAGE-014 and PAGE-175–178 visual acceptance once the in-app browser runtime is available, then connect controlled object-storage/scanner/OCR/ASR and enterprise WeCom sandboxes. Keep production enablement blocked until provider, backup/restore and rollback evidence is attached.
+Connect controlled object-storage/scanner/OCR/ASR and enterprise WeCom sandboxes, then run backup/restore and migration rollback drills. Keep production enablement blocked until provider, callback, backup/restore and rollback evidence is attached.
