@@ -1,0 +1,111 @@
+name: V6.1 controlled environment preflight
+
+on:
+  workflow_dispatch:
+    inputs:
+      candidate_commit:
+        description: Immutable 40-character candidate commit SHA
+        required: true
+        type: string
+      stage:
+        description: Controlled stage to inspect
+        required: true
+        default: all
+        type: choice
+        options: [all, "47", "48", "49"]
+
+permissions:
+  contents: read
+
+jobs:
+  preflight:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: controlled-preproduction
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      AUTH_JWT_SECRET: ${{ secrets.AUTH_JWT_SECRET }}
+      TRUSTED_PROXY_CIDRS: ${{ vars.TRUSTED_PROXY_CIDRS }}
+      IDENTITY_PROVIDER_GATEWAY_URL: ${{ vars.IDENTITY_PROVIDER_GATEWAY_URL }}
+      IDENTITY_PROVIDER_GATEWAY_TOKEN: ${{ secrets.IDENTITY_PROVIDER_GATEWAY_TOKEN }}
+      OBJECT_STORE_GATEWAY_URL: ${{ vars.OBJECT_STORE_GATEWAY_URL }}
+      OBJECT_STORE_SIGNING_SECRET: ${{ secrets.OBJECT_STORE_SIGNING_SECRET }}
+      WECOM_CONFIG_GATEWAY_URL: ${{ vars.WECOM_CONFIG_GATEWAY_URL }}
+      WECOM_CONFIG_GATEWAY_TOKEN: ${{ secrets.WECOM_CONFIG_GATEWAY_TOKEN }}
+      WECOM_NOTIFICATION_GATEWAY_URL: ${{ vars.WECOM_NOTIFICATION_GATEWAY_URL }}
+      WECOM_NOTIFICATION_GATEWAY_TOKEN: ${{ secrets.WECOM_NOTIFICATION_GATEWAY_TOKEN }}
+      PRIVACY_DELETION_GATEWAY_URL: ${{ vars.PRIVACY_DELETION_GATEWAY_URL }}
+      PRIVACY_DELETION_GATEWAY_TOKEN: ${{ secrets.PRIVACY_DELETION_GATEWAY_TOKEN }}
+      PRIVACY_EXPORT_GATEWAY_URL: ${{ vars.PRIVACY_EXPORT_GATEWAY_URL }}
+      PRIVACY_EXPORT_GATEWAY_TOKEN: ${{ secrets.PRIVACY_EXPORT_GATEWAY_TOKEN }}
+      COMMERCE_PROVIDER_GATEWAY_URL: ${{ vars.COMMERCE_PROVIDER_GATEWAY_URL }}
+      COMMERCE_PROVIDER_GATEWAY_TOKEN: ${{ secrets.COMMERCE_PROVIDER_GATEWAY_TOKEN }}
+      COMMERCE_CALLBACK_SECRET: ${{ secrets.COMMERCE_CALLBACK_SECRET }}
+      VERIFICATION_TOKEN_SECRET: ${{ secrets.VERIFICATION_TOKEN_SECRET }}
+      MINI_PROGRAM_GATEWAY_URL: ${{ vars.MINI_PROGRAM_GATEWAY_URL }}
+      MINI_PROGRAM_GATEWAY_TOKEN: ${{ secrets.MINI_PROGRAM_GATEWAY_TOKEN }}
+      MINI_PROGRAM_BUILDER_URL: ${{ vars.MINI_PROGRAM_BUILDER_URL }}
+      MINI_PROGRAM_BUILDER_TOKEN: ${{ secrets.MINI_PROGRAM_BUILDER_TOKEN }}
+      MINI_PROGRAM_CALLBACK_TOKEN: ${{ secrets.MINI_PROGRAM_CALLBACK_TOKEN }}
+      CONTROLLED_BASE_URL: ${{ vars.CONTROLLED_BASE_URL }}
+      CONSUMER_AUTH_JWT_SECRET: ${{ secrets.CONSUMER_AUTH_JWT_SECRET }}
+      LIFE_CONSUMER_AUTH_JWT_SECRET: ${{ secrets.LIFE_CONSUMER_AUTH_JWT_SECRET }}
+      PLATFORM_ADDRESS_ENCRYPTION_KEY: ${{ secrets.PLATFORM_ADDRESS_ENCRYPTION_KEY }}
+      SALES_IDENTITY_HASH_SECRET: ${{ secrets.SALES_IDENTITY_HASH_SECRET }}
+      INTERNAL_API_URL: ${{ vars.INTERNAL_API_URL }}
+      INTERNAL_WORKER_TOKEN: ${{ secrets.INTERNAL_WORKER_TOKEN }}
+      OUTBOX_EVENT_GATEWAY_URL: ${{ vars.OUTBOX_EVENT_GATEWAY_URL }}
+      OUTBOX_EVENT_GATEWAY_TOKEN: ${{ secrets.OUTBOX_EVENT_GATEWAY_TOKEN }}
+      GEO_PLUGIN_GATEWAY_URL: ${{ vars.GEO_PLUGIN_GATEWAY_URL }}
+      GEO_PLUGIN_GATEWAY_TOKEN: ${{ secrets.GEO_PLUGIN_GATEWAY_TOKEN }}
+      CUSTOMER_SERVICE_KNOWLEDGE_URL: ${{ vars.CUSTOMER_SERVICE_KNOWLEDGE_URL }}
+      CUSTOMER_SERVICE_KNOWLEDGE_TOKEN: ${{ secrets.CUSTOMER_SERVICE_KNOWLEDGE_TOKEN }}
+      CUSTOMER_SERVICE_MODEL_URL: ${{ vars.CUSTOMER_SERVICE_MODEL_URL }}
+      CUSTOMER_SERVICE_MODEL_TOKEN: ${{ secrets.CUSTOMER_SERVICE_MODEL_TOKEN }}
+      CUSTOMER_SERVICE_BUSINESS_TOOLS_URL: ${{ vars.CUSTOMER_SERVICE_BUSINESS_TOOLS_URL }}
+      CUSTOMER_SERVICE_BUSINESS_TOOLS_TOKEN: ${{ secrets.CUSTOMER_SERVICE_BUSINESS_TOOLS_TOKEN }}
+      PERFORMANCE_BASE_URL: ${{ vars.PERFORMANCE_BASE_URL }}
+      PERFORMANCE_DATABASE_URL: ${{ secrets.PERFORMANCE_DATABASE_URL }}
+      PERFORMANCE_CONVERSATION_PATH: ${{ vars.PERFORMANCE_CONVERSATION_PATH }}
+      PERFORMANCE_CONVERSATION_BODY_JSON: ${{ secrets.PERFORMANCE_CONVERSATION_BODY_JSON }}
+      PERFORMANCE_WRITE_PATH: ${{ vars.PERFORMANCE_WRITE_PATH }}
+      PERFORMANCE_WRITE_BODY_JSON: ${{ secrets.PERFORMANCE_WRITE_BODY_JSON }}
+      PERFORMANCE_REPORT_PATH: ${{ vars.PERFORMANCE_REPORT_PATH }}
+      PERFORMANCE_ENVIRONMENT: ${{ vars.PERFORMANCE_ENVIRONMENT }}
+      PERFORMANCE_READ_BEARER_TOKEN: ${{ secrets.PERFORMANCE_READ_BEARER_TOKEN }}
+      PERFORMANCE_MESSAGE_BEARER_TOKEN: ${{ secrets.PERFORMANCE_MESSAGE_BEARER_TOKEN }}
+      PERFORMANCE_WRITE_BEARER_TOKEN: ${{ secrets.PERFORMANCE_WRITE_BEARER_TOKEN }}
+    steps:
+      - name: Validate immutable candidate input
+        env:
+          CANDIDATE_COMMIT: ${{ inputs.candidate_commit }}
+        run: |
+          if ! printf '%s' "$CANDIDATE_COMMIT" | grep --quiet --extended-regexp '^[0-9a-f]{40}$'; then
+            echo 'candidate_commit must be an immutable lowercase 40-character SHA'
+            exit 1
+          fi
+      - name: Checkout trusted preflight from the default branch
+        uses: actions/checkout@v6
+        with:
+          ref: main
+          path: trusted
+          persist-credentials: false
+      - name: Resolve candidate without executing candidate code
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ inputs.candidate_commit }}
+          path: candidate
+          persist-credentials: false
+      - name: Verify resolved candidate
+        env:
+          CANDIDATE_COMMIT: ${{ inputs.candidate_commit }}
+        run: test "$(git -C candidate rev-parse HEAD)" = "$CANDIDATE_COMMIT"
+      - name: Inspect stage 47 configuration
+        if: ${{ inputs.stage == 'all' || inputs.stage == '47' }}
+        run: node trusted/tooling/controlled-environment-preflight.mjs --stage=47
+      - name: Inspect stage 48 configuration
+        if: ${{ inputs.stage == 'all' || inputs.stage == '48' }}
+        run: node trusted/tooling/controlled-environment-preflight.mjs --stage=48
+      - name: Inspect stage 49 configuration
+        if: ${{ inputs.stage == 'all' || inputs.stage == '49' }}
+        run: node trusted/tooling/controlled-environment-preflight.mjs --stage=49
