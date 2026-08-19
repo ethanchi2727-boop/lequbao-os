@@ -28,6 +28,7 @@ describe('cloud development workspace', () => {
 
     const bootstrap = await read('.devcontainer/bootstrap.sh');
     expect(bootstrap).toContain('pnpm install --frozen-lockfile');
+    expect(bootstrap).toContain('pnpm --filter @lequ/contracts build');
     expect(bootstrap).toContain('--file=database/schema.sql');
     expect(bootstrap).toContain('--set=development_seed=enabled');
     expect(bootstrap).toContain('--file=database/development-seed-verify.sql');

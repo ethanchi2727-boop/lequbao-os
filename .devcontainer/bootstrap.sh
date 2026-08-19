@@ -6,6 +6,7 @@ cd "$root"
 
 echo "Installing the frozen workspace dependencies"
 pnpm install --frozen-lockfile
+pnpm --filter @lequ/contracts build
 
 echo "Waiting for PostgreSQL 15"
 for attempt in $(seq 1 30); do
