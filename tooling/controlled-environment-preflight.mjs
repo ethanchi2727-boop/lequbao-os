@@ -60,6 +60,9 @@ export const controlledStageRequirements = {
     'PERFORMANCE_READ_BEARER_TOKEN',
     'PERFORMANCE_MESSAGE_BEARER_TOKEN',
     'PERFORMANCE_WRITE_BEARER_TOKEN',
+    'PERFORMANCE_CANDIDATE_IMAGE_MANIFEST_JSON',
+    'PERFORMANCE_DEPLOYED_IMAGES_JSON',
+    'RELEASE_COMMIT',
   ],
   50: ['RELEASE_COMMIT', 'CONTROLLED_RESULTS_FILE'],
 };
@@ -112,6 +115,15 @@ function invalidValue(environment, name) {
   )
     return 'invalid-environment';
   if (name.endsWith('_BODY_JSON')) {
+    try {
+      const parsed = JSON.parse(value);
+      if (!parsed || Array.isArray(parsed) || typeof parsed !== 'object')
+        return 'invalid-json-object';
+    } catch {
+      return 'invalid-json-object';
+    }
+  }
+  if (name.endsWith('_IMAGE_MANIFEST_JSON') || name.endsWith('_DEPLOYED_IMAGES_JSON')) {
     try {
       const parsed = JSON.parse(value);
       if (!parsed || Array.isArray(parsed) || typeof parsed !== 'object')

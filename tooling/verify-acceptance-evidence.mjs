@@ -91,6 +91,11 @@ const expectedEnvironmentGates = new Set([
   'PERFORMANCE',
   'IDENTITY_OBJECT_PRIVACY',
 ]);
+const mandatoryControlledEvidence = new Map([
+  ['PAYMENT_PROVIDER_SANDBOX', ['financial-policy-approvals.json']],
+  ['PERFORMANCE_CORE_AND_MESSAGES', ['candidate-image-digests.json']],
+  ['IDENTITY_SECRETS_PRIVACY_ONCALL', ['legal-document-release.json']],
+]);
 if (controlledPlan.version !== 1 || !Array.isArray(controlledPlan.suites)) {
   failures.push('controlled acceptance plan is invalid');
 } else {
@@ -114,6 +119,9 @@ if (controlledPlan.version !== 1 || !Array.isArray(controlledPlan.suites)) {
     for (const field of ['requiredEvidence', 'passCriteria'])
       if (!Array.isArray(suite[field]) || suite[field].length === 0)
         failures.push(`${suite.code} is missing ${field}`);
+    for (const requiredFile of mandatoryControlledEvidence.get(suite.code) ?? [])
+      if (!suite.requiredEvidence?.includes(requiredFile))
+        failures.push(`${suite.code} must require ${requiredFile}`);
     if (
       Array.isArray(suite.requiredEvidence) &&
       suite.requiredEvidence.some((file) => !/^[a-z0-9][a-z0-9._-]+$/u.test(file))

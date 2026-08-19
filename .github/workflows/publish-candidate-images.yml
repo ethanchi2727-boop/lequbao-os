@@ -1,0 +1,138 @@
+name: V6.1 publish candidate images
+
+on:
+  workflow_dispatch:
+    inputs:
+      candidate_commit:
+        description: Immutable 40-character candidate commit SHA
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  checks: read
+  packages: write
+
+concurrency:
+  group: v6-candidate-images-${{ inputs.candidate_commit }}
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    if: ${{ github.ref == 'refs/heads/main' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    environment: controlled-preproduction
+    steps:
+      - name: Validate immutable candidate input
+        env:
+          CANDIDATE_COMMIT: ${{ inputs.candidate_commit }}
+        run: |
+          if ! printf '%s' "$CANDIDATE_COMMIT" | grep --quiet --extended-regexp '^[0-9a-f]{40}$'; then
+            echo 'candidate_commit must be an immutable lowercase 40-character SHA'
+            exit 1
+          fi
+      - name: Checkout trusted release policy from main
+        uses: actions/checkout@v6
+        with:
+          ref: main
+          path: trusted
+          persist-credentials: false
+      - name: Resolve candidate source
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ inputs.candidate_commit }}
+          path: candidate
+          persist-credentials: false
+      - name: Verify resolved candidate and required checks
+        env:
+          CANDIDATE_COMMIT: ${{ inputs.candidate_commit }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          test "$(git -C candidate rev-parse HEAD)" = "$CANDIDATE_COMMIT"
+          checks="$(gh api "repos/${GITHUB_REPOSITORY}/commits/${CANDIDATE_COMMIT}/check-runs?per_page=100")"
+          for required in code-quality postgres-contract container-build; do
+            if ! jq --exit-status --arg required "$required" \
+              '[.check_runs[] | select(.name == $required and .conclusion == "success")] | length > 0' \
+              <<<"$checks" >/dev/null; then
+              echo "Required successful candidate check is missing: $required"
+              exit 1
+            fi
+          done
+      - name: Prepare unique image coordinates
+        env:
+          CANDIDATE_COMMIT: ${{ inputs.candidate_commit }}
+        run: |
+          owner="$(printf '%s' "$GITHUB_REPOSITORY_OWNER" | tr '[:upper:]' '[:lower:]')"
+          printf 'IMAGE_PREFIX=ghcr.io/%s/lequbao-v6\n' "$owner" >>"$GITHUB_ENV"
+          printf 'IMAGE_TAG=%s-%s-%s\n' "$CANDIDATE_COMMIT" "$GITHUB_RUN_ID" "$GITHUB_RUN_ATTEMPT" >>"$GITHUB_ENV"
+      - uses: docker/setup-buildx-action@v4
+      - uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ github.token }}
+      - name: Publish API image
+        id: api
+        uses: docker/build-push-action@v7
+        with:
+          context: candidate
+          file: candidate/deploy/Dockerfile
+          target: api
+          push: true
+          tags: ${{ env.IMAGE_PREFIX }}-api:${{ env.IMAGE_TAG }}
+          labels: org.opencontainers.image.revision=${{ inputs.candidate_commit }}
+          provenance: mode=max
+          sbom: true
+      - name: Publish Worker image
+        id: worker
+        uses: docker/build-push-action@v7
+        with:
+          context: candidate
+          file: candidate/deploy/Dockerfile
+          target: worker
+          push: true
+          tags: ${{ env.IMAGE_PREFIX }}-worker:${{ env.IMAGE_TAG }}
+          labels: org.opencontainers.image.revision=${{ inputs.candidate_commit }}
+          provenance: mode=max
+          sbom: true
+      - name: Publish Web image
+        id: web
+        uses: docker/build-push-action@v7
+        with:
+          context: candidate
+          file: candidate/deploy/Dockerfile
+          target: web
+          push: true
+          tags: ${{ env.IMAGE_PREFIX }}-web:${{ env.IMAGE_TAG }}
+          labels: org.opencontainers.image.revision=${{ inputs.candidate_commit }}
+          provenance: mode=max
+          sbom: true
+      - name: Record immutable image digests
+        env:
+          CANDIDATE_COMMIT: ${{ inputs.candidate_commit }}
+          API_DIGEST: ${{ steps.api.outputs.digest }}
+          WORKER_DIGEST: ${{ steps.worker.outputs.digest }}
+          WEB_DIGEST: ${{ steps.web.outputs.digest }}
+        run: |
+          for digest in "$API_DIGEST" "$WORKER_DIGEST" "$WEB_DIGEST"; do
+            if ! printf '%s' "$digest" | grep --quiet --extended-regexp '^sha256:[0-9a-f]{64}$'; then
+              echo 'Build did not return an immutable image digest'
+              exit 1
+            fi
+          done
+          jq --null-input \
+            --arg releaseCommit "$CANDIDATE_COMMIT" \
+            --arg workflowRunId "$GITHUB_RUN_ID" \
+            --arg api "${IMAGE_PREFIX}-api@${API_DIGEST}" \
+            --arg worker "${IMAGE_PREFIX}-worker@${WORKER_DIGEST}" \
+            --arg web "${IMAGE_PREFIX}-web@${WEB_DIGEST}" \
+            '{version:1,releaseCommit:$releaseCommit,workflowRunId:$workflowRunId,images:{api:$api,worker:$worker,web:$web}}' \
+            >candidate-image-digests.json
+      - name: Retain candidate image manifest
+        uses: actions/upload-artifact@v7
+        with:
+          name: candidate-images-${{ inputs.candidate_commit }}-${{ github.run_id }}
+          path: candidate-image-digests.json
+          if-no-files-found: error
+          retention-days: 90

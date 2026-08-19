@@ -9,6 +9,9 @@ const required = [
   'PERFORMANCE_WRITE_BODY_JSON',
   'PERFORMANCE_REPORT_PATH',
   'PERFORMANCE_ENVIRONMENT',
+  'PERFORMANCE_CANDIDATE_IMAGE_MANIFEST_JSON',
+  'PERFORMANCE_DEPLOYED_IMAGES_JSON',
+  'RELEASE_COMMIT',
 ];
 
 const parseObject = (name, value) => {
@@ -25,6 +28,41 @@ const parseObject = (name, value) => {
     throw new Error(`${name} contains secret-shaped fields`);
   return parsed;
 };
+
+const imageReferencePattern = /^ghcr\.io\/[a-z0-9._/-]+@sha256:[a-f0-9]{64}$/u;
+
+const exactKeys = (value, expected) => {
+  const keys = Object.keys(value).sort();
+  return keys.length === expected.length && expected.every((key, index) => keys[index] === key);
+};
+
+function parseImageBinding(env) {
+  if (!/^[a-f0-9]{40}$/u.test(env.RELEASE_COMMIT))
+    throw new Error('RELEASE_COMMIT must be an exact lowercase 40-character SHA');
+  const manifest = parseObject(
+    'PERFORMANCE_CANDIDATE_IMAGE_MANIFEST_JSON',
+    env.PERFORMANCE_CANDIDATE_IMAGE_MANIFEST_JSON,
+  );
+  const deployed = parseObject(
+    'PERFORMANCE_DEPLOYED_IMAGES_JSON',
+    env.PERFORMANCE_DEPLOYED_IMAGES_JSON,
+  );
+  if (!exactKeys(manifest, ['images', 'releaseCommit', 'version', 'workflowRunId']))
+    throw new Error('candidate image manifest fields are invalid');
+  if (manifest.version !== 1 || manifest.releaseCommit !== env.RELEASE_COMMIT)
+    throw new Error('candidate image manifest is not bound to RELEASE_COMMIT');
+  if (!exactKeys(manifest.images ?? {}, ['api', 'web', 'worker']))
+    throw new Error('candidate image manifest must contain API Worker and Web');
+  if (!exactKeys(deployed, ['api', 'web', 'worker']))
+    throw new Error('deployed images must contain API Worker and Web');
+  for (const target of ['api', 'worker', 'web']) {
+    if (!imageReferencePattern.test(manifest.images[target] ?? ''))
+      throw new Error(`candidate ${target} image must use an immutable GHCR digest`);
+    if (deployed[target] !== manifest.images[target])
+      throw new Error(`deployed ${target} image does not match the candidate digest`);
+  }
+  return { releaseCommit: env.RELEASE_COMMIT, images: manifest.images };
+}
 
 export function validatePerformanceConfig(env) {
   const sharedToken = env.PERFORMANCE_BEARER_TOKEN;
@@ -63,6 +101,7 @@ export function validatePerformanceConfig(env) {
   const reportPath = path.resolve(env.PERFORMANCE_REPORT_PATH);
   if (path.extname(reportPath).toLowerCase() !== '.json')
     throw new Error('PERFORMANCE_REPORT_PATH must end in .json');
+  const imageBinding = parseImageBinding(env);
   return {
     base,
     tokens: {
@@ -75,6 +114,7 @@ export function validatePerformanceConfig(env) {
     concurrency,
     requests,
     reportPath,
+    ...imageBinding,
     conversationPath: apiPath('PERFORMANCE_CONVERSATION_PATH'),
     conversationBody: parseObject(
       'PERFORMANCE_CONVERSATION_BODY_JSON',

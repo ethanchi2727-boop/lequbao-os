@@ -9,6 +9,7 @@ This runbook produces the required evidence for `PERF-001` and `PERF-002`. It mu
 - Use separate least-privilege bearer identities for employee context reads, consumer message writes and the bounded core-write fixture. A shared identity is allowed only when the selected endpoints genuinely accept the same identity boundary. Use a database identity that can read PostgreSQL statistics, `outbox_events` and the acknowledged `conversation_messages` rows but cannot mutate schema or business data.
 - Choose a new report path for every run. The harness refuses to overwrite an existing report.
 - Record release commit, deployment identifier, instance/database topology and fixture volume alongside the generated JSON artifact.
+- Copy the protected publisher's `candidate-image-digests.json` into the suite directory and prove the running API, Worker and Web use those exact digest references. A matching Git SHA in an image label is insufficient if the deployed digest differs.
 
 ## Required runtime configuration
 
@@ -25,6 +26,9 @@ Set these only in the controlled runner's secret/environment store:
 - `PERFORMANCE_CONVERSATION_BODY_JSON`: nonsensitive body fields such as `{"messageType":"TEXT"}`. The harness supplies a unique content marker.
 - `PERFORMANCE_WRITE_PATH` and `PERFORMANCE_WRITE_BODY_JSON`: bounded core-write fixture and its nonsensitive, valid request body.
 - `PERFORMANCE_REPORT_PATH`: a new `.json` artifact path outside the source tree when practical.
+- `RELEASE_COMMIT`: the exact 40-character candidate SHA.
+- `PERFORMANCE_CANDIDATE_IMAGE_MANIFEST_JSON`: unmodified JSON from the protected publisher's digest manifest.
+- `PERFORMANCE_DEPLOYED_IMAGES_JSON`: deployment-platform snapshot containing exactly the running `api`, `worker` and `web` digest references. Each must exactly equal the candidate manifest; tags and image labels are rejected as substitutes.
 - Optional `PERFORMANCE_CONCURRENCY` and `PERFORMANCE_REQUESTS`: defaults are 20 and 200 per scenario; record any higher production-shaped values in the release record.
 
 Run `pnpm performance:gate` from the repository root. Preserve the command exit code, generated JSON and deployment/monitoring snapshots in the release evidence store.

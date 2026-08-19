@@ -35,7 +35,7 @@ export async function verifyControlledResults({ plan, planSource, resultsFile, r
   }
   if (!results || Array.isArray(results) || typeof results !== 'object')
     return ['CONTROLLED_RESULTS_FILE must contain a JSON object'];
-  if (results.version !== 1) failures.push('controlled results version must be 1');
+  if (results.version !== 2) failures.push('controlled results version must be 2');
   const extraResultKeys = unexpectedKeys(results, [
     'version',
     'releaseCommit',
@@ -76,10 +76,13 @@ export async function verifyControlledResults({ plan, planSource, resultsFile, r
       'code',
       'result',
       'environmentGate',
+      'executedById',
       'executedByRole',
+      'reviewedById',
       'reviewedByRole',
       'startedAt',
       'completedAt',
+      'reviewedAt',
       'evidence',
     ]);
     if (extraSuiteKeys.length)
@@ -89,6 +92,13 @@ export async function verifyControlledResults({ plan, planSource, resultsFile, r
       failures.push(`${result.code} environment gate does not match the plan`);
     if (result.executedByRole !== suite.executorRole)
       failures.push(`${result.code} executor role does not match the plan`);
+    const subjectPattern = /^(?:github|org|workforce):[a-zA-Z0-9._-]{1,128}$/u;
+    if (!subjectPattern.test(result.executedById ?? ''))
+      failures.push(`${result.code} executor identity must be an approved opaque subject`);
+    if (!subjectPattern.test(result.reviewedById ?? ''))
+      failures.push(`${result.code} reviewer identity must be an approved opaque subject`);
+    if (result.executedById === result.reviewedById)
+      failures.push(`${result.code} requires a different accountable reviewer`);
     if (
       typeof result.reviewedByRole !== 'string' ||
       !result.reviewedByRole.trim() ||
@@ -97,6 +107,7 @@ export async function verifyControlledResults({ plan, planSource, resultsFile, r
       failures.push(`${result.code} requires an independent reviewer role`);
     const startedAt = safeTime(result.startedAt);
     const completedAt = safeTime(result.completedAt);
+    const reviewedAt = safeTime(result.reviewedAt);
     if (startedAt === undefined || completedAt === undefined || completedAt < startedAt)
       failures.push(`${result.code} has invalid execution timestamps`);
     else {
@@ -105,6 +116,14 @@ export async function verifyControlledResults({ plan, planSource, resultsFile, r
       if (generatedAt !== undefined && completedAt > generatedAt)
         failures.push(`${result.code} completed after the controlled results were generated`);
     }
+    if (
+      reviewedAt === undefined ||
+      completedAt === undefined ||
+      reviewedAt < completedAt ||
+      reviewedAt > Date.now() + 5 * 60_000 ||
+      (generatedAt !== undefined && reviewedAt > generatedAt)
+    )
+      failures.push(`${result.code} has invalid independent-review timestamp`);
     if (!Array.isArray(result.evidence)) {
       failures.push(`${result.code} evidence list is missing`);
       continue;

@@ -5,6 +5,7 @@ const [
   dockerignore,
   workflow,
   controlledPreflight,
+  candidatePublisher,
   webServer,
   runbook,
   apiRuntime,
@@ -15,6 +16,7 @@ const [
   readFile('.dockerignore', 'utf8'),
   readFile('.github/workflows/ci.yml', 'utf8'),
   readFile('.github/workflows/controlled-preflight.yml', 'utf8'),
+  readFile('.github/workflows/publish-candidate-images.yml', 'utf8'),
   readFile('apps/workbench-web/production-server.mjs', 'utf8'),
   readFile('docs/runbooks/DEPLOYMENT.md', 'utf8'),
   readFile('apps/api/src/runtime-configuration.ts', 'utf8'),
@@ -61,6 +63,29 @@ for (const marker of [
 ])
   if (!controlledPreflight.includes(marker))
     failures.push(`Controlled preflight trust-boundary marker missing: ${marker}`);
+for (const marker of [
+  "if: ${{ github.ref == 'refs/heads/main' }}",
+  'environment: controlled-preproduction',
+  'checks: read',
+  'packages: write',
+  'persist-credentials: false',
+  'Verify resolved candidate and required checks',
+  'code-quality postgres-contract container-build',
+  'docker/setup-buildx-action@v4',
+  'docker/login-action@v4',
+  'docker/build-push-action@v7',
+  'target: api',
+  'target: worker',
+  'target: web',
+  'provenance: mode=max',
+  'sbom: true',
+  'candidate-image-digests.json',
+  'actions/upload-artifact@v7',
+])
+  if (!candidatePublisher.includes(marker))
+    failures.push(`Candidate image publisher marker missing: ${marker}`);
+if (/^\s*tags:\s*.*(?:^|[:/-])latest(?:\s|$)/imu.test(candidatePublisher))
+  failures.push('Candidate image publisher must not create a mutable latest tag');
 for (const [name, source] of [
   ['API', apiRuntime],
   ['Worker', workerRuntime],
@@ -97,6 +122,6 @@ if (failures.length) {
   process.exitCode = 1;
 } else {
   console.log(
-    'Deployment gate verified API, Worker and Web non-root candidate targets and CI smoke.',
+    'Deployment gate verified non-root images, CI smoke and protected digest-bound candidate publication.',
   );
 }

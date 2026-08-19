@@ -428,8 +428,13 @@
       "title": "OpenAPI containers and CI release candidate",
       "status": "local-complete",
       "acceptancePrefixes": ["API"],
-      "evidence": ["apps/api/openapi.yaml", "deploy/Dockerfile", ".github/workflows/ci.yml"],
-      "selfCheck": "193 paths three non-root images and fail-closed production config"
+      "evidence": [
+        "apps/api/openapi.yaml",
+        "deploy/Dockerfile",
+        ".github/workflows/ci.yml",
+        ".github/workflows/publish-candidate-images.yml"
+      ],
+      "selfCheck": "193 paths three non-root images fail-closed production config and protected digest publication"
     },
 
     {
@@ -468,7 +473,9 @@
       "evidence": [
         "docs/release/stage-10-release-candidate-evidence.md",
         "docs/release/CONTROLLED_ENVIRONMENT_UNBLOCK.md",
-        "tooling/controlled-environment-preflight.mjs"
+        "tooling/controlled-environment-preflight.mjs",
+        "docs/runbooks/FINANCIAL_POLICY_APPROVAL.md",
+        "docs/runbooks/LEGAL_COMPLIANCE_RELEASE.md"
       ],
       "selfCheck": "29 controlled cases seven external gates and zero stop-release conditions"
     }

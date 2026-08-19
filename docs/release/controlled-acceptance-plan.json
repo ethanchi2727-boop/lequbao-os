@@ -92,13 +92,15 @@
         "provider-request-redacted.json",
         "provider-callback-redacted.json",
         "merchant-account-reconciliation.json",
-        "refund-unknown-recovery.json"
+        "refund-unknown-recovery.json",
+        "financial-policy-approvals.json"
       ],
       "passCriteria": [
         "amount comes from the server order",
         "provider merchant account matches the confirmed merchant account",
         "only verified callback evidence changes payment success",
-        "unknown payment or refund results are queried before retry and converge once"
+        "unknown payment or refund results are queried before retry and converge once",
+        "business and finance owners approve payment responsibility and both frozen financial-policy gates"
       ]
     },
     {
@@ -172,9 +174,11 @@
       "requiredEvidence": [
         "performance-report.json",
         "deployment-topology.json",
-        "monitoring-snapshot.json"
+        "monitoring-snapshot.json",
+        "candidate-image-digests.json"
       ],
       "passCriteria": [
+        "deployed API Worker and Web digests match the protected candidate image manifest",
         "core read P95 is at most 500 ms",
         "core write P95 is at most 800 ms",
         "customer message persistence P95 is at most 500 ms with no missing acknowledged ID"
@@ -217,13 +221,15 @@
         "object-retention.json",
         "privacy-export-delete.json",
         "alert-delivery.json",
-        "oncall-acknowledgement.json"
+        "oncall-acknowledgement.json",
+        "legal-document-release.json"
       ],
       "passCriteria": [
         "identity revocation and MFA boundaries pass",
         "secrets and objects use production access policies without plaintext evidence",
         "privacy export and deletion reach every target",
-        "a real on-call recipient receives and acknowledges P0 and P1 alerts"
+        "a real on-call recipient receives and acknowledges P0 and P1 alerts",
+        "approved user agreement privacy policy and required compliance texts are version-bound and live on every applicable surface"
       ]
     }
   ]

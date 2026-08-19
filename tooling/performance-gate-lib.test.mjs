@@ -5,6 +5,14 @@ import {
   validatePerformanceConfig,
 } from './performance-gate-lib.mjs';
 
+const digest = (character) => `sha256:${character.repeat(64)}`;
+const images = {
+  api: `ghcr.io/lequ/lequbao-v6-api@${digest('a')}`,
+  worker: `ghcr.io/lequ/lequbao-v6-worker@${digest('b')}`,
+  web: `ghcr.io/lequ/lequbao-v6-web@${digest('c')}`,
+};
+const releaseCommit = 'd'.repeat(40);
+
 const validEnvironment = {
   PERFORMANCE_BASE_URL: 'https://staging.example.test',
   PERFORMANCE_READ_BEARER_TOKEN: 'employee-read-credential',
@@ -17,6 +25,14 @@ const validEnvironment = {
   PERFORMANCE_WRITE_BODY_JSON: '{"expectedVersion":1}',
   PERFORMANCE_REPORT_PATH: 'artifacts/performance/report.json',
   PERFORMANCE_ENVIRONMENT: 'controlled-preproduction',
+  PERFORMANCE_CANDIDATE_IMAGE_MANIFEST_JSON: JSON.stringify({
+    version: 1,
+    releaseCommit,
+    workflowRunId: '12345',
+    images,
+  }),
+  PERFORMANCE_DEPLOYED_IMAGES_JSON: JSON.stringify(images),
+  RELEASE_COMMIT: releaseCommit,
 };
 
 describe('controlled performance gate', () => {
@@ -26,6 +42,8 @@ describe('controlled performance gate', () => {
       concurrency: 20,
       requests: 200,
       environment: 'controlled-preproduction',
+      releaseCommit,
+      images,
       tokens: {
         read: 'employee-read-credential',
         message: 'consumer-message-credential',
@@ -65,6 +83,21 @@ describe('controlled performance gate', () => {
         PERFORMANCE_WRITE_BODY_JSON: '{"providerToken":"do-not-store"}',
       }),
     ).toThrow('secret-shaped');
+  });
+
+  it('rejects a mutable candidate or any deployed image digest mismatch', () => {
+    expect(() =>
+      validatePerformanceConfig({ ...validEnvironment, RELEASE_COMMIT: 'main' }),
+    ).toThrow(/RELEASE_COMMIT/u);
+    expect(() =>
+      validatePerformanceConfig({
+        ...validEnvironment,
+        PERFORMANCE_DEPLOYED_IMAGES_JSON: JSON.stringify({
+          ...images,
+          worker: `ghcr.io/lequ/lequbao-v6-worker@${digest('e')}`,
+        }),
+      }),
+    ).toThrow(/deployed worker image/u);
   });
 
   it('calculates percentile and error evidence against the frozen threshold', () => {

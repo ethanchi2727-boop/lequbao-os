@@ -28,7 +28,7 @@ async function fixture(overrides = {}) {
   const evidence = 'controlled fixture passed\n';
   await writeFile(path.join(root, 'postgres', 'fixture.log'), evidence);
   const results = {
-    version: 1,
+    version: 2,
     releaseCommit,
     planSha256: createHash('sha256').update(planSource).digest('hex'),
     generatedAt: new Date().toISOString(),
@@ -37,10 +37,13 @@ async function fixture(overrides = {}) {
         code: 'POSTGRES',
         result: 'PASS',
         environmentGate: 'POSTGRESQL',
+        executedById: 'org:database-engineer-01',
         executedByRole: 'database engineer',
+        reviewedById: 'org:release-owner-01',
         reviewedByRole: 'release owner',
         startedAt: '2026-08-19T01:00:00.000Z',
         completedAt: '2026-08-19T01:05:00.000Z',
+        reviewedAt: '2026-08-19T01:06:00.000Z',
         evidence: [
           {
             file: 'postgres/fixture.log',
@@ -95,6 +98,7 @@ describe('controlled launch results', () => {
     const { results, resultsFile } = await fixture();
     results.providerToken = 'must-not-enter-results';
     results.suites[0].reviewedByRole = 'database engineer';
+    results.suites[0].reviewedById = 'org:database-engineer-01';
     results.suites[0].internalNote = 'undeclared';
     results.suites[0].evidence[0].sha256 = '0'.repeat(64);
     results.suites[0].evidence[0].note = 'undeclared';
@@ -110,6 +114,7 @@ describe('controlled launch results', () => {
       expect.arrayContaining([
         'controlled results contain undeclared fields: providerToken',
         'POSTGRES requires an independent reviewer role',
+        'POSTGRES requires a different accountable reviewer',
         'POSTGRES contains undeclared fields: internalNote',
         'POSTGRES evidence contains undeclared fields: note',
         'POSTGRES evidence hash mismatch for postgres/fixture.log',
@@ -122,6 +127,7 @@ describe('controlled launch results', () => {
     const { results, resultsFile } = await fixture();
     results.generatedAt = '2026-08-19T01:02:00.000Z';
     results.suites[0].completedAt = '2026-08-19T01:05:00.000Z';
+    results.suites[0].reviewedAt = '2026-08-19T01:04:00.000Z';
     results.suites[0].evidence.push(null);
     results.suites.push(null);
     await writeFile(resultsFile, JSON.stringify(results));
@@ -134,6 +140,7 @@ describe('controlled launch results', () => {
     expect(failures).toEqual(
       expect.arrayContaining([
         'POSTGRES completed after the controlled results were generated',
+        'POSTGRES has invalid independent-review timestamp',
         'POSTGRES contains an invalid evidence record',
         'controlled results contain an invalid suite record',
       ]),
@@ -172,10 +179,13 @@ describe('controlled launch results', () => {
         code: suite.code,
         result: 'PASS',
         environmentGate: suite.environmentGate,
+        executedById: `org:${suite.code.toLowerCase()}-executor`,
         executedByRole: suite.executorRole,
+        reviewedById: `org:${suite.code.toLowerCase()}-reviewer`,
         reviewedByRole: `${suite.executorRole} independent reviewer`,
         startedAt: new Date(Date.now() - 120_000).toISOString(),
         completedAt,
+        reviewedAt: new Date(Date.now() - 30_000).toISOString(),
         evidence,
       });
     }
@@ -184,7 +194,7 @@ describe('controlled launch results', () => {
     await writeFile(
       resultsFile,
       JSON.stringify({
-        version: 1,
+        version: 2,
         releaseCommit: candidate,
         planSha256: createHash('sha256').update(actualPlanSource).digest('hex'),
         generatedAt,

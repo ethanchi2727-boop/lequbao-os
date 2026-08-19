@@ -46,6 +46,8 @@ const report = {
   schemaVersion: 1,
   runId,
   environment: config.environment,
+  releaseCommit: config.releaseCommit,
+  images: config.images,
   baseOrigin: config.base.origin,
   startedAt: startedAt.toISOString(),
   concurrency: config.concurrency,
