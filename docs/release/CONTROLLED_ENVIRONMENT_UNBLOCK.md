@@ -2,7 +2,9 @@
 
 ## Current finding — 2026-08-19
 
-The GitHub repository has no Actions secrets, Actions variables, environments or deployments. The local workstation has no Docker-compatible engine or installed WSL distribution. Therefore no real identity, object, WeCom, WeChat, payment, GEO/plugin, cross-fault-domain restore, production-shaped load or on-call result can currently be produced without fabricating evidence.
+GitHub now has a `controlled-preproduction` environment that requires review, prevents self-review and accepts deployments only from the trusted `main` workflow ref. The default branch contains the standalone preflight through reviewed PR #2, and `main` requires the candidate code-quality, PostgreSQL and container checks. Ten application-owned signing/encryption values were generated directly into environment secrets; the immutable candidate and environment label are recorded as variables. No secret value was printed or committed.
+
+Real infrastructure remains absent: the repository has only one collaborator, and no non-loopback database, ingress CIDRs, deployed application, identity/object/WeCom/WeChat/payment/privacy/GEO/AI gateway, production-shaped scenario credentials, cross-fault-domain restore target or on-call receiver is configured. Current name coverage is Stage 47 `2/15`, Stage 48 `3/9`, Stage 49 `6/28` and Stage 50 `1/2`. These external values and an independent reviewer cannot be fabricated.
 
 This is an infrastructure/account boundary, not an untracked product-code gap. The repository now provides a fail-closed preflight:
 
