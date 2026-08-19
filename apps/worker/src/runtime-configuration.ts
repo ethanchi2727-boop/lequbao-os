@@ -13,6 +13,11 @@ const launchGroups = [
   ['PRIVACY_EXPORT_GATEWAY_URL', 'PRIVACY_EXPORT_GATEWAY_TOKEN'],
 ] as const;
 
+export const workerProductionRequiredSettings = [
+  ...alwaysRequired,
+  ...launchGroups.flatMap((group) => [...group]),
+];
+
 const configured = (environment: RuntimeEnvironment, name: string) =>
   Boolean(environment[name]?.trim());
 

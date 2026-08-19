@@ -62,6 +62,12 @@ for (const marker of [
   'persist-credentials: false',
   'Resolve candidate without executing candidate code',
   'trusted/tooling/controlled-environment-preflight.mjs',
+  'WORKER_TENANT_ID: ${{ vars.WORKER_TENANT_ID }}',
+  'configured RELEASE_COMMIT must equal candidate_commit',
+  'actions: read',
+  'Prove Stage 49 candidate image manifest provenance',
+  '.github/workflows/publish-candidate-images.yml',
+  'gh run download "$CANDIDATE_IMAGE_RUN_ID"',
 ])
   if (!controlledPreflight.includes(marker))
     failures.push(`Controlled preflight trust-boundary marker missing: ${marker}`);
@@ -103,6 +109,8 @@ for (const marker of [
   'links and special archive entries are forbidden',
   "name == 'results.json'",
   '--no-same-owner --no-same-permissions',
+  'node ../trusted/tooling/controlled-evidence-package.mjs',
+  '--verify-package=${{ github.workspace }}/evidence',
   'node ../trusted/tooling/verify-acceptance-evidence.mjs --launch',
   'actions/attest@v4',
   'actions/upload-artifact@v7',

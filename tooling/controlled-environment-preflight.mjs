@@ -1,6 +1,7 @@
 import path from 'node:path';
 import { isIP } from 'node:net';
 import { fileURLToPath } from 'node:url';
+import { validatePerformanceConfig } from './performance-gate-lib.mjs';
 
 export const controlledStageRequirements = {
   47: [
@@ -41,6 +42,7 @@ export const controlledStageRequirements = {
     'INTERNAL_WORKER_TOKEN',
     'OUTBOX_EVENT_GATEWAY_URL',
     'OUTBOX_EVENT_GATEWAY_TOKEN',
+    'WORKER_TENANT_ID',
     'GEO_PLUGIN_GATEWAY_URL',
     'GEO_PLUGIN_GATEWAY_TOKEN',
     'CUSTOMER_SERVICE_KNOWLEDGE_URL',
@@ -77,7 +79,12 @@ function configured(environment, name) {
 function invalidValue(environment, name) {
   const value = environment[name].trim();
   if (/replace-with|example-secret|changeme/iu.test(value)) return 'placeholder';
-  if (secretPattern.test(name) && Buffer.byteLength(value, 'utf8') < 16) return 'too-short';
+  const minimumSecretBytes =
+    /(?:JWT_SECRET|SIGNING_SECRET|CALLBACK_SECRET|VERIFICATION_TOKEN_SECRET)$/u.test(name)
+      ? 32
+      : 16;
+  if (secretPattern.test(name) && Buffer.byteLength(value, 'utf8') < minimumSecretBytes)
+    return 'too-short';
   if (name === 'TRUSTED_PROXY_CIDRS') {
     const invalid = value.split(',').some((entry) => {
       const [address, rawPrefix, ...extra] = entry.trim().split('/');
@@ -97,6 +104,8 @@ function invalidValue(environment, name) {
       const url = new URL(value);
       if (!['postgres:', 'postgresql:'].includes(url.protocol)) return 'invalid-postgres-url';
       if (['127.0.0.1', 'localhost', '::1'].includes(url.hostname)) return 'loopback';
+      if (!['require', 'verify-full'].includes(url.searchParams.get('sslmode') ?? ''))
+        return 'tls-required';
     } catch {
       return 'invalid-postgres-url';
     }
@@ -114,6 +123,13 @@ function invalidValue(environment, name) {
     !['staging', 'controlled-preproduction'].includes(value)
   )
     return 'invalid-environment';
+  if (
+    name === 'WORKER_TENANT_ID' &&
+    !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu.test(value)
+  )
+    return 'invalid-uuid';
+  if (name === 'PLATFORM_ADDRESS_ENCRYPTION_KEY' && Buffer.from(value, 'base64').length !== 32)
+    return 'invalid-32-byte-base64';
   if (name.endsWith('_BODY_JSON')) {
     try {
       const parsed = JSON.parse(value);
@@ -154,6 +170,16 @@ export function inspectControlledEnvironment(environment, stages = [47, 48, 49, 
     .filter((item) => item.reason);
   if (environment.LEQU_DEVELOPMENT_MOCKS === '1')
     invalid.push({ name: 'LEQU_DEVELOPMENT_MOCKS', reason: 'development-mock-forbidden' });
+  const performanceNames = controlledStageRequirements[49].filter(
+    (name) => name.startsWith('PERFORMANCE_') || name === 'RELEASE_COMMIT',
+  );
+  if (stages.includes(49) && performanceNames.every((name) => configured(environment, name))) {
+    try {
+      validatePerformanceConfig(environment);
+    } catch {
+      invalid.push({ name: 'PERFORMANCE_CONFIGURATION', reason: 'contract-invalid' });
+    }
+  }
   return {
     stages,
     required: names.length,

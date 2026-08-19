@@ -474,6 +474,8 @@
         "docs/release/stage-10-release-candidate-evidence.md",
         "docs/release/CONTROLLED_ENVIRONMENT_UNBLOCK.md",
         "tooling/controlled-environment-preflight.mjs",
+        "tooling/controlled-evidence-package.mjs",
+        ".github/workflows/verify-controlled-release.yml",
         "docs/runbooks/FINANCIAL_POLICY_APPROVAL.md",
         "docs/runbooks/LEGAL_COMPLIANCE_RELEASE.md"
       ],

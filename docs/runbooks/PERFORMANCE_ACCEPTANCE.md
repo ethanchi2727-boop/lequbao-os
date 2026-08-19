@@ -29,6 +29,9 @@ Set these only in the controlled runner's secret/environment store:
 - `RELEASE_COMMIT`: the exact 40-character candidate SHA.
 - `PERFORMANCE_CANDIDATE_IMAGE_MANIFEST_JSON`: unmodified JSON from the protected publisher's digest manifest.
 - `PERFORMANCE_DEPLOYED_IMAGES_JSON`: deployment-platform snapshot containing exactly the running `api`, `worker` and `web` digest references. Each must exactly equal the candidate manifest; tags and image labels are rejected as substitutes.
+
+The controlled Stage 49 preflight calls this same configuration validator as soon as the complete performance subset is present. Dispatch it with the successful protected candidate-image publisher run ID: the workflow verifies the trusted run metadata, downloads its exact digest artifact and compares the normalized bytes with the configured candidate manifest. Resolve any provenance, candidate/digest, origin/path, secret-shaped body or report-path rejection before approving a load run. A green preflight does not measure latency, persistence, database saturation or Outbox health and therefore is not acceptance evidence.
+
 - Optional `PERFORMANCE_CONCURRENCY` and `PERFORMANCE_REQUESTS`: defaults are 20 and 200 per scenario; record any higher production-shaped values in the release record.
 
 Run `pnpm performance:gate` from the repository root. Preserve the command exit code, generated JSON and deployment/monitoring snapshots in the release evidence store.

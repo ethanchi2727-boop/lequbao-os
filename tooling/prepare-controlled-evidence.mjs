@@ -109,6 +109,12 @@ function executionGuide({ plan, releaseCommit, deploymentId, environment, create
     '',
     'The assembler refuses missing, invalid, unredacted or placeholder evidence and will not overwrite an existing `results.json`.',
     '',
+    'After the local launch precheck passes, create a new upload staging directory containing only the exact verified manifest, context, artifacts and capture receipts:',
+    '',
+    '`pnpm controlled:stage-release -- --evidence-root=<absolute-this-directory> --output=<new-absolute-staging-directory>`',
+    '',
+    'Archive only that staging directory. Operator guides, decision templates, undeclared files and symlinks are forbidden from the release package.',
+    '',
   );
   return `${lines.join('\n')}\n`;
 }

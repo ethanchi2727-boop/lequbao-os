@@ -132,7 +132,10 @@ jobs:
           RELEASE_COMMIT: ${{ inputs.candidate_commit }}
           CONTROLLED_RESULTS_FILE: ${{ github.workspace }}/evidence/results.json
         working-directory: candidate
-        run: node ../trusted/tooling/verify-acceptance-evidence.mjs --launch
+        run: |
+          node ../trusted/tooling/controlled-evidence-package.mjs \
+            --verify-package=${{ github.workspace }}/evidence
+          node ../trusted/tooling/verify-acceptance-evidence.mjs --launch
       - name: Record protected verification result
         env:
           CANDIDATE_COMMIT: ${{ inputs.candidate_commit }}

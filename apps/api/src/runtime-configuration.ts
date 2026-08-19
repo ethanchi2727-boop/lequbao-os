@@ -43,6 +43,11 @@ const launchGroups = [
   ['WECOM_CONFIG_GATEWAY_URL', 'WECOM_CONFIG_GATEWAY_TOKEN'],
 ] as const;
 
+export const apiProductionRequiredSettings = [
+  ...alwaysRequired,
+  ...launchGroups.flatMap((group) => [...group]),
+];
+
 const configured = (environment: RuntimeEnvironment, name: string) =>
   Boolean(environment[name]?.trim());
 

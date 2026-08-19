@@ -22,6 +22,7 @@
     "controlled:prepare": "node tooling/prepare-controlled-evidence.mjs",
     "controlled:capture": "node tooling/capture-controlled-evidence.mjs",
     "controlled:assemble": "node tooling/assemble-controlled-results.mjs",
+    "controlled:stage-release": "node tooling/controlled-evidence-package.mjs",
     "dev:mock-gateways": "node --env-file-if-exists=.env.development-mock.local tooling/development-mock-gateway.mjs",
     "v5:inventory": "node --experimental-sqlite tooling/v5-data-store-inventory.mjs",
     "visual:check": "node tooling/verify-visual-assets.mjs",

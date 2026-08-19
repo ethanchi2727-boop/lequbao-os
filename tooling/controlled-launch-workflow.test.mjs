@@ -39,6 +39,8 @@ describe('protected controlled-release verification workflow', () => {
     const source = await readFile('.github/workflows/verify-controlled-release.yml', 'utf8');
     for (const check of ['code-quality', 'postgres-contract', 'container-build'])
       expect(source).toContain(check);
+    expect(source).toContain('node ../trusted/tooling/controlled-evidence-package.mjs');
+    expect(source).toContain('--verify-package=${{ github.workspace }}/evidence');
     expect(source).toContain('node ../trusted/tooling/verify-acceptance-evidence.mjs --launch');
     expect(source).toContain(
       'CONTROLLED_RESULTS_FILE: ${{ github.workspace }}/evidence/results.json',

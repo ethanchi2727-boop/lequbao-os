@@ -4,7 +4,7 @@
 
 GitHub now has a `controlled-preproduction` environment that requires review, prevents self-review and accepts deployments only from the trusted `main` workflow ref. The default branch contains the standalone preflight through reviewed PR #2, and `main` requires the candidate code-quality, PostgreSQL and container checks. Ten application-owned signing/encryption values were generated directly into environment secrets; the immutable candidate and environment label are recorded as variables. No secret value was printed or committed.
 
-Real infrastructure remains absent: the repository has only one collaborator, and no non-loopback database, ingress CIDRs, deployed application, identity/object/WeCom/WeChat/payment/privacy/GEO/AI gateway, production-shaped scenario credentials, cross-fault-domain restore target or on-call receiver is configured. Current name coverage is Stage 47 `2/15`, Stage 48 `3/9`, Stage 49 `7/31` and Stage 50 `1/2`. Stage 49 includes the existing release SHA but still lacks both candidate-publisher and deployment-platform image snapshots. These external values and an independent reviewer cannot be fabricated.
+Real infrastructure remains absent: the repository has only one collaborator, and no non-loopback database, ingress CIDRs, deployed application, identity/object/WeCom/WeChat/payment/privacy/GEO/AI gateway, production-shaped scenario credentials, cross-fault-domain restore target or on-call receiver is configured. A read-only GitHub environment-name audit on 2026-08-20 confirms coverage of Stage 47 `2/15`, Stage 48 `3/9`, Stage 49 `7/32` and Stage 50 `1/2`; no secret value was read. Stage 49 includes the existing release SHA but still lacks the Worker tenant UUID and both candidate-publisher and deployment-platform image snapshots. These external values and an independent reviewer cannot be fabricated.
 
 This is an infrastructure/account boundary, not an untracked product-code gap. The repository now provides a fail-closed preflight:
 
@@ -13,7 +13,7 @@ node tooling/controlled-environment-preflight.mjs
 node tooling/controlled-environment-preflight.mjs --stage=47
 ```
 
-It prints only setting names and validation reasons. It never returns secret values. A zero exit code means configuration is structurally ready to start controlled execution; it does not mean a suite passed.
+It prints only setting names and validation reasons. It never returns secret values. A zero exit code means configuration is structurally ready to start controlled execution; it does not mean a suite passed. The preflight now matches the API/Worker production startup boundary for PostgreSQL TLS, minimum secret lengths, the 32-byte address key and Worker tenant UUID, and its protected workflow rejects a configured release SHA that differs from the requested candidate. Once all performance settings exist, the same production-shaped performance validator also checks the candidate manifest, three GHCR digests, deployed-image equality, safe API paths/request bodies and a JSON report path before any load is sent.
 
 ## Stage 47 — identity, object and enterprise WeCom
 
@@ -29,7 +29,9 @@ Do not store authorization codes, merchant keys, callback secrets or raw payment
 
 ## Stage 49 — production-shaped staging and pilot
 
-Deploy the exact candidate commit behind HTTPS with separate least-privilege identities. Configure Outbox, GEO/plugin egress isolation, customer-service knowledge/model/tool gateways and the performance scenarios. Deliver P0 alerts to the real on-call channel and retain acknowledgement evidence. Run the staged internal/pilot/canary release with rollback available.
+Deploy the exact candidate commit behind HTTPS with separate least-privilege identities. Configure the one-shot Worker with an active tenant UUID, Outbox, GEO/plugin egress isolation, customer-service knowledge/model/tool gateways and the performance scenarios. Deliver P0 alerts to the real on-call channel and retain acknowledgement evidence. Run the staged internal/pilot/canary release with rollback available.
+
+For Stage 49, dispatch the protected preflight with `candidate_image_run_id` set to the successful trusted candidate-image publisher run. After the local performance contract passes, the workflow verifies that run completed successfully from the `main` publisher workflow, downloads the exact `candidate-images-<candidate>-<run>` artifact and compares its normalized manifest with `PERFORMANCE_CANDIDATE_IMAGE_MANIFEST_JSON`. A manually reconstructed digest JSON or an artifact from another run/candidate fails provenance verification.
 
 Local loopback performance and logical restore reports prove the harness only. They cannot replace production-shaped load, physical/WAL or cross-fault-domain recovery evidence.
 

@@ -74,6 +74,8 @@ describe('controlled evidence workspace preparation', () => {
     );
     expect(guide).toContain('`attempts`: array');
     expect(guide).toContain('contains no PASS decision and no evidence placeholder');
+    expect(guide).toContain('pnpm controlled:stage-release');
+    expect(guide).toContain('Operator guides, decision templates, undeclared files and symlinks');
   });
 
   it('refuses reuse, unsafe plan paths and invalid candidate metadata', async () => {
