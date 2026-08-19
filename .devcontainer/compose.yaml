@@ -4,6 +4,7 @@ services:
       context: ..
       dockerfile: .devcontainer/Dockerfile
     command: sleep infinity
+    working_dir: /workspaces/lequ-life-platform
     volumes:
       - ..:/workspaces/lequ-life-platform:cached
     environment:

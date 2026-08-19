@@ -11,6 +11,7 @@ describe('cloud development workspace', () => {
     expect(compose.services.postgres.healthcheck.test.join(' ')).toContain('pg_isready');
     expect(compose.services.postgres.volumes).toContain('postgres-data:/var/lib/postgresql/data');
     expect(compose.services.workspace.depends_on.postgres.condition).toBe('service_healthy');
+    expect(compose.services.workspace.working_dir).toBe('/workspaces/lequ-life-platform');
     expect(compose.services.workspace.environment.DATABASE_URL).toBe(
       'postgres://postgres:postgres@postgres:5432/lequ_v6',
     );
