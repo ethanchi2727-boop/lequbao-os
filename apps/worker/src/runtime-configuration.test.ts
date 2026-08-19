@@ -18,6 +18,11 @@ const launch = {
 };
 
 describe('Worker runtime configuration', () => {
+  it('forbids the development mock profile in production', () => {
+    expect(() =>
+      validateWorkerRuntimeConfiguration({ NODE_ENV: 'production', LEQU_DEVELOPMENT_MOCKS: '1' }),
+    ).toThrow(/forbids LEQU_DEVELOPMENT_MOCKS/u);
+  });
   it('rejects partial optional groups in every environment', () => {
     expect(() => validateWorkerRuntimeConfiguration(base)).not.toThrow();
     expect(() =>

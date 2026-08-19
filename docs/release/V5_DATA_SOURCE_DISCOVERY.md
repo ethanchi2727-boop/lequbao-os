@@ -2,7 +2,7 @@
 
 Date: 2026-08-19
 
-Candidate: `625793b11da35cc8822a7c0ed1213d45840fba85`
+Candidate inventory hardening commit: `e89fb91`
 
 Status: **INDEPENDENT REVIEW REQUIRED**
 

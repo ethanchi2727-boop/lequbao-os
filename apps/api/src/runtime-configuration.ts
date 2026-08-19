@@ -115,6 +115,8 @@ function validateProductionValues(environment: RuntimeEnvironment) {
 }
 
 export function validateApiRuntimeConfiguration(environment: RuntimeEnvironment) {
+  if (environment.NODE_ENV === 'production' && environment.LEQU_DEVELOPMENT_MOCKS === '1')
+    throw new Error('API production configuration forbids LEQU_DEVELOPMENT_MOCKS');
   const missingAlways = alwaysRequired.filter((name) => !configured(environment, name));
   if (missingAlways.length)
     throw new Error(`API runtime configuration missing: ${missingAlways.join(', ')}`);

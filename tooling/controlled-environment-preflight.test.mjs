@@ -75,4 +75,12 @@ describe('controlled environment preflight', () => {
       invalid: [],
     });
   });
+
+  it('rejects development mock mode even when controlled values are otherwise valid', () => {
+    const environment = { ...completeEnvironment(), LEQU_DEVELOPMENT_MOCKS: '1' };
+    expect(inspectControlledEnvironment(environment).invalid).toContainEqual({
+      name: 'LEQU_DEVELOPMENT_MOCKS',
+      reason: 'development-mock-forbidden',
+    });
+  });
 });

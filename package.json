@@ -20,6 +20,7 @@
     "launch:gate": "node tooling/verify-acceptance-evidence.mjs --launch",
     "controlled:preflight": "node tooling/controlled-environment-preflight.mjs",
     "controlled:assemble": "node tooling/assemble-controlled-results.mjs",
+    "dev:mock-gateways": "node --env-file-if-exists=.env.development-mock.local tooling/development-mock-gateway.mjs",
     "v5:inventory": "node --experimental-sqlite tooling/v5-data-store-inventory.mjs",
     "visual:check": "node tooling/verify-visual-assets.mjs",
     "workbench:check": "node tooling/workbench-contract.mjs --verify",

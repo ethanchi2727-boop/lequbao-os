@@ -152,6 +152,8 @@ export function inspectControlledEnvironment(environment, stages = [47, 48, 49, 
     .filter((name) => configured(environment, name))
     .map((name) => ({ name, reason: invalidValue(environment, name) }))
     .filter((item) => item.reason);
+  if (environment.LEQU_DEVELOPMENT_MOCKS === '1')
+    invalid.push({ name: 'LEQU_DEVELOPMENT_MOCKS', reason: 'development-mock-forbidden' });
   return {
     stages,
     required: names.length,

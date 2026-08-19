@@ -41,6 +41,11 @@ const launch = {
 };
 
 describe('API runtime configuration', () => {
+  it('forbids the development mock profile in production', () => {
+    expect(() =>
+      validateApiRuntimeConfiguration({ NODE_ENV: 'production', LEQU_DEVELOPMENT_MOCKS: '1' }),
+    ).toThrow(/forbids LEQU_DEVELOPMENT_MOCKS/u);
+  });
   it('allows a minimal development profile but rejects a partially configured provider group', () => {
     expect(() => validateApiRuntimeConfiguration(base)).not.toThrow();
     expect(() =>
