@@ -4,6 +4,12 @@ Date: 2026-08-19
 
 This is an execution audit, not a PASS manifest. The exact candidate commit, controlled environment, immutable artifacts and independent reviewer are still required by `pnpm launch:gate`.
 
+Assembly and launch verification inspect the evidence bytes as well as their hashes. Empty, binary, malformed or empty JSON, placeholder-only verdicts and common unredacted credential forms fail closed; this minimum content/redaction gate does not replace the technical review required for each suite.
+
+The 39 JSON slots additionally have exact minimum semantic contracts shared by capture, assembly and launch verification. Generated checklists name every required field/type, candidate/deployment binding, operational range, digest/date format and PASS, true or empty-unresolved invariant; structurally valid but unrelated or differently bound JSON is rejected.
+
+Assembly and launch verification additionally reconcile six multi-artifact suites: commerce quantities, payment account/amount identity, backup/restore identity, performance image topology, WeChat version transitions and alert acknowledgement must agree across their separate files.
+
 | Suite                             | Local executable readiness                                                                                                               | Remaining controlled action                                                                                                                            |
 | --------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `POSTGRES_RLS_FINANCE`            | PostgreSQL 15.19 clean/incremental schemas, 22 fixtures and financial/RLS integrations pass                                              | Re-run on the exact deployed candidate, retain the four declared artifacts and obtain independent review                                               |
@@ -20,11 +26,12 @@ This is an execution audit, not a PASS manifest. The exact candidate commit, con
 
 ## Execution order
 
-1. Freeze the candidate commit and calculate the controlled-plan SHA-256.
+1. Freeze and cleanly check out the candidate commit, run `pnpm controlled:preflight`, then use `pnpm controlled:prepare` to create a new candidate/deployment/environment-bound workspace. The initializer calculates the plan SHA-256 and creates the 11 suite directories and 47-artifact checklist without fabricating evidence or PASS decisions. Import only redacted external outputs through the generated non-overwriting `pnpm controlled:capture` commands.
 2. Run the V5 zero-data inventory first. If it fails, stop and reinstate full migration engineering before any other release activity.
 3. Run PostgreSQL, Worker and commerce suites against the exact candidate database.
 4. Run identity/object intake, payment, plugin/GEO and performance suites in controlled pre-production.
 5. Complete physical/WAL recovery, privacy propagation and alert acknowledgement.
-6. Run official WeChat build/review/pilot/rollback last, then assemble `results.json` and execute `pnpm launch:gate`.
+6. Run official WeChat build/review/pilot/rollback last, then assemble `results.json` and execute `pnpm launch:gate` as a local precheck.
+7. Package the complete redacted workspace under a candidate-bound draft GitHub Release and run the protected `verify-controlled-release.yml` workflow from trusted `main`. The independent environment reviewer inspects the evidence before approval; the resulting attestation and workflow run are the final auditable verification record.
 
 Failed attempts remain evidence. Do not reduce load, change the candidate, replace an artifact or broaden an identity to turn a failure green.

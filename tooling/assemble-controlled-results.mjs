@@ -1,9 +1,12 @@
 import { createHash } from 'node:crypto';
-import { createReadStream } from 'node:fs';
 import { readFile, realpath, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { verifyControlledResults } from './controlled-results.mjs';
+import { inspectControlledEvidenceFile } from './controlled-evidence.mjs';
+import { inspectControlledJsonEvidence } from './controlled-evidence-contracts.mjs';
+import { inspectControlledSuiteEvidence } from './controlled-suite-evidence.mjs';
+import { inspectCaptureReceipt } from './controlled-capture-receipt.mjs';
 
 const suiteFields = [
   'code',
@@ -17,15 +20,6 @@ const suiteFields = [
   'completedAt',
   'reviewedAt',
 ];
-
-const hashFile = (file) =>
-  new Promise((resolve, reject) => {
-    const hash = createHash('sha256');
-    const stream = createReadStream(file);
-    stream.on('data', (chunk) => hash.update(chunk));
-    stream.on('error', reject);
-    stream.on('end', () => resolve(hash.digest('hex')));
-  });
 
 const safeTime = (value) => {
   const milliseconds = Date.parse(value);
@@ -68,7 +62,7 @@ function assertDecision(decision, suite, generatedAt) {
     throw new Error(`${suite.code} execution and review chronology is invalid`);
 }
 
-async function evidenceRecord(root, suite, file) {
+async function evidenceRecord(root, suite, file, context, expectedPlanHash) {
   const relative = path.posix.join(suite.evidenceDirectory, file);
   const absolute = path.resolve(root, ...relative.split('/'));
   const relativeToRoot = path.relative(root, absolute);
@@ -78,7 +72,33 @@ async function evidenceRecord(root, suite, file) {
   const physicalRelative = path.relative(physicalRoot, physicalFile);
   if (physicalRelative.startsWith('..') || path.isAbsolute(physicalRelative))
     throw new Error(`${suite.code} evidence resolves outside the evidence root: ${relative}`);
-  return { file: relative, sha256: await hashFile(physicalFile) };
+  const inspection = await inspectControlledEvidenceFile(physicalFile);
+  if (inspection.failures.length)
+    throw new Error(
+      `${suite.code} evidence is invalid: ${relative}: ${inspection.failures.join(', ')}`,
+    );
+  const semanticFailures = await inspectControlledJsonEvidence(physicalFile, file, context);
+  if (semanticFailures.length)
+    throw new Error(
+      `${suite.code} evidence violates its semantic contract: ${relative}: ${semanticFailures.join(', ')}`,
+    );
+  const receipt = await inspectCaptureReceipt({
+    evidenceRoot: root,
+    suite,
+    artifact: file,
+    evidenceInspection: inspection,
+    context,
+    expectedPlanHash,
+  });
+  if (receipt.failures.length)
+    throw new Error(
+      `${suite.code} capture receipt is invalid: ${relative}: ${receipt.failures.join(', ')}`,
+    );
+  return {
+    file: relative,
+    sha256: inspection.sha256,
+    captureReceiptSha256: receipt.sha256,
+  };
 }
 
 export async function assembleControlledResults({
@@ -95,6 +115,25 @@ export async function assembleControlledResults({
   if (!/^[a-f0-9]{40}$/u.test(decisions.releaseCommit ?? ''))
     throw new Error('decisions releaseCommit must be an exact lowercase 40-character SHA');
   if (!Array.isArray(decisions.suites)) throw new Error('decisions suites are required');
+  const expectedPlanHash = createHash('sha256').update(planSource).digest('hex');
+  let context;
+  try {
+    context = JSON.parse(
+      await readFile(path.join(evidenceRoot, 'controlled-execution-context.json'), 'utf8'),
+    );
+  } catch {
+    throw new Error('controlled execution context is missing or invalid');
+  }
+  if (
+    context?.version !== 1 ||
+    context.releaseCommit !== decisions.releaseCommit ||
+    context.planSha256 !== expectedPlanHash ||
+    typeof context.deploymentId !== 'string' ||
+    !context.deploymentId ||
+    typeof context.environment !== 'string' ||
+    !context.environment
+  )
+    throw new Error('controlled execution context does not match the decision candidate and plan');
   const generatedMilliseconds = safeTime(generatedAt);
   if (generatedMilliseconds === undefined) throw new Error('generatedAt must be a UTC timestamp');
   const byCode = new Map();
@@ -114,13 +153,16 @@ export async function assembleControlledResults({
     assertDecision(decision, suite, generatedMilliseconds);
     const evidence = [];
     for (const file of suite.requiredEvidence)
-      evidence.push(await evidenceRecord(evidenceRoot, suite, file));
+      evidence.push(await evidenceRecord(evidenceRoot, suite, file, context, expectedPlanHash));
+    const suiteFailures = await inspectControlledSuiteEvidence(evidenceRoot, suite);
+    if (suiteFailures.length)
+      throw new Error(`${suite.code} cross-evidence contract failed: ${suiteFailures.join(', ')}`);
     suites.push({ ...decision, evidence });
   }
   return {
-    version: 2,
+    version: 3,
     releaseCommit: decisions.releaseCommit,
-    planSha256: createHash('sha256').update(planSource).digest('hex'),
+    planSha256: expectedPlanHash,
     generatedAt,
     suites,
   };

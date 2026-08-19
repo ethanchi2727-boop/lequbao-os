@@ -149,7 +149,7 @@ async function route(request, response, state, options) {
     if (parts[5] === 'members' && parts[6])
       return json(response, 200, {
         userId: options.userId,
-        roleCodes: ['TENANT_ADMIN'],
+        roleCodes: ['MERCHANT_OWNER'],
         storeIds: [options.storeId],
         sessionId: `development-mock-wecom-${parts[6]}`,
         intakeSessionId: ids.intakeSessionId,

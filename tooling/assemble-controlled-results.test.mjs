@@ -3,6 +3,8 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import { assembleControlledResults } from './assemble-controlled-results.mjs';
+import { captureControlledEvidenceArtifact } from './capture-controlled-evidence.mjs';
+import { prepareControlledEvidenceWorkspace } from './prepare-controlled-evidence.mjs';
 
 const temporaryDirectories = [];
 const plan = {
@@ -12,19 +14,48 @@ const plan = {
       code: 'CONTROLLED_ONE',
       environmentGate: 'POSTGRESQL',
       executorRole: 'release engineer',
+      runbook: 'docs/runbooks/CONTROLLED_ACCEPTANCE.md#postgresql-rls-and-financial-invariants',
       evidenceDirectory: 'controlled-one',
-      requiredEvidence: ['execution.log', 'snapshot.json'],
+      requiredEvidence: ['execution.log', 'rls-denials.json'],
+      passCriteria: ['controlled execution passes'],
     },
   ],
 };
 const planSource = `${JSON.stringify(plan, null, 2)}\n`;
 
-async function fixture() {
-  const root = await mkdtemp(path.join(tmpdir(), 'lequ-controlled-assembly-'));
-  temporaryDirectories.push(root);
-  await mkdir(path.join(root, 'controlled-one'));
-  await writeFile(path.join(root, 'controlled-one', 'execution.log'), 'passed\n');
-  await writeFile(path.join(root, 'controlled-one', 'snapshot.json'), '{"safe":true}\n');
+async function fixture(releaseCommit = 'a'.repeat(40)) {
+  const parent = await mkdtemp(path.join(tmpdir(), 'lequ-controlled-assembly-'));
+  temporaryDirectories.push(parent);
+  const root = path.join(parent, 'evidence');
+  const sourceRoot = path.join(parent, 'source');
+  await mkdir(sourceRoot);
+  await prepareControlledEvidenceWorkspace({
+    plan,
+    planSource,
+    evidenceRoot: root,
+    releaseCommit,
+    deploymentId: 'candidate-assembly-1',
+    environment: 'controlled-preproduction',
+    createdAt: '2026-08-19T00:59:00.000Z',
+  });
+  await writeFile(
+    path.join(sourceRoot, 'execution.log'),
+    'Controlled execution completed with all declared assertions passing.\n',
+  );
+  await writeFile(
+    path.join(sourceRoot, 'rls-denials.json'),
+    '{"result":"PASS","attempts":[{"operation":"cross-tenant-read","denied":true}]}\n',
+  );
+  for (const artifact of plan.suites[0].requiredEvidence)
+    await captureControlledEvidenceArtifact({
+      plan,
+      planSource,
+      evidenceRoot: root,
+      suiteCode: 'CONTROLLED_ONE',
+      artifact,
+      source: path.join(sourceRoot, artifact),
+      capturedAt: '2026-08-19T01:00:00.000Z',
+    });
   return root;
 }
 
@@ -58,7 +89,7 @@ describe('controlled result assembly', () => {
       generatedAt: '2026-08-19T01:07:00.000Z',
     });
     expect(results).toMatchObject({
-      version: 2,
+      version: 3,
       releaseCommit: 'a'.repeat(40),
       suites: [
         {
@@ -67,10 +98,12 @@ describe('controlled result assembly', () => {
             {
               file: 'controlled-one/execution.log',
               sha256: expect.stringMatching(/^[a-f0-9]{64}$/u),
+              captureReceiptSha256: expect.stringMatching(/^[a-f0-9]{64}$/u),
             },
             {
-              file: 'controlled-one/snapshot.json',
+              file: 'controlled-one/rls-denials.json',
               sha256: expect.stringMatching(/^[a-f0-9]{64}$/u),
+              captureReceiptSha256: expect.stringMatching(/^[a-f0-9]{64}$/u),
             },
           ],
         },
@@ -79,8 +112,8 @@ describe('controlled result assembly', () => {
   });
 
   it('rejects missing evidence, unknown suites and duplicate decisions', async () => {
-    const root = await fixture();
-    await rm(path.join(root, 'controlled-one', 'snapshot.json'));
+    const root = await fixture('b'.repeat(40));
+    await rm(path.join(root, 'controlled-one', 'rls-denials.json'));
     await expect(
       assembleControlledResults({
         plan,
@@ -105,7 +138,7 @@ describe('controlled result assembly', () => {
   });
 
   it('rejects same-person or pre-completion review metadata', async () => {
-    const root = await fixture();
+    const root = await fixture('c'.repeat(40));
     await expect(
       assembleControlledResults({
         plan,
@@ -125,5 +158,53 @@ describe('controlled result assembly', () => {
         generatedAt: '2026-08-19T01:07:00.000Z',
       }),
     ).rejects.toThrow(/different people/u);
+  });
+
+  it('rejects evidence that bypasses or loses its capture receipt', async () => {
+    const root = await fixture('e'.repeat(40));
+    await rm(
+      path.join(root, '.controlled-receipts', 'controlled-one', 'execution.log.receipt.json'),
+    );
+    await expect(
+      assembleControlledResults({
+        plan,
+        planSource,
+        decisions: { version: 1, releaseCommit: 'e'.repeat(40), suites: [decision] },
+        evidenceRoot: root,
+        generatedAt: '2026-08-19T01:07:00.000Z',
+      }),
+    ).rejects.toThrow(/capture receipt is missing/u);
+  });
+
+  it('rejects placeholder JSON and unredacted credentials before assembly', async () => {
+    const root = await fixture('d'.repeat(40));
+    await writeFile(path.join(root, 'controlled-one', 'rls-denials.json'), '{}\n');
+    await expect(
+      assembleControlledResults({
+        plan,
+        planSource,
+        decisions: { version: 1, releaseCommit: 'd'.repeat(40), suites: [decision] },
+        evidenceRoot: root,
+        generatedAt: '2026-08-19T01:07:00.000Z',
+      }),
+    ).rejects.toThrow(/JSON root must be a non-empty object or array/u);
+
+    await writeFile(
+      path.join(root, 'controlled-one', 'rls-denials.json'),
+      '{"result":"PASS","attempts":[{"operation":"cross-tenant-read","denied":true}]}\n',
+    );
+    await writeFile(
+      path.join(root, 'controlled-one', 'execution.log'),
+      `authorization: Bearer ${'x'.repeat(32)}\n`,
+    );
+    await expect(
+      assembleControlledResults({
+        plan,
+        planSource,
+        decisions: { version: 1, releaseCommit: 'd'.repeat(40), suites: [decision] },
+        evidenceRoot: root,
+        generatedAt: '2026-08-19T01:07:00.000Z',
+      }),
+    ).rejects.toThrow(/unredacted Bearer credential/u);
   });
 });

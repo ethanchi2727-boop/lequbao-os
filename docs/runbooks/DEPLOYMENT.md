@@ -23,11 +23,12 @@ The trusted `.github/workflows/publish-candidate-images.yml` workflow publishes 
 - Worker is a one-shot tenant-scoped job. The scheduler supplies one active `WORKER_TENANT_ID`, database credentials, `OUTBOX_EVENT_GATEWAY_URL` and `OUTBOX_EVENT_GATEWAY_TOKEN`. Production additionally requires the complete internal API, privacy deletion and privacy export gateway groups. Run jobs with overlap forbidden per tenant. Missing event-gateway configuration fails before any Outbox claim. Crashed claims become reclaimable after five minutes.
 - Inject secrets from the environment's secret manager. Never bake `.env`, callbacks, provider keys, database URLs or customer evidence into an image.
 - Before controlled execution, configure a protected GitHub `controlled-preproduction` environment with accountable reviewers and run `.github/workflows/controlled-preflight.yml` against an immutable candidate SHA. The workflow executes only the preflight code checked out from `main`; it resolves but does not execute candidate code while inspecting environment configuration.
+- After all eleven controlled suites are independently reviewed and the local launch precheck passes, attach the redacted evidence bundle to a candidate-bound draft GitHub Release and dispatch `.github/workflows/verify-controlled-release.yml` from trusted `main`. The protected job validates the archive, executes only trusted verifier code, records the exact results/plan hashes and produces an OIDC-backed attestation. A self-reported reviewer field or a local green command is not a production approval.
 
 ## Promotion and rollback
 
 1. Apply `database/schema.sql` or the reviewed incremental migrations before routing candidate traffic; migrations remain expand-only inside the rollback window.
 2. Start API, require `/ready` success, then start Web. Run one synthetic tenant Worker invocation and prove no row remains `PROCESSING` under its worker ID.
-3. Run the controlled suites and bind artifacts to the candidate commit and immutable image digests.
+3. Run the controlled suites, bind artifacts to the candidate commit and immutable image digests, then pass the protected attested launch-verification workflow.
 4. Promote by digest through internal, pilot, canary and full waves. Stop on a P0 condition or unexplained reconciliation difference.
 5. Before the first production write, a greenfield rollback may remove the candidate. After the first V6 write, use only a proven compatible application rollback, forward fix or verified V6 restore; never overwrite V6 facts with V5 data.

@@ -7,8 +7,8 @@
 
 - 已固化唯一开发基线、总包校验结果、冲突裁决和 V5→V6 迁移矩阵。
 - 已从 PostgreSQL 15+ 的 73 表正式基线扩展到 164 表、26 个迁移的审计目标，包含租户 RLS、不可变台账、商业交易、AI/客服、运营和平台控制面。
-- 当前实现 192 条范围明确的 API 路径、135 个乐趣宝叶页面与 62 个小程序叶页面；全部 197 个发布叶页面使用权威服务端边界。
-- 全仓门禁覆盖格式、Lint、契约/RBAC/OpenAPI、安全/运维/部署、六个类型检查、86 个测试文件、435 个测试和六个生产构建。
+- 当前实现 193 条范围明确的 API 路径、135 个乐趣宝叶页面与 62 个小程序叶页面；全部 197 个发布叶页面使用权威服务端边界。
+- 全仓门禁覆盖格式、Lint、契约/RBAC/OpenAPI、安全/运维/部署、六个类型检查、94 个测试文件、471 个测试和六个生产构建。
 
 权威状态见 [PROJECT_STATE.md](PROJECT_STATE.md)，架构决策见
 [docs/adr/0001-v6-1-rebuild.md](docs/adr/0001-v6-1-rebuild.md)。
@@ -53,5 +53,6 @@ corepack pnpm --filter @lequ/workbench-web dev
 
 尚未取得正式供应商账号时，可使用明确隔离的开发模拟网关完成业务链路开发；启动方式和安全边界见
 [开发期模拟网关](docs/runbooks/DEVELOPMENT_MOCKS.md)。模拟网关不能替代 PostgreSQL、真实联调或受控上线验收。
+仓库同时提供 GitHub Codespaces/Dev Container 配置，可自动启动 PostgreSQL 15、开发种子、Mock 网关、API 和 Workbench，适合从云端浏览器继续开发。
 
 不带 `demo=1` 时页面进入生产模式，从同源 API 或 `apiBase` 查询参数指定的 API 读取数据。员工签名会话必须由登录壳写入当前标签页的 `sessionStorage['lequbao.employee-session']`；不得把 Bearer 会话放入 URL。可通过 `sessionId` 恢复已有建档会话，否则页面会新建会话。

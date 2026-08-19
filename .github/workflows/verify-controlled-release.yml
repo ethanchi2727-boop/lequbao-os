@@ -1,0 +1,163 @@
+name: V6.1 verify controlled release
+
+on:
+  workflow_dispatch:
+    inputs:
+      candidate_commit:
+        description: Immutable 40-character candidate commit SHA
+        required: true
+        type: string
+      evidence_release_tag:
+        description: Draft release tag containing controlled-evidence.tar.gz
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  checks: read
+  id-token: write
+  attestations: write
+  artifact-metadata: write
+
+concurrency:
+  group: v6-controlled-release-${{ inputs.candidate_commit }}
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    if: ${{ github.ref == 'refs/heads/main' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: controlled-preproduction
+    steps:
+      - name: Validate immutable inputs
+        env:
+          CANDIDATE_COMMIT: ${{ inputs.candidate_commit }}
+          EVIDENCE_RELEASE_TAG: ${{ inputs.evidence_release_tag }}
+        run: |
+          if ! printf '%s' "$CANDIDATE_COMMIT" | grep --quiet --extended-regexp '^[0-9a-f]{40}$'; then
+            echo 'candidate_commit must be an immutable lowercase 40-character SHA'
+            exit 1
+          fi
+          expected="controlled-evidence-${CANDIDATE_COMMIT}-[0-9]{8}T[0-9]{6}Z"
+          if ! printf '%s' "$EVIDENCE_RELEASE_TAG" | grep --quiet --extended-regexp "^${expected}$"; then
+            echo 'evidence_release_tag must bind the candidate and UTC package time'
+            exit 1
+          fi
+      - name: Checkout trusted launch policy
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ github.sha }}
+          path: trusted
+          persist-credentials: false
+      - name: Resolve candidate without executing candidate code
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ inputs.candidate_commit }}
+          path: candidate
+          persist-credentials: false
+      - name: Verify trusted policy candidate and required checks
+        env:
+          CANDIDATE_COMMIT: ${{ inputs.candidate_commit }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          test "$(git -C trusted rev-parse HEAD)" = "$GITHUB_SHA"
+          test "$(git -C candidate rev-parse HEAD)" = "$CANDIDATE_COMMIT"
+          checks="$(gh api "repos/${GITHUB_REPOSITORY}/commits/${CANDIDATE_COMMIT}/check-runs?per_page=100")"
+          for required in code-quality postgres-contract container-build; do
+            if ! jq --exit-status --arg required "$required" \
+              '[.check_runs[] | select(.name == $required and .conclusion == "success")] | length > 0' \
+              <<<"$checks" >/dev/null; then
+              echo "Required successful candidate check is missing: $required"
+              exit 1
+            fi
+          done
+      - name: Download exact draft evidence package
+        env:
+          CANDIDATE_COMMIT: ${{ inputs.candidate_commit }}
+          EVIDENCE_RELEASE_TAG: ${{ inputs.evidence_release_tag }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          release="$(gh release view "$EVIDENCE_RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --json isDraft,targetCommitish,tagName)"
+          jq --exit-status \
+            --arg tag "$EVIDENCE_RELEASE_TAG" \
+            --arg candidate "$CANDIDATE_COMMIT" \
+            '.isDraft == true and .tagName == $tag and .targetCommitish == $candidate' \
+            <<<"$release" >/dev/null
+          mkdir evidence-package
+          gh release download "$EVIDENCE_RELEASE_TAG" \
+            --repo "$GITHUB_REPOSITORY" \
+            --pattern controlled-evidence.tar.gz \
+            --dir evidence-package
+          test "$(find evidence-package -maxdepth 1 -type f -name 'controlled-evidence.tar.gz' | wc -l)" -eq 1
+      - name: Validate and extract evidence archive safely
+        run: |
+          archive="$GITHUB_WORKSPACE/evidence-package/controlled-evidence.tar.gz"
+          test "$(stat --format=%s "$archive")" -le 536870912
+          python3 - "$archive" <<'PY'
+          import pathlib
+          import sys
+          import tarfile
+
+          archive = sys.argv[1]
+          with tarfile.open(archive, 'r:gz') as bundle:
+              members = bundle.getmembers()
+              if not members or len(members) > 256:
+                  raise SystemExit('evidence archive must contain 1..256 entries')
+              names = []
+              total = 0
+              for member in members:
+                  name = member.name.removeprefix('./')
+                  candidate = pathlib.PurePosixPath(name)
+                  if not name or '\\' in name or candidate.is_absolute() or '..' in candidate.parts:
+                      raise SystemExit(f'unsafe evidence archive path: {member.name}')
+                  if not (member.isfile() or member.isdir()):
+                      raise SystemExit(f'links and special archive entries are forbidden: {member.name}')
+                  if member.isfile() and member.size > 104857600:
+                      raise SystemExit(f'evidence archive entry exceeds 100 MiB: {member.name}')
+                  total += member.size
+                  names.append(name.rstrip('/'))
+              if total > 1073741824:
+                  raise SystemExit('expanded evidence archive exceeds 1 GiB')
+              if len(names) != len(set(names)):
+                  raise SystemExit('evidence archive contains duplicate paths')
+              if sum(name == 'results.json' for name in names) != 1:
+                  raise SystemExit('evidence archive must contain exactly one root results.json')
+          PY
+          mkdir evidence
+          tar --extract --gzip --file "$archive" --directory evidence --no-same-owner --no-same-permissions
+          test -f evidence/results.json
+      - name: Execute trusted launch verifier against candidate plan
+        env:
+          RELEASE_COMMIT: ${{ inputs.candidate_commit }}
+          CONTROLLED_RESULTS_FILE: ${{ github.workspace }}/evidence/results.json
+        working-directory: candidate
+        run: node ../trusted/tooling/verify-acceptance-evidence.mjs --launch
+      - name: Record protected verification result
+        env:
+          CANDIDATE_COMMIT: ${{ inputs.candidate_commit }}
+          EVIDENCE_RELEASE_TAG: ${{ inputs.evidence_release_tag }}
+        run: |
+          results_sha="$(sha256sum evidence/results.json | awk '{print $1}')"
+          plan_sha="$(sha256sum candidate/docs/release/controlled-acceptance-plan.json | awk '{print $1}')"
+          jq --null-input \
+            --arg releaseCommit "$CANDIDATE_COMMIT" \
+            --arg evidenceReleaseTag "$EVIDENCE_RELEASE_TAG" \
+            --arg resultsSha256 "$results_sha" \
+            --arg planSha256 "$plan_sha" \
+            --arg workflowRunId "$GITHUB_RUN_ID" \
+            --arg workflowRunAttempt "$GITHUB_RUN_ATTEMPT" \
+            --arg trustedPolicyCommit "$GITHUB_SHA" \
+            '{version:1,result:"PASS",releaseCommit:$releaseCommit,evidenceReleaseTag:$evidenceReleaseTag,resultsSha256:$resultsSha256,planSha256:$planSha256,workflowRunId:$workflowRunId,workflowRunAttempt:$workflowRunAttempt,trustedPolicyCommit:$trustedPolicyCommit}' \
+            >verified-controlled-release.json
+      - name: Attest protected verification result
+        uses: actions/attest@v4
+        with:
+          subject-path: verified-controlled-release.json
+      - name: Retain protected verification result
+        uses: actions/upload-artifact@v7
+        with:
+          name: verified-controlled-release-${{ inputs.candidate_commit }}-${{ github.run_id }}
+          path: verified-controlled-release.json
+          if-no-files-found: error
+          retention-days: 90

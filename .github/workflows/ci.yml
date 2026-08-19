@@ -128,6 +128,13 @@ jobs:
           psql -d lequ_v6_migration -v ON_ERROR_STOP=1 -f database/migrations/0024_product_publication_receipts.sql
           psql -d lequ_v6_migration -v ON_ERROR_STOP=1 -f database/migrations/0025_customer_service_operations.sql
           psql -d lequ_v6_migration -v ON_ERROR_STOP=1 -f database/migrations/0026_platform_control_plane.sql
+      - name: Prove development seed opt-in, idempotency and financial emptiness
+        run: |
+          createdb lequ_v6_development
+          psql -d lequ_v6_development -v ON_ERROR_STOP=1 -f database/schema.sql
+          psql -d lequ_v6_development -v ON_ERROR_STOP=1 -v development_seed=enabled -f database/development-seed.sql
+          psql -d lequ_v6_development -v ON_ERROR_STOP=1 -v development_seed=enabled -f database/development-seed.sql
+          psql -d lequ_v6_development -v ON_ERROR_STOP=1 -f database/development-seed-verify.sql
       - uses: actions/setup-node@v6
         with:
           node-version-file: .node-version
@@ -202,3 +209,41 @@ jobs:
           done
           docker logs lequ-web-smoke
           exit 1
+
+  development-stack:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v6
+      - name: Validate Dev Container and shell entrypoints
+        run: |
+          docker compose -f .devcontainer/compose.yaml config --quiet
+          bash -n .devcontainer/bootstrap.sh \
+            .devcontainer/start-development.sh \
+            .devcontainer/stop-development.sh \
+            .devcontainer/status.sh
+      - name: Prove PostgreSQL-backed development login and same-origin API path
+        run: |
+          set -euo pipefail
+          cleanup() {
+            result=$?
+            if [ "$result" -ne 0 ]; then
+              docker compose -f .devcontainer/compose.yaml logs --no-color || true
+            fi
+            docker compose -f .devcontainer/compose.yaml down --volumes --remove-orphans || true
+            exit "$result"
+          }
+          trap cleanup EXIT
+          docker compose -f .devcontainer/compose.yaml up --detach --build
+          docker compose -f .devcontainer/compose.yaml exec --no-TTY workspace \
+            bash .devcontainer/bootstrap.sh
+          docker compose -f .devcontainer/compose.yaml exec --no-TTY workspace \
+            bash .devcontainer/start-development.sh
+          docker compose -f .devcontainer/compose.yaml exec --no-TTY workspace \
+            node tooling/development-stack-smoke.mjs
+          session_count="$(docker compose -f .devcontainer/compose.yaml exec --no-TTY postgres \
+            psql --username=postgres --dbname=lequ_v6 --tuples-only --no-align \
+            --command="SELECT count(*) FROM user_sessions WHERE tenant_id='10000000-0000-4000-8000-000000000001'")"
+          test "$session_count" = "1"
+          docker compose -f .devcontainer/compose.yaml exec --no-TTY workspace \
+            bash .devcontainer/stop-development.sh

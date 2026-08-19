@@ -1,0 +1,36 @@
+services:
+  workspace:
+    build:
+      context: ..
+      dockerfile: .devcontainer/Dockerfile
+    command: sleep infinity
+    volumes:
+      - ..:/workspaces/lequ-life-platform:cached
+    environment:
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/lequ_v6
+      PGHOST: postgres
+      PGPORT: '5432'
+      PGDATABASE: lequ_v6
+      PGUSER: postgres
+      PGPASSWORD: postgres
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  postgres:
+    image: postgres:15-bookworm
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: lequ_v6
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres -d lequ_v6']
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+
+volumes:
+  postgres-data:

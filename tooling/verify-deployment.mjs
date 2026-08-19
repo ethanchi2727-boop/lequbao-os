@@ -6,6 +6,7 @@ const [
   workflow,
   controlledPreflight,
   candidatePublisher,
+  controlledReleaseVerifier,
   webServer,
   runbook,
   apiRuntime,
@@ -17,6 +18,7 @@ const [
   readFile('.github/workflows/ci.yml', 'utf8'),
   readFile('.github/workflows/controlled-preflight.yml', 'utf8'),
   readFile('.github/workflows/publish-candidate-images.yml', 'utf8'),
+  readFile('.github/workflows/verify-controlled-release.yml', 'utf8'),
   readFile('apps/workbench-web/production-server.mjs', 'utf8'),
   readFile('docs/runbooks/DEPLOYMENT.md', 'utf8'),
   readFile('apps/api/src/runtime-configuration.ts', 'utf8'),
@@ -86,6 +88,27 @@ for (const marker of [
     failures.push(`Candidate image publisher marker missing: ${marker}`);
 if (/^\s*tags:\s*.*(?:^|[:/-])latest(?:\s|$)/imu.test(candidatePublisher))
   failures.push('Candidate image publisher must not create a mutable latest tag');
+for (const marker of [
+  "if: ${{ github.ref == 'refs/heads/main' }}",
+  'environment: controlled-preproduction',
+  'checks: read',
+  'id-token: write',
+  'attestations: write',
+  'ref: ${{ github.sha }}',
+  'ref: ${{ inputs.candidate_commit }}',
+  'persist-credentials: false',
+  '.isDraft == true',
+  '.targetCommitish == $candidate',
+  'code-quality postgres-contract container-build',
+  'links and special archive entries are forbidden',
+  "name == 'results.json'",
+  '--no-same-owner --no-same-permissions',
+  'node ../trusted/tooling/verify-acceptance-evidence.mjs --launch',
+  'actions/attest@v4',
+  'actions/upload-artifact@v7',
+])
+  if (!controlledReleaseVerifier.includes(marker))
+    failures.push(`Controlled launch verifier marker missing: ${marker}`);
 for (const [name, source] of [
   ['API', apiRuntime],
   ['Worker', workerRuntime],
@@ -122,6 +145,6 @@ if (failures.length) {
   process.exitCode = 1;
 } else {
   console.log(
-    'Deployment gate verified non-root images, CI smoke and protected digest-bound candidate publication.',
+    'Deployment gate verified non-root images, CI smoke, protected candidate publication and attested controlled launch verification.',
   );
 }

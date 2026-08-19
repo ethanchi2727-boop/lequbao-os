@@ -1,16 +1,10 @@
 import { createHash } from 'node:crypto';
-import { createReadStream } from 'node:fs';
 import { readFile, realpath } from 'node:fs/promises';
 import path from 'node:path';
-
-const sha256File = (file) =>
-  new Promise((resolve, reject) => {
-    const digest = createHash('sha256');
-    const stream = createReadStream(file);
-    stream.on('data', (chunk) => digest.update(chunk));
-    stream.on('error', reject);
-    stream.on('end', () => resolve(digest.digest('hex')));
-  });
+import { inspectControlledEvidenceFile } from './controlled-evidence.mjs';
+import { inspectControlledJsonEvidence } from './controlled-evidence-contracts.mjs';
+import { inspectControlledSuiteEvidence } from './controlled-suite-evidence.mjs';
+import { inspectCaptureReceipt } from './controlled-capture-receipt.mjs';
 
 const safeTime = (value) => {
   const milliseconds = Date.parse(value);
@@ -35,7 +29,7 @@ export async function verifyControlledResults({ plan, planSource, resultsFile, r
   }
   if (!results || Array.isArray(results) || typeof results !== 'object')
     return ['CONTROLLED_RESULTS_FILE must contain a JSON object'];
-  if (results.version !== 2) failures.push('controlled results version must be 2');
+  if (results.version !== 3) failures.push('controlled results version must be 3');
   const extraResultKeys = unexpectedKeys(results, [
     'version',
     'releaseCommit',
@@ -50,6 +44,25 @@ export async function verifyControlledResults({ plan, planSource, resultsFile, r
   const expectedPlanHash = createHash('sha256').update(planSource).digest('hex');
   if (results.planSha256 !== expectedPlanHash)
     failures.push('controlled results are not bound to the current acceptance plan');
+  let context;
+  try {
+    context = JSON.parse(
+      await readFile(path.join(resultsRoot, 'controlled-execution-context.json'), 'utf8'),
+    );
+  } catch {
+    failures.push('controlled execution context is missing or invalid');
+  }
+  if (
+    context &&
+    (context.version !== 1 ||
+      context.releaseCommit !== releaseCommit ||
+      context.planSha256 !== expectedPlanHash ||
+      typeof context.deploymentId !== 'string' ||
+      !context.deploymentId ||
+      typeof context.environment !== 'string' ||
+      !context.environment)
+  )
+    failures.push('controlled execution context is not bound to the candidate and current plan');
   const generatedAt = safeTime(results.generatedAt);
   if (generatedAt === undefined || generatedAt > Date.now() + 5 * 60_000)
     failures.push('controlled results generatedAt is invalid or in the future');
@@ -134,7 +147,7 @@ export async function verifyControlledResults({ plan, planSource, resultsFile, r
         failures.push(`${result.code} contains an invalid evidence record`);
         continue;
       }
-      const extraEvidenceKeys = unexpectedKeys(item, ['file', 'sha256']);
+      const extraEvidenceKeys = unexpectedKeys(item, ['file', 'sha256', 'captureReceiptSha256']);
       if (extraEvidenceKeys.length)
         failures.push(
           `${result.code} evidence contains undeclared fields: ${extraEvidenceKeys.join(', ')}`,
@@ -157,6 +170,8 @@ export async function verifyControlledResults({ plan, planSource, resultsFile, r
         failures.push(`${result.code} has invalid SHA-256 for ${expectedRelative}`);
         continue;
       }
+      if (!/^[a-f0-9]{64}$/u.test(item.captureReceiptSha256 ?? ''))
+        failures.push(`${result.code} has invalid capture receipt SHA-256 for ${expectedRelative}`);
       const absolute = path.resolve(resultsRoot, ...expectedRelative.split('/'));
       const relative = path.relative(resultsRoot, absolute);
       if (relative.startsWith('..') || path.isAbsolute(relative)) {
@@ -175,9 +190,32 @@ export async function verifyControlledResults({ plan, planSource, resultsFile, r
           );
           continue;
         }
-        const actual = await sha256File(physicalFile);
-        if (actual !== item.sha256)
+        const inspection = await inspectControlledEvidenceFile(physicalFile);
+        for (const reason of inspection.failures)
+          failures.push(`${result.code} evidence is invalid for ${expectedRelative}: ${reason}`);
+        const semanticFailures = await inspectControlledJsonEvidence(
+          physicalFile,
+          requiredFile,
+          context ?? {},
+        );
+        for (const reason of semanticFailures)
+          failures.push(
+            `${result.code} evidence violates its semantic contract for ${expectedRelative}: ${reason}`,
+          );
+        if (inspection.sha256 && inspection.sha256 !== item.sha256)
           failures.push(`${result.code} evidence hash mismatch for ${expectedRelative}`);
+        const receipt = await inspectCaptureReceipt({
+          evidenceRoot: resultsRoot,
+          suite,
+          artifact: requiredFile,
+          evidenceInspection: inspection,
+          context: context ?? {},
+          expectedPlanHash,
+        });
+        for (const reason of receipt.failures)
+          failures.push(`${result.code} ${reason} for ${expectedRelative}`);
+        if (receipt.sha256 && receipt.sha256 !== item.captureReceiptSha256)
+          failures.push(`${result.code} capture receipt hash mismatch for ${expectedRelative}`);
       } catch {
         failures.push(`${result.code} evidence file is missing: ${expectedRelative}`);
       }
@@ -190,6 +228,9 @@ export async function verifyControlledResults({ plan, planSource, resultsFile, r
     );
     if (unexpected.length)
       failures.push(`${result.code} contains undeclared evidence: ${unexpected.join(', ')}`);
+    const suiteFailures = await inspectControlledSuiteEvidence(resultsRoot, suite);
+    for (const reason of suiteFailures)
+      failures.push(`${result.code} cross-evidence contract failed: ${reason}`);
   }
   for (const code of expectedSuites.keys())
     if (!seen.has(code)) failures.push(`controlled result suite is missing: ${code}`);

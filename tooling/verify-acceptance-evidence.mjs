@@ -1,5 +1,7 @@
 import { access, readFile } from 'node:fs/promises';
 import { verifyControlledResults } from './controlled-results.mjs';
+import { controlledJsonEvidenceContracts } from './controlled-evidence-contracts.mjs';
+import { controlledSuiteCrossEvidenceRules } from './controlled-suite-evidence.mjs';
 
 function parseCsv(source) {
   source = source.replace(/^\uFEFF/u, '');
@@ -102,6 +104,7 @@ if (controlledPlan.version !== 1 || !Array.isArray(controlledPlan.suites)) {
   const suiteCodes = new Set();
   const plannedIds = [];
   const environmentGates = new Set();
+  const plannedJsonArtifacts = new Set();
   for (const suite of controlledPlan.suites) {
     const caseIds = Array.isArray(suite.caseIds) ? suite.caseIds : [];
     if (!suite.code || suiteCodes.has(suite.code))
@@ -127,6 +130,8 @@ if (controlledPlan.version !== 1 || !Array.isArray(controlledPlan.suites)) {
       suite.requiredEvidence.some((file) => !/^[a-z0-9][a-z0-9._-]+$/u.test(file))
     )
       failures.push(`${suite.code} contains an unsafe evidence filename`);
+    for (const file of suite.requiredEvidence ?? [])
+      if (file.endsWith('.json')) plannedJsonArtifacts.add(file);
     if (!/^[a-z0-9-]+$/u.test(suite.evidenceDirectory ?? ''))
       failures.push(`${suite.code} has unsafe evidence directory`);
     const runbookFile = String(suite.runbook ?? '').split('#')[0];
@@ -149,6 +154,24 @@ if (controlledPlan.version !== 1 || !Array.isArray(controlledPlan.suites)) {
     [...expectedEnvironmentGates].some((gate) => !environmentGates.has(gate))
   )
     failures.push('controlled acceptance plan does not cover all seven external gates');
+  const contractArtifacts = new Set(Object.keys(controlledJsonEvidenceContracts));
+  const missingContracts = [...plannedJsonArtifacts].filter(
+    (artifact) => !contractArtifacts.has(artifact),
+  );
+  const staleContracts = [...contractArtifacts].filter(
+    (artifact) => !plannedJsonArtifacts.has(artifact),
+  );
+  if (missingContracts.length)
+    failures.push(`controlled JSON evidence contracts are missing: ${missingContracts.join(', ')}`);
+  if (staleContracts.length)
+    failures.push(`controlled JSON evidence contracts are stale: ${staleContracts.join(', ')}`);
+  const staleCrossSuiteRules = Object.keys(controlledSuiteCrossEvidenceRules).filter(
+    (code) => !suiteCodes.has(code),
+  );
+  if (staleCrossSuiteRules.length)
+    failures.push(
+      `controlled cross-suite evidence rules are stale: ${staleCrossSuiteRules.join(', ')}`,
+    );
 }
 if (launch) {
   if (!process.env.CONTROLLED_RESULTS_FILE) {

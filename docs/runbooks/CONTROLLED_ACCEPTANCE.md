@@ -6,7 +6,15 @@ For each suite, record the commit, deployment identifier, environment owner, exe
 
 ## Evidence manifest and launch verification
 
-Place `results.json` at the evidence root and each declared artifact under the exact suite directory/name from `controlled-acceptance-plan.json`. The result manifest uses version 2 and contains:
+From a clean checkout of the exact candidate, create a new evidence workspace before any suite runs:
+
+`pnpm controlled:prepare -- --release-commit=<40-character-candidate-sha> --deployment-id=<opaque-deployment-id> --environment=<controlled-environment> --evidence-root=<new-absolute-directory>`
+
+The initializer refuses a dirty or different checkout and an existing destination. It binds the plan hash, candidate, deployment and environment; creates all 11 suite directories; and generates a complete 47-artifact checklist plus a `PENDING` decision template. It deliberately creates no required artifact and no PASS decision. Keep every failed run in that workspace, and start a new workspace rather than overwriting evidence after a candidate change.
+
+Write each real provider/tool response to a new temporary file outside the evidence workspace, redact it there, and import it through the exact command generated in the workspace checklist. The generic form is `pnpm controlled:capture -- --evidence-root=<absolute-workspace> --suite=<suite-code> --artifact=<declared-file> --source=<absolute-source-file>`. Capture rechecks the clean candidate and plan binding, accepts only a declared suite/file pair, rejects invalid or commonly unredacted content, copies without overwrite, verifies the destination hash against the inspected source and exclusively writes a hidden receipt bound to the candidate, plan, deployment, environment and artifact bytes. The assembler and launch verifier both require that receipt and bind its hash into results v3. Never redirect output directly over a declared evidence slot.
+
+Place `results.json` at the evidence root and each declared artifact under the exact suite directory/name from `controlled-acceptance-plan.json`. The result manifest uses version 3 and contains:
 
 - the exact 40-character release-candidate `releaseCommit`;
 - `planSha256`, calculated from the unmodified bytes of `controlled-acceptance-plan.json`;
@@ -14,13 +22,23 @@ Place `results.json` at the evidence root and each declared artifact under the e
 - one result for every suite, including external-only suites;
 - suite code, exact environment gate, `PASS`, ordered execution/review timestamps, the planned executor role and a different independent reviewer role;
 - different opaque executor and reviewer subject IDs using an approved `github:`, `org:` or `workforce:` reference; do not use a name, email address or personal contact value;
-- every declared evidence path and the SHA-256 of its actual file.
+- every declared evidence path, the SHA-256 of its actual file and the SHA-256 of its candidate/plan/deployment-bound capture receipt.
 
 Extra suites, missing suites, missing/extra artifacts, path traversal, hash mismatch, same-person review, invalid opaque identities, review before execution completes, future timestamps, a changed plan or a different candidate commit all fail closed. Evidence paths are relative to `results.json`; do not use absolute paths or links.
 
+The assembler and launch verifier also inspect the artifact bytes before accepting their hashes. Every declared artifact must be a regular non-empty UTF-8 text file between 16 characters and 100 MiB. JSON artifacts must parse to a non-empty object or array. Empty files, `{}`, `[]`, binary data, trivial verdicts such as `TODO`, `NOT RUN` or `PASS`, and common unredacted private-key, GitHub-token, Bearer-token, provider-secret or credentialed PostgreSQL URL forms fail closed. This is a minimum content and redaction boundary, not a substitute for suite-specific technical review.
+
+All 39 JSON artifact names also have repository-owned minimum semantic contracts. The generated workspace checklist lists their required dotted fields, types, candidate/deployment bindings, numeric bounds, digest patterns, date-time rules and mandatory PASS/true/zero-unresolved invariants. Capture, assembly and final launch verification run the same contracts; a generic `{ "safe": true }`, a different candidate, an exceeded RPO/RTO, a mutable image tag, a future timestamp, a missing domain result, an empty proof collection or a wrong field type fails even when the file and receipt hashes match. These minimum schemas make evidence relevant to its declared slot but still do not replace independent technical review of the values.
+
+The generated checklist also names suite-level cross-artifact invariants. Assembly and final launch verification reconcile commerce stock/order/ledger totals, payment merchant-account and amount references, backup/restore artifact identity, performance report/deployment/candidate image digests, official WeChat build/publish/rollback versions and delivered/acknowledged alert identifiers. Individually valid and correctly hashed files cannot form a PASS bundle when they contradict one another.
+
 After independent review, set `CONTROLLED_RESULTS_FILE` to the absolute path of `results.json`, set `RELEASE_COMMIT` to the exact candidate commit and run `pnpm launch:gate`. A green result means the repository's 143 cases, 11 controlled suites, seven external gates, artifact bytes, plan and candidate commit match. It does not authorize deployment by itself; retain the output with the release approval.
 
-To avoid manual hash and path errors, place the complete v2 suite decisions in a JSON file outside the repository and run `pnpm controlled:assemble -- --decisions=<absolute-decisions.json> --evidence-root=<absolute-evidence-root>`. The assembler does not create a PASS decision: it requires every reviewed decision first, reads only the plan-declared artifacts, calculates their hashes, refuses to overwrite `results.json`, and immediately re-runs the same final verifier. Preserve a failed assembly as evidence and use a new evidence directory after remediation.
+To avoid manual hash and path errors, place the complete reviewed suite decisions in a JSON file outside the repository and run `pnpm controlled:assemble -- --decisions=<absolute-decisions.json> --evidence-root=<absolute-evidence-root>`. The assembler does not create a PASS decision: it requires every reviewed decision first, accepts only artifacts with valid capture receipts, calculates and binds both hashes, refuses to overwrite `results.json`, and immediately re-runs the same final verifier. Preserve a failed assembly as evidence and use a new evidence directory after remediation.
+
+The local launch command is a precheck, not the final independent approval boundary. After it passes, create `controlled-evidence.tar.gz` from the evidence-root contents so `results.json` is the single archive-root manifest. Create a **draft** GitHub Release targeted at the exact candidate SHA, using tag `controlled-evidence-<candidate-sha>-<YYYYMMDDTHHMMSSZ>`, and attach exactly one asset named `controlled-evidence.tar.gz`. Keep the release draft and access-restricted; never publish the evidence package.
+
+From trusted `main`, dispatch `.github/workflows/verify-controlled-release.yml` with that exact candidate and tag. The protected `controlled-preproduction` reviewer must inspect the suite reviewer identities, hashes and real provider/deployment evidence before approval. The workflow rechecks required candidate CI, accepts only the candidate-bound draft release, rejects unsafe archive entries, executes verifier code from trusted `main` against the candidate plan, and emits an OIDC-backed attestation for `verified-controlled-release.json`. Retain that attestation, workflow URL and result with the release approval.
 
 ## PostgreSQL RLS and financial invariants
 
