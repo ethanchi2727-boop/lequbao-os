@@ -235,6 +235,8 @@ jobs:
           }
           trap cleanup EXIT
           docker compose -f .devcontainer/compose.yaml up --detach --build
+          docker compose -f .devcontainer/compose.yaml exec --no-TTY --user root workspace \
+            chown --recursive node:node /workspaces/lequ-life-platform
           docker compose -f .devcontainer/compose.yaml exec --no-TTY workspace \
             bash .devcontainer/bootstrap.sh
           docker compose -f .devcontainer/compose.yaml exec --no-TTY workspace \

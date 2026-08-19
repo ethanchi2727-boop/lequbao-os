@@ -19,6 +19,9 @@ describe('cloud development workspace', () => {
 
   it('initializes and starts the development stack through explicit scripts', async () => {
     const definition = JSON.parse(await read('.devcontainer/devcontainer.json'));
+    const dockerfile = await read('.devcontainer/Dockerfile');
+    expect(dockerfile).toContain('FROM node:22.23.1-bookworm');
+    expect(dockerfile.trimEnd()).toMatch(/USER node$/u);
     expect(definition.postCreateCommand).toBe('bash .devcontainer/bootstrap.sh');
     expect(definition.postStartCommand).toBe('bash .devcontainer/start-development.sh');
     expect(definition.forwardPorts).toEqual([3000, 3399, 4173]);
@@ -72,6 +75,7 @@ describe('cloud development workspace', () => {
     expect(commands).toContain('docker compose -f .devcontainer/compose.yaml config --quiet');
     expect(commands).toContain('bash -n .devcontainer/bootstrap.sh');
     expect(commands).toContain('docker compose -f .devcontainer/compose.yaml up --detach --build');
+    expect(commands).toContain('chown --recursive node:node /workspaces/lequ-life-platform');
     expect(commands).toContain('node tooling/development-stack-smoke.mjs');
     expect(commands).toContain('SELECT count(*) FROM user_sessions');
     expect(commands).toContain('down --volumes --remove-orphans');

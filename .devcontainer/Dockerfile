@@ -1,4 +1,4 @@
-FROM mcr.microsoft.com/devcontainers/typescript-node:1-22-bookworm
+FROM node:22.23.1-bookworm
 
 USER root
 RUN apt-get update \
