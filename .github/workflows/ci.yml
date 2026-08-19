@@ -16,8 +16,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-node@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
         with:
           node-version-file: .node-version
       - name: Enable pinned pnpm
@@ -34,7 +34,7 @@ jobs:
     timeout-minutes: 15
     services:
       postgres:
-        image: postgres:15
+        image: postgres:15@sha256:5f72c7b5bd616308ccfd2e74d6be16fb06364e5eecbb815fe9dc6ab9761d2111
         env:
           POSTGRES_DB: lequ_v6
           POSTGRES_USER: postgres
@@ -53,7 +53,7 @@ jobs:
       PGUSER: postgres
       PGPASSWORD: postgres
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
       - name: Apply clean schema
         run: psql -v ON_ERROR_STOP=1 -f database/schema.sql
       - name: Prove tenant RLS isolation
@@ -135,7 +135,7 @@ jobs:
           psql -d lequ_v6_development -v ON_ERROR_STOP=1 -v development_seed=enabled -f database/development-seed.sql
           psql -d lequ_v6_development -v ON_ERROR_STOP=1 -v development_seed=enabled -f database/development-seed.sql
           psql -d lequ_v6_development -v ON_ERROR_STOP=1 -f database/development-seed-verify.sql
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
         with:
           node-version-file: .node-version
       - name: Enable pinned pnpm
@@ -168,7 +168,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
       - name: Build API candidate image
         run: docker build -f deploy/Dockerfile --target api -t lequ-api:ci .
       - name: Build Worker candidate image
@@ -214,7 +214,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
       - name: Validate Dev Container and shell entrypoints
         run: |
           docker compose -f .devcontainer/compose.yaml config --quiet

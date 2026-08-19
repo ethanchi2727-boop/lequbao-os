@@ -24,9 +24,14 @@ describe('protected controlled-release verification workflow', () => {
 
   it('accepts only a candidate-bound draft release and safely validates its archive', async () => {
     const source = await readFile('.github/workflows/verify-controlled-release.yml', 'utf8');
-    expect(source).toContain('.isDraft == true');
-    expect(source).toContain('.targetCommitish == $candidate');
-    expect(source).toContain('--pattern controlled-evidence.tar.gz');
+    expect(source).toContain('.draft == true');
+    expect(source).toContain('.target_commitish == $candidate');
+    expect(source).toContain('(.assets | length) == 1');
+    expect(source).toContain('.assets[0].name == "controlled-evidence.tar.gz"');
+    expect(source).toContain('.assets[0].state == "uploaded"');
+    expect(source).toContain('repos/${GITHUB_REPOSITORY}/releases/assets/${asset_id}');
+    expect(source).toContain('stat --format=%s evidence-package/controlled-evidence.tar.gz');
+    expect(source).not.toContain('gh release download');
     expect(source).toContain('len(members) > 256');
     expect(source).toContain("'..' in candidate.parts");
     expect(source).toContain('member.size > 104857600');
@@ -38,15 +43,21 @@ describe('protected controlled-release verification workflow', () => {
   it('executes only trusted verifier code and attests the protected result', async () => {
     const source = await readFile('.github/workflows/verify-controlled-release.yml', 'utf8');
     for (const check of ['code-quality', 'postgres-contract', 'container-build'])
-      expect(source).toContain(check);
+      expect(await readFile('tooling/verify-candidate-check-provenance.mjs', 'utf8')).toContain(
+        check,
+      );
+    expect(source).toContain('verify-candidate-check-provenance.mjs');
     expect(source).toContain('node ../trusted/tooling/controlled-evidence-package.mjs');
     expect(source).toContain('--verify-package=${{ github.workspace }}/evidence');
     expect(source).toContain('node ../trusted/tooling/verify-acceptance-evidence.mjs --launch');
     expect(source).toContain(
       'CONTROLLED_RESULTS_FILE: ${{ github.workspace }}/evidence/results.json',
     );
-    expect(source).toContain('uses: actions/attest@v4');
+    expect(source).toMatch(/uses: actions\/attest@[0-9a-f]{40}/u);
     expect(source).toContain('subject-path: verified-controlled-release.json');
-    expect(source).toContain('uses: actions/upload-artifact@v7');
+    expect(source).toMatch(/uses: actions\/upload-artifact@[0-9a-f]{40}/u);
+    expect(source).toContain('evidenceReleaseId:$evidenceReleaseId');
+    expect(source).toContain('evidenceAssetId:$evidenceAssetId');
+    expect(source).toContain('evidenceArchiveSha256:$evidenceArchiveSha256');
   });
 });

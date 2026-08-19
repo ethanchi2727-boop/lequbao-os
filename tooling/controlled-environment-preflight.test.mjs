@@ -172,7 +172,14 @@ describe('controlled environment preflight', () => {
     expect(source).toContain('configured RELEASE_COMMIT must equal candidate_commit');
     expect(source).toContain('candidate_image_run_id must be a numeric protected publisher run ID');
     expect(source).toContain('.path == ".github/workflows/publish-candidate-images.yml"');
-    expect(source).toContain('gh run download "$CANDIDATE_IMAGE_RUN_ID"');
+    expect(source).toContain('.head_sha == $trusted');
+    expect(source).toContain('/actions/runs/${CANDIDATE_IMAGE_RUN_ID}/artifacts?per_page=100');
+    expect(source).toContain('(.workflow_run.id | tostring) == $run');
+    expect(source).toContain('(.digest | test("^sha256:[0-9a-f]{64}$"))');
+    expect(source).toContain('/actions/artifacts/${artifact_id}/zip');
+    expect(source).toContain('candidate image artifact digest differs from GitHub metadata');
+    expect(source).toContain("entries[0].filename != 'candidate-image-digests.json'");
+    expect(source).not.toContain('gh run download');
     expect(source).toContain('candidate-images-${CANDIDATE_COMMIT}-${CANDIDATE_IMAGE_RUN_ID}');
     expect(source).toContain(
       'configured candidate image manifest differs from protected publisher artifact',

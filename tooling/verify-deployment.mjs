@@ -1,4 +1,6 @@
 import { readFile } from 'node:fs/promises';
+import { inspectContainerImagePins } from './container-image-policy.mjs';
+import { inspectGitHubActionPins } from './github-actions-policy.mjs';
 
 const [
   dockerfile,
@@ -26,6 +28,26 @@ const [
   readFile('.env.example', 'utf8'),
 ]);
 const failures = [];
+failures.push(
+  ...inspectContainerImagePins({
+    dockerfiles: {
+      'deploy/Dockerfile': dockerfile,
+      '.devcontainer/Dockerfile': await readFile('.devcontainer/Dockerfile', 'utf8'),
+    },
+    manifests: {
+      '.devcontainer/compose.yaml': await readFile('.devcontainer/compose.yaml', 'utf8'),
+      '.github/workflows/ci.yml': workflow,
+    },
+  }),
+);
+failures.push(
+  ...inspectGitHubActionPins({
+    '.github/workflows/ci.yml': workflow,
+    '.github/workflows/controlled-preflight.yml': controlledPreflight,
+    '.github/workflows/publish-candidate-images.yml': candidatePublisher,
+    '.github/workflows/verify-controlled-release.yml': controlledReleaseVerifier,
+  }),
+);
 for (const target of ['api', 'worker', 'web']) {
   if (!dockerfile.includes(` AS ${target}\n`)) failures.push(`Docker target missing: ${target}`);
   if (!workflow.includes(`--target ${target}`)) failures.push(`CI Docker build missing: ${target}`);
@@ -67,7 +89,13 @@ for (const marker of [
   'actions: read',
   'Prove Stage 49 candidate image manifest provenance',
   '.github/workflows/publish-candidate-images.yml',
-  'gh run download "$CANDIDATE_IMAGE_RUN_ID"',
+  '.head_sha == $trusted',
+  '/actions/runs/${CANDIDATE_IMAGE_RUN_ID}/artifacts?per_page=100',
+  '(.workflow_run.id | tostring) == $run',
+  '(.digest | test("^sha256:[0-9a-f]{64}$"))',
+  '/actions/artifacts/${artifact_id}/zip',
+  'candidate image artifact digest differs from GitHub metadata',
+  "entries[0].filename != 'candidate-image-digests.json'",
 ])
   if (!controlledPreflight.includes(marker))
     failures.push(`Controlled preflight trust-boundary marker missing: ${marker}`);
@@ -78,17 +106,18 @@ for (const marker of [
   'packages: write',
   'persist-credentials: false',
   'Verify resolved candidate and required checks',
-  'code-quality postgres-contract container-build',
-  'docker/setup-buildx-action@v4',
-  'docker/login-action@v4',
-  'docker/build-push-action@v7',
+  'ref: ${{ github.sha }}',
+  'verify-candidate-check-provenance.mjs',
+  'docker/setup-buildx-action@',
+  'docker/login-action@',
+  'docker/build-push-action@',
   'target: api',
   'target: worker',
   'target: web',
   'provenance: mode=max',
   'sbom: true',
   'candidate-image-digests.json',
-  'actions/upload-artifact@v7',
+  'actions/upload-artifact@',
 ])
   if (!candidatePublisher.includes(marker))
     failures.push(`Candidate image publisher marker missing: ${marker}`);
@@ -103,17 +132,22 @@ for (const marker of [
   'ref: ${{ github.sha }}',
   'ref: ${{ inputs.candidate_commit }}',
   'persist-credentials: false',
-  '.isDraft == true',
-  '.targetCommitish == $candidate',
-  'code-quality postgres-contract container-build',
+  '.draft == true',
+  '.target_commitish == $candidate',
+  '(.assets | length) == 1',
+  '.assets[0].name == "controlled-evidence.tar.gz"',
+  'repos/${GITHUB_REPOSITORY}/releases/assets/${asset_id}',
+  'stat --format=%s evidence-package/controlled-evidence.tar.gz',
+  'evidenceArchiveSha256',
+  'verify-candidate-check-provenance.mjs',
   'links and special archive entries are forbidden',
   "name == 'results.json'",
   '--no-same-owner --no-same-permissions',
   'node ../trusted/tooling/controlled-evidence-package.mjs',
   '--verify-package=${{ github.workspace }}/evidence',
   'node ../trusted/tooling/verify-acceptance-evidence.mjs --launch',
-  'actions/attest@v4',
-  'actions/upload-artifact@v7',
+  'actions/attest@',
+  'actions/upload-artifact@',
 ])
   if (!controlledReleaseVerifier.includes(marker))
     failures.push(`Controlled launch verifier marker missing: ${marker}`);

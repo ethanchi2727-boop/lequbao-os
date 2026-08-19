@@ -14,9 +14,13 @@ describe('candidate image publication workflow', () => {
     expect(publish.if).toBe("${{ github.ref == 'refs/heads/main' }}");
     expect(publish.environment).toBe('controlled-preproduction');
     expect(
-      steps.filter((step) => step.uses === 'actions/checkout@v6').map((step) => step.with),
+      steps.filter((step) => step.uses?.startsWith('actions/checkout@')).map((step) => step.with),
     ).toEqual([
-      expect.objectContaining({ ref: 'main', path: 'trusted', 'persist-credentials': false }),
+      expect.objectContaining({
+        ref: '${{ github.sha }}',
+        path: 'trusted',
+        'persist-credentials': false,
+      }),
       expect.objectContaining({ path: 'candidate', 'persist-credentials': false }),
     ]);
   });
@@ -25,8 +29,9 @@ describe('candidate image publication workflow', () => {
     const verification = steps.find(
       (step) => step.name === 'Verify resolved candidate and required checks',
     );
-    expect(verification.run).toContain('code-quality postgres-contract container-build');
-    const builds = steps.filter((step) => step.uses === 'docker/build-push-action@v7');
+    expect(verification.run).toContain('verify-candidate-check-provenance.mjs');
+    expect(verification.run).toContain('test "$(git -C trusted rev-parse HEAD)" = "$GITHUB_SHA"');
+    const builds = steps.filter((step) => step.uses?.startsWith('docker/build-push-action@'));
     expect(builds.map((step) => step.with.target).sort()).toEqual(['api', 'web', 'worker']);
     for (const build of builds) {
       expect(build.with).toMatchObject({
@@ -46,7 +51,7 @@ describe('candidate image publication workflow', () => {
     const manifest = steps.find((step) => step.name === 'Record immutable image digests');
     expect(manifest.run).toContain("'^sha256:[0-9a-f]{64}$'");
     expect(manifest.run).toContain('@${API_DIGEST}');
-    const artifact = steps.find((step) => step.uses === 'actions/upload-artifact@v7');
+    const artifact = steps.find((step) => step.uses?.startsWith('actions/upload-artifact@'));
     expect(artifact.with).toMatchObject({
       path: 'candidate-image-digests.json',
       'if-no-files-found': 'error',

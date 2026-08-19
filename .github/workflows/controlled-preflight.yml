@@ -98,13 +98,13 @@ jobs:
             exit 1
           fi
       - name: Checkout trusted preflight from the default branch
-        uses: actions/checkout@v6
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           ref: main
           path: trusted
           persist-credentials: false
       - name: Resolve candidate without executing candidate code
-        uses: actions/checkout@v6
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           ref: ${{ inputs.candidate_commit }}
           path: candidate
@@ -136,14 +136,76 @@ jobs:
           fi
           run="$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${CANDIDATE_IMAGE_RUN_ID}")"
           jq --exit-status \
-            '.conclusion == "success" and .event == "workflow_dispatch" and .head_branch == "main" and .path == ".github/workflows/publish-candidate-images.yml"' \
+            --arg trusted "$GITHUB_SHA" \
+            --arg repository "$GITHUB_REPOSITORY" \
+            '.conclusion == "success" and .event == "workflow_dispatch" and
+              .head_branch == "main" and .head_sha == $trusted and
+              .path == ".github/workflows/publish-candidate-images.yml" and
+              .repository.full_name == $repository and .head_repository.full_name == $repository' \
             <<<"$run" >/dev/null
+          artifact_name="candidate-images-${CANDIDATE_COMMIT}-${CANDIDATE_IMAGE_RUN_ID}"
+          artifacts="$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${CANDIDATE_IMAGE_RUN_ID}/artifacts?per_page=100")"
+          jq --exit-status \
+            --arg name "$artifact_name" \
+            --arg run "$CANDIDATE_IMAGE_RUN_ID" \
+            --arg trusted "$GITHUB_SHA" \
+            '[.artifacts[] | select(
+              .name == $name and .expired == false and .id > 0 and
+              .size_in_bytes > 0 and .size_in_bytes <= 1048576 and
+              (.digest | test("^sha256:[0-9a-f]{64}$")) and
+              (.workflow_run.id | tostring) == $run and
+              .workflow_run.head_branch == "main" and
+              .workflow_run.head_sha == $trusted
+            )] | length == 1' <<<"$artifacts" >/dev/null
+          artifact="$(jq --compact-output \
+            --arg name "$artifact_name" \
+            --arg run "$CANDIDATE_IMAGE_RUN_ID" \
+            --arg trusted "$GITHUB_SHA" \
+            '[.artifacts[] | select(
+              .name == $name and .expired == false and .id > 0 and
+              .size_in_bytes > 0 and .size_in_bytes <= 1048576 and
+              (.digest | test("^sha256:[0-9a-f]{64}$")) and
+              (.workflow_run.id | tostring) == $run and
+              .workflow_run.head_branch == "main" and
+              .workflow_run.head_sha == $trusted
+            )] | .[0]' \
+            <<<"$artifacts")"
+          artifact_id="$(jq --raw-output '.id' <<<"$artifact")"
+          artifact_digest="$(jq --raw-output '.digest' <<<"$artifact")"
+          if ! [[ "$artifact_id" =~ ^[1-9][0-9]*$ ]]; then
+            echo 'candidate image artifact ID must be a positive integer'
+            exit 1
+          fi
+          gh api "repos/${GITHUB_REPOSITORY}/actions/artifacts/${artifact_id}/zip" \
+            >candidate-image-manifest.zip
+          test "$(stat --format=%s candidate-image-manifest.zip)" -le 1048576
+          downloaded_digest="sha256:$(sha256sum candidate-image-manifest.zip | awk '{print $1}')"
+          if [ "$downloaded_digest" != "$artifact_digest" ]; then
+            echo 'candidate image artifact digest differs from GitHub metadata'
+            exit 1
+          fi
           mkdir candidate-image-manifest
-          gh run download "$CANDIDATE_IMAGE_RUN_ID" \
-            --repo "$GITHUB_REPOSITORY" \
-            --name "candidate-images-${CANDIDATE_COMMIT}-${CANDIDATE_IMAGE_RUN_ID}" \
-            --dir candidate-image-manifest
-          test "$(find candidate-image-manifest -maxdepth 1 -type f -name 'candidate-image-digests.json' | wc -l)" -eq 1
+          python3 - candidate-image-manifest.zip candidate-image-manifest/candidate-image-digests.json <<'PY'
+          import pathlib
+          import stat
+          import sys
+          import zipfile
+
+          archive, output = sys.argv[1:]
+          with zipfile.ZipFile(archive) as bundle:
+              entries = bundle.infolist()
+              if len(entries) != 1 or entries[0].filename != 'candidate-image-digests.json':
+                  raise SystemExit('candidate image artifact must contain exactly one root manifest')
+              entry = entries[0]
+              mode = entry.external_attr >> 16
+              if entry.is_dir() or stat.S_ISLNK(mode) or entry.flag_bits & 1:
+                  raise SystemExit('candidate image manifest must be a regular unencrypted file')
+              if entry.file_size <= 0 or entry.file_size > 1048576:
+                  raise SystemExit('candidate image manifest size is invalid')
+              if bundle.testzip() is not None:
+                  raise SystemExit('candidate image artifact CRC validation failed')
+              pathlib.Path(output).write_bytes(bundle.read(entry))
+          PY
           jq --sort-keys --compact-output . \
             candidate-image-manifest/candidate-image-digests.json >downloaded-candidate-images.json
           printf '%s' "$CONFIGURED_MANIFEST" | jq --sort-keys --compact-output . \

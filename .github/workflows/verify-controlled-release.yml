@@ -45,13 +45,13 @@ jobs:
             exit 1
           fi
       - name: Checkout trusted launch policy
-        uses: actions/checkout@v6
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           ref: ${{ github.sha }}
           path: trusted
           persist-credentials: false
       - name: Resolve candidate without executing candidate code
-        uses: actions/checkout@v6
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           ref: ${{ inputs.candidate_commit }}
           path: candidate
@@ -63,33 +63,39 @@ jobs:
         run: |
           test "$(git -C trusted rev-parse HEAD)" = "$GITHUB_SHA"
           test "$(git -C candidate rev-parse HEAD)" = "$CANDIDATE_COMMIT"
-          checks="$(gh api "repos/${GITHUB_REPOSITORY}/commits/${CANDIDATE_COMMIT}/check-runs?per_page=100")"
-          for required in code-quality postgres-contract container-build; do
-            if ! jq --exit-status --arg required "$required" \
-              '[.check_runs[] | select(.name == $required and .conclusion == "success")] | length > 0' \
-              <<<"$checks" >/dev/null; then
-              echo "Required successful candidate check is missing: $required"
-              exit 1
-            fi
-          done
+          node trusted/tooling/verify-candidate-check-provenance.mjs \
+            --candidate="$CANDIDATE_COMMIT" \
+            --repository="$GITHUB_REPOSITORY"
       - name: Download exact draft evidence package
         env:
           CANDIDATE_COMMIT: ${{ inputs.candidate_commit }}
           EVIDENCE_RELEASE_TAG: ${{ inputs.evidence_release_tag }}
           GH_TOKEN: ${{ github.token }}
         run: |
-          release="$(gh release view "$EVIDENCE_RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --json isDraft,targetCommitish,tagName)"
+          release="$(gh api "repos/${GITHUB_REPOSITORY}/releases/tags/${EVIDENCE_RELEASE_TAG}")"
           jq --exit-status \
             --arg tag "$EVIDENCE_RELEASE_TAG" \
             --arg candidate "$CANDIDATE_COMMIT" \
-            '.isDraft == true and .tagName == $tag and .targetCommitish == $candidate' \
+            '.draft == true and .tag_name == $tag and .target_commitish == $candidate and
+              (.assets | length) == 1 and .assets[0].name == "controlled-evidence.tar.gz" and
+              .assets[0].state == "uploaded" and .assets[0].size > 0 and .assets[0].size <= 536870912' \
             <<<"$release" >/dev/null
+          release_id="$(jq --raw-output '.id' <<<"$release")"
+          asset_id="$(jq --raw-output '.assets[0].id' <<<"$release")"
+          asset_size="$(jq --raw-output '.assets[0].size' <<<"$release")"
+          if ! [[ "$release_id" =~ ^[1-9][0-9]*$ && "$asset_id" =~ ^[1-9][0-9]*$ ]]; then
+            echo 'release and asset IDs must be positive integers'
+            exit 1
+          fi
           mkdir evidence-package
-          gh release download "$EVIDENCE_RELEASE_TAG" \
-            --repo "$GITHUB_REPOSITORY" \
-            --pattern controlled-evidence.tar.gz \
-            --dir evidence-package
+          gh api \
+            --header 'Accept: application/octet-stream' \
+            "repos/${GITHUB_REPOSITORY}/releases/assets/${asset_id}" \
+            >evidence-package/controlled-evidence.tar.gz
           test "$(find evidence-package -maxdepth 1 -type f -name 'controlled-evidence.tar.gz' | wc -l)" -eq 1
+          test "$(stat --format=%s evidence-package/controlled-evidence.tar.gz)" = "$asset_size"
+          printf 'EVIDENCE_RELEASE_ID=%s\nEVIDENCE_ASSET_ID=%s\n' \
+            "$release_id" "$asset_id" >>"$GITHUB_ENV"
       - name: Validate and extract evidence archive safely
         run: |
           archive="$GITHUB_WORKSPACE/evidence-package/controlled-evidence.tar.gz"
@@ -141,24 +147,28 @@ jobs:
           CANDIDATE_COMMIT: ${{ inputs.candidate_commit }}
           EVIDENCE_RELEASE_TAG: ${{ inputs.evidence_release_tag }}
         run: |
+          archive_sha="$(sha256sum evidence-package/controlled-evidence.tar.gz | awk '{print $1}')"
           results_sha="$(sha256sum evidence/results.json | awk '{print $1}')"
           plan_sha="$(sha256sum candidate/docs/release/controlled-acceptance-plan.json | awk '{print $1}')"
           jq --null-input \
             --arg releaseCommit "$CANDIDATE_COMMIT" \
             --arg evidenceReleaseTag "$EVIDENCE_RELEASE_TAG" \
+            --arg evidenceReleaseId "$EVIDENCE_RELEASE_ID" \
+            --arg evidenceAssetId "$EVIDENCE_ASSET_ID" \
+            --arg evidenceArchiveSha256 "$archive_sha" \
             --arg resultsSha256 "$results_sha" \
             --arg planSha256 "$plan_sha" \
             --arg workflowRunId "$GITHUB_RUN_ID" \
             --arg workflowRunAttempt "$GITHUB_RUN_ATTEMPT" \
             --arg trustedPolicyCommit "$GITHUB_SHA" \
-            '{version:1,result:"PASS",releaseCommit:$releaseCommit,evidenceReleaseTag:$evidenceReleaseTag,resultsSha256:$resultsSha256,planSha256:$planSha256,workflowRunId:$workflowRunId,workflowRunAttempt:$workflowRunAttempt,trustedPolicyCommit:$trustedPolicyCommit}' \
+            '{version:1,result:"PASS",releaseCommit:$releaseCommit,evidenceReleaseTag:$evidenceReleaseTag,evidenceReleaseId:$evidenceReleaseId,evidenceAssetId:$evidenceAssetId,evidenceArchiveSha256:$evidenceArchiveSha256,resultsSha256:$resultsSha256,planSha256:$planSha256,workflowRunId:$workflowRunId,workflowRunAttempt:$workflowRunAttempt,trustedPolicyCommit:$trustedPolicyCommit}' \
             >verified-controlled-release.json
       - name: Attest protected verification result
-        uses: actions/attest@v4
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4
         with:
           subject-path: verified-controlled-release.json
       - name: Retain protected verification result
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: verified-controlled-release-${{ inputs.candidate_commit }}-${{ github.run_id }}
           path: verified-controlled-release.json
