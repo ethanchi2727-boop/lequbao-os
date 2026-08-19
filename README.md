@@ -6,8 +6,9 @@
 ## 当前阶段
 
 - 已固化唯一开发基线、总包校验结果、冲突裁决和 V5→V6 迁移矩阵。
-- 已从 PostgreSQL 15+ 的 73 表正式基线扩展到 78 表审计目标，包含租户 RLS、不可变台账、收益结算、可信 AI 商户建档和单次消费上传票据。
-- 当前实现 17 条范围明确的 API 路径，以及模块化单体 API、异步 Worker、共享契约、乐趣宝响应式 Web 与全仓质量门。
+- 已从 PostgreSQL 15+ 的 73 表正式基线扩展到 164 表、26 个迁移的审计目标，包含租户 RLS、不可变台账、商业交易、AI/客服、运营和平台控制面。
+- 当前实现 192 条范围明确的 API 路径、135 个乐趣宝叶页面与 62 个小程序叶页面；全部 197 个发布叶页面使用权威服务端边界。
+- 全仓门禁覆盖格式、Lint、契约/RBAC/OpenAPI、安全/运维/部署、六个类型检查、79 个测试文件、401 个测试和六个生产构建。
 
 权威状态见 [PROJECT_STATE.md](PROJECT_STATE.md)，架构决策见
 [docs/adr/0001-v6-1-rebuild.md](docs/adr/0001-v6-1-rebuild.md)。
@@ -28,7 +29,7 @@ psql $env:DATABASE_URL -v ON_ERROR_STOP=1 -f database/schema.sql
 psql $env:DATABASE_URL -v ON_ERROR_STOP=1 -f database/tests/rls.sql
 ```
 
-本地没有 PostgreSQL 时，推送分支后由 GitHub Actions 的真实 PostgreSQL 服务执行这两项。
+GitHub Actions 还会执行完整 22 个数据库 fixtures、73 表增量升级、分账、商家录入、库存并发、Worker 故障注入和性能证据快照。
 
 启动 API 还必须配置会话与对象存储边界：
 
@@ -38,7 +39,9 @@ $env:OBJECT_STORE_GATEWAY_URL = 'https://<租户对象存储网关>'
 $env:OBJECT_STORE_SIGNING_SECRET = '<至少 32 字节的对象授权密钥>'
 ```
 
-这些密钥只从部署环境或密钥服务读取，不得提交到仓库。企业微信回调只有在完整配置 `WECOM_CORP_ID`、`WECOM_CALLBACK_TOKEN`、`WECOM_ENCODING_AES_KEY`、`WECOM_TENANT_ID`、`WECOM_USER_ID`、`WECOM_MEMBER_ID` 和 `WECOM_INTAKE_SESSION_ID` 时启用；数据库角色仍会在处理消息时再次校验。
+这些密钥只从部署环境或密钥服务读取，不得提交到仓库。企业微信回调通过 `WECOM_CONFIG_GATEWAY_URL` 和 `WECOM_CONFIG_GATEWAY_TOKEN` 接入多租户配置/身份边界；网关按 CorpID 解析密钥服务中的回调配置，并把成员解析为当前租户、用户、门店和建档会话，API 会拒绝跨 CorpID 响应。
+
+Worker 是按租户、一次性执行的安全单元，由外部调度器为每个活跃租户触发。`WORKER_TENANT_ID`、`OUTBOX_EVENT_GATEWAY_URL` 和 `OUTBOX_EVENT_GATEWAY_TOKEN` 为必填；没有事件网关时 Worker 会在领取事件前失败，不能把 Outbox 留在 `PROCESSING`。发布使用事件 ID 作为网关幂等键，失败进入有上限的重试/死信链，崩溃留下的旧锁会在五分钟后安全重领。
 
 本地查看乐趣宝建档页面：
 

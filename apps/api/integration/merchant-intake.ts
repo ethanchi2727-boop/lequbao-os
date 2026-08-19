@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { createHash } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import pg from 'pg';
 import { createMerchantIntakeService } from '../src/merchant-intake-service.js';
 import { createMerchantIntakeUploadService } from '../src/merchant-intake-upload-service.js';
@@ -8,9 +8,9 @@ import type { SessionIdentity } from '../src/session-identity.js';
 const connectionString = process.env.DATABASE_URL;
 if (!connectionString) throw new Error('DATABASE_URL is required');
 
-const tenantId = '91000000-0000-4000-8000-000000000001';
-const ownerId = '91000000-0000-4000-8000-000000000002';
-const processorId = '91000000-0000-4000-8000-000000000003';
+const tenantId = randomUUID();
+const ownerId = randomUUID();
+const processorId = randomUUID();
 const identity: SessionIdentity = {
   tenantId,
   userId: ownerId,
@@ -24,8 +24,8 @@ const pool = new pg.Pool({ connectionString });
 try {
   await pool.query(
     `INSERT INTO tenants(id, tenant_code, legal_name, display_name)
-     VALUES ($1, 'intake-integration', 'Intake Integration Legal', 'Intake Integration')`,
-    [tenantId],
+     VALUES ($1, $2, 'Intake Integration Legal', 'Intake Integration')`,
+    [tenantId, `intake-${tenantId.slice(0, 8)}`],
   );
   await pool.query(
     `INSERT INTO users(id, display_name) VALUES ($1, 'Merchant Owner'), ($2, 'AI Processor')`,
@@ -53,12 +53,17 @@ try {
       headers: {},
       expiresAt,
     }),
+    authorizeGet: ({ objectKey, expiresAt }) => ({
+      downloadUrl: `https://object-store.invalid/${encodeURIComponent(objectKey)}`,
+      expiresAt,
+    }),
     stat: async (objectKey) => {
       const evidence = uploadEvidence.get(objectKey);
       if (!evidence) throw new Error('object evidence missing');
       return evidence;
     },
     putText: async () => undefined,
+    getText: async () => '',
   });
   const createCommand = {
     identity,

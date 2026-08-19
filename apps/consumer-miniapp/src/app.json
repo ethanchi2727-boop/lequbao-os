@@ -1,0 +1,33 @@
+{
+  "pages": [
+    "pages/life/index",
+    "pages/mall/index",
+    "pages/community/index",
+    "pages/cart/index",
+    "pages/profile/index",
+    "pages/route/index"
+  ],
+  "window": {
+    "navigationBarTitleText": "乐趣生活",
+    "navigationBarBackgroundColor": "#fff9ec",
+    "navigationBarTextStyle": "black",
+    "backgroundColor": "#f5f7f6",
+    "backgroundTextStyle": "light"
+  },
+  "tabBar": {
+    "color": "#66736d",
+    "selectedColor": "#0d8b62",
+    "backgroundColor": "#ffffff",
+    "borderStyle": "white",
+    "list": [
+      { "pagePath": "pages/life/index", "text": "生活" },
+      { "pagePath": "pages/mall/index", "text": "商城" },
+      { "pagePath": "pages/community/index", "text": "生活圈" },
+      { "pagePath": "pages/cart/index", "text": "购物车" },
+      { "pagePath": "pages/profile/index", "text": "我的" }
+    ]
+  },
+  "usingComponents": { "life-experience": "/components/life-experience/index" },
+  "sitemapLocation": "sitemap.json",
+  "lazyCodeLoading": "requiredComponents"
+}

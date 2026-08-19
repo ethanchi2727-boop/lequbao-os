@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { ApiError, createMerchantIntakeApi } from './api-client.js';
+import { ApiError, createMerchantIntakeApi, createWorkbenchApi } from './api-client.js';
 
 const response = (body, status = 200) =>
   new Response(JSON.stringify(body), {
@@ -69,5 +69,52 @@ describe('merchant intake browser API client', () => {
         code: 'OBJECT_STORE_UNAVAILABLE',
       }),
     );
+  });
+});
+
+describe('workbench live read API', () => {
+  it('uses the employee session and rejects paths outside the bounded API', async () => {
+    const request = vi.fn(async (_url, init) =>
+      Response.json({ ok: true, auth: init.headers.authorization }),
+    );
+    const api = createWorkbenchApi({
+      baseUrl: 'https://api.example.test/',
+      token: 'employee-token',
+      fetch: request,
+    });
+    await expect(api.get('/api/v1/context')).resolves.toEqual({
+      ok: true,
+      auth: 'Bearer employee-token',
+    });
+    await expect(api.get('https://attacker.example/steal')).rejects.toMatchObject({
+      code: 'UNSAFE_API_PATH',
+    });
+  });
+
+  it('posts only bounded API paths with a fresh idempotency key', async () => {
+    const request = vi.fn().mockResolvedValue(response({ status: 'STARTED' }, 202));
+    const api = createWorkbenchApi({
+      baseUrl: 'https://api.example.test',
+      token: 'employee-token',
+      fetch: request,
+      idempotencyKey: () => 'workbench-command-1',
+    });
+    await expect(api.post('/api/v1/delivery-projects/project/actions/start', {})).resolves.toEqual({
+      status: 'STARTED',
+    });
+    expect(request).toHaveBeenCalledWith(
+      'https://api.example.test/api/v1/delivery-projects/project/actions/start',
+      expect.objectContaining({
+        method: 'POST',
+        headers: expect.objectContaining({
+          authorization: 'Bearer employee-token',
+          'idempotency-key': 'workbench-command-1',
+        }),
+        body: '{}',
+      }),
+    );
+    await expect(api.post('https://attacker.example/steal', {})).rejects.toMatchObject({
+      code: 'UNSAFE_API_PATH',
+    });
   });
 });

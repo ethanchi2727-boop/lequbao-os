@@ -1,0 +1,16 @@
+<view class="page safe-bottom">
+  <view class="header"><view><text class="merchant">{{content.title}}</text><text class="verified">线上门店</text></view><button bindtap="askAi">AI 店员</button></view>
+  <view wx:if="{{state === '加载中'}}" class="state"><view class="skeleton"></view><text>正在加载本店最新信息…</text></view>
+  <view wx:elif="{{state === '空数据'}}" class="state"><text class="state-title">暂时没有内容</text><text>商家正在准备，稍后再来看看</text></view>
+  <view wx:elif="{{state === '局部错误' || state === '可恢复失败'}}" class="state"><text class="state-title">部分内容加载失败</text><text>不会重复下单或付款</text><button bindtap="retry">安全重试</button></view>
+  <view wx:elif="{{state === '无权限'}}" class="state"><text class="state-title">需要身份绑定</text><text>只在查询你的订单时申请手机号</text></view>
+  <view wx:elif="{{state === '停用'}}" class="state"><text class="state-title">本店线上服务暂时停用</text><text>历史订单、售后和客服仍可进入</text></view>
+  <view wx:elif="{{state === '成功'}}" class="state success"><text class="state-title">操作成功</text><text>结果已由服务端确认</text></view>
+  <block wx:else>
+    <view class="hero" data-route="{{content.route}}" bindtap="open"><image src="/assets/local-dining.webp" mode="aspectFill"></image><view class="overlay"></view><view class="hero-copy"><text>{{content.title}}</text><text>{{content.subtitle}}</text><view>营业中 · 售后有入口</view></view></view>
+    <view class="quick"><view data-route="/merchant/page-269" bindtap="open"><text>门店</text><text>地址与营业</text></view><view data-route="/merchant/page-293" bindtap="open"><text>我的券</text><text>待使用券码</text></view><view data-route="/merchant/page-304" bindtap="open"><text>售后</text><text>申请与进度</text></view><view data-route="/merchant/page-298" bindtap="open"><text>AI 店员</text><text>可转人工</text></view></view>
+    <view class="section-head"><view><text>本店推荐</text><text>规则和实付价下单前看清</text></view><text data-route="{{content.route}}" bindtap="open">查看全部 ›</text></view>
+    <view class="product" wx:for="{{products}}" wx:key="id" data-route="{{item.route}}" data-product-id="{{item.id}}" bindtap="open"><image src="/assets/life-product.webp" mode="aspectFill"></image><view><text class="tag">{{item.tag}}</text><text class="product-title">{{item.title}}</text><text class="detail">{{item.detail}}</text><view class="price"><text>¥{{item.price}}</text><text>立即查看</text></view></view></view>
+    <view class="ai-notice"><text>AI 店员</text><text>回答由 AI 提供，可随时转人工；查询订单前需完成身份绑定。</text><button bindtap="askAi">问问本店</button></view>
+  </block>
+</view>

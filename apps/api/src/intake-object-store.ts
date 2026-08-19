@@ -1,8 +1,13 @@
-import { createHmac } from 'node:crypto';
+import { createHash, createHmac } from 'node:crypto';
 
 export interface UploadAuthorization {
   uploadUrl: string;
   headers: Record<string, string>;
+  expiresAt: string;
+}
+
+export interface DownloadAuthorization {
+  downloadUrl: string;
   expiresAt: string;
 }
 
@@ -20,8 +25,14 @@ export interface IntakeObjectStore {
     maxBytes: number;
     expiresAt: string;
   }): UploadAuthorization;
+  authorizeGet(input: {
+    objectKey: string;
+    maxBytes: number;
+    expiresAt: string;
+  }): DownloadAuthorization;
   stat(objectKey: string): Promise<StoredObjectEvidence>;
   putText(input: { objectKey: string; content: string; sha256: string }): Promise<void>;
+  getText(input: { objectKey: string; maxBytes: number }): Promise<string>;
 }
 
 const sign = (secret: string, value: string) =>
@@ -56,6 +67,25 @@ export function createIntakeObjectStoreGateway(options: {
           'x-content-sha256': input.sha256,
           'x-max-bytes': String(input.maxBytes),
         },
+        expiresAt: input.expiresAt,
+      };
+    },
+    authorizeGet(input) {
+      if (
+        !Number.isSafeInteger(input.maxBytes) ||
+        input.maxBytes < 1 ||
+        input.maxBytes > 52_428_800
+      )
+        throw new Error('object store download limit is invalid');
+      const expires = Math.floor(new Date(input.expiresAt).getTime() / 1000);
+      if (!Number.isSafeInteger(expires) || expires <= Math.floor(Date.now() / 1000))
+        throw new Error('object store download expiry is invalid');
+      const signature = sign(
+        options.signingSecret,
+        ['GET', input.objectKey, input.maxBytes, expires].join('\n'),
+      );
+      return {
+        downloadUrl: `${baseUrl}/v1/objects/${encodeURIComponent(input.objectKey)}?expires=${expires}&max_bytes=${input.maxBytes}&signature=${signature}`,
         expiresAt: input.expiresAt,
       };
     },
@@ -103,6 +133,29 @@ export function createIntakeObjectStoreGateway(options: {
         },
       );
       if (!response.ok) throw new Error(`object store text write failed: ${response.status}`);
+    },
+    async getText(input) {
+      if (!Number.isSafeInteger(input.maxBytes) || input.maxBytes < 1 || input.maxBytes > 1_048_576)
+        throw new Error('object store text read limit is invalid');
+      const expires = Math.floor(Date.now() / 1000) + 60;
+      const canonical = ['GET', input.objectKey, input.maxBytes, expires].join('\n');
+      const signature = sign(options.signingSecret, canonical);
+      const response = await request(
+        `${baseUrl}/v1/objects/${encodeURIComponent(input.objectKey)}?expires=${expires}&max_bytes=${input.maxBytes}&signature=${signature}`,
+        { method: 'GET' },
+      );
+      if (!response.ok) throw new Error(`object store text read failed: ${response.status}`);
+      const content = await response.text();
+      if (Buffer.byteLength(content, 'utf8') > input.maxBytes)
+        throw new Error('object store text exceeded read limit');
+      const expectedHash = response.headers.get('x-content-sha256');
+      if (!expectedHash || !/^[a-f0-9]{64}$/iu.test(expectedHash))
+        throw new Error('object store text evidence is missing');
+      // SHA-256 is intentionally recomputed without trusting the gateway's metadata.
+      const contentHash = createHash('sha256').update(content).digest('hex');
+      if (contentHash !== expectedHash.toLowerCase())
+        throw new Error('object store text evidence mismatch');
+      return content;
     },
   };
 }

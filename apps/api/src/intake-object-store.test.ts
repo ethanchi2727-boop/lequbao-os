@@ -25,6 +25,23 @@ describe('tenant intake object-store gateway', () => {
     });
   });
 
+  it('binds download authorization to object key, size limit and a short expiry', () => {
+    const store = createIntakeObjectStoreGateway({
+      baseUrl: 'https://objects.example.test',
+      signingSecret: secret,
+    });
+    const expiresAt = new Date(Date.now() + 60_000).toISOString();
+    const authorization = store.authorizeGet({
+      objectKey: 'tenant/private/cost evidence.pdf',
+      maxBytes: 1024,
+      expiresAt,
+    });
+    expect(authorization.expiresAt).toBe(expiresAt);
+    expect(authorization.downloadUrl).toContain('max_bytes=1024');
+    expect(authorization.downloadUrl).toContain('signature=');
+    expect(authorization.downloadUrl).not.toContain(secret);
+  });
+
   it('accepts only complete provider HEAD evidence', async () => {
     const fetch = vi.fn().mockResolvedValue(
       new Response(null, {

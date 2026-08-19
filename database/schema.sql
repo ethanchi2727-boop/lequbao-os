@@ -1996,3 +1996,23 @@ VALUES ('0007_merchant_intake_upload_tickets', encode(digest('lequbao-v6.1-0007'
 ON CONFLICT (version) DO NOTHING;
 
 COMMIT;
+
+\ir migrations/0008_identity_access_and_usage.sql
+\ir migrations/0009_revenue_right_governance.sql
+\ir migrations/0010_delivery_workflow.sql
+\ir migrations/0011_mini_program_lifecycle.sql
+\ir migrations/0012_customer_service_and_privacy.sql
+\ir migrations/0013_commerce_fulfillment_and_reconciliation.sql
+\ir migrations/0014_geo_reports_and_plugin_runtime.sql
+\ir migrations/0015_operations_migration_and_privacy.sql
+\ir migrations/0016_event_delivery_runtime.sql
+\ir migrations/0017_platform_consumer_cart.sql
+\ir migrations/0018_platform_checkout.sql
+\ir migrations/0019_merchant_mini_checkout_scope.sql
+\ir migrations/0020_consumer_trace_and_invoice_profiles.sql
+\ir migrations/0021_sales_and_subscription_lifecycle.sql
+\ir migrations/0022_distribution_disputes.sql
+\ir migrations/0023_employee_agent_runtime.sql
+\ir migrations/0024_product_publication_receipts.sql
+\ir migrations/0025_customer_service_operations.sql
+\ir migrations/0026_platform_control_plane.sql

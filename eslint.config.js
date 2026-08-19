@@ -20,4 +20,17 @@ export default tseslint.config(
       globals: globals.browser,
     },
   },
+  {
+    files: ['apps/{consumer-miniapp,merchant-miniapp}/src/**/*.js'],
+    rules: { '@typescript-eslint/no-require-imports': 'off' },
+    languageOptions: {
+      globals: {
+        App: 'readonly',
+        Component: 'readonly',
+        Page: 'readonly',
+        getApp: 'readonly',
+        wx: 'readonly',
+      },
+    },
+  },
 );

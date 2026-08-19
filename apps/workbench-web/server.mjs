@@ -21,6 +21,7 @@ const server = createServer(async (request, response) => {
     file = join(root, 'index.html');
   }
   response.setHeader('content-type', types[extname(file)] ?? 'text/html; charset=utf-8');
+  response.setHeader('cache-control', 'no-store');
   createReadStream(file).pipe(response);
 });
 server.listen(Number(process.env.PORT ?? 4173), process.env.HOST ?? '127.0.0.1', () =>

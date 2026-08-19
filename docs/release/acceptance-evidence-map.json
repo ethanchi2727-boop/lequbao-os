@@ -1,0 +1,192 @@
+{
+  "version": 1,
+  "controlledAcceptancePlan": "docs/release/controlled-acceptance-plan.json",
+  "defaultStatus": "LOCAL_PASS",
+  "prefixEvidence": {
+    "TEN": ["apps/api/src/access-control.test.ts", "database/tests/rls.sql"],
+    "RBAC": ["apps/api/src/access-control.test.ts", "database/tests/identity-access-and-usage.sql"],
+    "RGT": [
+      "apps/api/src/revenue-right-governance-service.test.ts",
+      "database/tests/revenue-right-governance.sql"
+    ],
+    "CST": ["apps/api/src/revenue-distribution.test.ts", "database/tests/revenue-distribution.sql"],
+    "DST": [
+      "apps/api/src/distribution-lock-service.test.ts",
+      "database/tests/distribution-payout-and-reversal.sql"
+    ],
+    "CMP": ["apps/api/src/revenue-policy.test.ts"],
+    "VCH": ["apps/api/src/voucher-policy.test.ts"],
+    "INT": [
+      "apps/api/src/merchant-intake-processing.test.ts",
+      "database/tests/merchant-intake.sql"
+    ],
+    "DEL": [
+      "apps/api/src/delivery-workflow-service.test.ts",
+      "database/tests/delivery-workflow.sql"
+    ],
+    "MP": [
+      "apps/api/src/mini-program-lifecycle-service.test.ts",
+      "database/tests/mini-program-lifecycle.sql"
+    ],
+    "CS": ["apps/api/src/customer-service.test.ts", "apps/api/src/customer-service-ai.test.ts"],
+    "ORD": [
+      "apps/api/src/commerce-order-service.test.ts",
+      "database/tests/commerce-fulfillment-and-reconciliation.sql"
+    ],
+    "PAY": [
+      "apps/api/src/commerce-payment-service.test.ts",
+      "apps/api/src/commerce-http-adapters.test.ts"
+    ],
+    "REF": ["apps/api/src/commerce-refund-service.test.ts"],
+    "VER": ["apps/api/src/commerce-verification-service.test.ts"],
+    "REW": [
+      "apps/api/src/commerce-payment-service.test.ts",
+      "database/tests/commerce-fulfillment-and-reconciliation.sql"
+    ],
+    "REC": ["apps/api/src/commerce-reconciliation-service.test.ts"],
+    "UI": ["tooling/verify-visual-assets.mjs", "apps/workbench-web/src/state.test.js"],
+    "GEO": [
+      "apps/api/src/geo-plugin-report-policy.test.ts",
+      "apps/worker/src/geo-report-jobs.test.ts"
+    ],
+    "PLG": [
+      "apps/api/src/geo-plugin-report-http.test.ts",
+      "apps/api/src/geo-plugin-report-policy.test.ts"
+    ],
+    "EVT": [
+      "apps/worker/src/outbox.test.ts",
+      "database/migrations/0016_event_delivery_runtime.sql"
+    ],
+    "MIG": [
+      "apps/worker/src/legacy-migration.test.ts",
+      "database/migrations/0015_operations_migration_and_privacy.sql"
+    ],
+    "PRI": [
+      "apps/worker/src/privacy-export-jobs.test.ts",
+      "apps/worker/src/privacy-deletion-jobs.test.ts"
+    ],
+    "SEC": ["tooling/security-gate.mjs", "docs/security/THREAT_MODEL_AND_DATA_FLOW.md"],
+    "DR": ["ops/scripts/restore-verify.ps1", "apps/api/src/geo-plugin-report-policy.test.ts"],
+    "API": ["tooling/verify-openapi.mjs", "apps/api/openapi.yaml"],
+    "PERF": [
+      "tooling/performance-gate.mjs",
+      "docs/release/stage-09-operations-security-migration-evidence.md"
+    ]
+  },
+  "statusOverrides": {
+    "INT-007": "LOCAL_REVIEWED",
+    "UI-003": "LOCAL_REVIEWED",
+    "UI-005": "LOCAL_REVIEWED",
+    "TEN-001": "CONTROLLED_ENV_REQUIRED",
+    "TEN-002": "CONTROLLED_ENV_REQUIRED",
+    "TEN-003": "CONTROLLED_ENV_REQUIRED",
+    "TEN-004": "CONTROLLED_ENV_REQUIRED",
+    "TEN-010": "CONTROLLED_ENV_REQUIRED",
+    "INT-001": "CONTROLLED_ENV_REQUIRED",
+    "INT-010": "CONTROLLED_ENV_REQUIRED",
+    "RGT-001": "CONTROLLED_ENV_REQUIRED",
+    "RGT-006": "CONTROLLED_ENV_REQUIRED",
+    "CST-003": "CONTROLLED_ENV_REQUIRED",
+    "DEL-001": "CONTROLLED_ENV_REQUIRED",
+    "ORD-001": "CONTROLLED_ENV_REQUIRED",
+    "ORD-002": "CONTROLLED_ENV_REQUIRED",
+    "PAY-001": "CONTROLLED_ENV_REQUIRED",
+    "REW-001": "CONTROLLED_ENV_REQUIRED",
+    "REW-004": "CONTROLLED_ENV_REQUIRED",
+    "PLG-003": "CONTROLLED_ENV_REQUIRED",
+    "EVT-001": "CONTROLLED_ENV_REQUIRED",
+    "EVT-002": "CONTROLLED_ENV_REQUIRED",
+    "MIG-001": "CONTROLLED_ENV_REQUIRED",
+    "MIG-003": "CONTROLLED_ENV_REQUIRED",
+    "MIG-004": "CONTROLLED_ENV_REQUIRED",
+    "MIG-005": "CONTROLLED_ENV_REQUIRED",
+    "MIG-006": "CONTROLLED_ENV_REQUIRED",
+    "PRI-003": "CONTROLLED_ENV_REQUIRED",
+    "SEC-003": "CONTROLLED_ENV_REQUIRED",
+    "DR-001": "CONTROLLED_ENV_REQUIRED",
+    "PERF-001": "CONTROLLED_ENV_REQUIRED",
+    "PERF-002": "CONTROLLED_ENV_REQUIRED"
+  },
+  "launchExternalGates": [
+    "PostgreSQL 15 clean and incremental migration, RLS, concurrency and fault-injection suites",
+    "WeChat merchant mini-program build, review, publish, rollback and callback sandbox",
+    "Payment/refund provider sandbox with merchant-account reconciliation",
+    "Real GEO target and isolated plugin runtime network policy",
+    "Encrypted backup restore with measured RPO/RTO and financial reconciliation",
+    "Production-shaped performance runs for core API and customer-service message peaks",
+    "On-call alert delivery, secret manager, object store and privacy export/deletion gateways"
+  ],
+  "surfaceReadiness": [
+    {
+      "product": "乐趣宝",
+      "totalLeaves": 135,
+      "authoritativeLeaves": 135,
+      "failClosedLeaves": 0,
+      "prototypeOnlyLeaves": 0,
+      "evidence": [
+        "apps/workbench-web/src/live-page-registry.mjs",
+        "apps/workbench-web/src/live-page-registry.test.js",
+        "apps/api/src/merchant-operations-service.ts",
+        "apps/api/src/merchant-operations-service.test.ts",
+        "apps/api/src/organization-governance-service.ts",
+        "apps/api/src/organization-governance-service.test.ts",
+        "apps/api/src/revenue-operations-service.ts",
+        "apps/api/src/revenue-operations-service.test.ts",
+        "apps/api/src/sales-lifecycle-service.ts",
+        "apps/api/src/sales-lifecycle-service.test.ts",
+        "apps/api/src/subscription-lifecycle-service.ts",
+        "apps/api/src/subscription-lifecycle-service.test.ts",
+        "apps/api/src/employee-agent-service.ts",
+        "apps/api/src/employee-agent-service.test.ts",
+        "apps/api/src/operational-home-service.ts",
+        "apps/api/src/operational-home-service.test.ts",
+        "apps/api/src/geo-operations-service.ts",
+        "apps/api/src/geo-operations-service.test.ts",
+        "database/migrations/0024_product_publication_receipts.sql",
+        "database/tests/product-publication-receipts.sql",
+        "apps/api/src/customer-service-operations-service.ts",
+        "apps/api/src/customer-service-operations-service.test.ts",
+        "database/migrations/0025_customer_service_operations.sql",
+        "database/tests/customer-service-operations.sql",
+        "apps/api/src/platform-control-service.ts",
+        "apps/api/src/platform-control-service.test.ts",
+        "apps/api/src/geo-plugin-report-service.test.ts",
+        "database/migrations/0026_platform_control_plane.sql",
+        "database/tests/platform-control-plane.sql",
+        "apps/worker/src/employee-agent-jobs.ts",
+        "apps/worker/src/employee-agent-jobs.test.ts",
+        "database/tests/sales-and-subscription-lifecycle.sql"
+      ]
+    },
+    {
+      "product": "乐趣生活",
+      "totalLeaves": 38,
+      "authoritativeLeaves": 38,
+      "failClosedLeaves": 0,
+      "prototypeOnlyLeaves": 0,
+      "evidence": [
+        "apps/consumer-miniapp/src/lib/api.js",
+        "apps/consumer-miniapp/src/pages/route/index.js",
+        "apps/consumer-miniapp/src/components/life-experience/index.js",
+        "apps/api/src/platform-discovery-service.ts",
+        "apps/api/src/platform-invoice-profile-service.ts"
+      ]
+    },
+    {
+      "product": "商家独立小程序模板实例",
+      "totalLeaves": 24,
+      "authoritativeLeaves": 24,
+      "failClosedLeaves": 0,
+      "prototypeOnlyLeaves": 0,
+      "evidence": [
+        "apps/merchant-miniapp/src/lib/api.js",
+        "apps/merchant-miniapp/src/pages/route/index.js",
+        "apps/merchant-miniapp/src/components/merchant-experience/index.js",
+        "apps/api/src/merchant-consumer-journey-service.ts",
+        "apps/api/src/merchant-consumer-journey-service.test.ts",
+        "apps/api/src/consumer-store-switch-service.ts",
+        "apps/api/src/consumer-store-switch-service.test.ts"
+      ]
+    }
+  ]
+}

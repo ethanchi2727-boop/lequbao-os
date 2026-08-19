@@ -1,0 +1,230 @@
+{
+  "version": 1,
+  "evidenceRoot": "artifacts/controlled-acceptance",
+  "suites": [
+    {
+      "code": "POSTGRES_RLS_FINANCE",
+      "caseIds": [
+        "TEN-001",
+        "TEN-002",
+        "TEN-004",
+        "INT-010",
+        "RGT-001",
+        "RGT-006",
+        "CST-003",
+        "DEL-001",
+        "ORD-001",
+        "REW-001",
+        "REW-004",
+        "EVT-001",
+        "SEC-003"
+      ],
+      "environmentGate": "POSTGRESQL",
+      "executorRole": "release database engineer",
+      "runbook": "docs/runbooks/CONTROLLED_ACCEPTANCE.md#postgresql-rls-and-financial-invariants",
+      "evidenceDirectory": "postgres-rls-finance",
+      "requiredEvidence": [
+        "clean-schema.log",
+        "incremental-migration.log",
+        "database-fixtures.log",
+        "rls-denials.json"
+      ],
+      "passCriteria": [
+        "PostgreSQL 15 clean and incremental migration succeeds",
+        "all database fixtures pass",
+        "cross-tenant reads and writes expose no fields or mutations"
+      ]
+    },
+    {
+      "code": "WORKER_FAULT_INJECTION",
+      "caseIds": ["TEN-003", "TEN-010", "EVT-002"],
+      "environmentGate": "POSTGRESQL",
+      "executorRole": "release reliability engineer",
+      "runbook": "docs/runbooks/CONTROLLED_ACCEPTANCE.md#worker-connection-and-event-fault-injection",
+      "evidenceDirectory": "worker-fault-injection",
+      "requiredEvidence": [
+        "fault-injection.log",
+        "tenant-context.json",
+        "inbox-deduplication.json"
+      ],
+      "passCriteria": [
+        "pooled connections reset tenant context per transaction",
+        "event tenant mismatch is rejected",
+        "crash replay produces one business result"
+      ]
+    },
+    {
+      "code": "INTAKE_OBJECT_PIPELINE",
+      "caseIds": ["INT-001"],
+      "environmentGate": "IDENTITY_OBJECT_PRIVACY",
+      "executorRole": "release application engineer",
+      "runbook": "docs/runbooks/CONTROLLED_ACCEPTANCE.md#intake-object-and-ocr-evidence",
+      "evidenceDirectory": "intake-object-pipeline",
+      "requiredEvidence": ["upload-response.json", "object-metadata.json", "ocr-provenance.json"],
+      "passCriteria": [
+        "original object is retained encrypted",
+        "OCR candidates contain source and confidence",
+        "no credential or raw object key appears in client evidence"
+      ]
+    },
+    {
+      "code": "COMMERCE_CONCURRENCY",
+      "caseIds": ["ORD-002"],
+      "environmentGate": "POSTGRESQL",
+      "executorRole": "release database engineer",
+      "runbook": "docs/runbooks/CONTROLLED_ACCEPTANCE.md#inventory-concurrency",
+      "evidenceDirectory": "commerce-concurrency",
+      "requiredEvidence": ["concurrency-input.json", "order-results.json", "inventory-ledger.json"],
+      "passCriteria": [
+        "successful quantity never exceeds sellable stock",
+        "inventory never becomes negative",
+        "failed contenders create no partial order"
+      ]
+    },
+    {
+      "code": "PAYMENT_PROVIDER_SANDBOX",
+      "caseIds": ["PAY-001"],
+      "environmentGate": "PAYMENT_REFUND",
+      "executorRole": "payments release engineer",
+      "runbook": "docs/runbooks/CONTROLLED_ACCEPTANCE.md#payment-provider-sandbox",
+      "evidenceDirectory": "payment-provider-sandbox",
+      "requiredEvidence": [
+        "provider-request-redacted.json",
+        "provider-callback-redacted.json",
+        "merchant-account-reconciliation.json",
+        "refund-unknown-recovery.json"
+      ],
+      "passCriteria": [
+        "amount comes from the server order",
+        "provider merchant account matches the confirmed merchant account",
+        "only verified callback evidence changes payment success",
+        "unknown payment or refund results are queried before retry and converge once"
+      ]
+    },
+    {
+      "code": "PLUGIN_NETWORK_SANDBOX",
+      "caseIds": ["PLG-003"],
+      "environmentGate": "GEO_PLUGIN",
+      "executorRole": "platform security engineer",
+      "runbook": "docs/runbooks/CONTROLLED_ACCEPTANCE.md#plugin-network-isolation",
+      "evidenceDirectory": "plugin-network-sandbox",
+      "requiredEvidence": [
+        "runtime-policy.json",
+        "allowed-request.log",
+        "denied-request.log",
+        "geo-target-redacted.json"
+      ],
+      "passCriteria": [
+        "declared HTTPS host is reachable only with the exact grant",
+        "undeclared host is denied at network layer",
+        "denial is durably audited",
+        "real GEO target result is stored without rank traffic or conversion claims"
+      ]
+    },
+    {
+      "code": "GREENFIELD_CUTOVER_GUARD",
+      "caseIds": ["MIG-001", "MIG-003", "MIG-004", "MIG-005", "MIG-006"],
+      "environmentGate": "POSTGRESQL",
+      "executorRole": "release migration lead",
+      "runbook": "docs/runbooks/MIGRATION_ROLLBACK.md",
+      "evidenceDirectory": "legacy-migration-rehearsal",
+      "requiredEvidence": [
+        "legacy-production-inventory.json",
+        "greenfield-waiver.json",
+        "fresh-install.log",
+        "rollback-window.log"
+      ],
+      "passCriteria": [
+        "every previously deployable V5 data store is inventoried and contains zero production business records",
+        "business product security and migration owners independently approve the greenfield waiver",
+        "the exact candidate installs on a fresh PostgreSQL database and all database gates pass",
+        "rollback is allowed only before the first production write; afterward recovery is forward-fix or verified restore",
+        "any discovered legacy production record invalidates the waiver and restores the full two-rehearsal migration requirement"
+      ]
+    },
+    {
+      "code": "BACKUP_RESTORE_PRIVACY",
+      "caseIds": ["PRI-003", "DR-001"],
+      "environmentGate": "BACKUP_RESTORE",
+      "executorRole": "disaster recovery lead",
+      "runbook": "docs/runbooks/BACKUP_RESTORE.md",
+      "evidenceDirectory": "backup-restore-privacy",
+      "requiredEvidence": [
+        "backup.manifest.json",
+        "restore-report.json",
+        "physical-wal-evidence.json",
+        "external-deletion-samples.json"
+      ],
+      "passCriteria": [
+        "RPO is at most 300 seconds",
+        "RTO is at most 3600 seconds",
+        "financial digest and all database fixtures pass",
+        "restored deletion replay reaches every configured external target"
+      ]
+    },
+    {
+      "code": "PERFORMANCE_CORE_AND_MESSAGES",
+      "caseIds": ["PERF-001", "PERF-002"],
+      "environmentGate": "PERFORMANCE",
+      "executorRole": "performance release engineer",
+      "runbook": "docs/runbooks/PERFORMANCE_ACCEPTANCE.md",
+      "evidenceDirectory": "performance-core-messages",
+      "requiredEvidence": [
+        "performance-report.json",
+        "deployment-topology.json",
+        "monitoring-snapshot.json"
+      ],
+      "passCriteria": [
+        "core read P95 is at most 500 ms",
+        "core write P95 is at most 800 ms",
+        "customer message persistence P95 is at most 500 ms with no missing acknowledged ID"
+      ]
+    },
+    {
+      "code": "WECHAT_RELEASE_AND_ROLLBACK",
+      "caseIds": [],
+      "externalOnly": true,
+      "environmentGate": "WECHAT",
+      "executorRole": "mini-program release lead",
+      "runbook": "docs/runbooks/CONTROLLED_ACCEPTANCE.md#wechat-build-publish-and-rollback",
+      "evidenceDirectory": "wechat-release-rollback",
+      "requiredEvidence": [
+        "consumer-build.json",
+        "merchant-template-build.json",
+        "review-publish.json",
+        "callback-redacted.json",
+        "rollback.json",
+        "device-matrix.json"
+      ],
+      "passCriteria": [
+        "both packages pass official build and real-device checks",
+        "review and publication versions match durable server evidence",
+        "callback signatures and replay behavior pass",
+        "rollback creates and verifies a new safe release"
+      ]
+    },
+    {
+      "code": "IDENTITY_SECRETS_PRIVACY_ONCALL",
+      "caseIds": [],
+      "externalOnly": true,
+      "environmentGate": "IDENTITY_OBJECT_PRIVACY",
+      "executorRole": "security and operations release lead",
+      "runbook": "docs/runbooks/CONTROLLED_ACCEPTANCE.md#identity-secrets-privacy-and-on-call",
+      "evidenceDirectory": "identity-secrets-privacy-oncall",
+      "requiredEvidence": [
+        "identity-session-redacted.json",
+        "secret-access-audit.json",
+        "object-retention.json",
+        "privacy-export-delete.json",
+        "alert-delivery.json",
+        "oncall-acknowledgement.json"
+      ],
+      "passCriteria": [
+        "identity revocation and MFA boundaries pass",
+        "secrets and objects use production access policies without plaintext evidence",
+        "privacy export and deletion reach every target",
+        "a real on-call recipient receives and acknowledges P0 and P1 alerts"
+      ]
+    }
+  ]
+}

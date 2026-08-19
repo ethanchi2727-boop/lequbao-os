@@ -1,0 +1,11 @@
+{
+  "name": "@lequ/merchant-miniapp",
+  "version": "6.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node ../../tooling/miniapp-contract.mjs merchant-miniapp",
+    "typecheck": "node ../../tooling/miniapp-contract.mjs merchant-miniapp --verify",
+    "test": "vitest run"
+  }
+}

@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "node server.mjs",
+    "start": "node production-server.mjs",
     "build": "node build.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run"

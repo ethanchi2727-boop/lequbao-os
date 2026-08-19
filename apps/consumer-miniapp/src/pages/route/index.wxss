@@ -1,0 +1,136 @@
+.route-page {
+  padding: 28rpx;
+}
+.route-hero {
+  padding: 34rpx;
+  border-radius: 28rpx;
+  background: linear-gradient(135deg, #0d8b62, #35ae81);
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+}
+.eyebrow {
+  font-size: 21rpx;
+  color: #c9f6e2;
+}
+.title {
+  font-size: 46rpx;
+  font-weight: 900;
+  margin-top: 12rpx;
+}
+.purpose {
+  font-size: 25rpx;
+  line-height: 1.55;
+  margin-top: 14rpx;
+}
+.state-switch {
+  margin: 24rpx 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 23rpx;
+  color: #66736d;
+}
+.state-switch button {
+  margin: 0;
+  padding: 0 20rpx;
+  height: 58rpx;
+  line-height: 58rpx;
+  border-radius: 29rpx;
+  background: #e3f5ed;
+  color: #0d8b62;
+  font-size: 21rpx;
+}
+.panel {
+  min-height: 360rpx;
+  padding: 34rpx;
+  border-radius: 24rpx;
+  background: #fff;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  color: #66736d;
+}
+.panel-title {
+  font-size: 32rpx;
+  font-weight: 800;
+  color: #17201c;
+  margin-bottom: 16rpx;
+}
+.panel button {
+  margin-top: 26rpx;
+  background: #fff3ee;
+  color: #ff5a36;
+  font-size: 24rpx;
+  border-radius: 36rpx;
+}
+.panel.content {
+  align-items: stretch;
+  text-align: left;
+  justify-content: flex-start;
+}
+.action {
+  display: flex;
+  align-items: center;
+  margin-top: 18rpx;
+  padding: 20rpx;
+  border-radius: 18rpx;
+  background: #f5f7f6;
+  color: #17201c;
+}
+.action text:first-child {
+  width: 44rpx;
+  height: 44rpx;
+  line-height: 44rpx;
+  text-align: center;
+  border-radius: 50%;
+  background: #e3f5ed;
+  color: #0d8b62;
+  margin-right: 18rpx;
+}
+.domains {
+  margin-top: 30rpx;
+  color: #7a8781;
+  font-size: 22rpx;
+}
+.warning {
+  background: #fff9ec;
+}
+.success {
+  background: #eaf7f1;
+}
+.primary {
+  margin-top: 24rpx;
+  height: 92rpx;
+  line-height: 92rpx;
+  border-radius: 46rpx;
+  background: #ff5a36;
+  color: #fff;
+  font-size: 28rpx;
+  font-weight: 800;
+}
+.primary[disabled] {
+  background: #cfd5d2;
+  color: #fff;
+}
+.help {
+  display: flex;
+  justify-content: center;
+  gap: 40rpx;
+  margin-top: 28rpx;
+  color: #66736d;
+  font-size: 22rpx;
+}
+.skeleton {
+  width: 90%;
+  height: 120rpx;
+  border-radius: 18rpx;
+  background: #edf0ee;
+  margin: 10rpx;
+}
+.skeleton.short {
+  width: 58%;
+  height: 28rpx;
+}

@@ -1,0 +1,11 @@
+{
+  "name": "@lequ/consumer-miniapp",
+  "version": "6.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node ../../tooling/miniapp-contract.mjs consumer-miniapp",
+    "typecheck": "node ../../tooling/miniapp-contract.mjs consumer-miniapp --verify",
+    "test": "vitest run"
+  }
+}

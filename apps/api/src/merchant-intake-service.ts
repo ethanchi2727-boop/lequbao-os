@@ -204,6 +204,32 @@ async function assertActiveRole(
   if (result.rowCount !== 1) throw new MerchantIntakeAuthorizationError();
 }
 
+async function assertRegionalProjectAssignment(
+  client: pg.PoolClient,
+  identity: SessionIdentity,
+  options: { projectId?: string | null | undefined; sessionId?: string | undefined },
+) {
+  if (!identity.roleCodes.includes('REGIONAL_PROVIDER')) return;
+  const assignment = options.projectId
+    ? await client.query(
+        `SELECT 1 FROM delivery_project_assignments
+          WHERE tenant_id=$1 AND project_id=$2 AND assignee_user_id=$3
+            AND access_scope @> ARRAY['DELIVERY_MATERIALS']::text[]
+            AND revoked_at IS NULL AND expires_at > now() LIMIT 1`,
+        [identity.tenantId, options.projectId, identity.userId],
+      )
+    : await client.query(
+        `SELECT 1 FROM merchant_intake_sessions session
+          JOIN delivery_project_assignments assignment
+            ON assignment.tenant_id=session.tenant_id AND assignment.project_id=session.delivery_project_id
+         WHERE session.tenant_id=$1 AND session.id=$2 AND assignment.assignee_user_id=$3
+           AND assignment.access_scope @> ARRAY['DELIVERY_MATERIALS']::text[]
+           AND assignment.revoked_at IS NULL AND assignment.expires_at > now() LIMIT 1`,
+        [identity.tenantId, options.sessionId, identity.userId],
+      );
+  if (assignment.rowCount !== 1) throw new MerchantIntakeAuthorizationError();
+}
+
 async function loadSession(
   client: pg.PoolClient,
   tenantId: string,
@@ -295,6 +321,9 @@ export function createMerchantIntakeService(pool: Pick<pg.Pool, 'connect'>): Mer
         );
         if (replay) return SessionResponseSchema.parse(replay);
         await assertActiveRole(client, command.identity, CREATE_WRITE_ROLES);
+        await assertRegionalProjectAssignment(client, command.identity, {
+          projectId: input.deliveryProjectId,
+        });
         const inserted = await client.query<{ id: string }>(
           `INSERT INTO merchant_intake_sessions(
              tenant_id, merchant_profile_id, delivery_project_id, channel, created_by, last_message_at
@@ -379,6 +408,7 @@ export function createMerchantIntakeService(pool: Pick<pg.Pool, 'connect'>): Mer
       return transaction(async (client) => {
         await client.query("SELECT set_config('app.tenant_id', $1, true)", [identity.tenantId]);
         await assertActiveRole(client, identity, CREATE_WRITE_ROLES);
+        await assertRegionalProjectAssignment(client, identity, { sessionId });
         return loadSession(client, identity.tenantId, sessionId);
       });
     },
@@ -398,6 +428,9 @@ export function createMerchantIntakeService(pool: Pick<pg.Pool, 'connect'>): Mer
         );
         if (replay) return AssetResponseSchema.parse(replay);
         await assertActiveRole(client, command.identity, CREATE_WRITE_ROLES);
+        await assertRegionalProjectAssignment(client, command.identity, {
+          sessionId: input.sessionId,
+        });
         const session = await client.query<{ channel: string; status: string }>(
           `SELECT channel, status FROM merchant_intake_sessions
             WHERE tenant_id = $1 AND id = $2 FOR UPDATE`,

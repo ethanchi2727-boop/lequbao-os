@@ -1,0 +1,12 @@
+{
+  "appid": "touristappid",
+  "projectname": "lequ-merchant-template-v6.1",
+  "compileType": "miniprogram",
+  "miniprogramRoot": "dist/",
+  "setting": {
+    "es6": true,
+    "minified": true,
+    "postcss": true,
+    "urlCheck": true
+  }
+}

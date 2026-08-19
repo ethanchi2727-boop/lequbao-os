@@ -1,0 +1,8 @@
+<view class="profile-page safe-bottom">
+  <view class="heading"><text>我的</text><text>跨商户订单使用同一平台账号关联，不复制账目</text></view>
+  <view wx:if="{{state === '加载中'}}" class="panel">正在加载真实订单…</view>
+  <view wx:elif="{{state === '空数据'}}" class="panel"><text class="title">还没有订单</text><text>付款后的订单会按商户合并显示在这里</text></view>
+  <view wx:elif="{{state === '可恢复失败'}}" class="panel warning"><text class="title">订单暂时无法加载</text><button bindtap="loadOrders">安全重试</button></view>
+  <view wx:else class="panel"><view class="order" wx:for="{{orders}}" wx:key="id" data-order-id="{{item.id}}" bindtap="openOrder"><view><text class="title">{{item.storeName}}</text><text>{{item.orderNo}}</text></view><view><text>{{item.status}}</text><text>¥{{item.payableAmountCents / 100}}</text></view></view></view>
+  <view class="panel muted"><text>会员、奖励、地址、发票、隐私和账号删除仍按各自上线门禁逐项接入。</text></view>
+</view>

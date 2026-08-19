@@ -23,6 +23,10 @@ jobs:
       - name: Enable pinned pnpm
         run: corepack enable && corepack prepare pnpm@11.19.0 --activate
       - run: pnpm install --frozen-lockfile
+      - name: Reject high-risk production dependency vulnerabilities
+        run: pnpm audit --prod --audit-level high
+      - name: Verify source secret scan and CycloneDX inventory
+        run: pnpm security:check
       - run: pnpm check
 
   postgres-contract:
@@ -64,6 +68,38 @@ jobs:
         run: psql -v ON_ERROR_STOP=1 -f database/tests/distribution-payout-and-reversal.sql
       - name: Prove merchant intake safety and confirmation guards
         run: psql -v ON_ERROR_STOP=1 -f database/tests/merchant-intake.sql
+      - name: Prove revocable sessions, frozen RBAC and immutable usage
+        run: psql -v ON_ERROR_STOP=1 -f database/tests/identity-access-and-usage.sql
+      - name: Prove revenue-right transfer confirmation, dual approval and dispute freeze
+        run: psql -v ON_ERROR_STOP=1 -f database/tests/revenue-right-governance.sql
+      - name: Prove delivery acceptance, immutable attempts and temporary access expiry
+        run: psql -v ON_ERROR_STOP=1 -f database/tests/delivery-workflow.sql
+      - name: Prove mini-program ownership, confirmation and authorization-loss guards
+        run: psql -v ON_ERROR_STOP=1 -f database/tests/mini-program-lifecycle.sql
+      - name: Prove customer-service human takeover, grounding and privacy guards
+        run: psql -v ON_ERROR_STOP=1 -f database/tests/customer-service-and-privacy.sql
+      - name: Prove commerce inventory, payment, refund, verification, reward and reconciliation guards
+        run: psql -v ON_ERROR_STOP=1 -f database/tests/commerce-fulfillment-and-reconciliation.sql
+      - name: Prove GEO evidence, report definitions and plugin runtime guards
+        run: psql -v ON_ERROR_STOP=1 -f database/tests/geo-reports-and-plugin-runtime.sql
+      - name: Prove migration switch, reconciliation and privacy propagation guards
+        run: psql -v ON_ERROR_STOP=1 -f database/tests/operations-migration-and-privacy.sql
+      - name: Prove platform consumer and cross-merchant cart account isolation
+        run: psql -v ON_ERROR_STOP=1 -f database/tests/platform-consumer-cart.sql
+      - name: Prove platform checkout address, quote and group account isolation
+        run: psql -v ON_ERROR_STOP=1 -f database/tests/platform-checkout.sql
+      - name: Prove sales evidence, contract, collection and subscription dual control
+        run: psql -v ON_ERROR_STOP=1 -f database/tests/sales-and-subscription-lifecycle.sql
+      - name: Prove distribution dispute isolation and immutable request evidence
+        run: psql -v ON_ERROR_STOP=1 -f database/tests/distribution-disputes.sql
+      - name: Prove employee agent runtime limits, RLS and immutable evidence
+        run: psql -v ON_ERROR_STOP=1 -f database/tests/employee-agent-runtime.sql
+      - name: Prove idempotent product publication receipts
+        run: psql -v ON_ERROR_STOP=1 -f database/tests/product-publication-receipts.sql
+      - name: Prove customer-service operations RLS and remediation bindings
+        run: psql -v ON_ERROR_STOP=1 -f database/tests/customer-service-operations.sql
+      - name: Prove platform control versions, RLS, skills and idempotency receipts
+        run: psql -v ON_ERROR_STOP=1 -f database/tests/platform-control-plane.sql
       - name: Prove incremental migrations from the 73-table package baseline
         run: |
           createdb lequ_v6_migration
@@ -73,6 +109,25 @@ jobs:
           psql -d lequ_v6_migration -v ON_ERROR_STOP=1 -f database/migrations/0005_distribution_payout_and_reversal.sql
           psql -d lequ_v6_migration -v ON_ERROR_STOP=1 -f database/migrations/0006_merchant_intake_commit_guards.sql
           psql -d lequ_v6_migration -v ON_ERROR_STOP=1 -f database/migrations/0007_merchant_intake_upload_tickets.sql
+          psql -d lequ_v6_migration -v ON_ERROR_STOP=1 -f database/migrations/0008_identity_access_and_usage.sql
+          psql -d lequ_v6_migration -v ON_ERROR_STOP=1 -f database/migrations/0009_revenue_right_governance.sql
+          psql -d lequ_v6_migration -v ON_ERROR_STOP=1 -f database/migrations/0010_delivery_workflow.sql
+          psql -d lequ_v6_migration -v ON_ERROR_STOP=1 -f database/migrations/0011_mini_program_lifecycle.sql
+          psql -d lequ_v6_migration -v ON_ERROR_STOP=1 -f database/migrations/0012_customer_service_and_privacy.sql
+          psql -d lequ_v6_migration -v ON_ERROR_STOP=1 -f database/migrations/0013_commerce_fulfillment_and_reconciliation.sql
+          psql -d lequ_v6_migration -v ON_ERROR_STOP=1 -f database/migrations/0014_geo_reports_and_plugin_runtime.sql
+          psql -d lequ_v6_migration -v ON_ERROR_STOP=1 -f database/migrations/0015_operations_migration_and_privacy.sql
+          psql -d lequ_v6_migration -v ON_ERROR_STOP=1 -f database/migrations/0016_event_delivery_runtime.sql
+          psql -d lequ_v6_migration -v ON_ERROR_STOP=1 -f database/migrations/0017_platform_consumer_cart.sql
+          psql -d lequ_v6_migration -v ON_ERROR_STOP=1 -f database/migrations/0018_platform_checkout.sql
+          psql -d lequ_v6_migration -v ON_ERROR_STOP=1 -f database/migrations/0019_merchant_mini_checkout_scope.sql
+          psql -d lequ_v6_migration -v ON_ERROR_STOP=1 -f database/migrations/0020_consumer_trace_and_invoice_profiles.sql
+          psql -d lequ_v6_migration -v ON_ERROR_STOP=1 -f database/migrations/0021_sales_and_subscription_lifecycle.sql
+          psql -d lequ_v6_migration -v ON_ERROR_STOP=1 -f database/migrations/0022_distribution_disputes.sql
+          psql -d lequ_v6_migration -v ON_ERROR_STOP=1 -f database/migrations/0023_employee_agent_runtime.sql
+          psql -d lequ_v6_migration -v ON_ERROR_STOP=1 -f database/migrations/0024_product_publication_receipts.sql
+          psql -d lequ_v6_migration -v ON_ERROR_STOP=1 -f database/migrations/0025_customer_service_operations.sql
+          psql -d lequ_v6_migration -v ON_ERROR_STOP=1 -f database/migrations/0026_platform_control_plane.sql
       - uses: actions/setup-node@v4
         with:
           node-version-file: .node-version
@@ -89,3 +144,61 @@ jobs:
         env:
           DATABASE_URL: postgres://postgres:postgres@127.0.0.1:5432/lequ_v6
         run: pnpm --filter @lequ/api exec tsx integration/merchant-intake.ts
+      - name: Execute concurrent commerce inventory reservation against PostgreSQL
+        env:
+          DATABASE_URL: postgres://postgres:postgres@127.0.0.1:5432/lequ_v6
+        run: pnpm --filter @lequ/api exec tsx integration/commerce-concurrency.ts
+      - name: Execute Worker tenant and event fault injection against PostgreSQL
+        env:
+          DATABASE_URL: postgres://postgres:postgres@127.0.0.1:5432/lequ_v6
+        run: pnpm --filter @lequ/worker exec tsx integration/outbox-fault-injection.ts
+      - name: Execute the performance evidence database snapshot against PostgreSQL
+        env:
+          DATABASE_URL: postgres://postgres:postgres@127.0.0.1:5432/lequ_v6
+        run: node tooling/performance-database-snapshot-integration.mjs
+
+  container-build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build API candidate image
+        run: docker build -f deploy/Dockerfile --target api -t lequ-api:ci .
+      - name: Build Worker candidate image
+        run: docker build -f deploy/Dockerfile --target worker -t lequ-worker:ci .
+      - name: Build Web candidate image
+        run: docker build -f deploy/Dockerfile --target web -t lequ-web:ci .
+      - name: Verify API production configuration fails closed
+        run: |
+          if output="$(docker run --rm \
+            --env DATABASE_URL=postgres://runtime.invalid/lequ \
+            --env AUTH_JWT_SECRET=ci-placeholder-auth-secret \
+            --env OBJECT_STORE_GATEWAY_URL=http://127.0.0.1:3301 \
+            --env OBJECT_STORE_SIGNING_SECRET=ci-placeholder-object-secret \
+            lequ-api:ci 2>&1)"; then
+            echo "API unexpectedly started with launch providers disabled"
+            exit 1
+          fi
+          printf '%s' "$output" | grep --quiet 'API production launch configuration missing'
+      - name: Verify Worker production configuration fails closed
+        run: |
+          if output="$(docker run --rm \
+            --env DATABASE_URL=postgres://runtime.invalid/lequ \
+            --env WORKER_TENANT_ID=00000000-0000-4000-8000-000000000000 \
+            --env OUTBOX_EVENT_GATEWAY_URL=http://127.0.0.1:3302 \
+            --env OUTBOX_EVENT_GATEWAY_TOKEN=ci-placeholder-event-token \
+            lequ-worker:ci 2>&1)"; then
+            echo "Worker unexpectedly started with launch gateways disabled"
+            exit 1
+          fi
+          printf '%s' "$output" | grep --quiet 'Worker production launch configuration missing'
+      - name: Smoke Web candidate image
+        run: |
+          docker run --detach --rm --name lequ-web-smoke --publish 18080:8080 lequ-web:ci
+          trap 'docker rm --force lequ-web-smoke >/dev/null 2>&1 || true' EXIT
+          for attempt in $(seq 1 20); do
+            if curl --fail --silent http://127.0.0.1:18080/health; then exit 0; fi
+            sleep 1
+          done
+          docker logs lequ-web-smoke
+          exit 1

@@ -117,3 +117,31 @@ export function createMerchantIntakeApi(options) {
     },
   };
 }
+
+export function createWorkbenchApi(options) {
+  const baseUrl = options.baseUrl.replace(/\/$/u, '');
+  const request = options.fetch ?? globalThis.fetch;
+  const key = options.idempotencyKey ?? (() => crypto.randomUUID());
+  return {
+    async get(path) {
+      if (!path.startsWith('/api/v1/')) throw new ApiError(400, 'UNSAFE_API_PATH');
+      const response = await request(`${baseUrl}${path}`, {
+        headers: jsonHeaders(options.token),
+      });
+      const body = await response.json().catch(() => ({}));
+      if (!response.ok) throw new ApiError(response.status, body.code);
+      return body;
+    },
+    async post(path, body) {
+      if (!path.startsWith('/api/v1/')) throw new ApiError(400, 'UNSAFE_API_PATH');
+      const response = await request(`${baseUrl}${path}`, {
+        method: 'POST',
+        headers: jsonHeaders(options.token, key()),
+        body: JSON.stringify(body ?? {}),
+      });
+      const responseBody = await response.json().catch(() => ({}));
+      if (!response.ok) throw new ApiError(response.status, responseBody.code);
+      return responseBody;
+    },
+  };
+}

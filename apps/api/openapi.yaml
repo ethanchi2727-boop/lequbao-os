@@ -20,23 +20,921 @@ paths:
           description: 依赖就绪
         '503':
           description: 依赖不可用
+  /internal/v1/metrics:
+    get:
+      operationId: getOperationalMetrics
+      summary: 内部监控采集低基数 HTTP 请求、失败和延迟指标
+      security: [{ InternalWorkerBearer: [] }]
+      responses:
+        '200': { description: Prometheus 文本格式指标，不含租户、顾客或业务正文标签 }
+        '401': { description: 内部监控凭证无效 }
+  /api/v1/auth/sessions/refresh:
+    post:
+      operationId: refreshEmployeeSession
+      summary: 校验设备绑定的刷新凭证并轮换新凭证
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/RefreshSessionRequest' }
+      responses:
+        '200':
+          description: 刷新凭证已轮换，旧凭证立即失效
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SessionTokens' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { description: 会话、设备或刷新凭证无效 }
+  /api/v1/auth/sessions/switch-tenant:
+    post:
+      operationId: switchEmployeeTenant
+      summary: 依据服务端实时成员关系切换当前组织
+      security: [{ EmployeeBearer: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/SwitchTenantRequest' }
+      responses:
+        '200':
+          description: 目标组织的新会话已签发
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SessionTokens' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { description: 当前会话或目标组织成员身份无效 }
+  /api/v1/auth/sessions/revoke:
+    post:
+      operationId: revokeEmployeeSession
+      summary: 注销当前会话并废止刷新凭证
+      security: [{ EmployeeBearer: [] }]
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              properties:
+                reason: { type: string, minLength: 1, maxLength: 255, default: USER_LOGOUT }
+      responses:
+        '204': { description: 会话已废止 }
+        '401': { description: 当前会话无效 }
   /api/v1/context:
     get:
       operationId: inspectTenantContext
-      parameters:
-        - $ref: '#/components/parameters/TenantId'
+      security: [{ EmployeeBearer: [] }]
       responses:
         '200':
-          description: 当前租户上下文
-        '400':
-          $ref: '#/components/responses/BadRequest'
+          description: 由签名且未撤销的服务端会话确定的当前上下文
+        '401': { description: 会话缺失、过期、撤销或账号已停用 }
+  /api/v1/operational-home/today:
+    get:
+      operationId: getOperationalHomeToday
+      summary: 按当前员工服务端门店范围汇总今日经营和待办
+      security: [{ EmployeeBearer: [] }]
+      responses:
+        '200':
+          description: 租户时区内的今日指标及可追溯待办入口，不包含客户明文或对象地址
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [timezone, period, storeScope, metrics, todos]
+                properties:
+                  timezone: { type: string }
+                  period:
+                    type: object
+                    required: [start, end]
+                    properties:
+                      start: { type: string, format: date-time }
+                      end: { type: string, format: date-time }
+                  storeScope: { type: string, enum: [TENANT, ASSIGNED] }
+                  metrics:
+                    type: object
+                    required:
+                      [
+                        ordersCreated,
+                        paidAmountCents,
+                        fulfillment,
+                        refunds,
+                        customerHandoffs,
+                        deliveryExceptions,
+                        agentAttention,
+                        notifications,
+                      ]
+                    additionalProperties: { type: integer, minimum: 0 }
+                  todos:
+                    type: array
+                    items:
+                      type: object
+                      required: [kind, label, count, priority, route]
+                      properties:
+                        kind: { type: string }
+                        label: { type: string }
+                        count: { type: integer, minimum: 1 }
+                        priority: { type: string, enum: [URGENT, HIGH, NORMAL] }
+                        route: { type: string, pattern: '^/bao/page-[0-9]{3}' }
+        '401': { description: 当前员工会话无效 }
+        '403': { description: 当前员工没有可用租户或门店范围 }
+  /api/v1/geo-operations/overview:
+    get:
+      operationId: getGeoOperationsOverview
+      summary: 查询员工授权门店的 GEO 档案、渠道发布及健康状态
+      security: [{ EmployeeBearer: [] }]
+      parameters:
+        - { in: query, name: storeId, schema: { type: string, format: uuid } }
+      responses:
+        '200': { description: 脱敏 GEO 健康汇总；不返回渠道外部记录号、原始响应或字段哈希 }
+        '401': { description: 员工会话无效 }
+        '403': { description: 缺少 geo.read 权限 }
+  /api/v1/geo-operations/differences:
+    get:
+      operationId: listGeoOperationsDifferences
+      summary: 查询员工授权门店的一致性差异
+      security: [{ EmployeeBearer: [] }]
+      parameters:
+        - { in: query, name: storeId, schema: { type: string, format: uuid } }
+        - {
+            in: query,
+            name: status,
+            schema: { type: string, enum: [OPEN, CONFIRMED, RESOLVED, IGNORED] },
+          }
+      responses:
+        '200': { description: 差异字段和处理状态；不返回标准值或观测值哈希 }
+        '401': { description: 员工会话无效 }
+        '403': { description: 缺少 geo.read 权限 }
+  /api/v1/geo-operations/differences/{differenceId}/actions/decide:
+    post:
+      operationId: decideGeoOperationsDifference
+      summary: MFA 下确认修正或忽略授权门店的一致性差异
+      security: [{ EmployeeBearer: [] }]
+      parameters:
+        - { in: path, name: differenceId, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [decision, reasonCode]
+              properties:
+                decision: { type: string, enum: [RESOLVE, IGNORE] }
+                reasonCode: { type: string, minLength: 1, maxLength: 120 }
+      responses:
+        '200': { description: 差异状态已原子更新并记录真实操作者审计 }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { description: 员工会话或 MFA 无效 }
+        '403': { description: 缺少 geo.publish 权限 }
+        '404': { description: 差异不存在或不在当前门店范围 }
+        '409': { description: 差异已经结束，不能重复决定 }
+  /api/v1/customer-service-operations/shifts:
+    get:
+      operationId: listCustomerServiceShifts
+      summary: 查询当前员工授权门店的客服值班
+      security: [{ EmployeeBearer: [] }]
+      parameters:
+        - { in: query, name: storeId, schema: { type: string, format: uuid } }
+        - {
+            in: query,
+            name: status,
+            schema: { type: string, enum: [SCHEDULED, ACTIVE, ENDED, CANCELLED] },
+          }
+      responses:
+        '200': { description: 授权门店内的客服值班列表 }
+        '403': { description: 缺少 customer_service.read 权限 }
+    post:
+      operationId: createCustomerServiceShift
+      summary: MFA 下为授权门店安排不超过 24 小时且不冲突的客服值班
+      security: [{ EmployeeBearer: [] }]
+      parameters: [{ $ref: '#/components/parameters/IdempotencyKey' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [storeId, assigneeUserId, startsAt, endsAt]
+              properties:
+                storeId: { type: string, format: uuid }
+                assigneeUserId: { type: string, format: uuid }
+                startsAt: { type: string, format: date-time }
+                endsAt: { type: string, format: date-time }
+      responses:
+        '201': { description: 值班已创建并记录审计 }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { description: 员工会话或 MFA 无效 }
+        '403': { description: 缺少 merchant_profile.manage 权限或员工不属于门店 }
+        '409': { description: 幂等冲突或值班时间冲突 }
+  /api/v1/customer-service-operations/tasks:
+    get:
+      operationId: listCustomerServiceTasks
+      summary: 查询当前员工授权门店的客户服务任务
+      security: [{ EmployeeBearer: [] }]
+      parameters:
+        - { in: query, name: storeId, schema: { type: string, format: uuid } }
+        - {
+            in: query,
+            name: status,
+            schema: { type: string, enum: [OPEN, IN_PROGRESS, DONE, CANCELLED] },
+          }
+      responses:
+        '200': { description: 仅含资源标识和脱敏摘要的客户服务任务 }
+        '403': { description: 缺少 customer_service.read 权限 }
+    post:
+      operationId: createCustomerServiceTask
+      summary: 为属于授权门店的客户或会话创建可追踪服务任务
+      security: [{ EmployeeBearer: [] }]
+      parameters: [{ $ref: '#/components/parameters/IdempotencyKey' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [storeId, taskType, priority, dueAt, summaryRedacted]
+              anyOf:
+                - required: [customerId]
+                - required: [conversationId]
+              properties:
+                storeId: { type: string, format: uuid }
+                customerId: { type: string, format: uuid }
+                conversationId: { type: string, format: uuid }
+                taskType:
+                  type: string
+                  enum: [FOLLOW_UP, RETENTION, COMPLAINT, KNOWLEDGE_GAP, SERVICE_RECOVERY]
+                priority: { type: string, enum: [NORMAL, HIGH, URGENT] }
+                assignedUserId: { type: string, format: uuid }
+                dueAt: { type: string, format: date-time }
+                summaryRedacted: { type: object, additionalProperties: true }
+      responses:
+        '201': { description: 客户服务任务已创建并记录审计 }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '403': { description: 缺少 customer_service.send 权限 }
+        '404': { description: 客户、会话或负责人不属于授权门店 }
+        '409': { description: 幂等键与原请求冲突 }
+  /api/v1/customer-service-operations/tasks/{taskId}/actions/complete:
+    post:
+      operationId: completeCustomerServiceTask
+      summary: 以当前版本原子完成授权门店客户服务任务
+      security: [{ EmployeeBearer: [] }]
+      parameters:
+        - { in: path, name: taskId, required: true, schema: { type: string, format: uuid } }
+        - { $ref: '#/components/parameters/IdempotencyKey' }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [expectedVersion, resolutionCode]
+              properties:
+                expectedVersion: { type: integer, minimum: 1 }
+                resolutionCode: { type: string, minLength: 1, maxLength: 120 }
+      responses:
+        '200': { description: 任务已完成或返回完全相同的幂等结果 }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '403': { description: 缺少 customer_service.close 权限 }
+        '404': { description: 任务不存在或不在授权门店范围 }
+        '409': { description: 幂等、版本或任务状态冲突 }
+  /api/v1/customer-service-operations/quality-reviews:
+    get:
+      operationId: listCustomerServiceQualityReviews
+      summary: 查询按低评分、投诉、高风险及抽样触发的客服质检
+      security: [{ EmployeeBearer: [] }]
+      parameters:
+        - { in: query, name: storeId, schema: { type: string, format: uuid } }
+        - {
+            in: query,
+            name: status,
+            schema: { type: string, enum: [PENDING, REVIEWED, REMEDIATION_REQUIRED, CLOSED] },
+          }
+      responses:
+        '200': { description: 授权门店内的脱敏质检列表及评分状态 }
+        '403': { description: 缺少 customer_service.read 权限 }
+  /api/v1/customer-service-operations/quality-reviews/{reviewId}/actions/decide:
+    post:
+      operationId: decideCustomerServiceQualityReview
+      summary: MFA 下提交质检结论，并在需要整改时原子创建知识补齐任务
+      security: [{ EmployeeBearer: [] }]
+      parameters:
+        - { in: path, name: reviewId, required: true, schema: { type: string, format: uuid } }
+        - { $ref: '#/components/parameters/IdempotencyKey' }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required:
+                [
+                  expectedVersion,
+                  decision,
+                  accuracyScore,
+                  safetyScore,
+                  policyScore,
+                  findingsRedacted,
+                ]
+              properties:
+                expectedVersion: { type: integer, minimum: 1 }
+                decision: { type: string, enum: [REVIEWED, REMEDIATION_REQUIRED] }
+                accuracyScore: { type: integer, minimum: 0, maximum: 100 }
+                safetyScore: { type: integer, minimum: 0, maximum: 100 }
+                policyScore: { type: integer, minimum: 0, maximum: 100 }
+                findingsRedacted: { type: object, additionalProperties: true }
+                remediationDueAt: { type: string, format: date-time }
+      responses:
+        '200': { description: 质检已决定，必要时已创建关联整改任务并记录审计 }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { description: 员工会话或 MFA 无效 }
+        '403': { description: 缺少 customer_service.close 权限 }
+        '404': { description: 质检不存在或不在授权门店范围 }
+        '409': { description: 幂等、版本或质检状态冲突 }
+  /api/v1/integrations/wecom/connection-health:
+    get:
+      operationId: listWeComConnectionHealth
+      summary: 查询企业微信接入和内部通知连接的持久健康证据
+      security: [{ EmployeeBearer: [] }]
+      responses:
+        '200': { description: 仅含状态、时间和错误代码，不返回连接密钥 }
+        '403': { description: 缺少 audit.read 权限 }
+  /api/v1/integrations/wecom/connection-health/actions/retry:
+    post:
+      operationId: retryWeComConnectionHealth
+      summary: MFA 下为指定连接创建一次可追踪健康检查任务
+      security: [{ EmployeeBearer: [] }]
+      parameters: [{ $ref: '#/components/parameters/IdempotencyKey' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [connectorCode, expectedVersion]
+              properties:
+                connectorCode: { type: string, enum: [WECOM_INTAKE, WECOM_NOTIFICATION] }
+                expectedVersion: { type: integer, minimum: 1 }
+      responses:
+        '200': { description: 检查任务已持久化并进入异步队列 }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '409': { description: 幂等、版本或连接状态冲突 }
+  /api/v1/reward-rules:
+    get:
+      operationId: listRewardRules
+      summary: 查询租户版本化奖励规则及出资、发放和冲正规则
+      security: [{ EmployeeBearer: [] }]
+      responses:
+        '200': { description: 当前及历史奖励规则版本 }
+        '403': { description: 缺少 reward_rule.manage 权限 }
+  /api/v1/reward-rules/actions/publish:
+    post:
+      operationId: publishRewardRule
+      summary: MFA 下发布新的活动奖励规则版本并退役旧版本
+      security: [{ EmployeeBearer: [] }]
+      parameters: [{ $ref: '#/components/parameters/IdempotencyKey' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required:
+                [
+                  ruleCode,
+                  expectedCurrentVersion,
+                  fundingSource,
+                  triggerCode,
+                  grantConfig,
+                  reversalPolicy,
+                ]
+              properties:
+                ruleCode: { type: string, pattern: '^[A-Z][A-Z0-9_]{1,79}$' }
+                expectedCurrentVersion: { type: integer, minimum: 0 }
+                fundingSource:
+                  { type: string, enum: [MERCHANT, PLATFORM_CAMPAIGN, PARTNER_CAMPAIGN] }
+                triggerCode: { type: string }
+                grantConfig:
+                  type: object
+                  additionalProperties: false
+                  required: [amountCents, availableAfterHours, expiresAfterDays]
+                  properties:
+                    amountCents: { type: integer, minimum: 1 }
+                    availableAfterHours: { type: integer, minimum: 0, maximum: 720 }
+                    expiresAfterDays: { type: integer, minimum: 1, maximum: 3650 }
+                reversalPolicy:
+                  type: object
+                  additionalProperties: false
+                  required: [fullRefund, partialRefund]
+                  properties:
+                    fullRefund: { type: string, const: FULL_REVERSAL }
+                    partialRefund: { type: string, const: PROPORTIONAL_REVERSAL }
+      responses:
+        '200': { description: 新规则版本已生效，旧版本仅保留历史 }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '409': { description: 幂等或当前规则版本冲突 }
+  /api/v1/skills/catalog:
+    get:
+      operationId: listOfficialSkills
+      summary: 查询官方版本化、完整性校验且不能扩大调用者权限的首发技能目录
+      security: [{ EmployeeBearer: [] }]
+      parameters:
+        - { in: query, name: query, schema: { type: string, maxLength: 120 } }
+        - { in: query, name: limit, schema: { type: integer, minimum: 1, maximum: 200 } }
+      responses:
+        '200': { description: 技能版本、输入步骤、确认点、成功标准和执行上限 }
+        '403': { description: 缺少 plugin.install 权限 }
+  /api/v1/platform/merchants:
+    get:
+      operationId: listPlatformMerchants
+      summary: 平台授权角色查询不含主体证件和联系人明文的商户目录
+      security: [{ EmployeeBearer: [] }]
+      parameters:
+        - { in: query, name: query, schema: { type: string, maxLength: 120 } }
+        - { in: query, name: status, schema: { type: string } }
+        - { in: query, name: limit, schema: { type: integer, minimum: 1, maximum: 200 } }
+      responses:
+        '200': { description: 商户状态、行业、门店数量及当前套餐摘要 }
+        '404': { description: 当前身份不是平台授权角色 }
+  /api/v1/platform/plans:
+    get:
+      operationId: listPlatformPlans
+      summary: 查询总部套餐权益配置及当前版本
+      security: [{ EmployeeBearer: [] }]
+      responses:
+        '200': { description: 套餐、价格、权益和版本 }
+        '403': { description: 缺少 revenue_policy.manage 权限 }
+  /api/v1/platform/plans/{planCode}/actions/update-entitlements:
+    post:
+      operationId: updatePlatformPlanEntitlements
+      summary: MFA 下按版本更新新订阅使用的套餐权益配置
+      security: [{ EmployeeBearer: [] }]
+      parameters:
+        - { in: path, name: planCode, required: true, schema: { type: string } }
+        - { $ref: '#/components/parameters/IdempotencyKey' }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [expectedVersion, entitlements]
+              properties:
+                expectedVersion: { type: integer, minimum: 1 }
+                entitlements: { type: object, additionalProperties: true }
+      responses:
+        '200': { description: 权益配置已更新并生成审计；订阅快照仍保留原版本 }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '409': { description: 幂等、版本或密钥形配置冲突 }
+  /api/v1/finance/reconciliation-discrepancies:
+    get:
+      operationId: listReconciliationDiscrepancies
+      summary: 查询当前租户不可变对账事实产生的差异单
+      security: [{ EmployeeBearer: [] }]
+      parameters:
+        - { in: query, name: status, schema: { type: string } }
+        - { in: query, name: limit, schema: { type: integer, minimum: 1, maximum: 200 } }
+      responses:
+        '200': { description: 差异原因、金额、处理状态和版本，不含渠道凭证 }
+        '403': { description: 缺少 finance.reconcile 权限 }
+  /api/v1/finance/reconciliation-discrepancies/{discrepancyId}/actions/resolve:
+    post:
+      operationId: resolveReconciliationDiscrepancy
+      summary: MFA 下结束差异单而不修改不可变支付、退款或账本事实
+      security: [{ EmployeeBearer: [] }]
+      parameters:
+        - { in: path, name: discrepancyId, required: true, schema: { type: string, format: uuid } }
+        - { $ref: '#/components/parameters/IdempotencyKey' }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [expectedVersion, decision, resolutionCode]
+              properties:
+                expectedVersion: { type: integer, minimum: 1 }
+                decision: { type: string, enum: [RESOLVED, ACCEPTED_KNOWN] }
+                resolutionCode: { type: string, pattern: '^[A-Z][A-Z0-9_]{1,119}$' }
+      responses:
+        '200': { description: 差异单已结束；全部差异结束时批次转为已解决 }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '409': { description: 幂等、版本或状态冲突 }
+  /api/v1/platform/channel-partners:
+    get:
+      operationId: listPlatformChannelPartners
+      summary: 查询平台渠道伙伴及明确的省市区授权范围
+      security: [{ EmployeeBearer: [] }]
+      parameters:
+        - { in: query, name: query, schema: { type: string, maxLength: 120 } }
+        - { in: query, name: status, schema: { type: string } }
+        - { in: query, name: limit, schema: { type: integer, minimum: 1, maximum: 200 } }
+      responses:
+        '200': { description: 伙伴、负责人标识、状态和区域版本 }
+        '404': { description: 当前身份不是平台授权角色 }
+  /api/v1/platform/channel-partners/actions/save:
+    post:
+      operationId: savePlatformChannelPartner
+      summary: MFA 下创建或按版本更新渠道伙伴并分配明确区域
+      security: [{ EmployeeBearer: [] }]
+      parameters: [{ $ref: '#/components/parameters/IdempotencyKey' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [partnerCode, partnerName, partnerType, ownerUserId, status, region]
+              properties:
+                partnerId: { type: string, format: uuid }
+                expectedVersion: { type: integer, minimum: 1 }
+                partnerCode: { type: string, pattern: '^[A-Z][A-Z0-9_-]{1,79}$' }
+                partnerName: { type: string, minLength: 1, maxLength: 160 }
+                partnerType:
+                  { type: string, enum: [CHANNEL_PARTNER, INVESTMENT_OPERATOR, REGIONAL_PROVIDER] }
+                ownerUserId: { type: string, format: uuid }
+                status: { type: string, enum: [ACTIVE, SUSPENDED] }
+                region:
+                  type: object
+                  additionalProperties: false
+                  required: [provinceCode]
+                  properties:
+                    provinceCode: { type: string, minLength: 1, maxLength: 20 }
+                    cityCode: { type: string, minLength: 1, maxLength: 20 }
+                    districtCode: { type: string, minLength: 1, maxLength: 20 }
+      responses:
+        '200': { description: 伙伴和区域已保存并审计 }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '409': { description: 幂等、负责人、版本或区域冲突 }
+  /api/v1/platform/model-route-budgets:
+    get:
+      operationId: listPlatformModelRouteBudgets
+      summary: 查询不含提供方密钥的模型路由、单任务和月度预算
+      security: [{ EmployeeBearer: [] }]
+      parameters:
+        - { in: query, name: query, schema: { type: string, maxLength: 120 } }
+        - { in: query, name: status, schema: { type: string } }
+        - { in: query, name: limit, schema: { type: integer, minimum: 1, maximum: 200 } }
+      responses:
+        '200': { description: 模型标识、用途、预算、步骤和工具调用上限 }
+        '404': { description: 当前身份不是平台授权角色 }
+  /api/v1/platform/model-route-budgets/actions/save:
+    post:
+      operationId: savePlatformModelRouteBudget
+      summary: MFA 下按版本保存模型路由预算，强制十二步和二十次工具调用上限
+      security: [{ EmployeeBearer: [] }]
+      parameters: [{ $ref: '#/components/parameters/IdempotencyKey' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required:
+                [
+                  routeCode,
+                  expectedVersion,
+                  purpose,
+                  modelKey,
+                  perTaskBudgetCents,
+                  monthlyBudgetCents,
+                  maxSteps,
+                  maxToolCalls,
+                  status,
+                ]
+              properties:
+                routeCode: { type: string, pattern: '^[A-Z][A-Z0-9_.-]{1,79}$' }
+                expectedVersion: { type: integer, minimum: 0 }
+                purpose: { type: string, minLength: 1, maxLength: 240 }
+                modelKey: { type: string, minLength: 2, maxLength: 160 }
+                perTaskBudgetCents: { type: integer, minimum: 0 }
+                monthlyBudgetCents: { type: integer, minimum: 0 }
+                maxSteps: { type: integer, minimum: 1, maximum: 12 }
+                maxToolCalls: { type: integer, minimum: 0, maximum: 20 }
+                status: { type: string, enum: [ACTIVE, SUSPENDED] }
+      responses:
+        '200': { description: 模型路由预算已保存并审计 }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '409': { description: 幂等、版本或预算上限冲突 }
+  /api/v1/employee-agent/conversations:
+    get:
+      operationId: listEmployeeAgentConversations
+      summary: 查询当前员工本人创建的 AI 会话
+      security: [{ EmployeeBearer: [] }]
+      responses:
+        '200': { description: 本人会话列表 }
+    post:
+      operationId: createEmployeeAgentConversation
+      summary: 创建绑定当前租户和可选门店的 AI 会话
+      security: [{ EmployeeBearer: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [mode, title]
+              properties:
+                storeId: { type: string, format: uuid }
+                mode: { type: string, enum: [NORMAL, COMPLEX] }
+                title: { type: string, minLength: 1, maxLength: 160 }
+      responses:
+        '201': { description: 已创建会话 }
+  /api/v1/employee-agent/conversations/{conversationId}:
+    get:
+      operationId: getEmployeeAgentConversation
+      summary: 查询本人 AI 会话
+      security: [{ EmployeeBearer: [] }]
+      parameters:
+        - { name: conversationId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200': { description: 会话状态 }
+        '404': { description: 会话不存在或无权访问 }
+  /api/v1/employee-agent/tasks:
+    get:
+      operationId: listEmployeeAgentTasks
+      summary: 查询本人后台与对话任务
+      security: [{ EmployeeBearer: [] }]
+      parameters:
+        - { name: status, in: query, schema: { type: string } }
+      responses:
+        '200': { description: 不含提示词正文与对象存储键的任务列表 }
+    post:
+      operationId: createEmployeeAgentTask
+      summary: 创建预算受限的 AI 任务并安全存储提示词
+      security: [{ EmployeeBearer: [] }]
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '201': { description: 已创建或幂等重放的任务 }
+        '409': { description: 幂等键冲突 }
+  /api/v1/employee-agent/tasks/{taskId}:
+    get:
+      operationId: getEmployeeAgentTask
+      summary: 查询任务、步骤、成果与来源轨迹
+      security: [{ EmployeeBearer: [] }]
+      parameters:
+        - { name: taskId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200': { description: 脱敏任务详情，不含提示词正文和对象存储键 }
+        '404': { description: 任务不存在或无权访问 }
+  /api/v1/employee-agent/tasks/{taskId}/plan:
+    post:
+      operationId: setEmployeeAgentTaskPlan
+      summary: 原子写入结构化计划并转为可执行
+      security: [{ EmployeeBearer: [] }]
+      parameters:
+        - { name: taskId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200': { description: 已写入完整计划 }
+        '409': { description: 任务状态或步数预算冲突 }
+  /api/v1/employee-agent/tasks/{taskId}/actions/pause:
+    post:
+      operationId: pauseEmployeeAgentTask
+      summary: 暂停本人运行中或待执行任务
+      security: [{ EmployeeBearer: [] }]
+      parameters:
+        - { name: taskId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses: { '200': { description: 已暂停 }, '409': { description: 状态冲突 } }
+  /api/v1/employee-agent/tasks/{taskId}/actions/resume:
+    post:
+      operationId: resumeEmployeeAgentTask
+      summary: 恢复本人已暂停任务
+      security: [{ EmployeeBearer: [] }]
+      parameters:
+        - { name: taskId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses: { '200': { description: 已恢复 }, '409': { description: 状态冲突 } }
+  /api/v1/employee-agent/tasks/{taskId}/actions/cancel:
+    post:
+      operationId: cancelEmployeeAgentTask
+      summary: 取消本人未结束任务
+      security: [{ EmployeeBearer: [] }]
+      parameters:
+        - { name: taskId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses: { '200': { description: 已取消 }, '409': { description: 状态冲突 } }
+  /api/v1/employee-agent/tasks/{taskId}/actions/retry:
+    post:
+      operationId: retryEmployeeAgentTask
+      summary: 安全重试本人可重试失败任务
+      security: [{ EmployeeBearer: [] }]
+      parameters:
+        - { name: taskId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        { '200': { description: 已进入待执行 }, '409': { description: 高风险、未知结果或重试超限 } }
+  /api/v1/employee-agent/approvals/actions/decide:
+    post:
+      operationId: decideEmployeeAgentApproval
+      summary: 消费一次性确认令牌并批准或拒绝步骤
+      security: [{ EmployeeBearer: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [token, decision]
+              properties:
+                token: { type: string, minLength: 32 }
+                decision: { type: string, enum: [APPROVE, REJECT] }
+      responses:
+        {
+          '200': { description: 已决定 },
+          '404': { description: 令牌无效或无权处理 },
+          '409': { description: 已过期或版本冲突 },
+        }
+  /api/v1/delivery-projects:
+    post:
+      operationId: createStandardDeliveryProject
+      summary: 从有效 898 订阅创建唯一的标准交付单与必选步骤
+      security: [{ EmployeeBearer: [] }]
+      x-required-permission: delivery.create
+      parameters: [{ $ref: '#/components/parameters/IdempotencyKey' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreateDeliveryProjectRequest' }
+      responses:
+        '201':
+          description: 交付项目已创建，相同幂等请求返回同一结果
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/DeliveryProject' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '422': { description: 商户、门店或 898 订阅不满足发起条件 }
+  /api/v1/delivery-projects/{projectId}:
+    get:
+      operationId: getDeliveryProject
+      security: [{ EmployeeBearer: [] }]
+      x-required-permission: delivery.read
+      parameters: [{ $ref: '#/components/parameters/DeliveryProjectId' }]
+      responses:
+        '200':
+          description: 交付单、步骤、等待对象与恢复信息
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/DeliveryProject' }
+        '404': { description: 项目不存在或未获分配 }
+  /api/v1/delivery-projects/{projectId}/actions/start:
+    post:
+      operationId: startDeliveryProject
+      security: [{ EmployeeBearer: [] }]
+      x-required-permission: delivery.execute
+      parameters:
+        - $ref: '#/components/parameters/DeliveryProjectId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '200':
+          description: 已进入执行、等待商户补件或等待 AppID 授权
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/DeliveryProject' }
+        '422': { description: 开始条件不满足 }
+  /api/v1/delivery-projects/{projectId}/actions/suspend:
+    post:
+      operationId: suspendDeliveryProject
+      security: [{ EmployeeBearer: [] }]
+      x-required-permission: delivery.execute
+      parameters:
+        - $ref: '#/components/parameters/DeliveryProjectId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '200':
+          description: 交付单已暂停且保留断点
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/DeliveryProject' }
+        '409': { description: 当前状态不可暂停 }
+  /api/v1/delivery-projects/{projectId}/actions/resume:
+    post:
+      operationId: resumeDeliveryProject
+      security: [{ EmployeeBearer: [] }]
+      x-required-permission: delivery.execute
+      parameters:
+        - $ref: '#/components/parameters/DeliveryProjectId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '200':
+          description: 重新校验实时前置条件后从安全断点恢复
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/DeliveryProject' }
+  /api/v1/delivery-projects/{projectId}/steps/{stepCode}/actions/execute:
+    post:
+      operationId: executeDeliveryStep
+      security: [{ EmployeeBearer: [] }]
+      x-required-permission: delivery.execute
+      parameters:
+        - $ref: '#/components/parameters/DeliveryProjectId'
+        - $ref: '#/components/parameters/DeliveryStepCode'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ExecuteDeliveryStepRequest' }
+      responses:
+        '200':
+          description: 步骤结果已存档；未授权时仅返回待授权且不调用外部端
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/DeliveryProject' }
+        '503': { description: 相应交付适配器未配置 }
+  /api/v1/delivery-projects/{projectId}/steps/{stepCode}/actions/retry:
+    post:
+      operationId: retryDeliveryStep
+      security: [{ EmployeeBearer: [] }]
+      x-required-permission: delivery.execute
+      parameters:
+        - $ref: '#/components/parameters/DeliveryProjectId'
+        - $ref: '#/components/parameters/DeliveryStepCode'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ExecuteDeliveryStepRequest' }
+      responses:
+        '200':
+          description: 仅指定失败步骤以新动作版本重试
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/DeliveryProject' }
+        '409': { description: 步骤不可重试或前置未完成 }
+  /api/v1/delivery-projects/{projectId}/actions/accept:
+    post:
+      operationId: acceptDeliveryProject
+      security: [{ EmployeeBearer: [] }]
+      x-required-permission: delivery.accept
+      parameters:
+        - $ref: '#/components/parameters/DeliveryProjectId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/AcceptDeliveryProjectRequest' }
+      responses:
+        '200':
+          description: 不可变验收清单、验收人与时间已存档
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/DeliveryProject' }
+        '422': { description: 仍有必选步骤未成功 }
+  /api/v1/delivery-projects/{projectId}/assignments:
+    post:
+      operationId: assignDeliveryProjectTemporarily
+      security: [{ EmployeeBearer: [] }]
+      x-required-permission: delivery.execute
+      parameters:
+        - $ref: '#/components/parameters/DeliveryProjectId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/AssignDeliveryProjectRequest' }
+      responses:
+        '200':
+          description: 仅交付材料/步骤权限的限时分配已保存，最长 30 天
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/DeliveryProject' }
+        '422': { description: 授权范围或到期时间无效 }
+  /api/v1/delivery-exceptions:
+    get:
+      operationId: listDeliveryExceptions
+      security: [{ EmployeeBearer: [] }]
+      x-required-permission: delivery.read
+      parameters:
+        - name: status
+          in: query
+          schema: { type: string, enum: [OPEN, IN_PROGRESS, RESOLVED, DISMISSED], default: OPEN }
+      responses:
+        '200':
+          description: 只包含可操作说明的异常列表，合作伙伴只能看被分配项目
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/DeliveryException' }
   /api/v1/merchants/{merchantProfileId}/revenue-rights:
     post:
       operationId: createMerchantRevenueRight
       summary: 为已签约商户激活唯一的原始商务永久收益权
+      security: [{ EmployeeBearer: [] }]
       x-required-permission: revenue_right.create
       parameters:
-        - $ref: '#/components/parameters/TenantId'
         - $ref: '#/components/parameters/IdempotencyKey'
         - name: merchantProfileId
           in: path
@@ -65,9 +963,9 @@ paths:
     post:
       operationId: lockSubscriptionDistributionStatement
       summary: 从已验证现金账本与实际成本生成并锁定月结单
+      security: [{ EmployeeBearer: [] }]
       x-required-permission: distribution.lock
       parameters:
-        - $ref: '#/components/parameters/TenantId'
         - $ref: '#/components/parameters/IdempotencyKey'
         - name: subscriptionId
           in: path
@@ -96,9 +994,9 @@ paths:
     post:
       operationId: requestDistributionActionApproval
       summary: 请求另一名平台财务人员审批付款或冲回
+      security: [{ EmployeeBearer: [] }]
       x-required-permission: distribution.pay|distribution.reverse
       parameters:
-        - $ref: '#/components/parameters/TenantId'
         - $ref: '#/components/parameters/IdempotencyKey'
         - $ref: '#/components/parameters/StatementId'
       requestBody:
@@ -118,8 +1016,9 @@ paths:
     post:
       operationId: approveDistributionAction
       summary: 由不同于请求人的平台财务人员审批
+      security: [{ EmployeeBearer: [] }]
+      x-required-permission: settlement.approve
       parameters:
-        - $ref: '#/components/parameters/TenantId'
         - $ref: '#/components/parameters/IdempotencyKey'
         - $ref: '#/components/parameters/ApprovalId'
       requestBody:
@@ -139,9 +1038,9 @@ paths:
     post:
       operationId: payDistributionStatement
       summary: 使用已批准动作与逐受益人渠道凭证完成付款
+      security: [{ EmployeeBearer: [] }]
       x-required-permission: distribution.pay
       parameters:
-        - $ref: '#/components/parameters/TenantId'
         - $ref: '#/components/parameters/IdempotencyKey'
         - $ref: '#/components/parameters/StatementId'
       requestBody:
@@ -162,9 +1061,9 @@ paths:
     post:
       operationId: reverseDistributionStatement
       summary: 按原分配及原付款链路新增冲回分录
+      security: [{ EmployeeBearer: [] }]
       x-required-permission: distribution.reverse
       parameters:
-        - $ref: '#/components/parameters/TenantId'
         - $ref: '#/components/parameters/IdempotencyKey'
         - $ref: '#/components/parameters/StatementId'
       requestBody:
@@ -180,6 +1079,95 @@ paths:
               schema: { $ref: '#/components/schemas/DistributionSettlementResult' }
         '400': { $ref: '#/components/responses/BadRequest' }
         '409': { description: 审批、原因、状态或幂等冲突 }
+  /api/v1/revenue-right-holders/{rightHolderId}/transfers:
+    post:
+      operationId: requestRevenueRightTransfer
+      summary: 由当前受益人发起永久收益权转让并进入双方确认
+      security: [{ EmployeeBearer: [] }]
+      x-required-permission: revenue_right.transfer_request
+      parameters:
+        - { name: rightHolderId, in: path, required: true, schema: { type: string, format: uuid } }
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [toBeneficiaryId, agreementObjectKey]
+              properties:
+                toBeneficiaryId: { type: string, format: uuid }
+                agreementObjectKey: { type: string, minLength: 1, maxLength: 1024 }
+      responses:
+        '202': { description: 等待转出与转入受益人分别确认 }
+        '401': { description: 会话无效 }
+        '403': { description: 不是当前受益人或无发起权限 }
+        '409': { description: 收益权状态或幂等冲突 }
+  /api/v1/revenue-right-transfers/{transferId}/confirmations:
+    post:
+      operationId: confirmRevenueRightTransfer
+      summary: 由转出或转入受益人以本人会话确认转让
+      security: [{ EmployeeBearer: [] }]
+      x-required-permission: revenue_right.transfer_request
+      parameters:
+        - { name: transferId, in: path, required: true, schema: { type: string, format: uuid } }
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [confirmationRole]
+              properties:
+                confirmationRole:
+                  type: string
+                  enum: [FROM_BENEFICIARY, TO_BENEFICIARY]
+                evidence: { type: object, additionalProperties: true }
+      responses:
+        '200': { description: 不可变确认凭证已保存 }
+        '403': { description: 当前用户不是对应受益人 }
+        '409': { description: 状态、重复确认或幂等冲突 }
+  /api/v1/revenue-right-transfers/{transferId}/actions/approve:
+    post:
+      operationId: approveRevenueRightTransfer
+      summary: 由不同于发起人的审批人批准并原子切换受益人时间段
+      security: [{ EmployeeBearer: [] }]
+      x-required-permission: revenue_right.transfer_approve
+      parameters:
+        - { name: transferId, in: path, required: true, schema: { type: string, format: uuid } }
+        - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '200': { description: 原受益人结束且新受益人生效，总份额仍为 7000 基点 }
+        '403': { description: 无审批权限 }
+        '409': { description: 缺少双方确认、同人审批或状态冲突 }
+  /api/v1/revenue-right-groups/{rightGroupId}/disputes:
+    post:
+      operationId: openRevenueRightDispute
+      summary: 对重复主张的永久收益权开立争议并暂停相关应付
+      security: [{ EmployeeBearer: [] }]
+      x-required-permission: revenue_right.suspend
+      parameters:
+        - { name: rightGroupId, in: path, required: true, schema: { type: string, format: uuid } }
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [claimantBeneficiaryIds, reasonCode]
+              properties:
+                claimantBeneficiaryIds:
+                  type: array
+                  minItems: 2
+                  items: { type: string, format: uuid }
+                reasonCode: { type: string, minLength: 1, maxLength: 80 }
+                evidence: { type: object, additionalProperties: true }
+      responses:
+        '202': { description: 收益权进入争议状态并暂停锁定新应付 }
+        '403': { description: 无暂停权限 }
+        '409': { description: 已有争议、状态或幂等冲突 }
   /api/v1/merchant-intake/sessions:
     post:
       operationId: createMerchantIntakeSession
@@ -349,19 +1337,2177 @@ paths:
         '400': { description: 回调参数或 XML 无效 }
         '401': { description: 签名、时间窗、密文或企业 ID 无效 }
         '409': { description: 相同 MsgId 对应不同密文 }
+  /api/v1/customer-service/conversations:
+    post:
+      operationId: createCustomerServiceConversation
+      summary: 消费者在商家小程序内建立自研在线客服会话
+      description: 独立消费者令牌确定租户、顾客和门店；服务同意与可选持续档案同意分开记录。
+      security: [{ ConsumerBearer: [] }]
+      parameters: [{ $ref: '#/components/parameters/IdempotencyKey' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreateCustomerServiceConversationRequest' }
+      responses:
+        '201':
+          description: 会话和不可抵赖的服务同意已创建
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CustomerServiceConversation' }
+        '401': { description: 消费者会话无效、过期或已撤销 }
+    get:
+      operationId: listCustomerServiceConversations
+      summary: 消费者查询本人当前门店会话，或员工查询授权门店转人工队列
+      security: [{ ConsumerBearer: [] }, { EmployeeBearer: [] }]
+      description: 消费者分支忽略 status 并固定 customer_id/store_id；员工分支要求 customer_service.read 并执行门店范围校验。
+      parameters:
+        - name: status
+          in: query
+          schema: { type: string, enum: [HUMAN_QUEUED, HUMAN_ACTIVE, WAITING_CUSTOMER, CLOSED] }
+      responses:
+        '200':
+          description: 仅返回本人当前门店会话，或员工租户/被分配门店范围内的会话
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/CustomerServiceConversation' }
+  /api/v1/customer-service/conversations/{conversationId}:
+    get:
+      operationId: getCustomerServiceConversation
+      summary: 消费者查看本人会话，或员工查看授权门店会话
+      security: [{ ConsumerBearer: [] }, { EmployeeBearer: [] }]
+      parameters: [{ $ref: '#/components/parameters/ConversationId' }]
+      responses:
+        '200':
+          description: 会话、人工工单和真实接管员工状态
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CustomerServiceConversation' }
+        '404': { description: 会话不属于当前消费者或员工数据范围 }
+  /api/v1/customer-service/conversations/{conversationId}/messages:
+    get:
+      operationId: listCustomerServiceMessages
+      summary: 查询本人或授权门店会话的脱敏消息元数据
+      security: [{ ConsumerBearer: [] }, { EmployeeBearer: [] }]
+      parameters: [{ $ref: '#/components/parameters/ConversationId' }]
+      responses:
+        '200':
+          description: 消息按持久化顺序返回
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/CustomerServiceMessage' }
+    post:
+      operationId: sendCustomerServiceMessage
+      summary: 客户或当前接管员工发送消息
+      description: 服务端根据令牌受众确定发送者；忽略客户端 sender_type 和 sender_user_id。消息正文先写对象存储，再返回 messageId。
+      security: [{ ConsumerBearer: [] }, { EmployeeBearer: [] }]
+      parameters:
+        - $ref: '#/components/parameters/ConversationId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/SendCustomerServiceMessageRequest' }
+      responses:
+        '201':
+          description: 消息已持久化；AI 处理通过耐久作业异步执行
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CustomerServiceMessage' }
+        '409': { description: 幂等冲突、会话已关闭或人工接管冲突 }
+  /api/v1/customer-service/conversations/{conversationId}/messages/{messageId}/content:
+    get:
+      operationId: getCustomerServiceMessageContent
+      summary: 消费者或授权员工读取单条会话正文
+      description: 每次重新校验消费者归属或员工门店范围；员工正文读取单独写入审计日志，对象存储引用不转成公开地址。
+      security: [{ ConsumerBearer: [] }, { EmployeeBearer: [] }]
+      parameters:
+        - $ref: '#/components/parameters/ConversationId'
+        - { name: messageId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200':
+          description: 经完整性校验的单条正文
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                required: [content]
+                properties:
+                  content: { type: string }
+        '403': { description: 消息不属于本人会话或授权门店 }
+  /api/v1/customer-service/conversations/{conversationId}/actions/request-human:
+    post:
+      operationId: requestCustomerServiceHumanHandoff
+      summary: 消费者显式请求人工
+      security: [{ ConsumerBearer: [] }]
+      parameters:
+        - $ref: '#/components/parameters/ConversationId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/RequestCustomerServiceHumanRequest' }
+      responses:
+        '202':
+          description: 站内队列已可靠创建；企业微信提醒失败不影响工单
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CustomerServiceConversation' }
+  /api/v1/customer-service/conversations/{conversationId}/actions/accept:
+    post:
+      operationId: acceptCustomerServiceConversation
+      summary: 授权门店员工原子接管，竞争者收到 409
+      security: [{ EmployeeBearer: [] }]
+      x-required-permission: customer_service.accept
+      parameters:
+        - $ref: '#/components/parameters/ConversationId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '200':
+          description: 工单与会话已绑定真实员工，排队或运行中的 AI 作业已取消
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CustomerServiceConversation' }
+        '409': { description: 已被另一员工接管 }
+  /api/v1/customer-service/conversations/{conversationId}/actions/return-to-ai:
+    post:
+      operationId: returnCustomerServiceConversationToAi
+      summary: 仅当前接管员工明确将会话交还 AI
+      security: [{ EmployeeBearer: [] }]
+      x-required-permission: customer_service.send
+      parameters:
+        - $ref: '#/components/parameters/ConversationId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '200':
+          description: 人工工单已结案，后续新问题可重新由 AI 处理
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CustomerServiceConversation' }
+  /api/v1/customer-service/conversations/{conversationId}/actions/close:
+    post:
+      operationId: closeCustomerServiceConversation
+      summary: 当前接管员工用解决码关闭会话
+      security: [{ EmployeeBearer: [] }]
+      x-required-permission: customer_service.close
+      parameters:
+        - $ref: '#/components/parameters/ConversationId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CloseCustomerServiceConversationRequest' }
+      responses:
+        '200':
+          description: 会话和工单已带解决码关闭
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CustomerServiceConversation' }
+  /api/v1/customer-profile:
+    get:
+      operationId: getContinuousCustomerProfile
+      summary: 消费者查看本商家范围内的持续客户档案摘要和来源
+      security: [{ ConsumerBearer: [] }]
+      responses:
+        '200': { description: 不含事实正文或对象存储密钥的来源、用途、置信度与到期状态 }
+        '401': { description: 消费者会话无效 }
+  /api/v1/customer-profile/consents:
+    post:
+      operationId: changeContinuousCustomerProfileConsent
+      summary: 分目的授予或撤回持续档案、营销、订阅消息或位置同意
+      security: [{ ConsumerBearer: [] }]
+      parameters: [{ $ref: '#/components/parameters/IdempotencyKey' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ChangeCustomerConsentRequest' }
+      responses:
+        '200':
+          description: 撤回持续档案同意后立即停止新增，并创建已有档案处理队列
+        '409': { description: 幂等冲突 }
+  /api/v1/customer-profile/privacy-requests:
+    post:
+      operationId: requestContinuousCustomerProfilePrivacyAction
+      summary: 消费者申请查看、更正、限制使用或删除持续客户档案
+      description: 更正内容写入租户隔离对象存储，数据库和日志只保留摘要；删除与限制请求立即阻止现有事实继续使用，并进入受控隐私队列。
+      security: [{ ConsumerBearer: [] }]
+      parameters: [{ $ref: '#/components/parameters/IdempotencyKey' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreateCustomerPrivacyRequest' }
+      responses:
+        '202':
+          description: 隐私请求已可靠排队，法律或交易保留项由隐私 Worker 区分处理
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CustomerPrivacyRequestReceipt' }
+        '403': { description: 更正目标不属于当前消费者或不可更正 }
+        '409': { description: 幂等冲突 }
+  /api/v1/customer-service/knowledge-publications:
+    get:
+      operationId: listCustomerServiceKnowledgePublications
+      summary: 商户管理员查看授权门店的已审核知识及有效期
+      security: [{ EmployeeBearer: [] }]
+      x-required-permission: merchant_profile.manage
+      parameters:
+        - { name: storeId, in: query, schema: { type: string, format: uuid } }
+      responses:
+        '200':
+          description: 过期知识先收敛为 EXPIRED，再按员工门店范围返回
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/KnowledgePublication' }
+    post:
+      operationId: publishCustomerServiceKnowledge
+      summary: 审核并发布一版门店知识供 AI 精确引用
+      description: 只允许发布 READY、非个人敏感且属于授权门店的文档；发布版本正文不可修改，更新必须产生新版本。
+      security: [{ EmployeeBearer: [] }]
+      x-required-permission: merchant_profile.manage
+      parameters: [{ $ref: '#/components/parameters/IdempotencyKey' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/PublishKnowledgeRequest' }
+      responses:
+        '201':
+          description: 不可变知识版本已发布
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/KnowledgePublication' }
+        '403': { description: 文档不属于授权门店、未就绪或包含个人敏感信息 }
+        '409': { description: 同一文档版本已发布或幂等冲突 }
+  /api/v1/customer-service/knowledge-publications/{publicationId}/actions/revoke:
+    post:
+      operationId: revokeCustomerServiceKnowledge
+      summary: 撤销一版错误或不再适用的已发布知识
+      security: [{ EmployeeBearer: [] }]
+      x-required-permission: merchant_profile.manage
+      parameters:
+        - { name: publicationId, in: path, required: true, schema: { type: string, format: uuid } }
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [reason]
+              properties:
+                reason: { type: string, minLength: 1, maxLength: 500 }
+      responses:
+        '200':
+          description: 发布内容保留为审计证据，但从 AI 可用范围撤销
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/KnowledgePublication' }
+        '409': { description: 知识已经过期或撤销 }
+  /internal/v1/customer-service/ai-jobs/process:
+    post:
+      operationId: processCustomerServiceAiJob
+      summary: 租户分片 Worker 触发耐久 AI 客服作业
+      security: [{ InternalWorkerBearer: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ProcessCustomerServiceAiJobRequest' }
+      responses:
+        '202': { description: 作业已成功、转人工、重试或由并发接管取消 }
+        '401': { description: 独立内部 Worker 凭证无效 }
+  /api/v1/mini-program-authorizations/actions/activate:
+    post:
+      operationId: activateMerchantMiniProgramAuthorization
+      summary: 用商户负责人一次性授权码换取 AppID 授权并绑定交付项目
+      description: 一次性授权码不落库；仅保存服务端密钥引用、授权范围和 AppID 全局归属摘要。
+      security: [{ EmployeeBearer: [] }]
+      x-required-permission: miniprogram.manage
+      parameters: [{ $ref: '#/components/parameters/IdempotencyKey' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ActivateMiniProgramAuthorizationRequest' }
+      responses:
+        '201':
+          description: AppID 授权已激活并归属当前商户
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/MiniProgram' }
+        '409': { description: AppID 已归属其他租户或幂等请求冲突 }
+        '422': { description: 授权范围、密钥引用或交付前置条件不满足 }
+        '503': { description: 微信授权网关未配置或结果未知 }
+  /api/v1/mini-programs/{miniProgramId}:
+    get:
+      operationId: getMerchantMiniProgram
+      summary: 查询当前体验、审核、发布和授权状态
+      security: [{ EmployeeBearer: [] }]
+      x-required-permission: miniprogram.manage
+      parameters: [{ $ref: '#/components/parameters/MiniProgramId' }]
+      responses:
+        '200':
+          description: 当前可见版本和线上稳定版本指针
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/MiniProgram' }
+        '409': { description: 小程序不存在于当前租户 }
+  /api/v1/mini-programs/{miniProgramId}/releases:
+    post:
+      operationId: createMerchantMiniProgramPreview
+      summary: 从固定模板和规范化配置生成不可变体验版
+      security: [{ EmployeeBearer: [] }]
+      x-required-permission: miniprogram.manage
+      parameters:
+        - $ref: '#/components/parameters/MiniProgramId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreateMiniProgramPreviewRequest' }
+      responses:
+        '202':
+          description: 构建、配置摘要、产物摘要、兼容范围和冒烟结果已保存
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/MiniProgram' }
+        '422': { description: AppID 授权已失效 }
+        '503': { description: 构建器不可用或产物验证失败 }
+  /api/v1/mini-programs/{miniProgramId}/releases/{releaseId}/actions/confirm-preview:
+    post:
+      operationId: confirmMerchantMiniProgramPreview
+      summary: 指定发布确认人确认体验版全部商户可见内容
+      security: [{ EmployeeBearer: [] }]
+      x-required-permission: miniprogram.manage
+      parameters:
+        - $ref: '#/components/parameters/MiniProgramId'
+        - $ref: '#/components/parameters/MiniProgramReleaseId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ConfirmMiniProgramPreviewRequest' }
+      responses:
+        '200':
+          description: 与配置摘要和构建摘要严格绑定的不可变确认已保存
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/MiniProgram' }
+        '422': { description: 不是指定确认人、清单不完整或体验版未就绪 }
+  /api/v1/mini-programs/{miniProgramId}/releases/{releaseId}/actions/submit-review:
+    post:
+      operationId: submitMerchantMiniProgramReview
+      summary: 仅提交已完成精确体验版确认的版本
+      security: [{ EmployeeBearer: [] }]
+      x-required-permission: miniprogram.release.submit
+      parameters:
+        - $ref: '#/components/parameters/MiniProgramId'
+        - $ref: '#/components/parameters/MiniProgramReleaseId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '202':
+          description: 微信审核单号与提交凭据已保存
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/MiniProgram' }
+        '422': { description: 精确构建确认或有效授权缺失 }
+        '503': { description: 微信审核提交结果未知 }
+  /api/v1/mini-programs/{miniProgramId}/releases/{releaseId}/actions/publish:
+    post:
+      operationId: publishMerchantMiniProgramRelease
+      summary: 仅发布微信审核通过版本，并主动查询超时结果
+      security: [{ EmployeeBearer: [] }]
+      x-required-permission: miniprogram.release.publish
+      parameters:
+        - $ref: '#/components/parameters/MiniProgramId'
+        - $ref: '#/components/parameters/MiniProgramReleaseId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '202':
+          description: 发布成功或经线上查询收敛成功，并启动分批观测
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/MiniProgram' }
+        '409': { description: 版本未审核通过或命令仍待恢复 }
+        '503': { description: 发布结果无法安全确认，禁止盲目重发 }
+  /api/v1/mini-programs/{miniProgramId}/actions/rollback:
+    post:
+      operationId: rollbackMerchantMiniProgram
+      summary: 复制上一稳定构建创建全新回滚版本，保留全部历史
+      security: [{ EmployeeBearer: [] }]
+      x-required-permission: miniprogram.release.rollback
+      parameters:
+        - $ref: '#/components/parameters/MiniProgramId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/RollbackMiniProgramRequest' }
+      responses:
+        '202':
+          description: 新回滚版本成为当前稳定版本；故障版本只标记不删除
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/MiniProgram' }
+        '409': { description: 无上一稳定版本或当前状态不可回滚 }
+        '503': { description: 微信回滚网关结果未知 }
+  /api/v1/mini-programs/{miniProgramId}/releases/{releaseId}/rollout-health:
+    post:
+      operationId: recordMerchantMiniProgramRolloutHealth
+      summary: 记录当前发布波次健康指标并决定扩大或停止
+      security: [{ EmployeeBearer: [] }]
+      x-required-permission: miniprogram.release.publish
+      parameters:
+        - $ref: '#/components/parameters/MiniProgramId'
+        - $ref: '#/components/parameters/MiniProgramReleaseId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/MiniProgramRolloutHealthRequest' }
+      responses:
+        '200':
+          description: 当前波次已通过并创建下一波，或已停止扩大
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/MiniProgram' }
+        '409': { description: 波次不存在、已完成或发布版本不匹配 }
+  /api/v1/webhooks/wechat/mini-program:
+    post:
+      operationId: receiveMerchantMiniProgramCallback
+      summary: 微信小程序授权和审核安全模式回调
+      description: 先校验 SHA-1 签名和五分钟时间窗，再持久化加密原文；由可信网关解码后按事件 ID 与密文摘要精确去重。
+      security: []
+      parameters:
+        - { name: msg_signature, in: query, required: true, schema: { type: string } }
+        - { name: timestamp, in: query, required: true, schema: { type: string } }
+        - { name: nonce, in: query, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/xml:
+            schema: { type: string }
+      responses:
+        '200': { description: 返回 success，事件已安全收敛或为完全相同的重放 }
+        '400': { description: 参数或 XML 无效 }
+        '401': { description: 签名或时间窗无效 }
+        '409': { description: 相同事件 ID 对应不同密文 }
+        '503': { description: 原文存储或可信解码器不可用，要求微信重试 }
+  /api/v1/revenue-operations/subscription:
+    get:
+      operationId: getRevenueOperationsSubscription
+      summary: 查询当前租户订阅周期和冻结套餐权益
+      security: [{ EmployeeBearer: [] }]
+      x-required-permission: report.value.read
+      responses:
+        '200': { description: 当前或最近订阅事实 }
+  /api/v1/revenue-operations/plans:
+    get:
+      operationId: listRevenueOperationsPlans
+      summary: 查询有效套餐价格与权益目录
+      security: [{ EmployeeBearer: [] }]
+      x-required-permission: report.value.read
+      responses:
+        '200': { description: 有效套餐目录 }
+  /api/v1/revenue-operations/usage:
+    get:
+      operationId: listRevenueOperationsUsage
+      summary: 查询租户周期用量、限制和实际成本
+      security: [{ EmployeeBearer: [] }]
+      x-required-permission: report.value.read
+      responses:
+        '200': { description: 用量表事实 }
+  /api/v1/revenue-operations/summary:
+    get:
+      operationId: getRevenueOperationsSummary
+      summary: 从冻结分配单汇总实收、退款、成本和可分配收益
+      security: [{ EmployeeBearer: [] }]
+      x-required-permission: report.value.read
+      responses:
+        '200': { description: 可核对收益摘要 }
+  /api/v1/revenue-operations/statements:
+    get:
+      operationId: listRevenueOperationsStatements
+      summary: 查询月度收益分配单和待处理差异
+      security: [{ EmployeeBearer: [] }]
+      x-required-permission: distribution.read_all
+      responses:
+        '200': { description: 分配单列表 }
+  /api/v1/revenue-operations/statements/{statementId}:
+    get:
+      operationId: getRevenueOperationsStatement
+      summary: 查询分配、账本分录及双人审批证据
+      security: [{ EmployeeBearer: [] }]
+      x-required-permission: distribution.read_all
+      parameters:
+        - { name: statementId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200': { description: 完整可核对分配单 }
+        '404': { description: 分配单不属于当前租户 }
+  /api/v1/revenue-operations/rights:
+    get:
+      operationId: listRevenueOperationsRights
+      summary: 查询永久收益权组及持有人比例
+      security: [{ EmployeeBearer: [] }]
+      x-required-permission: revenue_right.read_all
+      responses:
+        '200': { description: 收益权台账 }
+  /api/v1/revenue-operations/policies:
+    get:
+      operationId: listRevenueOperationsPolicies
+      summary: 查询版本化收益分配政策及精确比例
+      security: [{ EmployeeBearer: [] }]
+      x-required-permission: distribution.read_all
+      responses:
+        '200': { description: 政策版本与分配比例 }
+  /api/v1/revenue-operations/costs:
+    get:
+      operationId: listRevenueOperationsCosts
+      summary: 查询直接成本目录和成本事实，不返回凭证对象地址
+      security: [{ EmployeeBearer: [] }]
+      x-required-permission: distribution.cost.read
+      responses:
+        '200': { description: 成本目录、金额及凭证存在标志 }
+  /api/v1/revenue-operations/disputes:
+    get:
+      operationId: listRevenueOperationsDisputes
+      summary: 查询本人提交或授权范围内的成本与收益申诉
+      security: [{ EmployeeBearer: [] }]
+      x-required-permission: distribution.cost.read
+      parameters:
+        - { name: statementId, in: query, schema: { type: string, format: uuid } }
+        - { name: status, in: query, schema: { type: string } }
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 100 } }
+      responses:
+        '200': { description: 申诉处理状态，不包含凭证对象地址 }
+    post:
+      operationId: createRevenueOperationsDispute
+      summary: 对本人可见的分配单提交不可篡改申诉
+      security: [{ EmployeeBearer: [] }]
+      x-required-permission: distribution.cost.read
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [statementId, disputeType, reasonCode, description]
+              properties:
+                statementId: { type: string, format: uuid }
+                costEntryId: { type: string, format: uuid }
+                disputeType: { type: string, enum: [COST, REVENUE] }
+                reasonCode: { type: string, pattern: '^[A-Z][A-Z0-9_]{1,79}$' }
+                description: { type: string, minLength: 1, maxLength: 2000 }
+      responses:
+        '201': { description: 已提交且可幂等重放的申诉 }
+        '404': { description: 分配单或成本不属于当前授权范围 }
+        '409': { description: 幂等键冲突 }
+  /api/v1/revenue-operations/costs/{costEntryId}/evidence:
+    get:
+      operationId: getRevenueOperationsCostEvidence
+      summary: 为本人或授权范围内的成本凭证签发五分钟受限下载地址
+      security: [{ EmployeeBearer: [] }]
+      x-required-permission: distribution.cost.read
+      parameters:
+        - { name: costEntryId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200': { description: 脱敏成本元数据和短时受限下载地址，不返回对象存储键 }
+        '404': { description: 成本不存在、无凭证或不属于当前授权范围 }
+  /api/v1/revenue-operations/transfers:
+    get:
+      operationId: listRevenueOperationsTransfers
+      summary: 查询收益权转让和审批状态，不返回协议对象地址
+      security: [{ EmployeeBearer: [] }]
+      x-required-permission: revenue_right.read_all
+      responses:
+        '200': { description: 收益权转让列表 }
+  /api/v1/sales/opportunities:
+    get:
+      operationId: listSalesOpportunities
+      summary: 查询本人负责或授权范围内的商机
+      description: 响应不返回统一信用代码、手机、地址及其匹配哈希。
+      security: [{ EmployeeBearer: [] }]
+      x-required-permission: merchant.intake.read
+      parameters:
+        - { name: status, in: query, schema: { type: string } }
+        - { name: query, in: query, schema: { type: string, maxLength: 100 } }
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 100 } }
+      responses:
+        '200': { description: 当前授权范围的商机摘要 }
+    post:
+      operationId: createSalesOpportunity
+      summary: 从已通过安全处理的建档材料创建商机
+      security: [{ EmployeeBearer: [] }]
+      x-required-permission: merchant.intake.create
+      parameters: [{ $ref: '#/components/parameters/IdempotencyKey' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [legalSubjectName, evidenceAssetId, firstContactAt, nextAction]
+              anyOf:
+                - { required: [unifiedCreditCode] }
+                - { required: [contactMobile] }
+                - { required: [storeAddress] }
+              properties:
+                legalSubjectName: { type: string, minLength: 2, maxLength: 200 }
+                unifiedCreditCode: { type: string, minLength: 8, maxLength: 40 }
+                contactMobile: { type: string, minLength: 6, maxLength: 30 }
+                storeAddress: { type: string, minLength: 4, maxLength: 500 }
+                evidenceAssetId: { type: string, format: uuid }
+                firstContactAt: { type: string, format: date-time }
+                nextAction: { type: string, minLength: 2, maxLength: 500 }
+                protectionDays: { type: integer, minimum: 1, maximum: 365, default: 90 }
+      responses:
+        '201': { description: 商机已创建；稳定标识仅以服务端 HMAC 保存 }
+        '409': { description: 材料未通过安全处理或幂等冲突 }
+  /api/v1/sales/opportunities/{opportunityId}:
+    get:
+      operationId: getSalesOpportunity
+      summary: 查询商机、重复检查、报价、合同和累计收款证据
+      security: [{ EmployeeBearer: [] }]
+      x-required-permission: merchant.intake.read
+      parameters:
+        - { name: opportunityId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200': { description: 脱敏商机详情 }
+        '404': { description: 商机不在当前员工授权范围 }
+  /api/v1/sales/opportunities/{opportunityId}/actions/check-duplicates:
+    post:
+      operationId: checkSalesOpportunityDuplicates
+      summary: 使用服务端 HMAC 标识和商户主体执行不可变重复检查
+      security: [{ EmployeeBearer: [] }]
+      x-required-permission: merchant.intake.write
+      parameters:
+        - { name: opportunityId, in: path, required: true, schema: { type: string, format: uuid } }
+        - { $ref: '#/components/parameters/IdempotencyKey' }
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              properties:
+                decision: { type: string, enum: [CLEAR, CONFIRMED_DUPLICATE] }
+                decisionReasonCode: { type: string, minLength: 1, maxLength: 80 }
+      responses:
+        '200': { description: 重复检查证据及处理结果 }
+        '409': { description: 人工覆盖缺少原因或幂等冲突 }
+  /api/v1/sales/opportunities/{opportunityId}/quotes:
+    post:
+      operationId: createSalesQuote
+      summary: 基于当前有效套餐价格创建限时报价
+      security: [{ EmployeeBearer: [] }]
+      x-required-permission: merchant.intake.write
+      parameters:
+        - { name: opportunityId, in: path, required: true, schema: { type: string, format: uuid } }
+        - { $ref: '#/components/parameters/IdempotencyKey' }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [planCode, validUntil]
+              properties:
+                planCode: { type: string, minLength: 1, maxLength: 80 }
+                quotedPriceCents: { type: integer, minimum: 0 }
+                discountReason: { type: string, minLength: 2, maxLength: 200 }
+                addonSnapshot: { type: array, items: { type: object, additionalProperties: true } }
+                validUntil: { type: string, format: date-time }
+      responses:
+        '201': { description: 报价已按套餐价格快照签发 }
+        '409': { description: 商机、套餐、价格或有效期状态不允许 }
+  /api/v1/sales/opportunities/{opportunityId}/contracts:
+    post:
+      operationId: createSalesContract
+      summary: 从有效报价和安全合同文件生成待签合同
+      security: [{ EmployeeBearer: [] }]
+      x-required-permission: merchant.intake.confirm
+      parameters:
+        - { name: opportunityId, in: path, required: true, schema: { type: string, format: uuid } }
+        - { $ref: '#/components/parameters/IdempotencyKey' }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [quoteId, contractNo, contractAssetId, privacyPolicyVersion]
+              properties:
+                quoteId: { type: string, format: uuid }
+                contractNo: { type: string, minLength: 1, maxLength: 100 }
+                contractAssetId: { type: string, format: uuid }
+                privacyPolicyVersion: { type: string, minLength: 1, maxLength: 80 }
+      responses:
+        '201': { description: 合同已生成并等待签署 }
+        '409': { description: 报价过期、合同材料不安全或状态不允许 }
+  /api/v1/sales/contracts/{contractId}/actions/sign:
+    post:
+      operationId: signSalesContract
+      summary: MFA 确认合同签署且仅保存签署引用 HMAC
+      security: [{ EmployeeBearer: [] }]
+      x-required-permission: merchant.intake.confirm
+      parameters:
+        - { name: contractId, in: path, required: true, schema: { type: string, format: uuid } }
+        - { $ref: '#/components/parameters/IdempotencyKey' }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [merchantSignerReference, signedAt]
+              properties:
+                merchantSignerReference: { type: string, minLength: 4, maxLength: 300 }
+                signedAt: { type: string, format: date-time }
+      responses:
+        '200': { description: 合同已签署并保留审计证据 }
+        '409': { description: 合同状态不允许或幂等冲突 }
+  /api/v1/sales/contracts/{contractId}/collections:
+    post:
+      operationId: recordSalesCollection
+      summary: 财务 MFA 复核到账凭证并记录不可变收款事实
+      security: [{ EmployeeBearer: [] }]
+      x-required-permission: finance.reconcile
+      parameters:
+        - { name: contractId, in: path, required: true, schema: { type: string, format: uuid } }
+        - { $ref: '#/components/parameters/IdempotencyKey' }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [provider, externalEventId, providerReference, amountCents, occurredAt]
+              properties:
+                provider: { type: string, minLength: 1, maxLength: 80 }
+                externalEventId: { type: string, minLength: 1, maxLength: 255 }
+                providerReference: { type: string, minLength: 4, maxLength: 300 }
+                amountCents: { type: integer, minimum: 1 }
+                currency: { type: string, pattern: '^[A-Z]{3}$', default: CNY }
+                occurredAt: { type: string, format: date-time }
+      responses:
+        '201': { description: 到账证据已记录，渠道引用仅以 HMAC 保存 }
+        '409': { description: 合同未签署、渠道事件重复或幂等冲突 }
+  /api/v1/subscription-lifecycle/changes:
+    get:
+      operationId: listSubscriptionChanges
+      summary: 查询订阅开通、续费、套餐变更和退订申请
+      security: [{ EmployeeBearer: [] }]
+      x-required-permission: merchant.intake.read
+      parameters:
+        - { name: status, in: query, schema: { type: string } }
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 100 } }
+      responses:
+        '200': { description: 当前租户订阅变更申请 }
+    post:
+      operationId: requestSubscriptionChange
+      summary: 在合同收款校验后创建待另一人确认的订阅变更
+      security: [{ EmployeeBearer: [] }]
+      x-required-permission: merchant.intake.write
+      parameters: [{ $ref: '#/components/parameters/IdempotencyKey' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [changeType, effectiveAt, reasonCode]
+              properties:
+                changeType: { type: string, enum: [ACTIVATE, RENEW, CANCEL, PLAN_CHANGE] }
+                contractId: { type: string, format: uuid }
+                subscriptionId: { type: string, format: uuid }
+                requestedPlanCode: { type: string, minLength: 1, maxLength: 80 }
+                effectiveAt: { type: string, format: date-time }
+                reasonCode: { type: string, minLength: 1, maxLength: 80 }
+      responses:
+        '202': { description: 变更已进入不同人员确认队列 }
+        '409': { description: 合同未签、实收不足、套餐不一致或当前订阅状态不允许 }
+  /api/v1/subscription-lifecycle/changes/{changeId}:
+    get:
+      operationId: getSubscriptionChange
+      summary: 查询订阅变更、审批和执行证据
+      security: [{ EmployeeBearer: [] }]
+      x-required-permission: merchant.intake.read
+      parameters:
+        - { name: changeId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200': { description: 订阅变更详情 }
+        '404': { description: 变更不属于当前租户 }
+  /api/v1/subscription-lifecycle/changes/{changeId}/actions/decide:
+    post:
+      operationId: decideSubscriptionChange
+      summary: MFA 下由非申请人批准或驳回订阅变更
+      security: [{ EmployeeBearer: [] }]
+      x-required-permission: merchant.intake.confirm
+      parameters:
+        - { name: changeId, in: path, required: true, schema: { type: string, format: uuid } }
+        - { $ref: '#/components/parameters/IdempotencyKey' }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [decision]
+              properties:
+                decision: { type: string, enum: [APPROVE, REJECT] }
+                reasonCode: { type: string, minLength: 1, maxLength: 80 }
+      responses:
+        '200': { description: 审批决定和不可覆盖审计证据已保存 }
+        '409': { description: 同人审批、缺少驳回原因或状态冲突 }
+  /api/v1/internal/subscription-lifecycle/changes/{changeId}/actions/apply:
+    post:
+      operationId: applyApprovedSubscriptionChange
+      summary: 内部任务按生效时间幂等执行已批准的订阅变更
+      security: [{ InternalWorkerBearer: [] }]
+      parameters:
+        - { name: changeId, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [tenantId]
+              properties:
+                tenantId: { type: string, format: uuid }
+      responses:
+        '200': { description: 变更已执行或返回完全相同的已执行结果 }
+        '401': { description: 内部任务凭证无效 }
+        '409': { description: 未批准或尚未到生效时间 }
+  /api/v1/subscription-lifecycle/renewal-previews:
+    get:
+      operationId: listRenewalPreviews
+      summary: 查询基于月度经营报告生成的续费提醒
+      security: [{ EmployeeBearer: [] }]
+      x-required-permission: report.value.read
+      parameters:
+        - { name: status, in: query, schema: { type: string } }
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 100 } }
+      responses:
+        '200': { description: 续费提醒和结构化经营依据 }
+  /api/v1/subscription-lifecycle/renewal-previews/{previewId}:
+    get:
+      operationId: getRenewalPreview
+      summary: 查询续费建议的指标快照、具体问题和到期时间
+      security: [{ EmployeeBearer: [] }]
+      x-required-permission: report.value.read
+      parameters:
+        - { name: previewId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200': { description: 可追溯续费预览 }
+        '404': { description: 预览不属于当前租户 }
+  /api/v1/subscription-lifecycle/renewal-previews/actions/generate:
+    post:
+      operationId: generateRenewalPreview
+      summary: 从 READY 月度经营报告幂等生成续费预览
+      security: [{ EmployeeBearer: [] }]
+      x-required-permission: report.value.read
+      parameters: [{ $ref: '#/components/parameters/IdempotencyKey' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [subscriptionId, reportMonth]
+              properties:
+                subscriptionId: { type: string, format: uuid }
+                reportMonth: { type: string, format: date }
+      responses:
+        '201': { description: 结构化续费预览已生成 }
+        '409': { description: 订阅不可续费或月度报告尚未就绪 }
+  /api/v1/subscription-lifecycle/renewal-previews/{previewId}/actions/change-status:
+    post:
+      operationId: updateRenewalPreviewStatus
+      summary: 记录已联系、接受或拒绝续费建议
+      security: [{ EmployeeBearer: [] }]
+      x-required-permission: merchant.intake.write
+      parameters:
+        - { name: previewId, in: path, required: true, schema: { type: string, format: uuid } }
+        - { $ref: '#/components/parameters/IdempotencyKey' }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [status]
+              properties:
+                status: { type: string, enum: [CONTACTED, ACCEPTED, DECLINED] }
+      responses:
+        '200': { description: 续费联系状态已更新 }
+        '409': { description: 预览已经终态或幂等冲突 }
+  /api/v1/organization/members:
+    get:
+      operationId: listOrganizationMembers
+      summary: 查询当前租户员工及有效角色分配
+      security: [{ EmployeeBearer: [] }]
+      x-required-permission: member.manage
+      responses:
+        '200': { description: 不含手机或邮箱哈希的员工与角色列表 }
+  /api/v1/organization/authorization-catalog:
+    get:
+      operationId: getOrganizationAuthorizationCatalog
+      summary: 查询冻结角色、权限、风险级别和授权范围
+      security: [{ EmployeeBearer: [] }]
+      x-required-permission: role.manage
+      responses:
+        '200': { description: 角色与权限目录 }
+        '403': { description: 需要商户负责人权限和 MFA }
+  /api/v1/organization/role-assignments:
+    post:
+      operationId: assignOrganizationRole
+      summary: 幂等分配租户或门店角色并写审计
+      security: [{ EmployeeBearer: [] }]
+      x-required-permission: role.manage
+      parameters: [{ $ref: '#/components/parameters/IdempotencyKey' }]
+      responses:
+        '201': { description: 角色分配已创建或更新 }
+        '409': { description: 幂等冲突或成员状态不允许 }
+  /api/v1/organization/role-assignments/{assignmentId}/actions/revoke:
+    post:
+      operationId: revokeOrganizationRole
+      summary: 幂等撤销角色且禁止移除最后一个商户负责人
+      security: [{ EmployeeBearer: [] }]
+      x-required-permission: role.manage
+      parameters:
+        - { name: assignmentId, in: path, required: true, schema: { type: string, format: uuid } }
+        - { $ref: '#/components/parameters/IdempotencyKey' }
+      responses:
+        '200': { description: 角色已撤销并保留审计证据 }
+        '409': { description: 最后负责人保护或幂等冲突 }
+  /api/v1/organization/members/{userId}/actions/change-status:
+    post:
+      operationId: changeOrganizationMemberStatus
+      summary: 启用或停用成员，停用时立即撤销其会话
+      security: [{ EmployeeBearer: [] }]
+      x-required-permission: member.manage
+      parameters:
+        - { name: userId, in: path, required: true, schema: { type: string, format: uuid } }
+        - { $ref: '#/components/parameters/IdempotencyKey' }
+      responses:
+        '200': { description: 成员状态已更新 }
+        '409': { description: 自我停用或最后负责人保护 }
+  /api/v1/organization/audit-logs:
+    get:
+      operationId: listOrganizationAuditLogs
+      summary: 查询当前租户脱敏审计元数据
+      security: [{ EmployeeBearer: [] }]
+      x-required-permission: audit.read
+      responses:
+        '200': { description: 不返回前后敏感载荷的审计元数据 }
+  /api/v1/organization/privacy-requests:
+    get:
+      operationId: listOrganizationPrivacyRequests
+      summary: 查询消费者数据导出、限制和删除请求进度
+      security: [{ EmployeeBearer: [] }]
+      x-required-permission: customer_profile.export
+      responses:
+        '200': { description: 当前租户隐私请求及法定保留状态 }
+  /api/v1/organization/notifications:
+    get:
+      operationId: listOrganizationNotifications
+      summary: 查询员工授权门店范围内的内部客服通知
+      security: [{ EmployeeBearer: [] }]
+      x-required-permission: customer_service.read
+      responses:
+        '200': { description: 内部通知投递状态和脱敏摘要 }
+  /api/v1/merchant-operations/profile:
+    get:
+      operationId: getMerchantOperationsProfile
+      summary: 员工读取当前租户安全商户主档
+      description: 不返回联系人密文、证照对象键或支付密钥；租户和权限由实时员工会话确定。
+      security: [{ EmployeeBearer: [] }]
+      x-required-permission: merchant_profile.manage
+      responses:
+        '200': { description: 已脱敏商户主体、行业、区域、验证状态和版本 }
+        '404': { description: 当前租户无可见商户主档 }
+  /api/v1/merchant-operations/stores:
+    get:
+      operationId: listMerchantOperationsStores
+      summary: 查询当前员工获授权门店
+      security: [{ EmployeeBearer: [] }]
+      x-required-permission: merchant_profile.manage
+      responses:
+        '200': { description: 仅返回授权门店的公开运营字段，不返回地址和电话密文 }
+  /api/v1/merchant-operations/products:
+    get:
+      operationId: listMerchantOperationsProducts
+      summary: 查询商品、团购及服务库存摘要
+      security: [{ EmployeeBearer: [] }]
+      x-required-permission: merchant_profile.manage
+      parameters:
+        - { name: storeId, in: query, schema: { type: string, format: uuid } }
+        - {
+            name: productType,
+            in: query,
+            schema: { type: string, enum: [PHYSICAL, SERVICE, GROUP_BUY, DIGITAL_SUPPLY] },
+          }
+        - { name: status, in: query, schema: { type: string } }
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 100 } }
+      responses:
+        '200': { description: 商品快照、变体数及库存可售摘要 }
+        '404': { description: 请求门店不在员工授权范围 }
+  /api/v1/merchant-operations/products/{productId}/actions/publish:
+    post:
+      operationId: publishMerchantOperationsGroupBuy
+      summary: MFA 下确认发布当前授权门店的团购活动
+      description: 按期望版本锁定团购，重新检查门店、价格、有效规格和可售库存；幂等回执不可修改。
+      security: [{ EmployeeBearer: [] }]
+      x-required-permission: order.manage
+      parameters:
+        - { name: productId, in: path, required: true, schema: { type: string, format: uuid } }
+        - {
+            name: Idempotency-Key,
+            in: header,
+            required: true,
+            schema: { type: string, maxLength: 255 },
+          }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [expectedVersion, confirmed]
+              properties:
+                expectedVersion: { type: integer, minimum: 1 }
+                confirmed: { type: boolean, const: true }
+      responses:
+        '200': { description: 活动已上架，或返回完全相同请求的幂等结果 }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { description: 员工会话或 MFA 无效 }
+        '403': { description: 缺少 order.manage 权限 }
+        '404': { description: 团购不存在或不属于授权门店 }
+        '409': { description: 幂等冲突、版本变化或发布前置条件不满足 }
+  /api/v1/merchant-operations/orders:
+    get:
+      operationId: listMerchantOperationsOrders
+      summary: 员工按授权门店查询订单
+      security: [{ EmployeeBearer: [] }]
+      x-required-permission: order.read
+      parameters:
+        - { name: storeId, in: query, schema: { type: string, format: uuid } }
+        - { name: status, in: query, schema: { type: string } }
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 100 } }
+      responses:
+        '200': { description: 不含顾客隐私正文的订单金额和状态摘要 }
+  /api/v1/merchant-operations/orders/{orderId}:
+    get:
+      operationId: getMerchantOperationsOrder
+      summary: 员工查看授权门店订单、商品快照与退款
+      security: [{ EmployeeBearer: [] }]
+      x-required-permission: order.read
+      parameters:
+        - { name: orderId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200': { description: 订单、商品行快照和退款处理状态 }
+        '404': { description: 订单不存在或不属于授权门店 }
+  /api/v1/merchant-operations/refunds:
+    get:
+      operationId: listMerchantOperationsRefunds
+      summary: 员工查看授权门店退款与审批状态
+      security: [{ EmployeeBearer: [] }]
+      x-required-permission: order.read
+      parameters:
+        - { name: storeId, in: query, schema: { type: string, format: uuid } }
+        - { name: status, in: query, schema: { type: string } }
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 100 } }
+      responses:
+        '200': { description: 退款金额、原因、状态及双人审批身份 }
+  /api/v1/merchant-operations/verification-uses:
+    get:
+      operationId: listMerchantOperationsVerificationUses
+      summary: 员工查询授权门店核销和冲正记录
+      security: [{ EmployeeBearer: [] }]
+      x-required-permission: order.read
+      parameters:
+        - { name: storeId, in: query, schema: { type: string, format: uuid } }
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 100 } }
+      responses:
+        '200': { description: 核销数量、员工、时间及冲正关系 }
+  /api/v1/merchant-operations/reconciliations:
+    get:
+      operationId: listMerchantOperationsReconciliations
+      summary: 财务人员查询每日交易对账结果
+      security: [{ EmployeeBearer: [] }]
+      x-required-permission: finance.reconcile
+      parameters:
+        - { name: status, in: query, schema: { type: string } }
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 100 } }
+      responses:
+        '200': { description: 支付、退款、奖励、核销与渠道差异摘要 }
+        '403': { description: 需要财务权限和当前 MFA 会话 }
+  /api/v1/merchant-operations/customers:
+    get:
+      operationId: listMerchantOperationCustomers
+      summary: 按员工门店授权范围查询脱敏客户运营列表
+      security: [{ EmployeeBearer: [] }]
+      x-required-permission: customer_service.read
+      parameters:
+        - { name: storeId, in: query, schema: { type: string, format: uuid } }
+        - { name: status, in: query, schema: { type: string } }
+        - { name: query, in: query, schema: { type: string, maxLength: 80 } }
+      responses:
+        '200': { description: 不含昵称、手机号密文或对象存储引用的客户列表 }
+        '403': { description: 客户不在当前员工门店授权范围 }
+  /api/v1/merchant-operations/customers/{customerId}:
+    get:
+      operationId: getMerchantOperationCustomer
+      summary: 查询门店范围内客户的脱敏持续档案摘要
+      security: [{ EmployeeBearer: [] }]
+      x-required-permission: customer_service.read
+      parameters:
+        - { name: customerId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200': { description: 客户状态、同意版本状态及订单和会话计数 }
+        '403': { description: 客户不在当前员工门店授权范围 }
+  /api/v1/merchant-operations/customers/{customerId}/rewards:
+    get:
+      operationId: listMerchantOperationCustomerRewards
+      summary: 查询门店范围内客户的不可变奖励投影
+      security: [{ EmployeeBearer: [] }]
+      x-required-permission: customer_service.read
+      parameters:
+        - { name: customerId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200': { description: 奖励发放、核销、冲回和到期投影 }
+        '403': { description: 客户不在当前员工门店授权范围 }
+  /api/v1/consumer/storefront:
+    get:
+      operationId: getConsumerStorefront
+      summary: 查询消费者会话绑定的营业中门店公开资料，不返回密文字段或对象存储引用
+      security: [{ ConsumerBearer: [] }]
+      responses:
+        '200': { description: 门店名称、地区、坐标、营业时间和更新时间 }
+        '401': { description: 消费者会话无效、撤销或过期 }
+        '404': { description: 绑定门店不存在或未营业 }
+  /api/v1/consumer/membership:
+    get:
+      operationId: getConsumerMerchantMembership
+      summary: 查询当前商户客户的会员事实与不可变消费奖励投影
+      description: 不返回昵称、手机号密文或支付余额；可用奖励按当前客户奖励账户的未过期账本分录计算，并与支付资金隔离。
+      security: [{ ConsumerBearer: [] }]
+      responses:
+        '200': { description: 会员状态、加入时间、奖励账户状态、可用奖励和最近奖励批次 }
+        '401': { description: 消费者会话无效、撤销、过期或客户不存在 }
+  /api/v1/consumer/stores:
+    get:
+      operationId: listConsumerMerchantStores
+      summary: 列出当前商户租户内可切换的营业中门店并标记当前门店
+      security: [{ ConsumerBearer: [] }]
+      responses:
+        '200': { description: 仅当前商户的营业中门店公开摘要 }
+        '401': { description: 消费者会话无效、撤销或过期 }
+  /api/v1/consumer/session/actions/switch-store:
+    post:
+      operationId: switchConsumerMerchantStore
+      summary: 原子撤销当前门店会话并签发同到期时间的目标门店会话
+      description: 目标门店必须属于当前令牌商户且处于营业状态；相同幂等键可恢复同一次会话轮换，不延长原会话有效期。
+      security: [{ ConsumerBearer: [] }]
+      parameters: [{ $ref: '#/components/parameters/IdempotencyKey' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [storeId]
+              properties:
+                storeId: { type: string, format: uuid }
+              additionalProperties: false
+      responses:
+        '200': { description: 目标门店、新消费者访问令牌和不变的到期时间 }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { description: 原消费者会话无效、撤销或过期 }
+        '404': { description: 目标门店不存在、不属于当前商户或未营业 }
+        '409': { description: 幂等重放与目标门店不一致 }
+  /api/v1/consumer/products:
+    get:
+      operationId: listConsumerProducts
+      summary: 查询消费者会话绑定门店中真实在售的商品或团购
+      security: [{ ConsumerBearer: [] }]
+      parameters:
+        - name: productType
+          in: query
+          schema:
+            type: string
+            enum: [PHYSICAL, SERVICE, GROUP_BUY, DIGITAL_SUPPLY]
+        - { name: query, in: query, schema: { type: string, minLength: 1, maxLength: 80 } }
+        - {
+            name: limit,
+            in: query,
+            schema: { type: integer, minimum: 1, maximum: 50, default: 20 },
+          }
+        - {
+            name: offset,
+            in: query,
+            schema: { type: integer, minimum: 0, maximum: 10000, default: 0 },
+          }
+      responses:
+        '200': { description: 在售商品、有效规格、真实价格和库存可用性 }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { description: 消费者会话无效、撤销或过期 }
+  /api/v1/consumer/products/{productId}:
+    get:
+      operationId: getConsumerProduct
+      summary: 查询消费者会话绑定门店中的单个真实在售商品详情
+      security: [{ ConsumerBearer: [] }]
+      parameters:
+        - { name: productId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200': { description: 商品类型、价格、版本和有效规格 }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { description: 消费者会话无效、撤销或过期 }
+        '404': { description: 商品不存在、未上架或不属于绑定门店 }
+  /api/v1/consumer/products/{productId}/trace-report:
+    get:
+      operationId: getConsumerProductTraceReport
+      summary: 查询当前门店在售商品的有效已核验溯源报告
+      security: [{ ConsumerBearer: [] }]
+      parameters:
+        - { name: productId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200': { description: 版本化摘要、结构化证据、核验时间和有效期 }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { description: 消费者会话无效、撤销或过期 }
+        '404': { description: 商品或当前有效核验报告不存在 }
+  /api/v1/life/cart:
+    get:
+      operationId: getPlatformConsumerCart
+      summary: 查询平台消费者跨商户购物车；按商户和门店分组并重新读取当前价格与库存
+      security: [{ LifeConsumerBearer: [] }]
+      responses:
+        '200': { description: 购物车分组、实时价格、库存可用性和分组小计 }
+        '401': { description: 平台消费者会话无效、撤销或过期 }
+  /api/v1/life/discovery/stores:
+    get:
+      operationId: listPlatformConsumerDiscoveryStores
+      summary: 查询平台账号已建立客户关系的真实营业门店，并可按本次授权位置计算距离
+      description: 服务端从当前平台账号的有效商户客户绑定确定候选租户，逐租户读取公开门店字段。位置仅用于本次距离计算，不写库、不进入日志或画像。
+      security: [{ LifeConsumerBearer: [] }]
+      parameters:
+        - { name: cityCode, in: query, schema: { type: string, minLength: 1, maxLength: 20 } }
+        - { name: latitude, in: query, schema: { type: number, minimum: -90, maximum: 90 } }
+        - { name: longitude, in: query, schema: { type: number, minimum: -180, maximum: 180 } }
+        - {
+            name: limit,
+            in: query,
+            schema: { type: integer, minimum: 1, maximum: 100, default: 30 },
+          }
+      responses:
+        '200': { description: 安全门店摘要、在售商品数和可选距离；无绑定时为空数组 }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { description: 平台消费者会话无效、撤销或过期 }
+  /api/v1/merchant-consumer/cart:
+    get:
+      operationId: getMerchantConsumerCart
+      summary: 查询独立商家小程序当前门店购物车；双会话必须映射到同一商户客户
+      description: Authorization 携带商家消费者令牌，X-Life-Authorization 携带平台消费者 Bearer 令牌。服务端只返回会话绑定商户与门店的交集，不接受客户端租户范围。
+      security: [{ ConsumerBearer: [], LifeConsumerSecondaryBearer: [] }]
+      responses:
+        '200': { description: 当前商户门店范围内的持久购物车、实时价格与库存 }
+        '401': { description: 任一会话失效，或两个会话不属于同一商户客户 }
+  /api/v1/merchant-consumer/cart/items:
+    put:
+      operationId: setMerchantConsumerCartItem
+      summary: 在服务端会话确定的商户门店中设置购物车规格数量
+      security: [{ ConsumerBearer: [], LifeConsumerSecondaryBearer: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [variantId, quantity]
+              properties:
+                variantId: { type: string, format: uuid }
+                quantity: { type: integer, minimum: 1, maximum: 999 }
+              additionalProperties: false
+      responses:
+        '200': { description: 已重新校价的当前商户门店购物车 }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { description: 双会话无效或身份映射不一致 }
+        '409': { description: 商品规格或库存不可用 }
+  /api/v1/merchant-consumer/cart/items/{itemId}:
+    delete:
+      operationId: removeMerchantConsumerCartItem
+      summary: 仅删除当前双会话商户门店购物车范围内的项目
+      security: [{ ConsumerBearer: [], LifeConsumerSecondaryBearer: [] }]
+      parameters:
+        - { name: itemId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200': { description: 删除后当前商户门店购物车 }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { description: 双会话无效或身份映射不一致 }
+        '404': { description: 项目不存在或不属于当前商户门店范围 }
+  /api/v1/merchant-consumer/checkouts/quote:
+    post:
+      operationId: quoteMerchantConsumerCheckout
+      summary: 为当前独立商家小程序门店生成服务端校价结算快照
+      description: 商户、客户、门店与订单来源均由双会话确定；客户端只能选择商品类型对应的履约方式。
+      security: [{ ConsumerBearer: [], LifeConsumerSecondaryBearer: [] }]
+      parameters: [{ $ref: '#/components/parameters/IdempotencyKey' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [cartVersion]
+              properties:
+                cartVersion: { type: integer, minimum: 1 }
+                fulfillmentChoices:
+                  type: array
+                  maxItems: 3
+                  items:
+                    type: object
+                    required: [productType, orderType]
+                    properties:
+                      productType: { type: string, enum: [PHYSICAL, GROUP_BUY, SERVICE] }
+                      orderType:
+                        {
+                          type: string,
+                          enum: [PHYSICAL_DELIVERY, STORE_PICKUP, GROUP_BUY, SERVICE_APPOINTMENT],
+                        }
+                      addressId: { type: string, format: uuid }
+                    additionalProperties: false
+              additionalProperties: false
+      responses:
+        '201': { description: 来源标记为 MERCHANT_MINI_PROGRAM 的单商户门店结算快照 }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { description: 双会话无效或身份映射不一致 }
+        '409': { description: 购物车版本或幂等请求冲突 }
+        '422': { description: 商品、库存或履约规则不可用 }
+  /api/v1/merchant-consumer/checkouts/{checkoutId}:
+    get:
+      operationId: getMerchantConsumerCheckout
+      summary: 查询完全属于当前商户、客户、门店及独立小程序来源的结算快照
+      security: [{ ConsumerBearer: [], LifeConsumerSecondaryBearer: [] }]
+      parameters:
+        - { name: checkoutId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200': { description: 当前独立商家小程序结算快照 }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { description: 双会话无效或身份映射不一致 }
+        '404': { description: 快照不存在或含任一范围外分组 }
+  /api/v1/merchant-consumer/checkouts/{checkoutId}/actions/submit:
+    post:
+      operationId: submitMerchantConsumerCheckout
+      summary: 幂等创建来源为独立商家小程序的商户直收订单
+      security: [{ ConsumerBearer: [], LifeConsumerSecondaryBearer: [] }]
+      parameters:
+        - { name: checkoutId, in: path, required: true, schema: { type: string, format: uuid } }
+        - { $ref: '#/components/parameters/IdempotencyKey' }
+      responses:
+        '202': { description: 已创建或可从安全断点重试的订单分组状态 }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { description: 双会话无效或身份映射不一致 }
+        '404': { description: 快照不存在或不完全属于当前商户门店 }
+        '409': { description: 购物车变化或提交幂等冲突 }
+        '422': { description: 报价过期、价格库存变化或商户绑定失效 }
+  /api/v1/life/addresses:
+    get:
+      operationId: listPlatformConsumerAddresses
+      summary: 查询当前平台消费者自己的有效配送地址；敏感字段仅在鉴权后解密返回
+      security: [{ LifeConsumerBearer: [] }]
+      responses:
+        '200': { description: 默认优先的账号隔离地址列表 }
+        '401': { description: 平台消费者会话无效、撤销或过期 }
+        '503': { description: 地址加密密钥未配置，服务保持关闭 }
+    put:
+      operationId: savePlatformConsumerAddress
+      summary: 新增或更新当前消费者地址；收件人、手机号和街道地址使用 AES-256-GCM 加密落库
+      security: [{ LifeConsumerBearer: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [recipientName, mobile, provinceCode, cityCode, districtCode, addressLine]
+              properties:
+                id: { type: string, format: uuid }
+                recipientName: { type: string, minLength: 1, maxLength: 80 }
+                mobile: { type: string, pattern: '^1[3-9][0-9]{9}$' }
+                provinceCode: { type: string, minLength: 1, maxLength: 20 }
+                cityCode: { type: string, minLength: 1, maxLength: 20 }
+                districtCode: { type: string, minLength: 1, maxLength: 20 }
+                addressLine: { type: string, minLength: 1, maxLength: 300 }
+                isDefault: { type: boolean, default: false }
+              additionalProperties: false
+      responses:
+        '200': { description: 已保存并解密返回给当前所有者的地址 }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { description: 平台消费者会话无效、撤销或过期 }
+        '404': { description: 更新目标不存在或不属于当前消费者 }
+        '503': { description: 地址加密密钥未配置，服务保持关闭 }
+  /api/v1/life/addresses/{addressId}:
+    delete:
+      operationId: archivePlatformConsumerAddress
+      summary: 归档当前消费者自己的地址，不删除历史结算引用
+      security: [{ LifeConsumerBearer: [] }]
+      parameters:
+        - { name: addressId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '204': { description: 地址已归档 }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { description: 平台消费者会话无效、撤销或过期 }
+        '404': { description: 地址不存在或不属于当前消费者 }
+  /api/v1/life/invoice-profiles:
+    get:
+      operationId: listPlatformConsumerInvoiceProfiles
+      summary: 查询当前平台账号自己的有效发票抬头并在鉴权后解密
+      security: [{ LifeConsumerBearer: [] }]
+      responses:
+        '200': { description: 默认优先的个人或企业发票抬头 }
+        '401': { description: 平台消费者会话无效、撤销或过期 }
+        '503': { description: 敏感字段加密密钥未配置，服务保持关闭 }
+    put:
+      operationId: savePlatformConsumerInvoiceProfile
+      summary: 新增或更新本人发票抬头；标题、税号和邮箱使用 AES-256-GCM 加密落库
+      security: [{ LifeConsumerBearer: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [profileType, title]
+              properties:
+                id: { type: string, format: uuid }
+                profileType: { type: string, enum: [PERSONAL, ENTERPRISE] }
+                title: { type: string, minLength: 1, maxLength: 200 }
+                taxIdentifier: { type: string, minLength: 5, maxLength: 80 }
+                email: { type: string, format: email, maxLength: 255 }
+                isDefault: { type: boolean, default: false }
+              additionalProperties: false
+      responses:
+        '200': { description: 已加密保存并仅向本人解密返回的抬头 }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { description: 平台消费者会话无效、撤销或过期 }
+        '404': { description: 更新目标不存在或不属于当前账号 }
+        '503': { description: 敏感字段加密密钥未配置，服务保持关闭 }
+  /api/v1/life/invoice-profiles/{profileId}:
+    delete:
+      operationId: archivePlatformConsumerInvoiceProfile
+      summary: 归档本人发票抬头，不物理删除历史开票引用
+      security: [{ LifeConsumerBearer: [] }]
+      parameters:
+        - { name: profileId, in: path, required: true, schema: { type: string, format: uuid } }
+        - { $ref: '#/components/parameters/IdempotencyKey' }
+      responses:
+        '204': { description: 发票抬头已归档 }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { description: 平台消费者会话无效、撤销或过期 }
+        '404': { description: 抬头不存在或不属于当前账号 }
+  /api/v1/life/cart/items:
+    put:
+      operationId: setPlatformConsumerCartItem
+      summary: 设置跨商户购物车规格的目标数量；服务端验证账号商户绑定、商品状态和库存
+      security: [{ LifeConsumerBearer: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [merchantTenantId, storeId, variantId, quantity]
+              properties:
+                merchantTenantId: { type: string, format: uuid }
+                storeId: { type: string, format: uuid }
+                variantId: { type: string, format: uuid }
+                quantity: { type: integer, minimum: 1, maximum: 999 }
+              additionalProperties: false
+      responses:
+        '200': { description: 已按目标数量创建或更新并返回重新校价后的完整购物车 }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { description: 平台消费者会话无效、撤销或过期 }
+        '409': { description: 商户绑定、商品、门店、规格或库存不可用 }
+  /api/v1/life/cart/items/{itemId}:
+    delete:
+      operationId: removePlatformConsumerCartItem
+      summary: 删除当前平台消费者活动购物车中的指定项目
+      security: [{ LifeConsumerBearer: [] }]
+      parameters:
+        - { name: itemId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200': { description: 删除后重新校价的完整购物车 }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { description: 平台消费者会话无效、撤销或过期 }
+        '404': { description: 项目不存在或不属于当前消费者活动购物车 }
+  /api/v1/life/orders:
+    get:
+      operationId: listPlatformConsumerOrders
+      summary: 通过平台消费者已绑定的商户客户档案合并查询跨商户订单
+      security: [{ LifeConsumerBearer: [] }]
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [PENDING_PAYMENT, PAID, FULFILLING, COMPLETED, CANCELLED, CLOSED]
+        - {
+            name: limit,
+            in: query,
+            schema: { type: integer, minimum: 1, maximum: 100, default: 30 },
+          }
+      responses:
+        '200': { description: 按创建时间合并排序的跨商户订单摘要，不接受客户端租户身份 }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { description: 平台消费者会话无效、撤销或过期 }
+  /api/v1/life/checkouts/quote:
+    post:
+      operationId: quotePlatformConsumerCheckout
+      summary: 按当前购物车版本重新核价并按商户、门店和履约类型生成可解释结算快照
+      security: [{ LifeConsumerBearer: [] }]
+      parameters: [{ $ref: '#/components/parameters/IdempotencyKey' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [cartVersion]
+              properties:
+                cartVersion: { type: integer, minimum: 1 }
+                fulfillmentChoices:
+                  type: array
+                  maxItems: 100
+                  items:
+                    type: object
+                    required: [merchantTenantId, storeId, productType, orderType]
+                    properties:
+                      merchantTenantId: { type: string, format: uuid }
+                      storeId: { type: string, format: uuid }
+                      productType: { type: string, enum: [PHYSICAL, GROUP_BUY, SERVICE] }
+                      orderType:
+                        type: string
+                        enum: [PHYSICAL_DELIVERY, STORE_PICKUP, GROUP_BUY, SERVICE_APPOINTMENT]
+                      addressId: { type: string, format: uuid }
+                    additionalProperties: false
+              additionalProperties: false
+      responses:
+        '201': { description: 服务端价格、最优有效优惠、配送费、退款摘要及分组应付快照 }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { description: 平台消费者会话无效、撤销或过期 }
+        '409': { description: 购物车版本变化或幂等键请求体冲突 }
+        '422': { description: 商品、库存、履约规则、商户绑定或配送地址不可用 }
+  /api/v1/life/checkouts/{checkoutId}:
+    get:
+      operationId: getPlatformConsumerCheckout
+      summary: 查询当前平台消费者自己的结算快照和各商户分组状态
+      security: [{ LifeConsumerBearer: [] }]
+      parameters:
+        - { name: checkoutId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200': { description: 账号隔离的结算总额、分组定价证据及有效期 }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { description: 平台消费者会话无效、撤销或过期 }
+        '404': { description: 结算快照不存在或不属于当前消费者 }
+  /api/v1/life/checkouts/{checkoutId}/actions/submit:
+    post:
+      operationId: submitPlatformConsumerCheckout
+      summary: 幂等地按结算分组创建商户直收订单；部分失败保留已创建订单并允许从断点重试
+      security: [{ LifeConsumerBearer: [] }]
+      parameters:
+        - { name: checkoutId, in: path, required: true, schema: { type: string, format: uuid } }
+        - { $ref: '#/components/parameters/IdempotencyKey' }
+      responses:
+        '202': { description: 返回各分组 ORDER_CREATED 或 FAILED 状态；全部成功后关闭原购物车 }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { description: 平台消费者会话无效、撤销或过期 }
+        '404': { description: 结算快照不存在或不属于当前消费者 }
+        '409': { description: 购物车已变化或提交幂等键冲突 }
+        '422': { description: 报价过期、价格库存变化或商户绑定失效 }
+  /api/v1/life/orders/{orderId}:
+    get:
+      operationId: getPlatformConsumerOrder
+      summary: 仅通过当前平台消费者有效商户绑定查找订单详情
+      security: [{ LifeConsumerBearer: [] }]
+      parameters:
+        - { name: orderId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200': { description: 订单多维状态、金额、门店和下单时商品快照 }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { description: 平台消费者会话无效、撤销或过期 }
+        '404': { description: 任一有效商户绑定下均不存在该订单 }
+  /api/v1/life/orders/{orderId}/aftercare:
+    get:
+      operationId: getPlatformConsumerOrderAftercare
+      summary: 查询当前平台消费者订单的退款申请、审批与提供方进度真相
+      security: [{ LifeConsumerBearer: [] }]
+      parameters:
+        - { name: orderId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200': { description: 服务端持久化的退款记录、退款项目金额与审批状态 }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { description: 平台消费者会话无效、撤销或过期 }
+        '404': { description: 任一有效商户绑定下均不存在该乐趣生活订单 }
+  /api/v1/life/orders/{orderId}/refunds:
+    post:
+      operationId: requestPlatformConsumerRefund
+      summary: 服务端反查订单商户、客户和门店范围后申请退款
+      security: [{ LifeConsumerBearer: [] }]
+      parameters:
+        - { name: orderId, in: path, required: true, schema: { type: string, format: uuid } }
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/RequestCommerceRefund' }
+      responses:
+        '202':
+          description: 退款申请已按原订单已付分摊和剩余可退数量创建
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CommerceRefund' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { description: 平台消费者会话无效、撤销或过期 }
+        '404': { description: 任一有效商户绑定下均不存在该乐趣生活订单 }
+        '409': { description: 幂等请求冲突或订单、核销及剩余可退范围不允许申请 }
+        '503': { description: 退款提供方适配器未配置 }
+  /api/v1/life/orders/{orderId}/verification-entitlements:
+    get:
+      operationId: listPlatformConsumerVerificationEntitlements
+      summary: 通过平台账号有效商户绑定签发订单核销凭证
+      security: [{ LifeConsumerBearer: [] }]
+      parameters:
+        - { name: orderId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200':
+          description: 仅当前订单所有者可见的短期签名核销凭证
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/CommerceVerificationToken' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { description: 平台消费者会话无效、撤销或过期 }
+        '404': { description: 任一有效商户绑定下均不存在该乐趣生活订单 }
+        '503': { description: 核销签名密钥未配置 }
+  /api/v1/life/rewards:
+    get:
+      operationId: listPlatformConsumerRewards
+      summary: 合并当前平台账号有效商户绑定下的奖励账本投影
+      security: [{ LifeConsumerBearer: [] }]
+      parameters:
+        - {
+            name: limit,
+            in: query,
+            schema: { type: integer, minimum: 1, maximum: 100, default: 30 },
+          }
+      responses:
+        '200': { description: 奖励原额、已兑、已冲正、可用额、规则版本和有效期 }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { description: 平台消费者会话无效、撤销或过期 }
+  /api/v1/life/verification-entitlements:
+    get:
+      operationId: listPlatformConsumerAvailableVerificationEntitlements
+      summary: 合并当前平台账号有效商户绑定下尚可使用的核销凭证
+      security: [{ LifeConsumerBearer: [] }]
+      responses:
+        '200':
+          description: 仅包含剩余次数大于零且仍可使用的短期签名凭证
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/CommerceVerificationToken' }
+        '401': { description: 平台消费者会话无效、撤销或过期 }
+        '503': { description: 核销签名密钥未配置 }
+  /api/v1/verification-entitlements:
+    get:
+      operationId: listCommerceConsumerAvailableVerificationEntitlements
+      summary: 查询当前商家小程序消费者在绑定门店尚可使用的券
+      security: [{ ConsumerBearer: [] }]
+      responses:
+        '200':
+          description: 仅当前租户、客户和门店的可用短期签名凭证
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/CommerceVerificationToken' }
+        '401': { description: 商家消费者会话无效、撤销或过期 }
+        '503': { description: 核销签名密钥未配置 }
+  /api/v1/orders:
+    get:
+      operationId: listCommerceConsumerOrders
+      summary: 查询当前商家独立小程序消费者在绑定门店的订单
+      security: [{ ConsumerBearer: [] }]
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [PENDING_PAYMENT, PAID, FULFILLING, COMPLETED, CANCELLED, CLOSED]
+        - {
+            name: limit,
+            in: query,
+            schema: { type: integer, minimum: 1, maximum: 100, default: 30 },
+          }
+      responses:
+        '200': { description: 仅当前租户、客户和门店的商家小程序订单真相 }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { description: 商家消费者会话无效、撤销或过期 }
+    post:
+      operationId: createCommerceOrder
+      summary: 按服务端商品快照锁价并原子预占库存
+      security: [{ ConsumerBearer: [] }]
+      parameters: [{ $ref: '#/components/parameters/IdempotencyKey' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreateCommerceOrderRequest' }
+      responses:
+        '201':
+          description: 订单与库存预占已原子创建
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CommerceOrder' }
+        '409': { description: 库存不足或幂等请求冲突 }
+  /api/v1/orders/{orderId}:
+    get:
+      operationId: getCommerceOrder
+      summary: 获取消费者本人或员工授权范围内的订单投影
+      security: [{ ConsumerBearer: [] }, { EmployeeBearer: [] }]
+      x-required-permission: order.read
+      parameters:
+        - { name: orderId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200':
+          description: 服务端订单真相
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CommerceOrder' }
+        '403': { description: 订单不属于当前主体或不在门店范围 }
+  /api/v1/payment-intents:
+    post:
+      operationId: createCommercePaymentIntent
+      summary: 使用服务端订单金额和已确认商户收款账户创建支付
+      security: [{ ConsumerBearer: [] }]
+      parameters: [{ $ref: '#/components/parameters/IdempotencyKey' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreateCommercePaymentRequest' }
+      responses:
+        '202':
+          description: 支付凭证已安全保存并返回；客户端结果不改变支付状态
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CommercePaymentIntent' }
+        '409': { description: 订单不可支付或支付创建正在恢复 }
+  /api/v1/life/payment-intents:
+    post:
+      operationId: createPlatformConsumerPaymentIntent
+      summary: 从平台消费者有效商户绑定解析订单归属，并使用该商户已确认的支付账户创建支付凭证
+      security: [{ LifeConsumerBearer: [] }]
+      parameters: [{ $ref: '#/components/parameters/IdempotencyKey' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [orderId, provider]
+              properties:
+                orderId: { type: string, format: uuid }
+                provider: { type: string, enum: [WECHAT_PAY, ALIPAY, SANDBOX] }
+              additionalProperties: false
+      responses:
+        '202': { description: 商户直收支付凭证；客户端结果仍需服务端订单状态确认 }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { description: 平台消费者会话无效、撤销或过期 }
+        '404': { description: 任一有效商户绑定下均不存在该乐趣生活订单 }
+        '409': { description: 支付状态或幂等请求冲突 }
+        '503': { description: 支付提供方适配器或商户确认账户未配置 }
+  /api/v1/webhooks/payments/{provider}:
+    post:
+      operationId: receiveCommercePaymentCallback
+      summary: 对原始回调正文验签并幂等收敛支付或退款终态
+      security: []
+      parameters:
+        - {
+            name: provider,
+            in: path,
+            required: true,
+            schema: { $ref: '#/components/schemas/CommerceProvider' },
+          }
+        - {
+            name: x-payment-signature,
+            in: header,
+            required: true,
+            schema: { type: string, pattern: '^[a-fA-F0-9]{64}$' },
+          }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CommercePaymentCallback' }
+          application/vnd.lequ.payment-callback+json:
+            schema: { $ref: '#/components/schemas/CommercePaymentCallback' }
+      responses:
+        '200': { description: 已应用或已精确应用过 }
+        '401': { description: 原始正文签名、提供方或回调主体无效 }
+        '409': { description: 同一事件标识出现不同正文或业务状态冲突 }
+  /api/v1/orders/{orderId}/refunds:
+    get:
+      operationId: listCommerceConsumerRefunds
+      summary: 查询当前商家消费者订单的退款记录
+      security: [{ ConsumerBearer: [] }]
+      parameters:
+        - { name: orderId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200':
+          description: 服务端退款记录与项目分摊
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/CommerceRefund' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { description: 商家消费者会话无效、撤销或过期 }
+        '403': { description: 订单不属于当前租户、消费者或门店 }
+    post:
+      operationId: requestCommerceRefund
+      summary: 按原订单已付分摊创建不超范围的售后退款
+      security: [{ ConsumerBearer: [] }]
+      parameters:
+        - { name: orderId, in: path, required: true, schema: { type: string, format: uuid } }
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/RequestCommerceRefund' }
+      responses:
+        '202':
+          description: 退款已创建并根据快照进入审批或待提交
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CommerceRefund' }
+        '409': { description: 原单、核销或剩余可退范围不允许本次请求 }
+  /api/v1/refunds/{refundId}/actions/approve:
+    post:
+      operationId: approveCommerceRefund
+      summary: 由不同员工在授权门店范围内审批退款
+      security: [{ EmployeeBearer: [] }]
+      x-required-permission: refund.approve
+      x-mfa-required: true
+      parameters:
+        - { name: refundId, in: path, required: true, schema: { type: string, format: uuid } }
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ApproveCommerceRefund' }
+      responses:
+        '200':
+          description: 审批结果与审计证据已保存
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CommerceRefund' }
+        '409': { description: 自批、重复审批或状态冲突 }
+  /api/v1/orders/{orderId}/verification-entitlements:
+    get:
+      operationId: listCommerceVerificationEntitlements
+      summary: 获取消费者本人订单的当前不透明核销凭证
+      security: [{ ConsumerBearer: [] }]
+      parameters:
+        - { name: orderId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200':
+          description: 当前代次凭证；凭证正文不包含订单明文
+          content:
+            application/json:
+              schema:
+                { type: array, items: { $ref: '#/components/schemas/CommerceVerificationToken' } }
+  /api/v1/verification-uses:
+    post:
+      operationId: useCommerceVerification
+      summary: 在授权门店按设备风险、有效期和剩余次数原子核销
+      security: [{ EmployeeBearer: [] }]
+      x-required-permission: verification.execute
+      parameters: [{ $ref: '#/components/parameters/IdempotencyKey' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/UseCommerceVerification' }
+      responses:
+        '201':
+          description: 核销已落不可变流水并更新履约投影
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CommerceVerificationResult' }
+        '409': { description: 门店、时间、风险、代次或剩余次数校验失败 }
+  /api/v1/commerce-reconciliations:
+    post:
+      operationId: runCommerceReconciliation
+      summary: 核对支付、退款、订单、奖励与核销并对一分钱差异停账
+      security: [{ EmployeeBearer: [] }]
+      x-required-permission: finance.reconcile
+      x-mfa-required: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/RunCommerceReconciliation' }
+      responses:
+        '201':
+          description: 不可变日对账批次与差异明细
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CommerceReconciliation' }
+        '409': { description: 同批次仍在计算或收款账户不可用 }
+  /api/v1/internal/commerce/orders/{orderId}/actions/expire:
+    post:
+      operationId: expireCommerceOrder
+      summary: 内部任务幂等释放过期未支付订单的库存
+      security: [{ InternalWorkerBearer: [] }]
+      parameters:
+        - { name: orderId, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/InternalTenantCommand' }
+      responses:
+        '200': { description: 已过期或此前已经安全释放 }
+        '401': { description: 内部工作令牌无效 }
+  /api/v1/internal/commerce/refunds/{refundId}/actions/submit:
+    post:
+      operationId: submitCommerceRefund
+      summary: 内部任务使用唯一提供方尝试提交待处理退款
+      security: [{ InternalWorkerBearer: [] }]
+      parameters:
+        - { name: refundId, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/InternalTenantCommand' }
+      responses:
+        '202': { description: 已提交、处理中或等待提供方查询恢复 }
+        '401': { description: 内部工作令牌无效 }
+  /api/v1/geo/profiles/{profileId}/actions/publish:
+    post:
+      operationId: publishGeoProfile
+      summary: 将商户确认的统一资料发布到一个已授权目标
+      description: 只承诺资料校验、授权提交和证据保存，不承诺第三方收录、排名、流量或成交。
+      security: [{ EmployeeBearer: [] }]
+      x-required-permission: geo.publish
+      parameters:
+        - { name: profileId, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { type: object, additionalProperties: true }
+      responses:
+        '202': { description: 独立目标的提交状态、证据引用和下次重试时间 }
+        '422': { description: 资料不完整或出现禁止承诺 }
+  /api/v1/plugins/installations:
+    post:
+      operationId: installOfficialPlugin
+      summary: 负责人逐项确认权限、域名、费用和卸载影响后安装官方插件
+      security: [{ EmployeeBearer: [] }]
+      x-required-permission: plugin.install
+      parameters: [{ $ref: '#/components/parameters/IdempotencyKey' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { type: object, additionalProperties: true }
+      responses:
+        '202': { description: 安装完成并生成最小权限授权 }
+        '409': { description: 清单、版本或负责人确认不满足要求 }
+  /api/v1/plugins/catalog:
+    get:
+      operationId: listOfficialPlugins
+      summary: 查询已审核、已签名并发布的第一方插件目录
+      security: [{ EmployeeBearer: [] }]
+      x-required-permission: plugin.install
+      responses:
+        '200': { description: 包含权限、域名、费用、限额和卸载影响的官方插件清单 }
+  /api/v1/plugins/catalog/{pluginCode}:
+    get:
+      operationId: getOfficialPlugin
+      summary: 查询一个已发布第一方插件的精确版本、权限、域名、费用和卸载影响
+      security: [{ EmployeeBearer: [] }]
+      x-required-permission: plugin.install
+      parameters:
+        - { name: pluginCode, in: path, required: true, schema: { type: string } }
+      responses:
+        '200': { description: 可用于明确授权安装的插件版本和完整清单 }
+        '404': { description: 插件不存在或未发布 }
+  /api/v1/plugins/installations/{installationId}/invocations:
+    post:
+      operationId: invokeOfficialPlugin
+      summary: 使用安装级权限和声明域名调用隔离插件运行时
+      security: [{ EmployeeBearer: [] }]
+      x-required-permission: plugin.permission.grant
+      parameters:
+        - { name: installationId, in: path, required: true, schema: { type: string, format: uuid } }
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { type: object, additionalProperties: true }
+      responses:
+        '202': { description: 调用结果和独立熔断状态 }
+        '403': { description: 未授权权限或未声明出网域名 }
+  /api/v1/plugins/installations/{installationId}/actions/upgrade:
+    post:
+      operationId: upgradeOfficialPlugin
+      summary: 升级官方插件；新增权限或域名必须重新授权
+      security: [{ EmployeeBearer: [] }]
+      x-required-permission: plugin.install
+      parameters:
+        - { name: installationId, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { type: object, additionalProperties: true }
+      responses:
+        '202': { description: 已升级或经重新授权后升级 }
+  /api/v1/plugins/installations/{installationId}/actions/uninstall:
+    post:
+      operationId: uninstallOfficialPlugin
+      summary: 撤销令牌、停止新任务并按清单删除插件数据
+      security: [{ EmployeeBearer: [] }]
+      x-required-permission: plugin.install
+      parameters:
+        - { name: installationId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200': { description: 卸载完成并保存删除回执 }
+  /api/v1/reports/monthly-value:
+    get:
+      operationId: getMonthlyValueReport
+      summary: 查询每个数字都带统计口径和来源事件的月度价值报告
+      security: [{ EmployeeBearer: [] }]
+      x-required-permission: report.value.read
+      parameters:
+        - {
+            name: month,
+            in: query,
+            required: true,
+            schema: { type: string, pattern: '^\d{4}-\d{2}$' },
+          }
+        - { name: storeId, in: query, required: false, schema: { type: string, format: uuid } }
+      responses:
+        '200': { description: 指标、统计版本、更新时间、来源事件和 GEO 非承诺说明 }
+        '409': { description: 报告尚未生成完成 }
+  /api/v1/internal/reports/monthly-value/actions/materialize:
+    post:
+      operationId: materializeMonthlyValueReport
+      summary: 内部作业按租户和月份固化可追溯价值报告
+      security: [{ InternalWorkerBearer: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [tenantId, month]
+              properties:
+                tenantId: { type: string, format: uuid }
+                month: { type: string, pattern: '^\d{4}-\d{2}$' }
+                storeId: { type: string, format: uuid }
+      responses:
+        '201': { description: 报告快照已固化或返回已存在的同月快照 }
+        '401': { description: 内部 Worker 凭证无效 }
+  /api/v1/internal/geo/targets/{targetId}/actions/check:
+    post:
+      operationId: checkGeoTarget
+      summary: 内部作业检查渠道授权、可访问性和强一致字段差异
+      security: [{ InternalWorkerBearer: [] }]
+      parameters:
+        - { name: targetId, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [tenantId]
+              properties:
+                tenantId: { type: string, format: uuid }
+      responses:
+        '200': { description: 目标健康状态和差异字段清单 }
+        '401': { description: 内部 Worker 凭证无效 }
 components:
   securitySchemes:
     EmployeeBearer:
       type: http
       scheme: bearer
       bearerFormat: JWT
-      description: HS256 签名会话，必须包含 tenant_id、user_id、role_codes、store_ids、session_id 和 exp。
-  parameters:
-    TenantId:
-      name: x-tenant-id
+      description: HS256 签名会话，必须包含固定 issuer/audience、tenant_id、user_id、role_codes、store_ids、session_id、auth_level、iat 和 exp。
+    ConsumerBearer:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: 独立 audience 的消费者短时会话，服务端绑定 tenant_id、customer_id、store_id、session_id 与身份校验等级，并实时检查撤销和到期。
+    LifeConsumerBearer:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: 乐趣生活平台消费者短时会话，仅绑定平台 account_id 与 session_id；跨商户访问必须再验证账号到商户客户档案的当前绑定。
+    LifeConsumerSecondaryBearer:
+      type: apiKey
       in: header
-      required: true
-      schema: { type: string, format: uuid }
+      name: X-Life-Authorization
+      description: 独立商家小程序双身份接口使用的乐趣生活平台 Bearer 令牌；与 Authorization 中的商家消费者令牌同时校验。
+    InternalWorkerBearer:
+      type: http
+      scheme: bearer
+      description: 仅租户分片后台 Worker 使用的独立高熵服务凭证，不接受员工或消费者令牌。
+  parameters:
     IdempotencyKey:
       name: Idempotency-Key
       in: header
@@ -387,10 +3533,882 @@ components:
       in: path
       required: true
       schema: { type: string, format: uuid }
+    DeliveryProjectId:
+      name: projectId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    DeliveryStepCode:
+      name: stepCode
+      in: path
+      required: true
+      schema: { type: string, minLength: 1, maxLength: 120 }
+    MiniProgramId:
+      name: miniProgramId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    MiniProgramReleaseId:
+      name: releaseId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    ConversationId:
+      name: conversationId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
   responses:
     BadRequest:
       description: 请求或租户上下文无效
   schemas:
+    CommerceProvider:
+      type: string
+      enum: [WECHAT_PAY, ALIPAY, SANDBOX]
+    CreateCommerceOrderRequest:
+      type: object
+      additionalProperties: false
+      required: [storeId, sourceChannel, orderType, items]
+      properties:
+        storeId: { type: string, format: uuid }
+        sourceChannel: { type: string, enum: [MERCHANT_MINI_PROGRAM, LEQU_LIFE] }
+        orderType:
+          { type: string, enum: [PHYSICAL_DELIVERY, STORE_PICKUP, GROUP_BUY, SERVICE_APPOINTMENT] }
+        items:
+          type: array
+          minItems: 1
+          maxItems: 50
+          items:
+            type: object
+            additionalProperties: false
+            required: [variantId, quantity]
+            properties:
+              variantId: { type: string, format: uuid }
+              quantity: { type: integer, minimum: 1, maximum: 999 }
+    CommerceOrder:
+      type: object
+      required:
+        [
+          id,
+          orderNo,
+          storeId,
+          customerId,
+          orderType,
+          status,
+          paymentStatus,
+          fulfillmentStatus,
+          goodsAmountCents,
+          discountAmountCents,
+          shippingAmountCents,
+          payableAmountCents,
+          paidAmountCents,
+          refundedAmountCents,
+          currency,
+          items,
+          version,
+        ]
+      properties:
+        id: { type: string, format: uuid }
+        orderNo: { type: string }
+        storeId: { type: string, format: uuid }
+        customerId: { type: string, format: uuid }
+        sourceChannel: { type: string }
+        orderType: { type: string }
+        status: { type: string }
+        paymentStatus: { type: string }
+        fulfillmentStatus: { type: string }
+        verificationStatus: { type: string }
+        aftercareStatus: { type: string }
+        goodsAmountCents: { type: integer, minimum: 0 }
+        discountAmountCents: { type: integer, minimum: 0 }
+        shippingAmountCents: { type: integer, minimum: 0 }
+        payableAmountCents: { type: integer, minimum: 0 }
+        paidAmountCents: { type: integer, minimum: 0 }
+        refundedAmountCents: { type: integer, minimum: 0 }
+        currency: { type: string, minLength: 3, maxLength: 3 }
+        expiresAt: { type: [string, 'null'], format: date-time }
+        version: { type: integer, minimum: 1 }
+        items:
+          type: array
+          items:
+            type: object
+            required:
+              [
+                id,
+                productId,
+                variantId,
+                title,
+                quantity,
+                unitPriceCents,
+                lineAmountCents,
+                refundedQuantity,
+              ]
+            properties:
+              id: { type: string, format: uuid }
+              productId: { type: string, format: uuid }
+              variantId: { type: string, format: uuid }
+              title: { type: string }
+              quantity: { type: integer, minimum: 1 }
+              unitPriceCents: { type: integer, minimum: 0 }
+              lineAmountCents: { type: integer, minimum: 0 }
+              refundedQuantity: { type: integer, minimum: 0 }
+    CreateCommercePaymentRequest:
+      type: object
+      additionalProperties: false
+      required: [orderId, provider]
+      properties:
+        orderId: { type: string, format: uuid }
+        provider: { $ref: '#/components/schemas/CommerceProvider' }
+    CommercePaymentIntent:
+      type: object
+      required:
+        [id, orderId, provider, providerPaymentId, amountCents, currency, status, clientCredential]
+      properties:
+        id: { type: string, format: uuid }
+        orderId: { type: string, format: uuid }
+        provider: { $ref: '#/components/schemas/CommerceProvider' }
+        providerPaymentId: { type: string }
+        amountCents: { type: integer, minimum: 1 }
+        currency: { type: string, minLength: 3, maxLength: 3 }
+        status: { type: string, enum: [PROCESSING, SUCCEEDED] }
+        clientCredential: { type: string, description: 仅用于客户端唤起提供方，不作为支付成功证据 }
+        expiresAt: { type: [string, 'null'], format: date-time }
+    CommercePaymentCallback:
+      type: object
+      additionalProperties: false
+      required:
+        [
+          tenantId,
+          provider,
+          providerEventId,
+          eventType,
+          merchantAccountHash,
+          amountCents,
+          occurredAt,
+        ]
+      properties:
+        tenantId: { type: string, format: uuid }
+        provider: { $ref: '#/components/schemas/CommerceProvider' }
+        providerEventId: { type: string }
+        eventType:
+          {
+            type: string,
+            enum: [PAYMENT_SUCCEEDED, PAYMENT_FAILED, REFUND_SUCCEEDED, REFUND_FAILED],
+          }
+        merchantAccountHash: { type: string, pattern: '^[a-f0-9]{64}$' }
+        paymentIntentId: { type: string, format: uuid }
+        refundId: { type: string, format: uuid }
+        providerTransactionId: { type: string }
+        providerRefundId: { type: string }
+        amountCents: { type: integer, minimum: 1 }
+        reasonCode: { type: string }
+        occurredAt: { type: string, format: date-time }
+    RequestCommerceRefund:
+      type: object
+      additionalProperties: false
+      required: [requestType, reasonCode, items]
+      properties:
+        requestType:
+          {
+            type: string,
+            enum:
+              [UNSHIPPED_REFUND, RETURN_REFUND, UNUSED_GROUP_BUY_REFUND, SERVICE_DISPUTE, OTHER],
+          }
+        reasonCode: { type: string, minLength: 1, maxLength: 120 }
+        description: { type: string, maxLength: 2000 }
+        items:
+          type: array
+          minItems: 1
+          maxItems: 50
+          items:
+            type: object
+            additionalProperties: false
+            required: [orderItemId, quantity]
+            properties:
+              orderItemId: { type: string, format: uuid }
+              quantity: { type: integer, minimum: 1 }
+    ApproveCommerceRefund:
+      type: object
+      additionalProperties: false
+      required: [decision, reason]
+      properties:
+        decision: { type: string, enum: [APPROVED, REJECTED] }
+        reason: { type: string, minLength: 1, maxLength: 500 }
+    CommerceRefund:
+      type: object
+      required:
+        [id, refundNo, orderId, amountCents, reasonCode, status, approvalRequired, items, version]
+      properties:
+        id: { type: string, format: uuid }
+        refundNo: { type: string }
+        orderId: { type: string, format: uuid }
+        amountCents: { type: integer, minimum: 1 }
+        reasonCode: { type: string }
+        status: { type: string }
+        approvalRequired: { type: boolean }
+        items: { type: array, items: { type: object } }
+        version: { type: integer, minimum: 1 }
+    CommerceVerificationToken:
+      type: object
+      required: [entitlementId, orderId, verificationToken, remainingUses, status]
+      properties:
+        entitlementId: { type: string, format: uuid }
+        orderId: { type: string, format: uuid }
+        verificationToken: { type: string, pattern: '^lqv1\\.[A-Za-z0-9_-]{43}$' }
+        remainingUses: { type: integer, minimum: 0 }
+        status: { type: string }
+        validFrom: { type: [string, 'null'], format: date-time }
+        validUntil: { type: [string, 'null'], format: date-time }
+    UseCommerceVerification:
+      type: object
+      additionalProperties: false
+      required: [verificationToken, storeId, quantity]
+      properties:
+        verificationToken: { type: string }
+        storeId: { type: string, format: uuid }
+        quantity: { type: integer, minimum: 1, maximum: 999 }
+        deviceRiskLevel: { type: string, enum: [NORMAL, ELEVATED, HIGH, BLOCKED], default: NORMAL }
+    CommerceVerificationResult:
+      type: object
+      required:
+        [
+          verificationUseId,
+          entitlementId,
+          orderId,
+          storeId,
+          quantity,
+          remainingUses,
+          status,
+          usedAt,
+        ]
+      properties:
+        verificationUseId: { type: string, format: uuid }
+        entitlementId: { type: string, format: uuid }
+        orderId: { type: string, format: uuid }
+        storeId: { type: string, format: uuid }
+        quantity: { type: integer, minimum: 1 }
+        remainingUses: { type: integer, minimum: 0 }
+        status: { type: string, enum: [AVAILABLE, PARTIALLY_USED, FULLY_USED, VOIDED] }
+        usedAt: { type: string, format: date-time }
+    RunCommerceReconciliation:
+      type: object
+      additionalProperties: false
+      required: [businessDate, provider]
+      properties:
+        businessDate: { type: string, format: date }
+        provider: { $ref: '#/components/schemas/CommerceProvider' }
+    CommerceReconciliation:
+      type: object
+      required:
+        [
+          id,
+          businessDate,
+          provider,
+          status,
+          orderPaidCents,
+          providerPaidCents,
+          orderRefundedCents,
+          providerRefundedCents,
+          rewardNetCents,
+          verificationCount,
+          differenceCents,
+          discrepancies,
+        ]
+      properties:
+        id: { type: string, format: uuid }
+        businessDate: { type: string, format: date }
+        provider: { $ref: '#/components/schemas/CommerceProvider' }
+        status: { type: string, enum: [BALANCED, DIFFERENCE_FOUND, REVIEWING, RESOLVED, FAILED] }
+        orderPaidCents: { type: integer, minimum: 0 }
+        providerPaidCents: { type: integer, minimum: 0 }
+        orderRefundedCents: { type: integer, minimum: 0 }
+        providerRefundedCents: { type: integer, minimum: 0 }
+        rewardNetCents: { type: integer }
+        verificationCount: { type: integer, minimum: 0 }
+        differenceCents: { type: integer }
+        discrepancies: { type: array, items: { type: object } }
+    InternalTenantCommand:
+      type: object
+      additionalProperties: false
+      required: [tenantId]
+      properties:
+        tenantId: { type: string, format: uuid }
+    CreateCustomerServiceConversationRequest:
+      type: object
+      additionalProperties: false
+      required: [channel, privacyPolicyVersion, consentEvidenceRef]
+      properties:
+        channel: { type: string, enum: [MERCHANT_MINI_PROGRAM, LEQU_LIFE, WEB] }
+        privacyPolicyVersion: { type: string, minLength: 1, maxLength: 80 }
+        profileMemoryConsent: { type: boolean, default: false }
+        consentEvidenceRef: { type: string, minLength: 1, maxLength: 500 }
+        contextType: { type: string, enum: [NONE, PRODUCT, GROUP_BUY, ORDER], default: NONE }
+        contextId: { type: [string, 'null'], format: uuid }
+    SendCustomerServiceMessageRequest:
+      type: object
+      additionalProperties: false
+      required: [content]
+      properties:
+        content: { type: string, minLength: 1, maxLength: 4000 }
+        messageType: { type: string, const: TEXT, default: TEXT }
+    RequestCustomerServiceHumanRequest:
+      type: object
+      additionalProperties: false
+      required: [reasonCode]
+      properties:
+        reasonCode: { type: string, minLength: 1, maxLength: 120 }
+        priority: { type: string, enum: [NORMAL, HIGH, URGENT], default: NORMAL }
+    CloseCustomerServiceConversationRequest:
+      type: object
+      additionalProperties: false
+      required: [resolutionCode]
+      properties:
+        resolutionCode: { type: string, minLength: 1, maxLength: 120 }
+        internalNote: { type: string, maxLength: 2000 }
+    ChangeCustomerConsentRequest:
+      type: object
+      additionalProperties: false
+      required: [consentType, status, policyVersion, evidenceRef, purpose]
+      properties:
+        consentType:
+          { type: string, enum: [PROFILE_MEMORY, MARKETING, SUBSCRIPTION_MESSAGE, LOCATION] }
+        status: { type: string, enum: [GRANTED, WITHDRAWN] }
+        policyVersion: { type: string, minLength: 1, maxLength: 80 }
+        evidenceRef: { type: string, minLength: 1, maxLength: 500 }
+        purpose: { type: string, minLength: 1, maxLength: 255 }
+    CreateCustomerPrivacyRequest:
+      type: object
+      additionalProperties: false
+      required: [requestType, scope]
+      properties:
+        requestType: { type: string, enum: [VIEW, CORRECT, DELETE, RESTRICT] }
+        scope:
+          type: array
+          minItems: 1
+          maxItems: 20
+          items: { type: string, minLength: 1, maxLength: 80 }
+        correction:
+          type: object
+          additionalProperties: false
+          required: [factId, replacementValue, reason]
+          properties:
+            factId: { type: string, format: uuid }
+            replacementValue: { type: string, minLength: 1, maxLength: 2000, writeOnly: true }
+            reason: { type: string, minLength: 1, maxLength: 500, writeOnly: true }
+    CustomerPrivacyRequestReceipt:
+      type: object
+      additionalProperties: false
+      required: [requestId, status]
+      properties:
+        requestId: { type: string, format: uuid }
+        status: { type: string, const: QUEUED }
+    PublishKnowledgeRequest:
+      type: object
+      additionalProperties: false
+      required: [documentId, storeId, sourceType, trustLevel, validFrom]
+      properties:
+        documentId: { type: string, format: uuid }
+        storeId: { type: string, format: uuid }
+        sourceType:
+          {
+            type: string,
+            enum: [MERCHANT_RULE, MERCHANT_FILE, EMPLOYEE_CONFIRMED_QA, PUBLIC_REFERENCE],
+          }
+        trustLevel: { type: string, enum: [AUTHORITATIVE, VERIFIED, REFERENCE] }
+        validFrom: { type: string, format: date-time }
+        expiresAt: { type: [string, 'null'], format: date-time }
+    KnowledgePublication:
+      type: object
+      additionalProperties: false
+      required:
+        [
+          id,
+          storeId,
+          knowledgeBaseId,
+          documentId,
+          documentVersion,
+          sourceType,
+          trustLevel,
+          title,
+          status,
+          validFrom,
+          expiresAt,
+          publishedBy,
+          publishedAt,
+        ]
+      properties:
+        id: { type: string, format: uuid }
+        storeId: { type: string, format: uuid }
+        knowledgeBaseId: { type: string, format: uuid }
+        documentId: { type: string, format: uuid }
+        documentVersion: { type: integer, minimum: 1 }
+        sourceType: { type: string }
+        trustLevel: { type: string, enum: [AUTHORITATIVE, VERIFIED, REFERENCE] }
+        title: { type: string }
+        status: { type: string, enum: [ACTIVE, EXPIRED, REVOKED] }
+        validFrom: { type: string, format: date-time }
+        expiresAt: { type: [string, 'null'], format: date-time }
+        publishedBy: { type: string, format: uuid }
+        publishedAt: { type: string, format: date-time }
+    ProcessCustomerServiceAiJobRequest:
+      type: object
+      additionalProperties: false
+      required: [tenantId, jobId, workerId, traceId]
+      properties:
+        tenantId: { type: string, format: uuid }
+        jobId: { type: string, format: uuid }
+        workerId: { type: string, minLength: 1 }
+        traceId: { type: string, minLength: 1 }
+    CustomerServiceTicket:
+      type: object
+      additionalProperties: false
+      required: [id, reasonCode, priority, status, dueAt, assignedUserId]
+      properties:
+        id: { type: string, format: uuid }
+        reasonCode: { type: string }
+        priority: { type: string, enum: [NORMAL, HIGH, URGENT] }
+        status: { type: string, enum: [OPEN, ASSIGNED, RESOLVED, CANCELLED, EXPIRED] }
+        dueAt: { type: [string, 'null'], format: date-time }
+        assignedUserId: { type: [string, 'null'], format: uuid }
+    CustomerServiceConversation:
+      type: object
+      additionalProperties: false
+      required:
+        [
+          id,
+          storeId,
+          customerId,
+          channel,
+          status,
+          riskLevel,
+          assignedUserId,
+          contextType,
+          contextId,
+          ticket,
+          version,
+          createdAt,
+          updatedAt,
+        ]
+      properties:
+        id: { type: string, format: uuid }
+        storeId: { type: string, format: uuid }
+        customerId: { type: string, format: uuid }
+        channel: { type: string, enum: [MERCHANT_MINI_PROGRAM, LEQU_LIFE, WEB] }
+        status:
+          {
+            type: string,
+            enum:
+              [BOT_ACTIVE, HUMAN_REQUESTED, HUMAN_QUEUED, HUMAN_ACTIVE, WAITING_CUSTOMER, CLOSED],
+          }
+        riskLevel: { type: string, enum: [NORMAL, ELEVATED, HIGH] }
+        assignedUserId: { type: [string, 'null'], format: uuid }
+        contextType: { type: [string, 'null'], enum: [NONE, PRODUCT, GROUP_BUY, ORDER, null] }
+        contextId: { type: [string, 'null'], format: uuid }
+        ticket:
+          oneOf:
+            - { $ref: '#/components/schemas/CustomerServiceTicket' }
+            - { type: 'null' }
+        version: { type: integer, minimum: 1 }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    CustomerServiceMessage:
+      type: object
+      additionalProperties: false
+      required:
+        [
+          id,
+          conversationId,
+          senderType,
+          senderUserId,
+          senderDisplayName,
+          messageType,
+          contentObjectRef,
+          contentPreviewRedacted,
+          riskLabels,
+          createdAt,
+        ]
+      properties:
+        id: { type: string, format: uuid }
+        conversationId: { type: string, format: uuid }
+        senderType: { type: string, enum: [CUSTOMER, AI, EMPLOYEE, SYSTEM] }
+        senderUserId: { type: [string, 'null'], format: uuid }
+        senderDisplayName: { type: [string, 'null'] }
+        messageType:
+          { type: string, enum: [TEXT, IMAGE, FILE, ORDER_CARD, PRODUCT_CARD, SYSTEM_EVENT] }
+        contentObjectRef: { type: string, description: 受鉴权内容引用，不是可公开下载地址 }
+        contentPreviewRedacted: { type: [string, 'null'] }
+        riskLabels: { type: array, items: { type: string } }
+        createdAt: { type: string, format: date-time }
+    ActivateMiniProgramAuthorizationRequest:
+      type: object
+      additionalProperties: false
+      required:
+        [merchantProfileId, deliveryProjectId, merchantChosenName, templateCode, authorizationCode]
+      properties:
+        merchantProfileId: { type: string, format: uuid }
+        deliveryProjectId: { type: string, format: uuid }
+        merchantChosenName: { type: string, minLength: 1, maxLength: 120 }
+        templateCode: { type: string, minLength: 1, maxLength: 120 }
+        authorizationCode:
+          {
+            type: string,
+            minLength: 16,
+            maxLength: 2048,
+            writeOnly: true,
+            description: 一次性使用且不落库,
+          }
+    CreateMiniProgramPreviewRequest:
+      type: object
+      additionalProperties: false
+      required: [templateVersion, configVersion, config]
+      properties:
+        templateVersion: { type: string, minLength: 1, maxLength: 120 }
+        configVersion: { type: integer, minimum: 1 }
+        config: { type: object, additionalProperties: true }
+    ConfirmMiniProgramPreviewRequest:
+      type: object
+      additionalProperties: false
+      required: [checklist]
+      properties:
+        checklist:
+          type: object
+          additionalProperties: false
+          required:
+            [
+              nameConfirmed,
+              logoConfirmed,
+              homepageConfirmed,
+              productConfirmed,
+              priceConfirmed,
+              storeConfirmed,
+              groupBuyRuleConfirmed,
+              customerServiceConfirmed,
+              categoryQualified,
+              paymentSubjectConfirmed,
+              privacyConfirmed,
+            ]
+          properties:
+            nameConfirmed: { type: boolean, const: true }
+            logoConfirmed: { type: boolean, const: true }
+            homepageConfirmed: { type: boolean, const: true }
+            productConfirmed: { type: boolean, const: true }
+            priceConfirmed: { type: boolean, const: true }
+            storeConfirmed: { type: boolean, const: true }
+            groupBuyRuleConfirmed: { type: boolean, const: true }
+            customerServiceConfirmed: { type: boolean, const: true }
+            categoryQualified: { type: boolean, const: true }
+            paymentSubjectConfirmed: { type: boolean, const: true }
+            privacyConfirmed: { type: boolean, const: true }
+    RollbackMiniProgramRequest:
+      type: object
+      additionalProperties: false
+      required: [reason]
+      properties:
+        reason: { type: string, minLength: 1, maxLength: 1000 }
+    MiniProgramRolloutHealthRequest:
+      type: object
+      additionalProperties: false
+      required: [wave, healthy, observedMetrics]
+      properties:
+        wave: { type: string, enum: [INTERNAL, PILOT, CANARY, ALL] }
+        healthy: { type: boolean }
+        observedMetrics: { type: object, additionalProperties: true }
+    MiniProgramRelease:
+      type: object
+      additionalProperties: false
+      required:
+        [
+          id,
+          releaseNumber,
+          templateVersion,
+          configVersion,
+          configDigest,
+          buildDigest,
+          artifactRef,
+          externalAuditId,
+          externalVersion,
+          status,
+          rejectionReason,
+          merchantConfirmedBy,
+          merchantConfirmedAt,
+          publishedAt,
+          rolledBackFromId,
+          previousStableReleaseId,
+        ]
+      properties:
+        id: { type: string, format: uuid }
+        releaseNumber: { type: string }
+        templateVersion: { type: string }
+        configVersion: { type: integer, minimum: 1 }
+        configDigest: { type: [string, 'null'], pattern: '^[a-f0-9]{64}$' }
+        buildDigest: { type: [string, 'null'], pattern: '^[a-f0-9]{64}$' }
+        artifactRef: { type: [string, 'null'] }
+        externalAuditId: { type: [string, 'null'] }
+        externalVersion: { type: [string, 'null'] }
+        status:
+          {
+            type: string,
+            enum:
+              [
+                DRAFT,
+                BUILDING,
+                PREVIEW_READY,
+                BUILD_FAILED,
+                SUBMITTED,
+                IN_REVIEW,
+                APPROVED,
+                REJECTED,
+                PUBLISHING,
+                PUBLISHED,
+                PUBLISH_FAILED,
+                ROLLED_BACK,
+              ],
+          }
+        rejectionReason: { type: [string, 'null'] }
+        merchantConfirmedBy: { type: [string, 'null'], format: uuid }
+        merchantConfirmedAt: { type: [string, 'null'], format: date-time }
+        publishedAt: { type: [string, 'null'], format: date-time }
+        rolledBackFromId: { type: [string, 'null'], format: uuid }
+        previousStableReleaseId: { type: [string, 'null'], format: uuid }
+    MiniProgram:
+      type: object
+      additionalProperties: false
+      required:
+        [
+          id,
+          merchantProfileId,
+          deliveryProjectId,
+          appId,
+          merchantChosenName,
+          templateCode,
+          status,
+          currentReleaseId,
+          pendingReleaseId,
+          lastStableReleaseId,
+          authorizationStatus,
+          authorizationScope,
+          release,
+        ]
+      properties:
+        id: { type: string, format: uuid }
+        merchantProfileId: { type: string, format: uuid }
+        deliveryProjectId: { type: string, format: uuid }
+        appId: { type: string, description: 商户自有 AppID }
+        merchantChosenName: { type: string }
+        templateCode: { type: string }
+        status: { type: string, enum: [DRAFT, AUTHORIZED, ACTIVE, SUSPENDED, AUTH_REVOKED] }
+        currentReleaseId: { type: [string, 'null'], format: uuid }
+        pendingReleaseId: { type: [string, 'null'], format: uuid }
+        lastStableReleaseId: { type: [string, 'null'], format: uuid }
+        authorizationStatus: { type: string, enum: [PENDING, ACTIVE, EXPIRED, REVOKED, ERROR] }
+        authorizationScope: { type: array, items: { type: string } }
+        release:
+          oneOf:
+            - { $ref: '#/components/schemas/MiniProgramRelease' }
+            - { type: 'null' }
+    CreateDeliveryProjectRequest:
+      type: object
+      additionalProperties: false
+      required: [merchantProfileId, storeId, subscriptionId]
+      properties:
+        merchantProfileId: { type: string, format: uuid }
+        storeId: { type: string, format: uuid }
+        subscriptionId: { type: string, format: uuid }
+    ExecuteDeliveryStepRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        inputSnapshot: { type: object, additionalProperties: true, default: {} }
+    AcceptDeliveryProjectRequest:
+      type: object
+      additionalProperties: false
+      required: [checklist]
+      properties:
+        checklist:
+          type: object
+          minProperties: 1
+          additionalProperties: { type: boolean }
+        additionalAcceptorIds:
+          type: array
+          items: { type: string, format: uuid }
+          default: []
+    AssignDeliveryProjectRequest:
+      type: object
+      additionalProperties: false
+      required: [assigneeUserId, accessScope, expiresAt]
+      properties:
+        assigneeUserId: { type: string, format: uuid }
+        accessScope:
+          type: array
+          minItems: 1
+          uniqueItems: true
+          items: { type: string, enum: [DELIVERY_MATERIALS, STEP_EXECUTION] }
+        expiresAt: { type: string, format: date-time }
+    DeliveryStep:
+      type: object
+      additionalProperties: false
+      required:
+        [
+          id,
+          stepCode,
+          stepGroup,
+          required,
+          executionMode,
+          status,
+          attemptCount,
+          lastErrorCode,
+          resultRef,
+        ]
+      properties:
+        id: { type: string, format: uuid }
+        stepCode: { type: string }
+        stepGroup: { type: string }
+        required: { type: boolean }
+        executionMode: { type: string, enum: [AUTOMATED, HUMAN_CONFIRMATION, EXTERNAL_REVIEW] }
+        status:
+          {
+            type: string,
+            enum:
+              [PENDING, WAITING_INPUT, WAITING_AUTH, RUNNING, SUCCEEDED, FAILED, BLOCKED, SKIPPED],
+          }
+        attemptCount: { type: integer, minimum: 0 }
+        lastErrorCode: { type: [string, 'null'] }
+        resultRef: { type: [string, 'null'] }
+    DeliveryProject:
+      type: object
+      additionalProperties: false
+      required:
+        [
+          id,
+          merchantProfileId,
+          storeId,
+          subscriptionId,
+          workflowCode,
+          workflowVersion,
+          ruleVersion,
+          status,
+          progressPercent,
+          missingItems,
+          blockingReasonCode,
+          waitCategory,
+          acceptedBy,
+          acceptedAt,
+          platformProcessingSeconds,
+          merchantWaitSeconds,
+          externalWaitSeconds,
+          version,
+          steps,
+        ]
+      properties:
+        id: { type: string, format: uuid }
+        merchantProfileId: { type: string, format: uuid }
+        storeId: { type: string, format: uuid }
+        subscriptionId: { type: string, format: uuid }
+        workflowCode: { type: string, const: merchant_delivery_standard }
+        workflowVersion: { type: integer, minimum: 1 }
+        ruleVersion: { type: integer, minimum: 1 }
+        status:
+          {
+            type: string,
+            enum:
+              [
+                DRAFT,
+                WAITING_MERCHANT_INPUT,
+                WAITING_AUTHORIZATION,
+                PROVISIONING,
+                PARTIALLY_FAILED,
+                BLOCKED,
+                ACCEPTANCE,
+                DELIVERED,
+                OPERATING,
+                SUSPENDED,
+                CANCELLED,
+              ],
+          }
+        progressPercent: { type: integer, minimum: 0, maximum: 100 }
+        missingItems: { type: array, items: { type: string } }
+        blockingReasonCode: { type: [string, 'null'] }
+        waitCategory:
+          {
+            type: [string, 'null'],
+            enum: [PLATFORM, MERCHANT, WECHAT, THIRD_PARTY, INTERNAL, null],
+          }
+        acceptedBy: { type: [string, 'null'], format: uuid }
+        acceptedAt: { type: [string, 'null'], format: date-time }
+        platformProcessingSeconds: { type: string, pattern: '^(0|[1-9][0-9]*)$' }
+        merchantWaitSeconds: { type: string, pattern: '^(0|[1-9][0-9]*)$' }
+        externalWaitSeconds: { type: string, pattern: '^(0|[1-9][0-9]*)$' }
+        version: { type: integer, minimum: 1 }
+        steps:
+          type: array
+          items: { $ref: '#/components/schemas/DeliveryStep' }
+    DeliveryException:
+      type: object
+      additionalProperties: false
+      required:
+        [
+          id,
+          projectId,
+          stepCode,
+          category,
+          status,
+          retryable,
+          errorCode,
+          employeeMessage,
+          responsibility,
+          nextAction,
+          openedAt,
+        ]
+      properties:
+        id: { type: string, format: uuid }
+        projectId: { type: string, format: uuid }
+        stepCode: { type: [string, 'null'] }
+        category: { type: string }
+        status: { type: string, enum: [OPEN, IN_PROGRESS, RESOLVED, DISMISSED] }
+        retryable: { type: boolean }
+        errorCode: { type: string }
+        employeeMessage: { type: string }
+        responsibility: { type: string }
+        nextAction: { type: string }
+        openedAt: { type: string, format: date-time }
+    RefreshSessionRequest:
+      type: object
+      additionalProperties: false
+      required: [tenantId, userId, sessionId, refreshToken, deviceId]
+      properties:
+        tenantId: { type: string, format: uuid }
+        userId: { type: string, format: uuid }
+        sessionId: { type: string, format: uuid }
+        refreshToken: { type: string, minLength: 32, maxLength: 512 }
+        deviceId: { type: string, minLength: 16, maxLength: 512 }
+    SwitchTenantRequest:
+      type: object
+      additionalProperties: false
+      required: [tenantId, deviceId]
+      properties:
+        tenantId: { type: string, format: uuid }
+        deviceId: { type: string, minLength: 16, maxLength: 512 }
+    SessionIdentity:
+      type: object
+      additionalProperties: false
+      required: [tenantId, userId, roleCodes, storeIds, sessionId, authLevel]
+      properties:
+        tenantId: { type: string, format: uuid }
+        userId: { type: string, format: uuid }
+        roleCodes: { type: array, minItems: 1, items: { type: string } }
+        storeIds: { type: array, items: { type: string, format: uuid } }
+        sessionId: { type: string, format: uuid }
+        authLevel: { type: string, enum: [PASSWORD, MFA] }
+    SessionTokens:
+      type: object
+      additionalProperties: false
+      required: [accessToken, refreshToken, accessTokenExpiresAt, sessionExpiresAt, identity]
+      properties:
+        accessToken: { type: string }
+        refreshToken: { type: string }
+        accessTokenExpiresAt: { type: string, format: date-time }
+        sessionExpiresAt: { type: string, format: date-time }
+        identity: { $ref: '#/components/schemas/SessionIdentity' }
     RevenueRightHolder:
       type: object
       additionalProperties: false

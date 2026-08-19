@@ -1,0 +1,101 @@
+version: 1
+owner_source: DEPLOYMENT_ON_CALL_CONTACT
+rules:
+  - {
+      code: AUTH_ANOMALY,
+      severity: P1,
+      metric: auth_failures_rate,
+      condition: 'rate_5m > 0.20 and attempts_5m >= 20',
+      action: freeze_identity_writes,
+    }
+  - {
+      code: CROSS_TENANT_DENIAL_SPIKE,
+      severity: P0,
+      metric: cross_tenant_denials_total,
+      condition: 'increase_5m > 0',
+      action: freeze_affected_tenant_high_risk_writes,
+    }
+  - {
+      code: PERMISSION_CHANGE_SPIKE,
+      severity: P1,
+      metric: permission_changes_total,
+      condition: 'increase_10m > 10',
+      action: freeze_member_and_role_writes,
+    }
+  - {
+      code: BULK_EXPORT_SPIKE,
+      severity: P1,
+      metric: customer_export_rows_total,
+      condition: 'increase_10m > 10000',
+      action: freeze_exports,
+    }
+  - {
+      code: REFUND_SPIKE,
+      severity: P1,
+      metric: refund_requested_cents,
+      condition: 'rate_10m > tenant_baseline_7d_x3',
+      action: freeze_refund_approval,
+    }
+  - {
+      code: RELEASE_SPIKE,
+      severity: P1,
+      metric: mini_program_release_total,
+      condition: 'increase_10m > 10',
+      action: freeze_release_writes,
+    }
+  - {
+      code: PAYMENT_CALLBACK_DELAY,
+      severity: P0,
+      metric: payment_callback_persist_p95_ms,
+      condition: 'value_5m > 300',
+      action: page_payment_on_call,
+    }
+  - {
+      code: REWARD_LEDGER_UNBALANCED,
+      severity: P0,
+      metric: reward_unbalanced_transactions_total,
+      condition: 'value > 0',
+      action: freeze_reward_writes,
+    }
+  - {
+      code: OUTBOX_DEAD,
+      severity: P0,
+      metric: outbox_dead_total,
+      condition: 'value > 0',
+      action: page_platform_on_call,
+    }
+  - {
+      code: PLUGIN_CIRCUIT_OPEN,
+      severity: P1,
+      metric: plugin_circuit_open_total,
+      condition: 'increase_5m > 0',
+      action: isolate_plugin_only,
+    }
+  - {
+      code: SECRET_READ_ANOMALY,
+      severity: P0,
+      metric: secret_read_denials_total,
+      condition: 'increase_5m > 0',
+      action: revoke_service_identity,
+    }
+  - {
+      code: DATABASE_SLOW_QUERY,
+      severity: P1,
+      metric: db_query_p95_ms,
+      condition: 'value_10m > 500',
+      action: page_database_on_call,
+    }
+  - {
+      code: AUDIT_WRITE_FAILURE,
+      severity: P0,
+      metric: audit_write_failures_total,
+      condition: 'value > 0',
+      action: freeze_high_risk_writes,
+    }
+  - {
+      code: PRIVACY_DELETION_FAILED,
+      severity: P1,
+      metric: privacy_deletion_failed_total,
+      condition: 'value > 0',
+      action: page_privacy_on_call,
+    }

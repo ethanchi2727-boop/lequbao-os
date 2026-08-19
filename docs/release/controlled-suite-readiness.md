@@ -1,0 +1,30 @@
+# Controlled-suite execution readiness
+
+Date: 2026-08-19
+
+This is an execution audit, not a PASS manifest. The exact candidate commit, controlled environment, immutable artifacts and independent reviewer are still required by `pnpm launch:gate`.
+
+| Suite                             | Local executable readiness                                                                                               | Remaining controlled action                                                                                                                            |
+| --------------------------------- | ------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `POSTGRES_RLS_FINANCE`            | PostgreSQL 15.19 clean/incremental schemas, 22 fixtures and financial/RLS integrations pass                              | Re-run on the exact deployed candidate, retain the four declared artifacts and obtain independent review                                               |
+| `WORKER_FAULT_INJECTION`          | Real pooled-connection tenant reset, mismatch, retry, Inbox, gap, dead-letter and replay integration passes and is in CI | Execute against the candidate database and retain the declared tenant/Inbox artifacts                                                                  |
+| `INTAKE_OBJECT_PIPELINE`          | API, signing, malware-before-OCR and provenance boundaries are implemented and fault-tested                              | Use real identity, object, malware and OCR providers with a synthetic licence image                                                                    |
+| `COMMERCE_CONCURRENCY`            | Ten contenders against stock three produce exactly three complete orders with no fragments                               | Repeat against the candidate topology and export request/order/ledger evidence                                                                         |
+| `PAYMENT_PROVIDER_SANDBOX`        | Callback, idempotency, late success, refund and reconciliation code/tests pass                                           | Use the confirmed merchant sandbox account and provider query-before-retry evidence                                                                    |
+| `PLUGIN_NETWORK_SANDBOX`          | Grant/circuit/audit policy and GEO result model pass locally                                                             | Deploy the isolated runtime, prove one allowed and one network-layer-denied host, and submit a real GEO target                                         |
+| `GREENFIELD_CUTOVER_GUARD`        | Fresh V6 schema, rollback boundary and fail-closed legacy contingency are documented                                     | Inventory every V5 deployable store as zero production data and obtain the independent greenfield waiver; one record restores full migration rehearsal |
+| `BACKUP_RESTORE_PRIVACY`          | Encrypted logical restore passes hash, finance, privacy replay, 22 fixtures, RPO 97.01 s and RTO 15.04 s                 | Run physical/WAL cross-fault-domain recovery and prove deletion reaches real external targets                                                          |
+| `PERFORMANCE_CORE_AND_MESSAGES`   | Real local API/PostgreSQL rehearsal passes; separate identities, SQL snapshot and durable FAIL report are verified       | Run the exact candidate at production-shaped staging volume and retain topology/monitoring evidence                                                    |
+| `WECHAT_RELEASE_AND_ROLLBACK`     | Both packages build and all 62 leaves are authoritative                                                                  | Use official tooling and real devices for review, pilot publish, signed callback and new-release rollback                                              |
+| `IDENTITY_SECRETS_PRIVACY_ONCALL` | Revocation/MFA, encryption contracts, privacy Worker and alert definitions pass locally                                  | Exercise real IdP/KMS/object/privacy/on-call systems and retain acknowledged delivery evidence                                                         |
+
+## Execution order
+
+1. Freeze the candidate commit and calculate the controlled-plan SHA-256.
+2. Run the V5 zero-data inventory first. If it fails, stop and reinstate full migration engineering before any other release activity.
+3. Run PostgreSQL, Worker and commerce suites against the exact candidate database.
+4. Run identity/object intake, payment, plugin/GEO and performance suites in controlled pre-production.
+5. Complete physical/WAL recovery, privacy propagation and alert acknowledgement.
+6. Run official WeChat build/review/pilot/rollback last, then assemble `results.json` and execute `pnpm launch:gate`.
+
+Failed attempts remain evidence. Do not reduce load, change the candidate, replace an artifact or broaden an identity to turn a failure green.

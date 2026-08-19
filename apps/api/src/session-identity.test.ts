@@ -1,6 +1,10 @@
 import { createHmac } from 'node:crypto';
 import { describe, expect, it } from 'vitest';
-import { SessionAuthenticationError, createSessionIdentityVerifier } from './session-identity.js';
+import {
+  SessionAuthenticationError,
+  createSessionIdentityVerifier,
+  createSessionTokenSigner,
+} from './session-identity.js';
 
 const secret = 'intake-auth-test-secret-with-at-least-32-bytes';
 const encode = (value: unknown) => Buffer.from(JSON.stringify(value)).toString('base64url');
@@ -12,11 +16,15 @@ const sign = (payload: Record<string, unknown>) => {
 };
 
 const payload = {
+  iss: 'lequbao-api',
+  aud: 'lequbao-workbench',
   tenant_id: '90000000-0000-4000-8000-000000000001',
   user_id: '90000000-0000-4000-8000-000000000002',
   role_codes: ['MERCHANT_OWNER'],
   store_ids: [],
   session_id: 'session-1',
+  auth_level: 'MFA',
+  iat: Math.floor(Date.now() / 1000),
   exp: Math.floor(Date.now() / 1000) + 300,
 };
 
@@ -27,6 +35,27 @@ describe('signed session identity', () => {
       tenantId: payload.tenant_id,
       userId: payload.user_id,
       roleCodes: ['MERCHANT_OWNER'],
+      authLevel: 'MFA',
+    });
+  });
+
+  it('issues a short-lived token with fixed issuer, audience and deduplicated scope claims', () => {
+    const expiresAt = Math.floor(Date.now() / 1000) + 300;
+    const token = createSessionTokenSigner(secret).sign(
+      {
+        tenantId: payload.tenant_id,
+        userId: payload.user_id,
+        roleCodes: ['MERCHANT_OWNER', 'MERCHANT_OWNER'],
+        storeIds: [],
+        sessionId: 'issued-session',
+        authLevel: 'MFA',
+      },
+      expiresAt,
+    );
+    expect(createSessionIdentityVerifier(secret).verify(`Bearer ${token}`)).toMatchObject({
+      sessionId: 'issued-session',
+      roleCodes: ['MERCHANT_OWNER'],
+      authLevel: 'MFA',
     });
   });
 
@@ -39,6 +68,15 @@ describe('signed session identity', () => {
     const [header, body, signature] = token.split('.') as [string, string, string];
     const tamperedBody = `${body.slice(0, -1)}${body.endsWith('A') ? 'B' : 'A'}`;
     expect(() => verifier.verify(`Bearer ${header}.${tamperedBody}.${signature}`)).toThrow(
+      SessionAuthenticationError,
+    );
+    const signatureBytes = Buffer.from(signature, 'base64url');
+    const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_';
+    const lastIndex = alphabet.indexOf(signature.at(-1)!);
+    const nonCanonicalSignature = `${signature.slice(0, -1)}${alphabet[lastIndex | 1]}`;
+    expect(Buffer.from(nonCanonicalSignature, 'base64url')).toEqual(signatureBytes);
+    expect(nonCanonicalSignature).not.toBe(signature);
+    expect(() => verifier.verify(`Bearer ${header}.${body}.${nonCanonicalSignature}`)).toThrow(
       SessionAuthenticationError,
     );
     expect(() => createSessionIdentityVerifier('weak')).toThrow('32 bytes');
