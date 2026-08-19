@@ -4,6 +4,7 @@ const [
   dockerfile,
   dockerignore,
   workflow,
+  controlledPreflight,
   webServer,
   runbook,
   apiRuntime,
@@ -13,6 +14,7 @@ const [
   readFile('deploy/Dockerfile', 'utf8'),
   readFile('.dockerignore', 'utf8'),
   readFile('.github/workflows/ci.yml', 'utf8'),
+  readFile('.github/workflows/controlled-preflight.yml', 'utf8'),
   readFile('apps/workbench-web/production-server.mjs', 'utf8'),
   readFile('docs/runbooks/DEPLOYMENT.md', 'utf8'),
   readFile('apps/api/src/runtime-configuration.ts', 'utf8'),
@@ -50,18 +52,31 @@ for (const marker of [
   'Verify Worker production configuration fails closed',
 ])
   if (!workflow.includes(marker)) failures.push(`Container startup gate missing: ${marker}`);
+for (const marker of [
+  'environment: controlled-preproduction',
+  'ref: main',
+  'persist-credentials: false',
+  'Resolve candidate without executing candidate code',
+  'trusted/tooling/controlled-environment-preflight.mjs',
+])
+  if (!controlledPreflight.includes(marker))
+    failures.push(`Controlled preflight trust-boundary marker missing: ${marker}`);
 for (const [name, source] of [
   ['API', apiRuntime],
   ['Worker', workerRuntime],
 ]) {
   if (!source.includes("environment.NODE_ENV === 'production'"))
     failures.push(`${name} production fail-closed configuration gate missing`);
+  if (!source.includes('production configuration unsafe'))
+    failures.push(`${name} production unsafe-value gate missing`);
 }
 for (const marker of [
   'COMMERCE_PROVIDER_GATEWAY_URL',
   'CUSTOMER_SERVICE_MODEL_URL',
   'MINI_PROGRAM_CALLBACK_TOKEN',
   'WECOM_CONFIG_GATEWAY_URL',
+  'IDENTITY_PROVIDER_GATEWAY_URL',
+  'TRUSTED_PROXY_CIDRS',
   'PRIVACY_DELETION_GATEWAY_URL',
   'PRIVACY_EXPORT_GATEWAY_URL',
 ])
@@ -71,6 +86,9 @@ for (const marker of [
   'one-shot tenant-scoped job',
   'Missing event-gateway configuration fails before any Outbox claim',
   'refuses startup',
+  'controlled-preproduction',
+  'sslmode=require',
+  'blanket trusted proxy',
 ])
   if (!runbook.includes(marker)) failures.push(`Deployment runbook boundary missing: ${marker}`);
 

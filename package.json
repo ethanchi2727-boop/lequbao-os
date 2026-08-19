@@ -15,8 +15,10 @@
     "rbac:generate": "node tooling/generate-rbac-migration.mjs",
     "rbac:check": "node tooling/generate-rbac-migration.mjs --check",
     "release-plan:check": "node tooling/verify-release-readiness-plan.mjs",
+    "release-50:check": "node tooling/verify-50-stage-plan.mjs",
     "acceptance:check": "node tooling/verify-acceptance-evidence.mjs",
     "launch:gate": "node tooling/verify-acceptance-evidence.mjs --launch",
+    "controlled:preflight": "node tooling/controlled-environment-preflight.mjs",
     "visual:check": "node tooling/verify-visual-assets.mjs",
     "workbench:check": "node tooling/workbench-contract.mjs --verify",
     "openapi:check": "node tooling/verify-openapi.mjs",
@@ -28,7 +30,7 @@
     "typecheck": "pnpm --filter @lequ/contracts build && pnpm -r --if-present run typecheck",
     "test": "vitest run tooling && pnpm --filter @lequ/contracts build && pnpm -r --if-present run test",
     "build": "pnpm -r --if-present run build",
-    "check": "pnpm format:check && pnpm lint && pnpm contracts:check && pnpm rbac:check && pnpm release-plan:check && pnpm acceptance:check && pnpm visual:check && pnpm workbench:check && pnpm openapi:check && pnpm security:check && pnpm operations:check && pnpm deployment:check && pnpm typecheck && pnpm test && pnpm build"
+    "check": "pnpm format:check && pnpm lint && pnpm contracts:check && pnpm rbac:check && pnpm release-plan:check && pnpm release-50:check && pnpm acceptance:check && pnpm visual:check && pnpm workbench:check && pnpm openapi:check && pnpm security:check && pnpm operations:check && pnpm deployment:check && pnpm typecheck && pnpm test && pnpm build"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",

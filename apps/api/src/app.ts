@@ -21,6 +21,13 @@ import {
   type AuthSessionService,
 } from './auth-session-service.js';
 import {
+  IdentityExchangeRejectedError,
+  IdentityExchangeRateLimitedError,
+  IdentityExchangeUnavailableError,
+  parseIdentityExchangeInput,
+  type IdentityExchangeGateway,
+} from './identity-exchange-http-adapter.js';
+import {
   ConsumerSessionAuthenticationError,
   type ConsumerSessionIdentity,
   type ConsumerSessionIdentityVerifier,
@@ -265,6 +272,8 @@ import {
 export interface AppOptions {
   databaseCheck?: () => Promise<void>;
   logger?: boolean;
+  trustedProxy?: string[];
+  authAuditHasher?: (purpose: 'ip' | 'user-agent' | 'assertion', value: string) => string;
   revenueRights?: RevenueRightService;
   revenueRightGovernance?: RevenueRightGovernanceService;
   distributionLocks?: DistributionLockService;
@@ -276,6 +285,7 @@ export interface AppOptions {
   sessionIdentity?: SessionIdentityVerifier;
   accessControl?: AccessControlService;
   authSessions?: AuthSessionService;
+  identityExchange?: IdentityExchangeGateway;
   deliveryWorkflows?: DeliveryWorkflowService;
   miniPrograms?: MiniProgramLifecycleService;
   miniProgramCallback?: MiniProgramCallbackService;
@@ -314,7 +324,10 @@ export interface AppOptions {
 }
 
 export async function buildApp(options: AppOptions = {}): Promise<FastifyInstance> {
-  const app = Fastify({ logger: options.logger ?? false });
+  const app = Fastify({
+    logger: options.logger ?? false,
+    trustProxy: options.trustedProxy ?? false,
+  });
   app.setErrorHandler((error, _request, reply) => {
     if (error instanceof ZodError) return reply.code(400).send({ code: 'INVALID_REQUEST' });
     if (error instanceof EmployeeAgentAuthorizationError)
@@ -407,6 +420,37 @@ export async function buildApp(options: AppOptions = {}): Promise<FastifyInstanc
     return reply.type('text/plain; version=0.0.4; charset=utf-8').send(operationalMetrics.render());
   });
 
+  app.post('/api/v1/auth/sessions/exchange', async (request, reply) => {
+    if (!options.identityExchange || !options.authSessions)
+      return reply.code(503).send({ code: 'AUTHENTICATION_UNAVAILABLE' });
+    return handleAuthSession(reply, async () => {
+      const exchangeInput = parseIdentityExchangeInput(request.body);
+      const userAgent = request.headers['user-agent'] ?? '';
+      const verified = await options.identityExchange!.exchange(exchangeInput, {
+        sourceIp: request.ip,
+        userAgent,
+      });
+      return options.authSessions!.issue({
+        tenantId: verified.tenantId,
+        userId: verified.userId,
+        authLevel: verified.authLevel,
+        deviceId: verified.deviceId,
+        ...(options.authAuditHasher
+          ? {
+              audit: {
+                action: 'auth.session.issued' as const,
+                traceId: request.id,
+                ipHash: options.authAuditHasher('ip', request.ip),
+                userAgentHash: options.authAuditHasher('user-agent', userAgent),
+                assertionIdHash: options.authAuditHasher('assertion', verified.assertionId),
+                provider: verified.provider,
+              },
+            }
+          : {}),
+      });
+    });
+  });
+
   app.post('/api/v1/auth/sessions/refresh', async (request, reply) => {
     if (!options.authSessions) return reply.code(503).send({ code: 'AUTHENTICATION_UNAVAILABLE' });
     return handleAuthSession(reply, () =>
@@ -424,6 +468,19 @@ export async function buildApp(options: AppOptions = {}): Promise<FastifyInstanc
         ...body,
         userId: identity.userId,
         authLevel: identity.authLevel ?? 'PASSWORD',
+        ...(options.authAuditHasher
+          ? {
+              audit: {
+                action: 'auth.tenant.switched' as const,
+                traceId: request.id,
+                ipHash: options.authAuditHasher('ip', request.ip),
+                userAgentHash: options.authAuditHasher(
+                  'user-agent',
+                  request.headers['user-agent'] ?? '',
+                ),
+              },
+            }
+          : {}),
       } as Parameters<AuthSessionService['issue']>[0]),
     );
   });
@@ -4415,6 +4472,12 @@ async function handleAuthSession(
     if (error instanceof ZodError) return reply.code(400).send({ code: 'INVALID_REQUEST' });
     if (error instanceof RefreshSessionInvalidError || error instanceof AuthSubjectInactiveError)
       return reply.code(401).send({ code: 'INVALID_SESSION' });
+    if (error instanceof IdentityExchangeRejectedError)
+      return reply.code(401).send({ code: 'INVALID_IDENTITY_ASSERTION' });
+    if (error instanceof IdentityExchangeRateLimitedError)
+      return reply.code(429).send({ code: 'IDENTITY_RATE_LIMITED' });
+    if (error instanceof IdentityExchangeUnavailableError)
+      return reply.code(503).send({ code: 'IDENTITY_PROVIDER_UNAVAILABLE' });
     throw error;
   }
 }

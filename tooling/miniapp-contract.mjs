@@ -183,9 +183,7 @@ export async function verifyMiniapp(name) {
 export async function buildMiniapp(name) {
   const { appRoot, leaves, optimizedRoot, optimizedAssets } = await verifyMiniapp(name);
   const output = join(appRoot, 'dist');
-  const resolved = resolve(output);
-  if (!resolved.startsWith(resolve(appRoot) + '\\'))
-    throw new Error('refusing unsafe mini-program clean');
+  if (!isSafeMiniappOutput(appRoot, output)) throw new Error('refusing unsafe mini-program clean');
   await rm(output, { recursive: true, force: true });
   await cp(join(appRoot, 'src'), output, { recursive: true });
   await mkdir(join(output, 'assets'), { recursive: true });
@@ -214,6 +212,10 @@ export async function buildMiniapp(name) {
   await writeFile(join(appRoot, 'project.config.json'), `${JSON.stringify(project, null, 2)}\n`);
   const size = (await stat(join(output, 'generated/page-contracts.json'))).size;
   return { leaves: contracts.length, manifestBytes: size };
+}
+
+export function isSafeMiniappOutput(appRoot, output) {
+  return resolve(output) === resolve(appRoot, 'dist');
 }
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {

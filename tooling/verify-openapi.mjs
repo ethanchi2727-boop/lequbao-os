@@ -10,6 +10,7 @@ if (!specification.paths?.['/api/v1/merchants/{merchantProfileId}/revenue-rights
   failures.push('implemented revenue-right endpoint is missing');
 }
 for (const path of [
+  '/api/v1/auth/sessions/exchange',
   '/api/v1/auth/sessions/refresh',
   '/internal/v1/metrics',
   '/api/v1/auth/sessions/switch-tenant',
@@ -99,6 +100,7 @@ for (const path of [
 const publicPaths = new Set([
   '/health',
   '/ready',
+  '/api/v1/auth/sessions/exchange',
   '/api/v1/auth/sessions/refresh',
   '/api/v1/webhooks/wecom/intake',
   '/api/v1/webhooks/wechat/mini-program',

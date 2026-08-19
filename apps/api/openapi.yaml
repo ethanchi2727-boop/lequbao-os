@@ -28,6 +28,26 @@ paths:
       responses:
         '200': { description: Prometheus 文本格式指标，不含租户、顾客或业务正文标签 }
         '401': { description: 内部监控凭证无效 }
+  /api/v1/auth/sessions/exchange:
+    post:
+      operationId: exchangeEmployeeIdentityAssertion
+      summary: 通过受信身份网关结合服务端来源风险上下文消费一次性企业微信或手机验证码断言并签发首个员工会话
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/IdentityExchangeRequest' }
+      responses:
+        '200':
+          description: 身份、租户、用户和 MFA 等级由受信网关确定，会话与设备绑定
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SessionTokens' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { description: 一次性断言无效、过期、重放或设备绑定不匹配 }
+        '429':
+          { description: 设备、账号、来源地址或租户维度触发身份网关限流；响应不透露账号是否存在 }
+        '503': { description: 身份网关或会话服务不可用 }
   /api/v1/auth/sessions/refresh:
     post:
       operationId: refreshEmployeeSession
@@ -48,7 +68,7 @@ paths:
   /api/v1/auth/sessions/switch-tenant:
     post:
       operationId: switchEmployeeTenant
-      summary: 依据服务端实时成员关系切换当前组织
+      summary: 依据服务端实时成员关系切换当前组织并写入脱敏审计
       security: [{ EmployeeBearer: [] }]
       requestBody:
         required: true
@@ -4371,6 +4391,18 @@ components:
         responsibility: { type: string }
         nextAction: { type: string }
         openedAt: { type: string, format: date-time }
+    IdentityExchangeRequest:
+      type: object
+      additionalProperties: false
+      required: [provider, assertion, deviceId]
+      properties:
+        provider: { type: string, enum: [ENTERPRISE_WECOM, PHONE_OTP] }
+        assertion:
+          type: string
+          minLength: 16
+          maxLength: 4096
+          description: 一次性凭据，只转发给受信网关，不写入应用持久层
+        deviceId: { type: string, minLength: 16, maxLength: 512 }
     RefreshSessionRequest:
       type: object
       additionalProperties: false

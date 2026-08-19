@@ -1,0 +1,476 @@
+{
+  "version": 1,
+  "candidateBranch": "upgrade/v6.1-rebuild",
+  "frozenCounts": {
+    "pageNodes": 307,
+    "leafPages": 197,
+    "acceptanceCases": 143,
+    "sourceTables": 73,
+    "targetTables": 164,
+    "implementedOpenApiPaths": 193
+  },
+  "stages": [
+    {
+      "id": 1,
+      "title": "source package integrity",
+      "status": "local-complete",
+      "acceptancePrefixes": [],
+      "evidence": ["docs/v6.1/source-package/tools/verify_package.py", "PROJECT_STATE.md"],
+      "selfCheck": "source package checksum verification"
+    },
+    {
+      "id": 2,
+      "title": "product boundary and frozen decisions",
+      "status": "local-complete",
+      "acceptancePrefixes": [],
+      "evidence": ["PROJECT_STATE.md"],
+      "selfCheck": "frozen terminology and conflict audit"
+    },
+    {
+      "id": 3,
+      "title": "page tree and route inventory",
+      "status": "local-complete",
+      "acceptancePrefixes": [],
+      "evidence": ["docs/v6.1/source-package/02_完整PRD页面树与状态机/页面树与页面契约/页面树.csv"],
+      "selfCheck": "307 nodes and 197 unique leaf routes"
+    },
+    {
+      "id": 4,
+      "title": "acceptance inventory and evidence ownership",
+      "status": "local-complete",
+      "acceptancePrefixes": [],
+      "evidence": ["docs/release/acceptance-evidence-map.json"],
+      "selfCheck": "46 P0 plus 97 extended cases"
+    },
+    {
+      "id": 5,
+      "title": "modular monolith and runtime boundary",
+      "status": "local-complete",
+      "acceptancePrefixes": [],
+      "evidence": ["pnpm-workspace.yaml", "docs/release/LAUNCH_READINESS_AUDIT.md"],
+      "selfCheck": "workspace typecheck and production builds"
+    },
+
+    {
+      "id": 6,
+      "title": "PostgreSQL target schema",
+      "status": "local-complete",
+      "acceptancePrefixes": ["TEN"],
+      "evidence": ["database/schema.sql", "docs/release/stage-10-postgresql-local-evidence.md"],
+      "selfCheck": "clean schema and tenant fixtures"
+    },
+    {
+      "id": 7,
+      "title": "incremental migrations and greenfield guard",
+      "status": "local-complete",
+      "acceptancePrefixes": ["MIG"],
+      "evidence": ["database/migrations", "docs/runbooks/MIGRATION_ROLLBACK.md"],
+      "selfCheck": "migrations 0001 through 0026 apply incrementally"
+    },
+    {
+      "id": 8,
+      "title": "row-level tenant and store isolation",
+      "status": "local-complete",
+      "acceptancePrefixes": [],
+      "evidence": ["database/tests/rls.sql"],
+      "selfCheck": "cross-tenant reads and writes are denied"
+    },
+    {
+      "id": 9,
+      "title": "immutable audit and idempotency",
+      "status": "local-complete",
+      "acceptancePrefixes": [],
+      "evidence": ["database/schema.sql", "apps/api/src/revenue-right-governance-service.ts"],
+      "selfCheck": "append-only evidence and conflict-safe replay"
+    },
+    {
+      "id": 10,
+      "title": "sessions and frozen RBAC",
+      "status": "local-complete",
+      "acceptancePrefixes": ["RBAC"],
+      "evidence": [
+        "apps/api/src/auth-session-service.ts",
+        "database/migrations/0008_identity_access_and_usage.sql"
+      ],
+      "selfCheck": "revocation MFA and 213 scoped grants"
+    },
+
+    {
+      "id": 11,
+      "title": "organization membership and access governance",
+      "status": "local-complete",
+      "acceptancePrefixes": [],
+      "evidence": ["apps/api/src/organization-governance-service.ts"],
+      "selfCheck": "live membership and store scope revalidation"
+    },
+    {
+      "id": 12,
+      "title": "entitlement and AI usage ledger",
+      "status": "local-complete",
+      "acceptancePrefixes": ["CMP"],
+      "evidence": ["apps/api/src/entitlement-usage-service.ts"],
+      "selfCheck": "immutable snapshots and hard limits"
+    },
+    {
+      "id": 13,
+      "title": "permanent revenue rights",
+      "status": "local-complete",
+      "acceptancePrefixes": ["RGT"],
+      "evidence": ["apps/api/src/revenue-right-governance-service.ts"],
+      "selfCheck": "beneficiary confirmation dispute freeze and dual control"
+    },
+    {
+      "id": 14,
+      "title": "subscription cash and statement locking",
+      "status": "local-complete",
+      "acceptancePrefixes": ["CST"],
+      "evidence": ["apps/api/src/revenue-policy.ts", "database/tests/subscription-cash-ledger.sql"],
+      "selfCheck": "server-derived money and exact minor-unit allocation"
+    },
+    {
+      "id": 15,
+      "title": "cost distribution payout and vouchers",
+      "status": "local-complete",
+      "acceptancePrefixes": ["DST", "VCH"],
+      "evidence": [
+        "apps/api/src/revenue-operations-service.ts",
+        "database/tests/distribution-payout-and-reversal.sql"
+      ],
+      "selfCheck": "70 10 20 balance and linked reversals"
+    },
+
+    {
+      "id": 16,
+      "title": "merchant conversational intake",
+      "status": "local-complete",
+      "acceptancePrefixes": ["INT"],
+      "evidence": ["apps/api/src/merchant-intake-service.ts"],
+      "selfCheck": "typed confirmation and atomic merchant commit"
+    },
+    {
+      "id": 17,
+      "title": "object malware OCR and speech pipeline",
+      "status": "local-complete",
+      "acceptancePrefixes": [],
+      "evidence": [
+        "apps/api/src/intake-object-store.ts",
+        "apps/api/src/merchant-intake-processing.ts"
+      ],
+      "selfCheck": "malware-first fail-closed extraction"
+    },
+    {
+      "id": 18,
+      "title": "enterprise WeCom callback isolation",
+      "status": "local-complete",
+      "acceptancePrefixes": [],
+      "evidence": [
+        "apps/api/src/wecom-intake-http-adapter.ts",
+        "apps/api/src/wecom-intake-callback.ts"
+      ],
+      "selfCheck": "tenant resolver signature freshness and replay"
+    },
+    {
+      "id": 19,
+      "title": "sales evidence and merchant activation",
+      "status": "local-complete",
+      "acceptancePrefixes": [],
+      "evidence": ["apps/api/src/sales-lifecycle-service.ts"],
+      "selfCheck": "owner scope immutable evidence and version checks"
+    },
+    {
+      "id": 20,
+      "title": "contracts collections and subscriptions",
+      "status": "local-complete",
+      "acceptancePrefixes": [],
+      "evidence": ["apps/api/src/subscription-lifecycle-service.ts"],
+      "selfCheck": "signed contract collection and different-person approval"
+    },
+
+    {
+      "id": 21,
+      "title": "one-click delivery workflow",
+      "status": "local-complete",
+      "acceptancePrefixes": ["DEL"],
+      "evidence": ["apps/api/src/delivery-workflow-service.ts"],
+      "selfCheck": "38 steps bounded retry pause and immutable acceptance"
+    },
+    {
+      "id": 22,
+      "title": "merchant mini-program lifecycle",
+      "status": "local-complete",
+      "acceptancePrefixes": ["MP"],
+      "evidence": ["apps/api/src/mini-program-lifecycle-service.ts"],
+      "selfCheck": "authorize build review release rollout and rollback"
+    },
+    {
+      "id": 23,
+      "title": "consumer discovery catalog and store switch",
+      "status": "local-complete",
+      "acceptancePrefixes": [],
+      "evidence": [
+        "apps/api/src/consumer-catalog-service.ts",
+        "apps/api/src/consumer-store-switch-service.ts"
+      ],
+      "selfCheck": "account-bound discovery and store state"
+    },
+    {
+      "id": 24,
+      "title": "cart quote and checkout",
+      "status": "local-complete",
+      "acceptancePrefixes": ["ORD"],
+      "evidence": [
+        "apps/api/src/platform-cart-service.ts",
+        "apps/api/src/platform-checkout-service.ts"
+      ],
+      "selfCheck": "server pricing inventory lock and grouped fulfillment"
+    },
+    {
+      "id": 25,
+      "title": "merchant-direct payment",
+      "status": "local-complete",
+      "acceptancePrefixes": ["PAY"],
+      "evidence": [
+        "apps/api/src/commerce-payment-service.ts",
+        "apps/api/src/platform-payment-service.ts"
+      ],
+      "selfCheck": "raw signed callback and account binding"
+    },
+
+    {
+      "id": 26,
+      "title": "order fulfillment and expiry",
+      "status": "local-complete",
+      "acceptancePrefixes": [],
+      "evidence": ["apps/api/src/commerce-order-service.ts", "apps/worker/src/commerce-jobs.ts"],
+      "selfCheck": "atomic reservation consume and one-time release"
+    },
+    {
+      "id": 27,
+      "title": "refund and aftercare",
+      "status": "local-complete",
+      "acceptancePrefixes": ["REF"],
+      "evidence": [
+        "apps/api/src/commerce-refund-service.ts",
+        "apps/api/src/platform-aftercare-service.ts"
+      ],
+      "selfCheck": "item-scoped approval provider convergence and retry"
+    },
+    {
+      "id": 28,
+      "title": "verification credentials",
+      "status": "local-complete",
+      "acceptancePrefixes": ["VER"],
+      "evidence": ["apps/api/src/commerce-verification-service.ts"],
+      "selfCheck": "opaque store time risk generation and quantity checks"
+    },
+    {
+      "id": 29,
+      "title": "consumer reward ledger",
+      "status": "local-complete",
+      "acceptancePrefixes": ["REW"],
+      "evidence": [
+        "apps/api/src/revenue-operations-service.ts",
+        "apps/api/src/platform-control-service.ts"
+      ],
+      "selfCheck": "order-time rule snapshot and balanced reversal"
+    },
+    {
+      "id": 30,
+      "title": "financial reconciliation",
+      "status": "local-complete",
+      "acceptancePrefixes": ["REC"],
+      "evidence": ["apps/api/src/commerce-reconciliation-service.ts"],
+      "selfCheck": "one-cent and missing-record stop rules"
+    },
+
+    {
+      "id": 31,
+      "title": "consumer mini-program surface",
+      "status": "local-complete",
+      "acceptancePrefixes": ["UI"],
+      "evidence": ["apps/consumer-miniapp", "docs/acceptance/2026-08-19-full-surface-browser.md"],
+      "selfCheck": "38 leaves eight states and optimized assets"
+    },
+    {
+      "id": 32,
+      "title": "merchant mini-program surface",
+      "status": "local-complete",
+      "acceptancePrefixes": [],
+      "evidence": ["apps/merchant-miniapp"],
+      "selfCheck": "24 leaves authoritative journeys and fail-closed actions"
+    },
+    {
+      "id": 33,
+      "title": "Workbench authoritative surface",
+      "status": "local-complete",
+      "acceptancePrefixes": [],
+      "evidence": [
+        "apps/workbench-web/src/live-page-registry.mjs",
+        "docs/acceptance/2026-08-19-production-fail-closed-browser.md"
+      ],
+      "selfCheck": "exact 135-leaf registry and production fail-closed policy"
+    },
+    {
+      "id": 34,
+      "title": "AI customer service and human takeover",
+      "status": "local-complete",
+      "acceptancePrefixes": ["CS"],
+      "evidence": [
+        "apps/api/src/customer-service.ts",
+        "apps/api/src/customer-service-operations-service.ts"
+      ],
+      "selfCheck": "durable messages atomic claim and late-answer cancellation"
+    },
+    {
+      "id": 35,
+      "title": "grounded AI and safe tools",
+      "status": "local-complete",
+      "acceptancePrefixes": [],
+      "evidence": ["apps/api/src/customer-service-ai.ts", "apps/worker/src/customer-service-ai.ts"],
+      "selfCheck": "source grounding read-only tools and scope escape rejection"
+    },
+
+    {
+      "id": 36,
+      "title": "customer profile and privacy lifecycle",
+      "status": "local-complete",
+      "acceptancePrefixes": ["PRI"],
+      "evidence": [
+        "apps/worker/src/privacy-export-jobs.ts",
+        "apps/worker/src/privacy-deletion-jobs.ts"
+      ],
+      "selfCheck": "consent withdrawal export delete and downstream propagation"
+    },
+    {
+      "id": 37,
+      "title": "GEO evidence and freshness monitoring",
+      "status": "local-complete",
+      "acceptancePrefixes": ["GEO"],
+      "evidence": [
+        "apps/api/src/geo-plugin-report-service.ts",
+        "apps/worker/src/geo-report-jobs.ts"
+      ],
+      "selfCheck": "per-target evidence and no ranking claims"
+    },
+    {
+      "id": 38,
+      "title": "plugin and official skill sandbox",
+      "status": "local-complete",
+      "acceptancePrefixes": ["PLG"],
+      "evidence": [
+        "apps/api/src/geo-plugin-report-policy.ts",
+        "apps/api/src/platform-control-service.ts"
+      ],
+      "selfCheck": "exact grants HTTPS hosts circuits and uninstall receipts"
+    },
+    {
+      "id": 39,
+      "title": "bounded employee Agent",
+      "status": "local-complete",
+      "acceptancePrefixes": [],
+      "evidence": [
+        "apps/api/src/employee-agent-service.ts",
+        "apps/worker/src/employee-agent-jobs.ts"
+      ],
+      "selfCheck": "step tool retry cost deadline and approval bounds"
+    },
+    {
+      "id": 40,
+      "title": "platform control plane",
+      "status": "local-complete",
+      "acceptancePrefixes": [],
+      "evidence": ["apps/api/src/platform-control-service.ts"],
+      "selfCheck": "versioned rules plans partners models and receipts"
+    },
+
+    {
+      "id": 41,
+      "title": "Worker Outbox and fault recovery",
+      "status": "local-complete",
+      "acceptancePrefixes": ["EVT"],
+      "evidence": ["apps/worker/src/outbox.ts", "apps/worker/src/outbox-publisher.ts"],
+      "selfCheck": "crash replay stale lock recovery and tenant reset"
+    },
+    {
+      "id": 42,
+      "title": "observability alerts and freeze controls",
+      "status": "local-complete",
+      "acceptancePrefixes": [],
+      "evidence": ["apps/api/src/operational-observability.ts", "ops/alerts.yaml"],
+      "selfCheck": "trace metrics redaction and 13 mandatory alerts"
+    },
+    {
+      "id": 43,
+      "title": "backup restore and disaster recovery",
+      "status": "local-complete",
+      "acceptancePrefixes": ["DR"],
+      "evidence": ["ops/scripts/backup-postgres.ps1", "ops/scripts/restore-verify.ps1"],
+      "selfCheck": "encrypted logical restore with measured RPO and RTO"
+    },
+    {
+      "id": 44,
+      "title": "performance and capacity gate",
+      "status": "local-complete",
+      "acceptancePrefixes": ["PERF"],
+      "evidence": ["tooling/performance-gate.mjs", "tooling/performance-database-snapshot.mjs"],
+      "selfCheck": "threshold manifest and PostgreSQL snapshot evidence"
+    },
+    {
+      "id": 45,
+      "title": "security threat model SBOM and secret scan",
+      "status": "local-complete",
+      "acceptancePrefixes": ["SEC"],
+      "evidence": ["docs/security/THREAT_MODEL_AND_DATA_FLOW.md", "docs/release/sbom.cdx.json"],
+      "selfCheck": "production audit secret scan and 249-component SBOM"
+    },
+    {
+      "id": 46,
+      "title": "OpenAPI containers and CI release candidate",
+      "status": "local-complete",
+      "acceptancePrefixes": ["API"],
+      "evidence": ["apps/api/openapi.yaml", "deploy/Dockerfile", ".github/workflows/ci.yml"],
+      "selfCheck": "193 paths three non-root images and fail-closed production config"
+    },
+
+    {
+      "id": 47,
+      "title": "controlled identity object and enterprise WeCom",
+      "status": "controlled-pending",
+      "acceptancePrefixes": [],
+      "evidence": [
+        "docs/release/controlled-acceptance-plan.json",
+        "docs/release/CONTROLLED_ENVIRONMENT_UNBLOCK.md",
+        "apps/api/src/identity-exchange-http-adapter.ts"
+      ],
+      "selfCheck": "real IdP object OCR speech and enterprise callback evidence"
+    },
+    {
+      "id": 48,
+      "title": "controlled WeChat release and payment sandbox",
+      "status": "controlled-pending",
+      "acceptancePrefixes": [],
+      "evidence": ["docs/runbooks/CONTROLLED_ACCEPTANCE.md"],
+      "selfCheck": "real build review rollback payment refund and reconciliation"
+    },
+    {
+      "id": 49,
+      "title": "production-shaped staging on-call and pilot",
+      "status": "controlled-pending",
+      "acceptancePrefixes": [],
+      "evidence": ["docs/runbooks/DEPLOYMENT.md", "docs/runbooks/P0_ALERT_AND_FREEZE.md"],
+      "selfCheck": "load network isolation alert delivery and staged pilot"
+    },
+    {
+      "id": 50,
+      "title": "cutover go-no-go and launch approval",
+      "status": "controlled-pending",
+      "acceptancePrefixes": [],
+      "evidence": [
+        "docs/release/stage-10-release-candidate-evidence.md",
+        "docs/release/CONTROLLED_ENVIRONMENT_UNBLOCK.md",
+        "tooling/controlled-environment-preflight.mjs"
+      ],
+      "selfCheck": "29 controlled cases seven external gates and zero stop-release conditions"
+    }
+  ]
+}

@@ -16,7 +16,7 @@ No stage in this run is committed or pushed independently. Changes accumulate in
 | Source database tables      |           73 | Imported PostgreSQL 15+ schema                                                                    |
 | Audited target tables       |          164 | Twenty-six migrations; includes customer service and platform control-plane evidence              |
 | Source OpenAPI paths        |           37 | Frozen package contract                                                                           |
-| Implemented OpenAPI paths   |          192 | Implementation-bounded employee, consumer, operations, subscription and Agent APIs                |
+| Implemented OpenAPI paths   |          193 | Implementation-bounded employee, consumer, operations, subscription and Agent APIs                |
 | Domain events               |           46 | Frozen package contract; implementation remains partial                                           |
 | Roles / permission controls |      15 / 51 | Frozen matrix is generated into 213 scoped grants and enforced on every implemented protected API |
 
@@ -32,7 +32,7 @@ Already evidenced and not to be rebuilt:
 
 Material gaps that prevent a production launch:
 
-- remaining identity-provider exchange and organization/member administration surfaces;
+- real identity-provider gateway/device/MFA evidence for the implemented one-time assertion exchange, plus accountable organization/member administration review;
 - real WeChat component-platform credentials, callback registration and controlled release evidence;
 - AI customer service, customer privacy lifecycle and human takeover concurrency;
 - product, inventory, order, payment, refund, verification, reward and reconciliation services;

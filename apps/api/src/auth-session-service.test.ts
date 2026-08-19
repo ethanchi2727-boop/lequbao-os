@@ -57,6 +57,49 @@ describe('revocable auth session lifecycle', () => {
     expect(insertCall?.[1]).not.toContain(result.refreshToken);
   });
 
+  it('writes a redacted successful-login audit in the session transaction', async () => {
+    const value = fixture((sql) =>
+      sql.includes('FROM tenant_memberships')
+        ? [{ role_code: 'MERCHANT_OWNER', store_id: null }]
+        : [],
+    );
+    const ipHash = 'a'.repeat(64);
+    const userAgentHash = 'b'.repeat(64);
+    const assertionIdHash = 'c'.repeat(64);
+    await value.service.issue({
+      tenantId,
+      userId,
+      authLevel: 'MFA',
+      deviceId,
+      audit: {
+        action: 'auth.session.issued',
+        traceId: 'request-trace-1',
+        ipHash,
+        userAgentHash,
+        assertionIdHash,
+        provider: 'ENTERPRISE_WECOM',
+      },
+    });
+    const auditCall = value.query.mock.calls.find(([sql]) =>
+      String(sql).includes('INSERT INTO audit_logs'),
+    );
+    expect(auditCall?.[1]).toEqual(
+      expect.arrayContaining([ipHash, userAgentHash, 'request-trace-1']),
+    );
+    expect(auditCall?.[1]).not.toContain(deviceId);
+    expect(JSON.parse(String(auditCall?.[1]?.[6]))).toEqual({
+      authLevel: 'MFA',
+      provider: 'ENTERPRISE_WECOM',
+      assertionIdHash,
+    });
+    const auditIndex = value.query.mock.calls.findIndex(([sql]) =>
+      String(sql).includes('INSERT INTO audit_logs'),
+    );
+    const commitIndex = value.query.mock.calls.findIndex(([sql]) => String(sql) === 'COMMIT');
+    expect(auditIndex).toBeGreaterThan(-1);
+    expect(commitIndex).toBeGreaterThan(auditIndex);
+  });
+
   it('rejects issuance when membership, user, tenant or current role assignment is inactive', async () => {
     const value = fixture(() => []);
     await expect(

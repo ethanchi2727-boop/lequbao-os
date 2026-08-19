@@ -1,3 +1,4 @@
+import { createHmac } from 'node:crypto';
 import { buildApp } from './app.js';
 import { createAccessControlService } from './access-control.js';
 import { createAuthSessionService } from './auth-session-service.js';
@@ -64,6 +65,7 @@ import {
   type MiniProgramLifecycleService,
 } from './mini-program-lifecycle-service.js';
 import { createIntakeObjectStoreGateway } from './intake-object-store.js';
+import { createHttpIdentityExchangeGateway } from './identity-exchange-http-adapter.js';
 import { createRevenueRightService } from './revenue-right-service.js';
 import { createRevenueRightGovernanceService } from './revenue-right-governance-service.js';
 import { createSessionIdentityVerifier, createSessionTokenSigner } from './session-identity.js';
@@ -85,6 +87,11 @@ const databaseUrl = process.env.DATABASE_URL;
 if (!databaseUrl) throw new Error('DATABASE_URL is required');
 const authSecret = process.env.AUTH_JWT_SECRET;
 if (!authSecret) throw new Error('AUTH_JWT_SECRET is required');
+const trustedProxy = process.env.TRUSTED_PROXY_CIDRS?.split(',')
+  .map((entry) => entry.trim())
+  .filter(Boolean);
+const authAuditHasher = (purpose: 'ip' | 'user-agent' | 'assertion', value: string) =>
+  createHmac('sha256', authSecret).update(`${purpose}\0${value}`).digest('hex');
 const objectStoreGatewayUrl = process.env.OBJECT_STORE_GATEWAY_URL;
 if (!objectStoreGatewayUrl) throw new Error('OBJECT_STORE_GATEWAY_URL is required');
 const objectStoreSigningSecret = process.env.OBJECT_STORE_SIGNING_SECRET;
@@ -95,6 +102,13 @@ const objectStore = createIntakeObjectStoreGateway({
   baseUrl: objectStoreGatewayUrl,
   signingSecret: objectStoreSigningSecret,
 });
+const identityExchange =
+  process.env.IDENTITY_PROVIDER_GATEWAY_URL && process.env.IDENTITY_PROVIDER_GATEWAY_TOKEN
+    ? createHttpIdentityExchangeGateway({
+        baseUrl: process.env.IDENTITY_PROVIDER_GATEWAY_URL,
+        serviceToken: process.env.IDENTITY_PROVIDER_GATEWAY_TOKEN,
+      })
+    : undefined;
 const merchantIntake = createMerchantIntakeService(pool);
 const salesLifecycle = process.env.SALES_IDENTITY_HASH_SECRET
   ? createSalesLifecycleService(pool, {
@@ -249,6 +263,8 @@ if (process.env.WECOM_CONFIG_GATEWAY_URL && process.env.WECOM_CONFIG_GATEWAY_TOK
 }
 const app = await buildApp({
   logger: true,
+  ...(trustedProxy?.length ? { trustedProxy } : {}),
+  authAuditHasher,
   revenueRights: createRevenueRightService(pool),
   revenueRightGovernance: createRevenueRightGovernanceService(pool),
   distributionLocks: createDistributionLockService(pool),
@@ -259,6 +275,7 @@ const app = await buildApp({
   ...(wecomIntakeCallback ? { wecomIntakeCallback } : {}),
   sessionIdentity: createSessionIdentityVerifier(authSecret),
   authSessions: createAuthSessionService(pool, createSessionTokenSigner(authSecret)),
+  ...(identityExchange ? { identityExchange } : {}),
   deliveryWorkflows: createDeliveryWorkflowService(pool),
   accessControl: createAccessControlService(pool),
   customerService,

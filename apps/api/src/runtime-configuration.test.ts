@@ -2,37 +2,40 @@ import { describe, expect, it } from 'vitest';
 import { validateApiRuntimeConfiguration } from './runtime-configuration.js';
 
 const base = {
-  DATABASE_URL: 'postgres://database',
-  AUTH_JWT_SECRET: 'auth-secret',
-  OBJECT_STORE_GATEWAY_URL: 'http://127.0.0.1:3301',
-  OBJECT_STORE_SIGNING_SECRET: 'object-secret',
+  DATABASE_URL: 'postgres://runtime:secret@database.example/lequ?sslmode=require',
+  AUTH_JWT_SECRET: 'a'.repeat(32),
+  OBJECT_STORE_GATEWAY_URL: 'https://objects.example',
+  OBJECT_STORE_SIGNING_SECRET: 'b'.repeat(32),
 };
 
 const launch = {
-  SALES_IDENTITY_HASH_SECRET: 'sales-secret',
-  CONSUMER_AUTH_JWT_SECRET: 'consumer-secret',
-  LIFE_CONSUMER_AUTH_JWT_SECRET: 'life-secret',
-  PLATFORM_ADDRESS_ENCRYPTION_KEY: 'address-key',
-  INTERNAL_WORKER_TOKEN: 'worker-token',
+  TRUSTED_PROXY_CIDRS: '10.0.0.0/8,2001:db8::/32',
+  IDENTITY_PROVIDER_GATEWAY_URL: 'https://identity.example',
+  IDENTITY_PROVIDER_GATEWAY_TOKEN: 'identity-provider-token-strong',
+  SALES_IDENTITY_HASH_SECRET: 'c'.repeat(32),
+  CONSUMER_AUTH_JWT_SECRET: 'd'.repeat(32),
+  LIFE_CONSUMER_AUTH_JWT_SECRET: 'e'.repeat(32),
+  PLATFORM_ADDRESS_ENCRYPTION_KEY: Buffer.alloc(32, 7).toString('base64'),
+  INTERNAL_WORKER_TOKEN: 'worker-token-strong',
   WECOM_NOTIFICATION_GATEWAY_URL: 'https://wecom.example',
   WECOM_NOTIFICATION_GATEWAY_TOKEN: 'wecom-notification-token',
   COMMERCE_PROVIDER_GATEWAY_URL: 'https://commerce.example',
-  COMMERCE_PROVIDER_GATEWAY_TOKEN: 'commerce-token',
-  COMMERCE_CALLBACK_SECRET: 'commerce-callback',
-  VERIFICATION_TOKEN_SECRET: 'verification-token',
+  COMMERCE_PROVIDER_GATEWAY_TOKEN: 'commerce-token-strong',
+  COMMERCE_CALLBACK_SECRET: 'f'.repeat(32),
+  VERIFICATION_TOKEN_SECRET: '1'.repeat(32),
   GEO_PLUGIN_GATEWAY_URL: 'https://geo.example',
-  GEO_PLUGIN_GATEWAY_TOKEN: 'geo-token',
+  GEO_PLUGIN_GATEWAY_TOKEN: 'geo-token-strong-value',
   CUSTOMER_SERVICE_KNOWLEDGE_URL: 'https://knowledge.example',
-  CUSTOMER_SERVICE_KNOWLEDGE_TOKEN: 'knowledge-token',
+  CUSTOMER_SERVICE_KNOWLEDGE_TOKEN: 'knowledge-token-strong',
   CUSTOMER_SERVICE_MODEL_URL: 'https://model.example',
-  CUSTOMER_SERVICE_MODEL_TOKEN: 'model-token',
+  CUSTOMER_SERVICE_MODEL_TOKEN: 'model-token-strong',
   CUSTOMER_SERVICE_BUSINESS_TOOLS_URL: 'https://tools.example',
-  CUSTOMER_SERVICE_BUSINESS_TOOLS_TOKEN: 'tools-token',
+  CUSTOMER_SERVICE_BUSINESS_TOOLS_TOKEN: 'tools-token-strong',
   MINI_PROGRAM_GATEWAY_URL: 'https://mini.example',
-  MINI_PROGRAM_GATEWAY_TOKEN: 'mini-token',
+  MINI_PROGRAM_GATEWAY_TOKEN: 'mini-token-strong',
   MINI_PROGRAM_BUILDER_URL: 'https://builder.example',
-  MINI_PROGRAM_BUILDER_TOKEN: 'builder-token',
-  MINI_PROGRAM_CALLBACK_TOKEN: 'callback-token',
+  MINI_PROGRAM_BUILDER_TOKEN: 'builder-token-strong',
+  MINI_PROGRAM_CALLBACK_TOKEN: 'callback-token-strong',
   WECOM_CONFIG_GATEWAY_URL: 'https://wecom-config.example',
   WECOM_CONFIG_GATEWAY_TOKEN: 'wecom-config-token',
 };
@@ -60,5 +63,24 @@ describe('API runtime configuration', () => {
     expect(() =>
       validateApiRuntimeConfiguration({ ...base, ...launch, NODE_ENV: 'production' }),
     ).not.toThrow();
+  });
+
+  it('rejects placeholders, weak secrets, insecure gateways and non-TLS PostgreSQL', () => {
+    for (const mutation of [
+      { AUTH_JWT_SECRET: 'replace-with-at-least-32-bytes' },
+      { COMMERCE_CALLBACK_SECRET: 'too-short' },
+      { OBJECT_STORE_GATEWAY_URL: 'http://objects.example' },
+      { DATABASE_URL: 'postgres://runtime:secret@database.example/lequ' },
+      { PLATFORM_ADDRESS_ENCRYPTION_KEY: 'not-32-byte-base64' },
+      { TRUSTED_PROXY_CIDRS: 'not-a-cidr' },
+    ])
+      expect(() =>
+        validateApiRuntimeConfiguration({
+          ...base,
+          ...launch,
+          ...mutation,
+          NODE_ENV: 'production',
+        }),
+      ).toThrow(/production configuration unsafe/u);
   });
 });

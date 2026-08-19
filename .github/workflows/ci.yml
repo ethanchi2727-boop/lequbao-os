@@ -16,8 +16,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
         with:
           node-version-file: .node-version
       - name: Enable pinned pnpm
@@ -53,7 +53,7 @@ jobs:
       PGUSER: postgres
       PGPASSWORD: postgres
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Apply clean schema
         run: psql -v ON_ERROR_STOP=1 -f database/schema.sql
       - name: Prove tenant RLS isolation
@@ -128,7 +128,7 @@ jobs:
           psql -d lequ_v6_migration -v ON_ERROR_STOP=1 -f database/migrations/0024_product_publication_receipts.sql
           psql -d lequ_v6_migration -v ON_ERROR_STOP=1 -f database/migrations/0025_customer_service_operations.sql
           psql -d lequ_v6_migration -v ON_ERROR_STOP=1 -f database/migrations/0026_platform_control_plane.sql
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version-file: .node-version
       - name: Enable pinned pnpm
@@ -161,7 +161,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Build API candidate image
         run: docker build -f deploy/Dockerfile --target api -t lequ-api:ci .
       - name: Build Worker candidate image

@@ -9,6 +9,25 @@ const IssueSchema = z.object({
   userId: UuidSchema,
   authLevel: z.enum(['PASSWORD', 'MFA']),
   deviceId: z.string().min(16).max(512),
+  audit: z
+    .object({
+      action: z.enum(['auth.session.issued', 'auth.tenant.switched']),
+      traceId: z.string().min(1).max(128),
+      ipHash: z
+        .string()
+        .regex(/^[a-f0-9]{64}$/u)
+        .optional(),
+      userAgentHash: z
+        .string()
+        .regex(/^[a-f0-9]{64}$/u)
+        .optional(),
+      assertionIdHash: z
+        .string()
+        .regex(/^[a-f0-9]{64}$/u)
+        .optional(),
+      provider: z.enum(['ENTERPRISE_WECOM', 'PHONE_OTP']).optional(),
+    })
+    .optional(),
 });
 const RefreshSchema = z.object({
   tenantId: TenantIdSchema,
@@ -133,6 +152,30 @@ export function createAuthSessionService(
             sessionExpiresAt,
           ],
         );
+        if (input.audit) {
+          await client.query(
+            `INSERT INTO audit_logs(
+               tenant_id,actor_type,actor_id,action,resource_type,resource_id,
+               result_code,ip_hash,user_agent_hash,after_redacted,trace_id
+             ) VALUES ($1,'USER',$2,$3,'user_session',$4,'SUCCESS',$5,$6,$7::jsonb,$8)`,
+            [
+              input.tenantId,
+              input.userId,
+              input.audit.action,
+              sessionId,
+              input.audit.ipHash ?? null,
+              input.audit.userAgentHash ?? null,
+              JSON.stringify({
+                authLevel: input.authLevel,
+                ...(input.audit.provider ? { provider: input.audit.provider } : {}),
+                ...(input.audit.assertionIdHash
+                  ? { assertionIdHash: input.audit.assertionIdHash }
+                  : {}),
+              }),
+              input.audit.traceId,
+            ],
+          );
+        }
         const identity: SessionIdentity = {
           tenantId: input.tenantId,
           userId: input.userId,
