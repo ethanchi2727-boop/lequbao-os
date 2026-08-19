@@ -13,8 +13,27 @@ export class ApiError extends Error {
   }
 }
 
+export function resolveTrustedApiBase(baseUrl, expectedOrigin = globalThis.location?.origin) {
+  let candidate;
+  try {
+    candidate = new URL(baseUrl, expectedOrigin);
+  } catch {
+    throw new ApiError(400, 'UNSAFE_API_ORIGIN');
+  }
+  if (expectedOrigin) {
+    let trusted;
+    try {
+      trusted = new URL(expectedOrigin).origin;
+    } catch {
+      throw new ApiError(400, 'UNSAFE_API_ORIGIN');
+    }
+    if (candidate.origin !== trusted) throw new ApiError(400, 'UNSAFE_API_ORIGIN');
+  }
+  return candidate.origin;
+}
+
 export function createMerchantIntakeApi(options) {
-  const baseUrl = options.baseUrl.replace(/\/$/u, '');
+  const baseUrl = resolveTrustedApiBase(options.baseUrl, options.expectedOrigin);
   const request = options.fetch ?? globalThis.fetch;
   const key = options.idempotencyKey ?? (() => crypto.randomUUID());
 
@@ -119,7 +138,7 @@ export function createMerchantIntakeApi(options) {
 }
 
 export function createWorkbenchApi(options) {
-  const baseUrl = options.baseUrl.replace(/\/$/u, '');
+  const baseUrl = resolveTrustedApiBase(options.baseUrl, options.expectedOrigin);
   const request = options.fetch ?? globalThis.fetch;
   const key = options.idempotencyKey ?? (() => crypto.randomUUID());
   return {

@@ -1,6 +1,12 @@
 import { createHash } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import { spawnSync } from 'node:child_process';
+import { inspectDependencyInstallPolicy } from './dependency-install-policy.mjs';
+import { inspectDevelopmentMockProfile } from './development-mock-profile.mjs';
+import {
+  inspectProductionLicenseReport,
+  readInstalledProductionLicenseReport,
+} from './production-license-policy.mjs';
 const listed = spawnSync('git', ['ls-files', '--cached', '--others', '--exclude-standard', '-z'], {
   encoding: 'utf8',
 });
@@ -40,10 +46,53 @@ const recorded = sbom.metadata?.properties?.find(
 )?.value;
 if (recorded !== lockHash) failures.push('SBOM_LOCK_HASH_MISMATCH');
 if (!Array.isArray(sbom.components) || sbom.components.length < 1) failures.push('SBOM_EMPTY');
+const packageFiles = [
+    'package.json',
+    'apps/api/package.json',
+    'apps/consumer-miniapp/package.json',
+    'apps/merchant-miniapp/package.json',
+    'apps/workbench-web/package.json',
+    'apps/worker/package.json',
+    'packages/contracts/package.json',
+  ],
+  installFiles = [
+    'README.md',
+    '.devcontainer/bootstrap.sh',
+    '.github/workflows/ci.yml',
+    'deploy/Dockerfile',
+  ],
+  packageManifests = Object.fromEntries(
+    await Promise.all(
+      packageFiles.map(async (file) => [file, JSON.parse(await readFile(file, 'utf8'))]),
+    ),
+  ),
+  installSources = Object.fromEntries(
+    await Promise.all(installFiles.map(async (file) => [file, await readFile(file, 'utf8')])),
+  );
+failures.push(
+  ...inspectDependencyInstallPolicy({
+    workspaceSource: await readFile('pnpm-workspace.yaml', 'utf8'),
+    rootManifest: packageManifests['package.json'],
+    nodeVersion: await readFile('.node-version', 'utf8'),
+    packageManifests,
+    lockfileSource: lockText,
+    installSources,
+  }).map((failure) => `DEPENDENCY_POLICY:${failure}`),
+);
+const productionLicenses = inspectProductionLicenseReport(readInstalledProductionLicenseReport());
+failures.push(
+  ...productionLicenses.failures.map((failure) => `PRODUCTION_LICENSE_POLICY:${failure}`),
+);
+failures.push(
+  ...inspectDevelopmentMockProfile({
+    productionSource: await readFile('.env.example', 'utf8'),
+    mockSource: await readFile('.env.development-mock.example', 'utf8'),
+  }).map((failure) => `DEVELOPMENT_MOCK_PROFILE:${failure}`),
+);
 if (failures.length) {
   for (const failure of failures) console.error(`Security gate failure: ${failure}`);
   process.exitCode = 1;
 } else
   console.log(
-    `Security gate verified ${files.length} text files and ${sbom.components.length} SBOM components; no embedded production secret patterns.`,
+    `Security gate verified ${files.length} text files, ${sbom.components.length} SBOM components and ${productionLicenses.packageVersions} production package versions across ${productionLicenses.licenses.length} approved licenses; no embedded production secret patterns.`,
   );

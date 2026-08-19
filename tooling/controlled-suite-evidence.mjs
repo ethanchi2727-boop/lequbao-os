@@ -3,23 +3,31 @@ import path from 'node:path';
 import { isDeepStrictEqual } from 'node:util';
 
 export const controlledSuiteCrossEvidenceRules = {
+  INTAKE_OBJECT_PIPELINE: [
+    'upload response and retained encrypted metadata reference the same redacted object',
+  ],
   COMMERCE_CONCURRENCY: [
     'opening stock equals the declared input stock',
     'successful quantity does not exceed stock or requested quantity',
     'ledger sold quantity equals successful quantity',
     'closing stock equals opening stock minus successful quantity',
+    'every contender has exactly one successful or failed outcome and failed outcomes have no partial fact',
   ],
   PAYMENT_PROVIDER_SANDBOX: [
     'request, callback, reconciliation and refund use the same merchant account reference',
     'request, callback and reconciliation use the same amount',
   ],
-  BACKUP_RESTORE_PRIVACY: ['restore report references the exact encrypted backup manifest file'],
+  BACKUP_RESTORE_PRIVACY: [
+    'restore report references the exact encrypted backup manifest file',
+    'restore report repeats the exact encrypted artifact and financial snapshot hashes',
+  ],
   PERFORMANCE_CORE_AND_MESSAGES: [
     'performance report images equal the protected candidate manifest',
     'deployment topology API, Worker and Web images equal the protected candidate manifest',
   ],
   WECHAT_RELEASE_AND_ROLLBACK: [
     'reviewed consumer and merchant versions equal their official build artifacts',
+    'published version equals the approved review version',
     'rollback starts from the published version and creates a different safe version',
   ],
   IDENTITY_SECRETS_PRIVACY_ONCALL: [
@@ -32,7 +40,12 @@ const same = (left, right) => isDeepStrictEqual(left, right);
 export function validateControlledSuiteDocuments(suiteCode, documents) {
   const failures = [];
   const get = (artifact) => documents[artifact];
-  if (suiteCode === 'COMMERCE_CONCURRENCY') {
+  if (suiteCode === 'INTAKE_OBJECT_PIPELINE') {
+    const upload = get('upload-response.json');
+    const metadata = get('object-metadata.json');
+    if (upload && metadata && upload.objectRefHash !== metadata.objectRefHash)
+      failures.push('upload response and object metadata references do not match');
+  } else if (suiteCode === 'COMMERCE_CONCURRENCY') {
     const input = get('concurrency-input.json');
     const orders = get('order-results.json');
     const ledger = get('inventory-ledger.json');
@@ -47,6 +60,16 @@ export function validateControlledSuiteDocuments(suiteCode, documents) {
         failures.push('ledger sold quantity does not match successful quantity');
       if (ledger.closingStock !== ledger.openingStock - orders.successfulQuantity)
         failures.push('closing stock does not reconcile with successful quantity');
+      const inputRefs = new Set((input.contenders ?? []).map((item) => item?.contenderRef));
+      const successRefs = (orders.successfulOrders ?? []).map((item) => item?.contenderRef);
+      const failedRefs = (orders.failedContenders ?? []).map((item) => item?.contenderRef);
+      const outcomeRefs = [...successRefs, ...failedRefs];
+      if (
+        outcomeRefs.length !== inputRefs.size ||
+        new Set(outcomeRefs).size !== outcomeRefs.length ||
+        outcomeRefs.some((reference) => !inputRefs.has(reference))
+      )
+        failures.push('commerce contender outcomes do not reconcile exactly with input contenders');
     }
   } else if (suiteCode === 'PAYMENT_PROVIDER_SANDBOX') {
     const request = get('provider-request-redacted.json');
@@ -76,6 +99,10 @@ export function validateControlledSuiteDocuments(suiteCode, documents) {
     const restore = get('restore-report.json');
     if (backup && restore && backup.backupFile !== restore.backupFile)
       failures.push('restore report references a different backup file');
+    if (backup && restore && backup.encryptedSha256 !== restore.encryptedSha256)
+      failures.push('restore report references a different encrypted backup hash');
+    if (backup && restore && backup.financialSnapshotSha256 !== restore.financialSnapshotSha256)
+      failures.push('restore report references a different financial snapshot hash');
   } else if (suiteCode === 'PERFORMANCE_CORE_AND_MESSAGES') {
     const report = get('performance-report.json');
     const topology = get('deployment-topology.json');
@@ -101,6 +128,8 @@ export function validateControlledSuiteDocuments(suiteCode, documents) {
         failures.push('published consumer version does not match its official build');
       if (merchant.version !== publish.merchantVersion)
         failures.push('published merchant version does not match its official build');
+      if (publish.reviewVersion !== publish.publishedVersion)
+        failures.push('published WeChat version does not match the approved review version');
       if (rollback.fromVersion !== publish.publishedVersion)
         failures.push('rollback source does not match the published version');
       if (rollback.toVersion === rollback.fromVersion)

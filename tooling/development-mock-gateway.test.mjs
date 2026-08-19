@@ -111,6 +111,57 @@ describe('development mock gateway', () => {
     });
   });
 
+  test('implements the complete declared provider-route matrix with mock provenance', async () => {
+    const base = await start();
+    const requests = [
+      [
+        'POST',
+        '/v1/identity/assertions/exchange',
+        { provider: 'PHONE_OTP', assertion: 'a', deviceId: 'd' },
+        200,
+      ],
+      ['GET', '/v1/wecom/corps/development-corp', undefined, 200],
+      ['GET', '/v1/wecom/corps/development-corp/members/development-member', undefined, 200],
+      ['POST', '/v1/payments', { provider: 'SANDBOX' }, 200],
+      ['POST', '/v1/refunds', { refundId: 'development-refund' }, 200],
+      ['POST', '/v1/reconciliation/daily-bill', { businessDate: '2026-08-20' }, 200],
+      ['POST', '/v1/customer-service/knowledge/search', { query: '开发测试' }, 200],
+      ['POST', '/v1/customer-service/read-tools/query', { toolCode: 'ORDER_LOOKUP' }, 200],
+      ['POST', '/v1/customer-service/model/answer', { citations: [] }, 200],
+      ['POST', '/v1/wecom/internal/notifications', { message: 'development' }, 202],
+      ['POST', '/v1/geo/submit', { target: 'development' }, 200],
+      ['POST', '/v1/geo/inspect', { target: 'development' }, 200],
+      ['POST', '/v1/plugins/invoke', { input: {} }, 200],
+      ['POST', '/v1/plugins/uninstall', { installationId: 'development' }, 204],
+      ['POST', '/v1/wechat/authorizations/exchange', { code: 'development' }, 200],
+      ['POST', '/v1/wechat/releases/submit-review', { releaseId: 'development' }, 200],
+      ['POST', '/v1/wechat/releases/publish', { releaseId: 'development' }, 200],
+      ['POST', '/v1/wechat/releases/query-online', { releaseId: 'development' }, 200],
+      ['POST', '/v1/wechat/releases/rollback', { releaseId: 'development' }, 200],
+      ['POST', '/v1/wechat/callbacks/decode', { encrypted: 'development' }, 200],
+      ['POST', '/v1/mini-program-builds', { templateCommit: 'development' }, 200],
+      ['POST', '/v1/events', { id: idsForTest.eventId }, 202],
+      ['POST', '/v1/privacy/delete', { requestId: 'development' }, 202],
+      [
+        'POST',
+        '/v1/privacy-exports',
+        { tenantId: idsForTest.tenantId, requestId: 'development' },
+        200,
+      ],
+    ];
+    for (const [method, path, body, expectedStatus] of requests) {
+      const response = await fetch(`${base}${path}`, {
+        method,
+        headers: authorized,
+        body: body === undefined ? undefined : JSON.stringify(body),
+      });
+      expect(response.status, `${method} ${path}`).toBe(expectedStatus);
+      expect(response.headers.get('x-lequ-data-source'), `${method} ${path}`).toBe(
+        'development-mock',
+      );
+    }
+  });
+
   test('requires the development mock bearer token', async () => {
     const base = await start();
     expect((await fetch(`${base}/v1/events`, { method: 'POST' })).status).toBe(401);

@@ -18,6 +18,6 @@ For every document record:
 
 ## Evidence result
 
-Export `identity-secrets-privacy-oncall/legal-document-release.json` with the candidate commit, deployment identifier, surface-to-document matrix, document hashes, publication checks, approval receipt references and reviewer decision. The artifact must report no missing surface, broken link, placeholder text, version mismatch or unresolved reviewer condition.
+Export `identity-secrets-privacy-oncall/legal-document-release.json` with the candidate commit, deployment identifier, surface-to-document matrix, document hashes, publication checks, approval receipt references and reviewer decision. Each document needs a unique ID, version, SHA-256, owner reference, approval receipt, non-future effective time and stable HTTPS publication URL. The matrix must separately cover 乐趣宝 Web, 乐趣生活 mini-program and the merchant mini-program, reference only declared document IDs, verify account deletion/export instructions and contain no failed publication check. Product and legal/compliance approvals must use different accountable subjects. The artifact must report no missing surface, broken link, placeholder text, version mismatch or unresolved reviewer condition.
 
 Any missing approval, draft/placeholder copy, inaccessible policy, consent-to-document mismatch or absent account deletion/export instruction is a no-go. Updating a document after acceptance creates a new controlled result; it cannot silently retain the old release decision.

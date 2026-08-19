@@ -61,45 +61,413 @@ function semanticFixture(artifact, binding) {
     worker: `ghcr.io/example/lequ-worker@sha256:${'a'.repeat(64)}`,
     web: `ghcr.io/example/lequ-web@sha256:${'a'.repeat(64)}`,
   };
+  const performanceSnapshot = {
+    databaseName: 'lequ-controlled',
+    sizeBytes: 1,
+    connections: 1,
+    committedTransactions: 1,
+    rolledBackTransactions: 0,
+    blocksRead: 1,
+    blocksHit: 1,
+    tempFiles: 0,
+    tempBytes: 0,
+    deadlocks: 0,
+    estimatedLiveRows: 1,
+    tableCount: 164,
+    messageBacklog: { activeCount: 0, deadCount: 0, oldestActiveSeconds: 0 },
+  };
+  const performanceScenarios = [
+    ['core-read', 500],
+    ['customer-message-write', 500],
+    ['core-write', 800],
+  ].map(([name, thresholdP95Ms]) => ({
+    name,
+    requests: 10,
+    successes: 10,
+    errors: 0,
+    p50Ms: 10,
+    p95Ms: 20,
+    p99Ms: 30,
+    errorRate: 0,
+    thresholdP95Ms,
+  }));
+  const alertRecords = ['P0', 'P1'].map((severity, index) => ({
+    alertId: `${severity}-controlled-${index}`,
+    severity,
+    triggeredAt: '2026-08-19T01:00:00.000Z',
+  }));
   const overrides = {
-    'concurrency-input.json': { stock: 3, requestedQuantity: 10 },
-    'order-results.json': { successfulQuantity: 3 },
-    'inventory-ledger.json': { openingStock: 3, closingStock: 0, soldQuantity: 3 },
+    'rls-denials.json': {
+      attempts: ['cross-tenant-read', 'cross-tenant-write'].map((operation, index) => ({
+        operation,
+        denied: true,
+        exposedFieldCount: 0,
+        mutationCount: 0,
+        auditRefHash: `${index + 1}`.repeat(64),
+      })),
+    },
+    'tenant-context.json': {
+      transactions: ['1', '2'].map((tenant, index) => ({
+        connectionRefHash: 'c'.repeat(64),
+        expectedTenantRefHash: tenant.repeat(64),
+        observedTenantRefHash: tenant.repeat(64),
+        resetVerified: true,
+        sequence: index + 1,
+      })),
+    },
+    'inbox-deduplication.json': {
+      eventRefHash: 'd'.repeat(64),
+      deliveryAttempts: 2,
+      businessResultCount: 1,
+      deliveries: [1, 2].map((attempt) => ({ eventRefHash: 'd'.repeat(64), attempt })),
+      businessResults: [{ resultRefHash: 'e'.repeat(64) }],
+    },
+    'upload-response.json': { objectRefHash: '1'.repeat(64) },
+    'object-metadata.json': { objectRefHash: '1'.repeat(64) },
+    'ocr-provenance.json': {
+      candidates: [{ field: 'merchant-name', sourceRegionHash: '2'.repeat(64), confidence: 0.99 }],
+      provenance: {
+        gatewayRef: 'controlled-ocr-gateway',
+        modelVersion: 'ocr-v1',
+        processedAt: '2026-08-19T01:00:00.000Z',
+      },
+    },
+    'concurrency-input.json': {
+      stock: 3,
+      requestedQuantity: 10,
+      contenders: Array.from({ length: 10 }, (_, index) => ({
+        contenderRef: `contender-${index}`,
+        quantity: 1,
+      })),
+    },
+    'order-results.json': {
+      successfulQuantity: 3,
+      successfulOrders: Array.from({ length: 3 }, (_, index) => ({
+        contenderRef: `contender-${index}`,
+        quantity: 1,
+      })),
+      failedContenders: Array.from({ length: 7 }, (_, index) => ({
+        contenderRef: `contender-${index + 3}`,
+        partialFactCount: 0,
+      })),
+    },
+    'inventory-ledger.json': {
+      openingStock: 3,
+      closingStock: 0,
+      soldQuantity: 3,
+      entries: Array.from({ length: 3 }, (_, index) => ({
+        type: 'SOLD',
+        quantity: 1,
+        orderRef: `order-${index}`,
+      })),
+    },
     'provider-request-redacted.json': {
-      merchantAccountRef: 'merchant-account-hash',
+      merchantAccountRef: 'f'.repeat(64),
       serverOrderAmountFen: 100,
     },
     'provider-callback-redacted.json': {
-      merchantAccountRef: 'merchant-account-hash',
+      merchantAccountRef: 'f'.repeat(64),
       amountFen: 100,
     },
     'merchant-account-reconciliation.json': {
-      providerMerchantAccountRef: 'merchant-account-hash',
-      platformMerchantAccountRef: 'merchant-account-hash',
+      providerMerchantAccountRef: 'f'.repeat(64),
+      platformMerchantAccountRef: 'f'.repeat(64),
       amountFen: 100,
     },
-    'refund-unknown-recovery.json': { merchantAccountRef: 'merchant-account-hash' },
-    'backup.manifest.json': { backupFile: 'candidate.dump.age' },
-    'restore-report.json': { backupFile: 'candidate.dump.age' },
-    'performance-report.json': { images },
+    'refund-unknown-recovery.json': {
+      merchantAccountRef: 'f'.repeat(64),
+      providerQuery: { performed: true, sameIdempotencyKey: true },
+      finalState: 'REFUND_SUCCEEDED',
+    },
+    'runtime-policy.json': { allowedHosts: ['https://plugin-gateway.example.test/'] },
+    'geo-target-redacted.json': {
+      targetRefHash: '3'.repeat(64),
+      storedClaims: [
+        {
+          field: 'merchant-name',
+          valueHash: '4'.repeat(64),
+          verifiedAt: '2026-08-19T01:00:00.000Z',
+        },
+      ],
+    },
+    'financial-policy-approvals.json': {
+      decisionVersion: 'finance-v1',
+      effectiveAt: '2026-08-19T01:00:00.000Z',
+      decisions: {
+        paymentResponsibilityResolved: true,
+        merchantAccountMappingResolved: true,
+        legacyBalanceResolved: true,
+        distributionConflictC001Resolved: true,
+        computeAllocationResolved: true,
+        historicalSnapshotPreserved: true,
+      },
+      approvals: [
+        {
+          subjectId: 'org:business-owner',
+          role: 'business owner',
+          decision: 'APPROVED',
+          receiptId: 'business-receipt',
+          approvedAt: '2026-08-19T01:00:00.000Z',
+        },
+        {
+          subjectId: 'org:finance-owner',
+          role: 'finance owner',
+          decision: 'APPROVED',
+          receiptId: 'finance-receipt',
+          approvedAt: '2026-08-19T01:00:00.000Z',
+        },
+      ],
+      independentReview: {
+        subjectId: 'org:finance-reviewer',
+        decision: 'APPROVED',
+        reviewedAt: '2026-08-19T01:00:00.000Z',
+      },
+    },
+    'legacy-production-inventory.json': {
+      generatedAt: '2026-08-19T01:00:00.000Z',
+      verdict: 'INDEPENDENT_REVIEW_REQUIRED',
+      limitations: ['independent waiver required'],
+      sources: [
+        {
+          id: 'local-v5',
+          kind: 'sqlite',
+          declaredEnvironment: 'development',
+          locationSha256: 'a'.repeat(64),
+          fileSha256: 'b'.repeat(64),
+          bytes: 1,
+          tableCount: 1,
+          nonEmptyTableCount: 1,
+          rowCount: 1,
+          outcome: 'DATA_PRESENT_REVIEW_REQUIRED',
+        },
+      ],
+    },
+    'greenfield-waiver.json': {
+      result: 'PASS',
+      environments: [
+        {
+          environment: 'production',
+          ownerRef: 'org:production-owner',
+          decision: 'ZERO_PRODUCTION_DATA',
+        },
+      ],
+      coverage: Object.fromEntries(
+        ['hosts', 'databasePaths', 'persistentVolumes', 'objectStores', 'providerLedgers'].map(
+          (category) => [
+            category,
+            [
+              {
+                scopeRef: `${category}-scope`,
+                ownerRef: `${category}-owner`,
+                inspectionMethod: 'accountable inventory',
+                inspectedAt: '2026-08-19T01:00:00.000Z',
+                productionRecordCount: 0,
+              },
+            ],
+          ],
+        ),
+      ),
+      domainZeroCounts: Object.fromEntries(
+        [
+          'orders',
+          'payments',
+          'refunds',
+          'rewards',
+          'verifications',
+          'customers',
+          'consents',
+          'merchants',
+          'identities',
+          'providerLedgers',
+        ].map((domain) => [domain, 0]),
+      ),
+      approvals: [
+        ...['product owner', 'business owner', 'security reviewer', 'migration owner'].map(
+          (role, index) => ({
+            subjectId: `org:greenfield-${index}`,
+            role,
+            decision: 'APPROVED',
+            receiptId: `greenfield-receipt-${index}`,
+            approvedAt: '2026-08-19T01:00:00.000Z',
+          }),
+        ),
+      ],
+      reviewedAt: '2026-08-19T01:00:00.000Z',
+    },
+    'backup.manifest.json': {
+      backupFile: 'candidate.dump.age',
+      encryptedSha256: 'd'.repeat(64),
+      financialSnapshotSha256: 'e'.repeat(64),
+    },
+    'restore-report.json': {
+      backupFile: 'candidate.dump.age',
+      encryptedSha256: 'd'.repeat(64),
+      financialSnapshotSha256: 'e'.repeat(64),
+      databaseFixturesPassed: Array.from({ length: 22 }, (_, index) => `fixture-${index}.sql`),
+      error: null,
+    },
+    'physical-wal-evidence.json': {
+      timeline: [{ event: 'cross-fault-domain restore', at: '2026-08-19T01:00:00.000Z' }],
+    },
+    'external-deletion-samples.json': {
+      result: 'PASS',
+      targets: ['object-store', 'search', 'vector', 'cache'].map((target) => ({
+        target,
+        receiptRef: `${target}-receipt`,
+        deleted: true,
+        verifiedAt: '2026-08-19T01:00:00.000Z',
+      })),
+      samples: [{ sampleRef: 'privacy-sample', remainingMatches: 0 }],
+    },
+    'performance-report.json': {
+      images,
+      failure: null,
+      requestsPerScenario: 10,
+      scenarios: performanceScenarios,
+      database: { before: performanceSnapshot, after: performanceSnapshot },
+      persistence: { expectedMessageIds: 10, persistedMessageIds: 10, missingMessageIds: [] },
+    },
     'candidate-image-digests.json': { images },
     'deployment-topology.json': {
+      environment: 'controlled-preproduction',
       services: {
         api: { image: images.api },
         worker: { image: images.worker },
         web: { image: images.web },
       },
+      dataStores: ['postgresql', 'object-store'].map((kind, index) => ({
+        kind,
+        endpointRefHash: `${index + 4}`.repeat(64),
+        tlsVerified: true,
+      })),
+    },
+    'monitoring-snapshot.json': {
+      alerts: [{ alertId: 'expected-load-alert', status: 'EXPECTED' }],
+      saturation: { cpuMaxPercent: 70, memoryMaxPercent: 75, databaseConnectionMaxPercent: 60 },
+      backlog: { outboxDeadDelta: 0, unacknowledgedMessageCount: 0 },
     },
     'consumer-build.json': { version: 'consumer-1' },
     'merchant-template-build.json': { version: 'merchant-1' },
     'review-publish.json': {
       consumerVersion: 'consumer-1',
       merchantVersion: 'merchant-1',
+      reviewVersion: 'pilot-1',
       publishedVersion: 'pilot-1',
+      pilotScope: { percentage: 10, scopeRefs: ['pilot-store-ref'] },
+    },
+    'device-matrix.json': {
+      devices: ['iOS', 'Android'].map((platform, index) => ({
+        platform,
+        deviceRefHash: `${index + 1}`.repeat(64),
+        officialClientVersion: 'official-client-1',
+        result: 'PASS',
+      })),
+      scenarios: ['consumer', 'merchant-template'].map((packageName) => ({
+        package: packageName,
+        result: 'PASS',
+        deviceRefs: ['ios-ref', 'android-ref'],
+      })),
     },
     'rollback.json': { fromVersion: 'pilot-1', toVersion: 'pilot-safe-2' },
-    'alert-delivery.json': { alerts: ['P0-1', 'P1-1'] },
-    'oncall-acknowledgement.json': { alerts: ['P0-1', 'P1-1'] },
+    'identity-session-redacted.json': {
+      revocation: { revokedSessionRejected: true, latencySeconds: 5 },
+      mfa: { highRiskRequired: true, downgradeRejected: true },
+      sessions: [
+        {
+          sessionRefHash: '6'.repeat(64),
+          tenantScopeVerified: true,
+          shortLived: true,
+        },
+      ],
+    },
+    'secret-access-audit.json': {
+      accessEvents: [
+        {
+          secretRefHash: '7'.repeat(64),
+          subjectRef: 'workforce:controlled-secret-operator',
+          action: 'READ',
+          allowed: true,
+          occurredAt: '2026-08-19T01:00:00.000Z',
+        },
+        {
+          secretRefHash: '8'.repeat(64),
+          subjectRef: 'workforce:controlled-secret-operator',
+          action: 'ROTATE',
+          allowed: true,
+          occurredAt: '2026-08-19T01:00:00.000Z',
+        },
+      ],
+    },
+    'object-retention.json': {
+      policy: { encryptionRequired: true, deletionEnforced: true },
+      objectsSampled: [
+        {
+          objectRefHash: '9'.repeat(64),
+          encrypted: true,
+          retentionApplied: true,
+          deletionVerified: true,
+        },
+      ],
+    },
+    'privacy-export-delete.json': {
+      export: { encrypted: true, verifiedSessionDelivery: true, durationSeconds: 60 },
+      deletion: { authorized: true, auditRecorded: true },
+      targets: ['database', 'object-store', 'search', 'vector', 'cache'].map((target, index) => ({
+        target,
+        receiptHash: `${index + 1}`.repeat(64),
+        deleted: true,
+        verifiedAt: '2026-08-19T01:00:00.000Z',
+      })),
+    },
+    'alert-delivery.json': {
+      alerts: alertRecords,
+      recipients: [{ recipientRefHash: 'a'.repeat(64) }],
+      deliveryResults: alertRecords.map((alert) => ({
+        alertId: alert.alertId,
+        delivered: true,
+        deliveredAt: '2026-08-19T01:00:00.000Z',
+        channelRefHash: 'b'.repeat(64),
+      })),
+    },
+    'oncall-acknowledgement.json': {
+      alerts: alertRecords,
+      acknowledgements: alertRecords.map((alert) => ({
+        alertId: alert.alertId,
+        acknowledged: true,
+        acknowledgedAt: '2026-08-19T01:00:00.000Z',
+        escalationOutcome: 'ACKNOWLEDGED',
+      })),
+    },
+    'legal-document-release.json': {
+      result: 'PASS',
+      documents: [
+        {
+          documentId: 'privacy-policy',
+          version: 'v1',
+          ownerRef: 'org:legal-owner',
+          approvalReceipt: 'legal-receipt',
+          sha256: 'c'.repeat(64),
+          publishedUrl: 'https://example.test/privacy',
+          effectiveAt: '2026-08-19T01:00:00.000Z',
+        },
+      ],
+      surfaceMatrix: ['lequbao-web', 'lequ-life-miniapp', 'merchant-miniapp'].map((surface) => ({
+        surface,
+        documentIds: ['privacy-policy'],
+        publicationVerified: true,
+        accountPrivacyInstructionsVerified: true,
+        failures: [],
+      })),
+      approvals: [
+        ...['product owner', 'legal compliance reviewer'].map((role, index) => ({
+          subjectId: `org:legal-${index}`,
+          role,
+          decision: 'APPROVED',
+          receiptId: `legal-receipt-${index}`,
+          approvedAt: '2026-08-19T01:00:00.000Z',
+        })),
+      ],
+    },
   };
   Object.assign(value, overrides[artifact]);
   return value;

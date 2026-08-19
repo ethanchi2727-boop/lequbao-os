@@ -121,6 +121,8 @@ finally {
     rtoSeconds = $rtoSeconds
     rpoThresholdSeconds = 300
     rtoThresholdSeconds = 3600
+    encryptedSha256 = $manifest.encryptedSha256
+    financialSnapshotSha256 = $manifest.financialSnapshotSha256
     encryptedSha256Verified = $true
     financialSnapshotMatch = $financialMatch
     privacyReplayTasksEnqueued = $privacyReplayCount

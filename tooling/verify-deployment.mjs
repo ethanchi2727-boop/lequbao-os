@@ -10,6 +10,8 @@ const [
   candidatePublisher,
   controlledReleaseVerifier,
   webServer,
+  webApp,
+  webApiClient,
   runbook,
   apiRuntime,
   workerRuntime,
@@ -22,12 +24,24 @@ const [
   readFile('.github/workflows/publish-candidate-images.yml', 'utf8'),
   readFile('.github/workflows/verify-controlled-release.yml', 'utf8'),
   readFile('apps/workbench-web/production-server.mjs', 'utf8'),
+  readFile('apps/workbench-web/src/app.js', 'utf8'),
+  readFile('apps/workbench-web/src/api-client.js', 'utf8'),
   readFile('docs/runbooks/DEPLOYMENT.md', 'utf8'),
   readFile('apps/api/src/runtime-configuration.ts', 'utf8'),
   readFile('apps/worker/src/runtime-configuration.ts', 'utf8'),
   readFile('.env.example', 'utf8'),
 ]);
 const failures = [];
+const [rootManifest, apiManifest, workerManifest, apiBuildConfig, workerBuildConfig] =
+  await Promise.all(
+    [
+      'package.json',
+      'apps/api/package.json',
+      'apps/worker/package.json',
+      'apps/api/tsconfig.build.json',
+      'apps/worker/tsconfig.build.json',
+    ].map(async (file) => JSON.parse(await readFile(file, 'utf8'))),
+  );
 failures.push(
   ...inspectContainerImagePins({
     dockerfiles: {
@@ -69,9 +83,19 @@ for (const marker of [
   'content-security-policy',
   'permissions-policy',
   'x-content-type-options',
+  'cross-origin-resource-policy',
+  'x-permitted-cross-domain-policies',
   "frame-ancestors 'none'",
+  'realpath(root)',
 ])
   if (!webServer.includes(marker)) failures.push(`Web production header missing: ${marker}`);
+for (const marker of ['const apiBaseUrl = location.origin', 'expectedOrigin: location.origin'])
+  if (!webApp.includes(marker)) failures.push(`Web same-origin API boundary missing: ${marker}`);
+if (webApp.includes("params.get('apiBase')"))
+  failures.push('Web production entrypoint must not accept an apiBase query override');
+for (const marker of ['UNSAFE_API_ORIGIN', 'candidate.origin !== trusted'])
+  if (!webApiClient.includes(marker))
+    failures.push(`Web API-client same-origin enforcement missing: ${marker}`);
 if (!workflow.includes('Smoke Web candidate image')) failures.push('Web image smoke step missing');
 for (const marker of [
   'Verify API production configuration fails closed',
@@ -181,12 +205,24 @@ for (const marker of [
   'blanket trusted proxy',
 ])
   if (!runbook.includes(marker)) failures.push(`Deployment runbook boundary missing: ${marker}`);
+if (!rootManifest.scripts?.check?.includes('pnpm artifacts:check'))
+  failures.push('Full repository gate must verify built production artifacts');
+for (const [name, manifest, buildConfig] of [
+  ['API', apiManifest, apiBuildConfig],
+  ['Worker', workerManifest, workerBuildConfig],
+]) {
+  if (JSON.stringify(manifest.files) !== JSON.stringify(['dist']))
+    failures.push(`${name} package files must equal ["dist"]`);
+  for (const setting of ['declaration', 'declarationMap', 'sourceMap'])
+    if (buildConfig.compilerOptions?.[setting] !== false)
+      failures.push(`${name} production build must disable ${setting}`);
+}
 
 if (failures.length) {
   for (const failure of failures) console.error(`Deployment gate failure: ${failure}`);
   process.exitCode = 1;
 } else {
   console.log(
-    'Deployment gate verified non-root images, CI smoke, protected candidate publication and attested controlled launch verification.',
+    'Deployment gate verified runtime-only artifacts, non-root images, CI smoke, protected candidate publication and attested controlled launch verification.',
   );
 }

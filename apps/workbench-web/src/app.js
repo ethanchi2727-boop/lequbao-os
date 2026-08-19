@@ -12,12 +12,13 @@ let view = viewFor(resolvePage(location.pathname), params.get('state') ?? 'defau
 const app = document.querySelector('#app');
 const demoMode = params.get('demo') === '1';
 const sessionToken = sessionStorage.getItem('lequbao.employee-session');
-const apiBaseUrl = params.get('apiBase') ?? location.origin;
+const apiBaseUrl = location.origin;
 const intakeApi =
   demoMode || !sessionToken
     ? null
     : createMerchantIntakeApi({
-        baseUrl: params.get('apiBase') ?? location.origin,
+        baseUrl: apiBaseUrl,
+        expectedOrigin: location.origin,
         token: sessionToken,
       });
 const workbenchApi =
@@ -25,6 +26,7 @@ const workbenchApi =
     ? null
     : createWorkbenchApi({
         baseUrl: apiBaseUrl,
+        expectedOrigin: location.origin,
         token: sessionToken,
       });
 let liveSession = null;

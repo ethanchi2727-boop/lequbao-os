@@ -12,6 +12,7 @@ describe('controlled suite cross-evidence contracts', () => {
       'BACKUP_RESTORE_PRIVACY',
       'COMMERCE_CONCURRENCY',
       'IDENTITY_SECRETS_PRIVACY_ONCALL',
+      'INTAKE_OBJECT_PIPELINE',
       'PAYMENT_PROVIDER_SANDBOX',
       'PERFORMANCE_CORE_AND_MESSAGES',
       'WECHAT_RELEASE_AND_ROLLBACK',
@@ -22,9 +23,23 @@ describe('controlled suite cross-evidence contracts', () => {
 
   it('accepts reconciled commerce, payment and backup evidence', () => {
     expect(
+      validateControlledSuiteDocuments('INTAKE_OBJECT_PIPELINE', {
+        'upload-response.json': { objectRefHash: 'same-object' },
+        'object-metadata.json': { objectRefHash: 'same-object' },
+      }),
+    ).toEqual([]);
+    expect(
       validateControlledSuiteDocuments('COMMERCE_CONCURRENCY', {
-        'concurrency-input.json': { stock: 3, requestedQuantity: 10 },
-        'order-results.json': { successfulQuantity: 3 },
+        'concurrency-input.json': {
+          stock: 3,
+          requestedQuantity: 3,
+          contenders: ['a', 'b', 'c'].map((contenderRef) => ({ contenderRef })),
+        },
+        'order-results.json': {
+          successfulQuantity: 3,
+          successfulOrders: ['a', 'b', 'c'].map((contenderRef) => ({ contenderRef })),
+          failedContenders: [],
+        },
         'inventory-ledger.json': { openingStock: 3, soldQuantity: 3, closingStock: 0 },
       }),
     ).toEqual([]);
@@ -45,8 +60,16 @@ describe('controlled suite cross-evidence contracts', () => {
     ).toEqual([]);
     expect(
       validateControlledSuiteDocuments('BACKUP_RESTORE_PRIVACY', {
-        'backup.manifest.json': { backupFile: 'candidate.dump.age' },
-        'restore-report.json': { backupFile: 'candidate.dump.age' },
+        'backup.manifest.json': {
+          backupFile: 'candidate.dump.age',
+          encryptedSha256: 'a'.repeat(64),
+          financialSnapshotSha256: 'b'.repeat(64),
+        },
+        'restore-report.json': {
+          backupFile: 'candidate.dump.age',
+          encryptedSha256: 'a'.repeat(64),
+          financialSnapshotSha256: 'b'.repeat(64),
+        },
       }),
     ).toEqual([]);
   });
@@ -66,6 +89,12 @@ describe('controlled suite cross-evidence contracts', () => {
         'closing stock does not reconcile with successful quantity',
       ]),
     );
+    expect(
+      validateControlledSuiteDocuments('INTAKE_OBJECT_PIPELINE', {
+        'upload-response.json': { objectRefHash: 'one' },
+        'object-metadata.json': { objectRefHash: 'two' },
+      }),
+    ).toContain('upload response and object metadata references do not match');
     expect(
       validateControlledSuiteDocuments('PAYMENT_PROVIDER_SANDBOX', {
         'provider-request-redacted.json': { merchantAccountRef: 'one', serverOrderAmountFen: 100 },
@@ -107,6 +136,7 @@ describe('controlled suite cross-evidence contracts', () => {
         'review-publish.json': {
           consumerVersion: 'consumer-2',
           merchantVersion: 'merchant-1',
+          reviewVersion: 'review-1',
           publishedVersion: 'pilot-1',
         },
         'rollback.json': { fromVersion: 'pilot-2', toVersion: 'pilot-2' },
@@ -114,6 +144,7 @@ describe('controlled suite cross-evidence contracts', () => {
     ).toEqual(
       expect.arrayContaining([
         'published consumer version does not match its official build',
+        'published WeChat version does not match the approved review version',
         'rollback source does not match the published version',
         'rollback must create a different safe release version',
       ]),
@@ -124,5 +155,27 @@ describe('controlled suite cross-evidence contracts', () => {
         'oncall-acknowledgement.json': { alerts: ['P1-1'] },
       }),
     ).toContain('on-call acknowledgement does not cover the delivered alert identifiers');
+  });
+
+  it('rejects a restore report bound to different backup bytes or financial facts', () => {
+    expect(
+      validateControlledSuiteDocuments('BACKUP_RESTORE_PRIVACY', {
+        'backup.manifest.json': {
+          backupFile: 'candidate.dump.age',
+          encryptedSha256: 'a'.repeat(64),
+          financialSnapshotSha256: 'b'.repeat(64),
+        },
+        'restore-report.json': {
+          backupFile: 'candidate.dump.age',
+          encryptedSha256: 'c'.repeat(64),
+          financialSnapshotSha256: 'd'.repeat(64),
+        },
+      }),
+    ).toEqual(
+      expect.arrayContaining([
+        'restore report references a different encrypted backup hash',
+        'restore report references a different financial snapshot hash',
+      ]),
+    );
   });
 });

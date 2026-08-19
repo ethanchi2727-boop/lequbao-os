@@ -1,5 +1,5 @@
 import { createReadStream } from 'node:fs';
-import { stat } from 'node:fs/promises';
+import { realpath, stat } from 'node:fs/promises';
 import { createServer } from 'node:http';
 import { extname, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -29,12 +29,25 @@ const securityHeaders = {
   'content-security-policy':
     "default-src 'self'; base-uri 'none'; connect-src 'self' https:; form-action 'self'; frame-ancestors 'none'; img-src 'self' data:; object-src 'none'; script-src 'self'; style-src 'self'",
   'cross-origin-opener-policy': 'same-origin',
+  'cross-origin-resource-policy': 'same-origin',
   'permissions-policy': 'camera=(), microphone=(), geolocation=()',
   'referrer-policy': 'no-referrer',
   'strict-transport-security': 'max-age=31536000; includeSubDomains',
   'x-content-type-options': 'nosniff',
   'x-frame-options': 'DENY',
+  'x-permitted-cross-domain-policies': 'none',
 };
+
+async function resolveRealStaticFile(root, candidate) {
+  try {
+    const [realRoot, realCandidate] = await Promise.all([realpath(root), realpath(candidate)]);
+    if (realCandidate !== realRoot && !realCandidate.startsWith(`${realRoot}${sep}`)) return null;
+    if (!(await stat(realCandidate)).isFile()) return null;
+    return realCandidate;
+  } catch {
+    return null;
+  }
+}
 
 export function createWorkbenchProductionServer(options = {}) {
   const rootInput =
@@ -44,14 +57,24 @@ export function createWorkbenchProductionServer(options = {}) {
   const root = resolve(rootInput instanceof URL ? fileURLToPath(rootInput) : rootInput);
   return createServer(async (request, response) => {
     for (const [name, value] of Object.entries(securityHeaders)) response.setHeader(name, value);
-    if (request.url === '/health') {
-      response.setHeader('content-type', 'application/json; charset=utf-8');
-      return response.end('{"status":"ok","version":"6.1.0"}\n');
-    }
+    response.setHeader('cache-control', 'no-store');
     if (!['GET', 'HEAD'].includes(request.method ?? '')) {
       response.statusCode = 405;
       response.setHeader('allow', 'GET, HEAD');
       return response.end();
+    }
+    if (request.url === '/health') {
+      response.setHeader('content-type', 'application/json; charset=utf-8');
+      const ready = await resolveRealStaticFile(root, resolve(root, 'index.html'));
+      if (!ready) {
+        response.statusCode = 503;
+        return request.method === 'HEAD'
+          ? response.end()
+          : response.end('{"status":"unavailable","version":"6.1.0"}\n');
+      }
+      return request.method === 'HEAD'
+        ? response.end()
+        : response.end('{"status":"ok","version":"6.1.0"}\n');
     }
     const url = new URL(request.url ?? '/', 'http://local');
     const resolved = resolveStaticRequest(root, url.pathname);
@@ -68,6 +91,7 @@ export function createWorkbenchProductionServer(options = {}) {
     } catch {
       found = false;
     }
+    const fallback = !found && !extname(url.pathname);
     if (!found) {
       if (extname(url.pathname)) {
         response.statusCode = 404;
@@ -75,10 +99,14 @@ export function createWorkbenchProductionServer(options = {}) {
       }
       file = resolve(root, 'index.html');
     }
-    response.setHeader('content-type', types[extname(file)] ?? 'application/octet-stream');
-    response.setHeader('cache-control', 'no-store');
+    const realFile = await resolveRealStaticFile(root, file);
+    if (!realFile) {
+      response.statusCode = fallback ? 503 : 404;
+      return response.end();
+    }
+    response.setHeader('content-type', types[extname(realFile)] ?? 'application/octet-stream');
     if (request.method === 'HEAD') return response.end();
-    createReadStream(file)
+    createReadStream(realFile)
       .on('error', () => response.destroy())
       .pipe(response);
   });

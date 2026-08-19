@@ -19,6 +19,6 @@ The record must be signed or approved in the organization's accountable system a
 
 ## Evidence result
 
-Export the redacted decision as `payment-provider-sandbox/financial-policy-approvals.json`. It must bind the exact release commit and controlled deployment, identify both approvals and contain no unresolved item. Any absent owner, conditional decision without a satisfied condition, account mismatch, unresolved C-001 payout interpretation or legacy-balance uncertainty is a no-go.
+Export the redacted decision as `payment-provider-sandbox/financial-policy-approvals.json`. It must bind the exact release commit and controlled deployment; identify different business-owner and finance-owner subjects with `APPROVED` receipt IDs and non-future UTC times; record a later approval from a third independent reviewer; and contain no unresolved item. Its structured decisions must explicitly resolve payment responsibility, merchant-account mapping, legacy balances, C-001 distribution, compute allocation and preservation of historical snapshots. Any absent owner, duplicated accountable subject, conditional decision without a satisfied condition, account mismatch, unresolved C-001 payout interpretation or legacy-balance uncertainty is a no-go.
 
 This approval does not mutate financial history. A later policy change requires a new version for future transactions and cannot rewrite an order, ledger, right, statement, payout or reversal snapshot.

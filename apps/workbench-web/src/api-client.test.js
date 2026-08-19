@@ -1,5 +1,10 @@
 import { describe, expect, it, vi } from 'vitest';
-import { ApiError, createMerchantIntakeApi, createWorkbenchApi } from './api-client.js';
+import {
+  ApiError,
+  createMerchantIntakeApi,
+  createWorkbenchApi,
+  resolveTrustedApiBase,
+} from './api-client.js';
 
 const response = (body, status = 200) =>
   new Response(JSON.stringify(body), {
@@ -73,6 +78,20 @@ describe('merchant intake browser API client', () => {
 });
 
 describe('workbench live read API', () => {
+  it('never sends an employee session to a cross-origin API base', () => {
+    expect(() =>
+      createWorkbenchApi({
+        baseUrl: 'https://attacker.example',
+        expectedOrigin: 'https://workbench.example',
+        token: 'employee-token',
+        fetch: vi.fn(),
+      }),
+    ).toThrow(expect.objectContaining({ code: 'UNSAFE_API_ORIGIN' }));
+    expect(
+      resolveTrustedApiBase('https://workbench.example/ignored-path', 'https://workbench.example'),
+    ).toBe('https://workbench.example');
+  });
+
   it('uses the employee session and rejects paths outside the bounded API', async () => {
     const request = vi.fn(async (_url, init) =>
       Response.json({ ok: true, auth: init.headers.authorization }),

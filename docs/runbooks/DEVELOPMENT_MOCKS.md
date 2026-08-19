@@ -6,25 +6,33 @@
 
 1. 将 `.env.development-mock.example` 复制为 `.env.development-mock.local`；该文件已被 Git 忽略。
 2. 把其中的 `DATABASE_URL` 改为开发 PostgreSQL 15+。数据库、RLS 和迁移属于平台核心边界，不使用内存 mock 替代。
-3. 启动统一模拟网关：
+3. 先验证示例与本地配置完整覆盖生产运行时声明的所有供应商组，且仍保持开发专用、回环地址和统一鉴权：
+
+   ```powershell
+   corepack pnpm dev:mock-check
+   ```
+
+   检查只输出配置键或失败原因，不输出本地配置值。
+
+4. 启动统一模拟网关：
 
    ```powershell
    corepack pnpm dev:mock-gateways
    ```
 
-4. 另开终端，以同一个环境文件启动 API：
+5. 另开终端，以同一个环境文件启动 API：
 
    ```powershell
    node --env-file=.env.development-mock.local --import tsx apps/api/src/server.ts
    ```
 
-5. 需要执行一次 Worker 时：
+6. 需要执行一次 Worker 时：
 
    ```powershell
    node --env-file=.env.development-mock.local --import tsx apps/worker/src/main.ts
    ```
 
-默认模拟网关为 `http://127.0.0.1:3399`，健康检查为 `/health`。它覆盖身份交换、对象存储、支付/退款/对账、客服知识/模型/工具、企业微信通知与回调配置、GEO/插件、微信小程序构建与生命周期、Outbox、隐私删除和隐私导出边界。
+默认模拟网关为 `http://127.0.0.1:3399`，健康检查为 `/health`。它覆盖身份交换、对象存储、支付/退款/对账、客服知识/模型/工具、企业微信通知与回调配置、GEO/插件、微信小程序构建与生命周期、Outbox、隐私删除和隐私导出边界。自动化路由矩阵会逐项请求全部 24 条供应商路由，并验证每个响应的 `development-mock` 来源标记。
 
 ## GitHub Codespaces / Dev Container
 

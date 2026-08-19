@@ -4,7 +4,10 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { promisify } from 'node:util';
 import { fileURLToPath } from 'node:url';
-import { controlledJsonEvidenceContracts } from './controlled-evidence-contracts.mjs';
+import {
+  controlledJsonEvidenceContracts,
+  controlledJsonEvidenceReviewRules,
+} from './controlled-evidence-contracts.mjs';
 import { controlledSuiteCrossEvidenceRules } from './controlled-suite-evidence.mjs';
 
 const execFile = promisify(execFileCallback);
@@ -69,6 +72,7 @@ function executionGuide({ plan, releaseCommit, deploymentId, environment, create
   for (const suite of plan.suites) {
     const artifactLines = suite.requiredEvidence.flatMap((file) => {
       const contract = controlledJsonEvidenceContracts[file];
+      const reviewRules = controlledJsonEvidenceReviewRules[file];
       return [
         `  - \`${file}\``,
         `    - Capture: \`pnpm controlled:capture -- --evidence-root=<absolute-this-directory> --suite=${suite.code} --artifact=${file} --source=<absolute-captured-source>\``,
@@ -77,6 +81,9 @@ function executionGuide({ plan, releaseCommit, deploymentId, environment, create
               '    - Required JSON fields:',
               ...contract.map((rule) => `      - \`${rule.path}\`: ${describeSemanticRule(rule)}`),
             ]
+          : []),
+        ...(reviewRules
+          ? ['    - Critical review invariants:', ...reviewRules.map((rule) => `      - ${rule}`)]
           : []),
       ];
     });

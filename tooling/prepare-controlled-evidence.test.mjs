@@ -146,5 +146,8 @@ describe('controlled evidence workspace preparation', () => {
     }
     expect(guide).toContain('Cross-artifact invariants:');
     expect(guide).toContain('performance report images equal the protected candidate manifest');
+    expect(guide).toContain('Critical review invariants:');
+    expect(guide).toContain('all ten production business domains have an exact zero count');
+    expect(guide).toContain('product and legal/compliance approvals');
   });
 });

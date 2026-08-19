@@ -133,7 +133,16 @@ describe('controlled evidence capture', () => {
     );
     await writeFile(
       source,
-      '{"result":"PASS","attempts":[{"operation":"cross-tenant-read","denied":true}]}\n',
+      `${JSON.stringify({
+        result: 'PASS',
+        attempts: ['cross-tenant-read', 'cross-tenant-write'].map((operation, index) => ({
+          operation,
+          denied: true,
+          exposedFieldCount: 0,
+          mutationCount: 0,
+          auditRefHash: `${index + 1}`.repeat(64),
+        })),
+      })}\n`,
     );
     await expect(captureControlledEvidenceArtifact(input)).resolves.toMatchObject({
       artifact: 'rls-denials.json',
@@ -143,6 +152,40 @@ describe('controlled evidence capture', () => {
 
   it('rejects semantic evidence bound to a different candidate or deployment', async () => {
     const source = path.join(sourceRoot, 'financial-policy-approvals.json');
+    const financialApproval = {
+      decisionVersion: 'finance-v1',
+      effectiveAt: '2026-08-19T01:00:00.000Z',
+      decisions: {
+        paymentResponsibilityResolved: true,
+        merchantAccountMappingResolved: true,
+        legacyBalanceResolved: true,
+        distributionConflictC001Resolved: true,
+        computeAllocationResolved: true,
+        historicalSnapshotPreserved: true,
+      },
+      approvals: [
+        {
+          subjectId: 'org:business-owner',
+          role: 'business owner',
+          decision: 'APPROVED',
+          receiptId: 'business-receipt',
+          approvedAt: '2026-08-19T01:00:00.000Z',
+        },
+        {
+          subjectId: 'org:finance-owner',
+          role: 'finance owner',
+          decision: 'APPROVED',
+          receiptId: 'finance-receipt',
+          approvedAt: '2026-08-19T01:00:00.000Z',
+        },
+      ],
+      independentReview: {
+        subjectId: 'org:finance-reviewer',
+        decision: 'APPROVED',
+        reviewedAt: '2026-08-19T01:00:00.000Z',
+      },
+      unresolvedItems: [],
+    };
     const input = {
       plan,
       planSource,
@@ -156,8 +199,7 @@ describe('controlled evidence capture', () => {
       `${JSON.stringify({
         releaseCommit: 'b'.repeat(40),
         deploymentId: 'different-deployment',
-        approvals: ['finance-owner'],
-        unresolvedItems: [],
+        ...financialApproval,
       })}\n`,
     );
     await expect(captureControlledEvidenceArtifact(input)).rejects.toThrow(
@@ -168,8 +210,7 @@ describe('controlled evidence capture', () => {
       `${JSON.stringify({
         releaseCommit,
         deploymentId: 'candidate-1',
-        approvals: ['finance-owner'],
-        unresolvedItems: [],
+        ...financialApproval,
       })}\n`,
     );
     await expect(captureControlledEvidenceArtifact(input)).resolves.toMatchObject({

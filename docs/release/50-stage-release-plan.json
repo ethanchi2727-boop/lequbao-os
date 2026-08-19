@@ -420,8 +420,15 @@
       "title": "security threat model SBOM and secret scan",
       "status": "local-complete",
       "acceptancePrefixes": ["SEC"],
-      "evidence": ["docs/security/THREAT_MODEL_AND_DATA_FLOW.md", "docs/release/sbom.cdx.json"],
-      "selfCheck": "production audit secret scan and 249-component SBOM"
+      "evidence": [
+        "docs/security/THREAT_MODEL_AND_DATA_FLOW.md",
+        "docs/security/DEPENDENCY_SECURITY_POLICY.md",
+        "docs/release/sbom.cdx.json",
+        "tooling/dependency-install-policy.mjs",
+        "tooling/development-mock-profile.mjs",
+        "tooling/production-license-policy.mjs"
+      ],
+      "selfCheck": "production audit secret scan 249-component SBOM CVE audit approved production licenses fail-closed frozen dependency installation and isolated development-mock profile"
     },
     {
       "id": 46,
@@ -432,9 +439,10 @@
         "apps/api/openapi.yaml",
         "deploy/Dockerfile",
         ".github/workflows/ci.yml",
-        ".github/workflows/publish-candidate-images.yml"
+        ".github/workflows/publish-candidate-images.yml",
+        "tooling/production-artifact-policy.mjs"
       ],
-      "selfCheck": "193 paths three non-root images fail-closed production config and protected digest publication"
+      "selfCheck": "193 paths runtime-only package inventories three non-root images fail-closed production config and protected digest publication"
     },
 
     {
@@ -474,12 +482,13 @@
         "docs/release/stage-10-release-candidate-evidence.md",
         "docs/release/CONTROLLED_ENVIRONMENT_UNBLOCK.md",
         "tooling/controlled-environment-preflight.mjs",
+        "tooling/controlled-evidence-contracts.mjs",
         "tooling/controlled-evidence-package.mjs",
         ".github/workflows/verify-controlled-release.yml",
         "docs/runbooks/FINANCIAL_POLICY_APPROVAL.md",
         "docs/runbooks/LEGAL_COMPLIANCE_RELEASE.md"
       ],
-      "selfCheck": "29 controlled cases seven external gates and zero stop-release conditions"
+      "selfCheck": "29 controlled cases seven external gates strict governance evidence and zero stop-release conditions"
     }
   ]
 }

@@ -22,6 +22,16 @@ const plan = {
   ],
 };
 const planSource = `${JSON.stringify(plan, null, 2)}\n`;
+const rlsDenialsEvidence = {
+  result: 'PASS',
+  attempts: ['cross-tenant-read', 'cross-tenant-write'].map((operation, index) => ({
+    operation,
+    denied: true,
+    exposedFieldCount: 0,
+    mutationCount: 0,
+    auditRefHash: `${index + 1}`.repeat(64),
+  })),
+};
 
 async function fixture(releaseCommit = 'a'.repeat(40)) {
   const parent = await mkdtemp(path.join(tmpdir(), 'lequ-controlled-assembly-'));
@@ -44,7 +54,7 @@ async function fixture(releaseCommit = 'a'.repeat(40)) {
   );
   await writeFile(
     path.join(sourceRoot, 'rls-denials.json'),
-    '{"result":"PASS","attempts":[{"operation":"cross-tenant-read","denied":true}]}\n',
+    `${JSON.stringify(rlsDenialsEvidence)}\n`,
   );
   for (const artifact of plan.suites[0].requiredEvidence)
     await captureControlledEvidenceArtifact({
@@ -191,7 +201,7 @@ describe('controlled result assembly', () => {
 
     await writeFile(
       path.join(root, 'controlled-one', 'rls-denials.json'),
-      '{"result":"PASS","attempts":[{"operation":"cross-tenant-read","denied":true}]}\n',
+      `${JSON.stringify(rlsDenialsEvidence)}\n`,
     );
     await writeFile(
       path.join(root, 'controlled-one', 'execution.log'),
