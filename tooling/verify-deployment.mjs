@@ -207,6 +207,11 @@ for (const marker of [
   if (!runbook.includes(marker)) failures.push(`Deployment runbook boundary missing: ${marker}`);
 if (!rootManifest.scripts?.check?.includes('pnpm artifacts:check'))
   failures.push('Full repository gate must verify built production artifacts');
+if (
+  rootManifest.scripts?.['controlled:inventory'] !==
+  'node tooling/controlled-environment-inventory.mjs'
+)
+  failures.push('Controlled environment names-only inventory command is missing');
 for (const [name, manifest, buildConfig] of [
   ['API', apiManifest, apiBuildConfig],
   ['Worker', workerManifest, workerBuildConfig],

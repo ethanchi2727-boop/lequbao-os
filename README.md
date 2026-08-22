@@ -8,7 +8,7 @@
 - 已固化唯一开发基线、总包校验结果、冲突裁决和 V5→V6 迁移矩阵。
 - 已从 PostgreSQL 15+ 的 73 表正式基线扩展到 164 表、26 个迁移的审计目标，包含租户 RLS、不可变台账、商业交易、AI/客服、运营和平台控制面。
 - 当前实现 193 条范围明确的 API 路径、135 个乐趣宝叶页面与 62 个小程序叶页面；全部 197 个发布叶页面使用权威服务端边界。
-- 全仓门禁覆盖格式、Lint、契约/RBAC/OpenAPI、安全/运维/部署、六个类型检查、102 个测试文件、520 个测试、六个生产构建和构建后生产产物清单。
+- 全仓门禁覆盖格式、Lint、契约/RBAC/OpenAPI、安全/运维/部署、六个类型检查、103 个测试文件、528 个测试、六个生产构建和构建后生产产物清单。
 
 权威状态见 [PROJECT_STATE.md](PROJECT_STATE.md)，架构决策见
 [docs/adr/0001-v6-1-rebuild.md](docs/adr/0001-v6-1-rebuild.md)。
@@ -20,9 +20,13 @@
 ```powershell
 corepack pnpm install --frozen-lockfile
 corepack pnpm check
+corepack pnpm controlled:inventory
 ```
 
 `pnpm check` 会在构建完成后执行 `artifacts:check`，拒绝 API/Worker/Web 产物中的源码映射、声明文件、测试、隐藏/特殊文件、异常扩展、敏感值形态和超限文件。
+
+`controlled:inventory` 默认只生成 Stage 47–50 所需的 secret、variable 与外部证据文件名称；服务器和第三方账户准备好后可用 names-only JSON 精确审计各阶段还缺哪些配置。
+提供只读 GitHub 访问令牌时，`corepack pnpm controlled:inventory -- --github=<owner/repository>` 可直接审计 `controlled-preproduction` 环境。GitHub 不提供 secret 值；变量列表响应中的值会被立即丢弃，报告只输出名称、缺口和存储类型错误，并在配置不完整、分类错误或列表截断时以非零状态退出。
 
 依赖安装使用提交内锁文件，并默认拒绝未审核的依赖生命周期脚本；当前唯一显式允许的是构建所需的 `esbuild`。修改依赖时必须同时审查 `pnpm-lock.yaml` 和 `pnpm-workspace.yaml`，不得使用 `--no-frozen-lockfile`、`dangerouslyAllowAllBuilds` 或未经审查的 Git/URL 依赖。候选版本还必须通过 `corepack pnpm audit --prod --audit-level high` 和 `corepack pnpm licenses:check`；许可证与漏洞处理规则见 [生产依赖安全策略](docs/security/DEPENDENCY_SECURITY_POLICY.md)。
 
