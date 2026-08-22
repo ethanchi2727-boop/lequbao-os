@@ -24,7 +24,7 @@ export async function dispatchCommerceJobs(options: {
     const orders = await client.query<{ id: string }>(
       `SELECT id FROM orders
         WHERE tenant_id=$1 AND status='PENDING_PAYMENT' AND expires_at<=now()
-          AND reservation_released_at IS NULL
+          AND inventory_released_at IS NULL
         ORDER BY expires_at,id LIMIT $2`,
       [options.tenantId, limit],
     );

@@ -23,6 +23,9 @@ describe('commerce background jobs', () => {
       { type: 'EXPIRE_ORDER', id: 'order-1', accepted: true },
       { type: 'SUBMIT_REFUND', id: 'refund-1', accepted: true },
     ]);
+    const orderDiscoverySql = String(query.mock.calls[2]?.[0]);
+    expect(orderDiscoverySql).toContain('inventory_released_at IS NULL');
+    expect(orderDiscoverySql).not.toContain('reservation_released_at');
     expect(fetch.mock.calls.map(([url]) => url)).toEqual([
       'https://internal.example.test/api/v1/internal/commerce/orders/order-1/actions/expire',
       'https://internal.example.test/api/v1/internal/commerce/refunds/refund-1/actions/submit',
