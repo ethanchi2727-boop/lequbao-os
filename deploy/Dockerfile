@@ -16,7 +16,7 @@ RUN pnpm --filter @lequ/contracts build
 USER node
 EXPOSE 8080
 HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
-  CMD ["node", "-e", "fetch('http://127.0.0.1:8080/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+  CMD ["node", "-e", "const fs=require('node:fs');const marker='/tmp/lequ-worker-ready';if(!fs.existsSync(marker)||Date.now()-fs.statSync(marker).mtimeMs>30000)process.exit(1);fetch('http://127.0.0.1:8080/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
 CMD ["bash", "deploy/start-bao-preview.sh"]
 
 FROM source AS api-build

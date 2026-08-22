@@ -20,6 +20,9 @@ container and initializes the real 164-table schema plus the idempotent, non-fin
 seed. Hostname acknowledgement, mock mode and database readiness all fail closed. The Web proxy
 strips client-supplied forwarding headers, binds non-health traffic to `bao.lequ.com`, marks every
 response as a development-mock preview and asks crawlers not to index it.
+The application container is healthy only after the Worker has completed successfully and refreshed
+its readiness marker within 30 seconds; repeated background-job failures therefore fail deployment
+health instead of being hidden by the retry loop.
 
 This Compose file is not a production promotion path. Never put real customer, merchant, payment or
 provider data into its volume, and never treat Mock output as controlled acceptance evidence. Do not
