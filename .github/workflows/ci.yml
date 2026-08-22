@@ -218,10 +218,13 @@ jobs:
       - name: Validate Dev Container and shell entrypoints
         run: |
           docker compose -f .devcontainer/compose.yaml config --quiet
+          docker compose -f compose.yaml config --quiet
           bash -n .devcontainer/bootstrap.sh \
             .devcontainer/start-development.sh \
             .devcontainer/stop-development.sh \
-            .devcontainer/status.sh
+            .devcontainer/status.sh \
+            deploy/init-bao-preview-postgres.sh \
+            deploy/start-bao-preview.sh
       - name: Prove PostgreSQL-backed development login and same-origin API path
         run: |
           set -euo pipefail
@@ -249,3 +252,38 @@ jobs:
           test "$session_count" = "1"
           docker compose -f .devcontainer/compose.yaml exec --no-TTY workspace \
             bash .devcontainer/stop-development.sh
+
+  bao-preview-stack:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - name: Validate and start the bao.lequ.com preview stack
+        run: |
+          set -euo pipefail
+          cleanup() {
+            result=$?
+            if [ "$result" -ne 0 ]; then
+              docker compose -f compose.yaml logs --no-color || true
+            fi
+            docker compose -f compose.yaml down --volumes --remove-orphans || true
+            exit "$result"
+          }
+          trap cleanup EXIT
+          docker compose -f compose.yaml config --quiet
+          docker compose -f compose.yaml up --detach --build
+          for attempt in $(seq 1 90); do
+            if curl --fail --silent http://127.0.0.1:8080/health >/dev/null; then break; fi
+            if [ "$attempt" = 90 ]; then exit 1; fi
+            sleep 2
+          done
+          test "$(curl --silent --output /dev/null --write-out '%{http_code}' \
+            --header 'Host: bao.lequ.com' http://127.0.0.1:8080/)" = 302
+          test "$(curl --silent --output /dev/null --write-out '%{http_code}' \
+            --header 'Host: unexpected.example' http://127.0.0.1:8080/bao/page-014)" = 421
+          curl --fail --silent --header 'Host: bao.lequ.com' \
+            http://127.0.0.1:8080/__development/login | grep --quiet 'lequbao.employee-session'
+          docker compose -f compose.yaml exec --no-TTY postgres \
+            psql --username=postgres --dbname=lequ_v6 --tuples-only --no-align \
+            --command="SELECT count(*) FROM user_sessions WHERE tenant_id='10000000-0000-4000-8000-000000000001'" \
+            | grep --quiet '^1$'

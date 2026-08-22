@@ -38,7 +38,20 @@ async function proxyRequest(request, response, apiBaseUrl, fetchImpl) {
   const target = new URL(`${requested.pathname}${requested.search}`, apiBaseUrl);
   const headers = new Headers();
   for (const [name, value] of Object.entries(request.headers)) {
-    if (!value || ['connection', 'content-length', 'host'].includes(name)) continue;
+    if (
+      !value ||
+      [
+        'connection',
+        'content-length',
+        'forwarded',
+        'host',
+        'x-forwarded-for',
+        'x-forwarded-host',
+        'x-forwarded-proto',
+        'x-real-ip',
+      ].includes(name)
+    )
+      continue;
     headers.set(name, Array.isArray(value) ? value.join(', ') : value);
   }
   const method = request.method ?? 'GET';
@@ -94,13 +107,32 @@ export function createWorkbenchDevelopmentServer({
   root = defaultRoot,
   apiBaseUrl,
   developmentMock = false,
+  publicPreview = false,
+  publicHostname,
   fetchImpl = fetch,
 } = {}) {
   return createServer(async (request, response) => {
     try {
       const url = new URL(request.url ?? '/', 'http://local');
+      if (publicPreview) {
+        response.setHeader('x-robots-tag', 'noindex, nofollow, noarchive');
+        response.setHeader('x-content-type-options', 'nosniff');
+        response.setHeader('x-frame-options', 'DENY');
+        response.setHeader('referrer-policy', 'no-referrer');
+        response.setHeader('x-lequ-environment', 'development-mock-preview');
+      }
       if (request.method === 'GET' && url.pathname === '/health')
         return writeJson(response, 200, { status: 'ok', version: '6.1.0-development' });
+      if (publicPreview && publicHostname) {
+        const requestHostname = (request.headers.host ?? '').split(':')[0]?.toLowerCase();
+        if (requestHostname !== publicHostname.toLowerCase())
+          return writeJson(response, 421, { code: 'PREVIEW_HOST_MISMATCH' });
+      }
+      if (publicPreview && developmentMock && request.method === 'GET' && url.pathname === '/') {
+        response.statusCode = 302;
+        response.setHeader('location', '/__development/login');
+        return response.end();
+      }
       if (url.pathname === '/__development/login') {
         if (!developmentMock || !apiBaseUrl) return writeJson(response, 404, { code: 'NOT_FOUND' });
         if (request.method !== 'GET')
@@ -134,6 +166,8 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
   const server = createWorkbenchDevelopmentServer({
     apiBaseUrl: process.env.WORKBENCH_API_PROXY_URL,
     developmentMock: process.env.LEQU_DEVELOPMENT_MOCKS === '1',
+    publicPreview: process.env.LEQU_PUBLIC_PREVIEW === '1',
+    publicHostname: process.env.LEQU_PREVIEW_HOSTNAME,
   });
   const port = Number(process.env.PORT ?? 4173);
   server.listen(port, process.env.HOST ?? '127.0.0.1', () => {

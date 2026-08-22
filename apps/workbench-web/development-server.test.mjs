@@ -1,4 +1,4 @@
-import { createServer } from 'node:http';
+import { createServer, request } from 'node:http';
 import { once } from 'node:events';
 import { afterEach, describe, expect, it } from 'vitest';
 import { createWorkbenchDevelopmentServer } from './server.mjs';
@@ -19,6 +19,25 @@ async function listen(server) {
   return `http://127.0.0.1:${address.port}`;
 }
 
+async function requestWithHost(base, pathname, host) {
+  const target = new URL(pathname, base);
+  return await new Promise((resolve, reject) => {
+    const outgoing = request(target, { headers: { host } }, (response) => {
+      const chunks = [];
+      response.on('data', (chunk) => chunks.push(chunk));
+      response.on('end', () =>
+        resolve({
+          status: response.statusCode,
+          headers: response.headers,
+          body: Buffer.concat(chunks).toString('utf8'),
+        }),
+      );
+    });
+    outgoing.on('error', reject);
+    outgoing.end();
+  });
+}
+
 describe('Workbench development server', () => {
   it('proxies same-origin API calls without inventing a response', async () => {
     let observed;
@@ -29,6 +48,7 @@ describe('Workbench development server', () => {
         method: request.method,
         url: request.url,
         authorization: request.headers.authorization,
+        forwardedFor: request.headers['x-forwarded-for'],
         body: Buffer.concat(chunks).toString('utf8'),
       };
       response.writeHead(201, { 'content-type': 'application/json' });
@@ -38,7 +58,11 @@ describe('Workbench development server', () => {
     const development = await listen(createWorkbenchDevelopmentServer({ apiBaseUrl: upstreamUrl }));
     const response = await fetch(`${development}/api/v1/example?mode=test`, {
       method: 'POST',
-      headers: { authorization: 'Bearer development', 'content-type': 'application/json' },
+      headers: {
+        authorization: 'Bearer development',
+        'content-type': 'application/json',
+        'x-forwarded-for': '203.0.113.250',
+      },
       body: '{"value":1}',
     });
     expect(response.status).toBe(201);
@@ -47,6 +71,7 @@ describe('Workbench development server', () => {
       method: 'POST',
       url: '/api/v1/example?mode=test',
       authorization: 'Bearer development',
+      forwardedFor: undefined,
       body: '{"value":1}',
     });
   });
@@ -77,5 +102,26 @@ describe('Workbench development server', () => {
       createWorkbenchDevelopmentServer({ apiBaseUrl: 'http://127.0.0.1:3000' }),
     );
     expect((await fetch(`${development}/__development/login`)).status).toBe(404);
+  });
+
+  it('binds the public preview to the configured host and enters through mock login', async () => {
+    const development = await listen(
+      createWorkbenchDevelopmentServer({
+        apiBaseUrl: 'http://127.0.0.1:3000',
+        developmentMock: true,
+        publicPreview: true,
+        publicHostname: 'bao.lequ.com',
+      }),
+    );
+    const entry = await requestWithHost(development, '/', 'bao.lequ.com');
+    expect(entry.status).toBe(302);
+    expect(entry.headers.location).toBe('/__development/login');
+    expect(entry.headers['x-robots-tag']).toContain('noindex');
+    expect(entry.headers['x-lequ-environment']).toBe('development-mock-preview');
+
+    const mismatch = await requestWithHost(development, '/bao/page-014', 'other.example');
+    expect(mismatch.status).toBe(421);
+    expect(JSON.parse(mismatch.body)).toEqual({ code: 'PREVIEW_HOST_MISMATCH' });
+    expect((await fetch(`${development}/health`)).status).toBe(200);
   });
 });

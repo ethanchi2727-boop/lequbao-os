@@ -4,6 +4,9 @@ import { inspectGitHubActionPins } from './github-actions-policy.mjs';
 
 const [
   dockerfile,
+  previewCompose,
+  previewStart,
+  previewDatabaseInit,
   dockerignore,
   workflow,
   controlledPreflight,
@@ -18,6 +21,9 @@ const [
   envExample,
 ] = await Promise.all([
   readFile('deploy/Dockerfile', 'utf8'),
+  readFile('compose.yaml', 'utf8'),
+  readFile('deploy/start-bao-preview.sh', 'utf8'),
+  readFile('deploy/init-bao-preview-postgres.sh', 'utf8'),
   readFile('.dockerignore', 'utf8'),
   readFile('.github/workflows/ci.yml', 'utf8'),
   readFile('.github/workflows/controlled-preflight.yml', 'utf8'),
@@ -49,6 +55,7 @@ failures.push(
       '.devcontainer/Dockerfile': await readFile('.devcontainer/Dockerfile', 'utf8'),
     },
     manifests: {
+      'compose.yaml': previewCompose,
       '.devcontainer/compose.yaml': await readFile('.devcontainer/compose.yaml', 'utf8'),
       '.github/workflows/ci.yml': workflow,
     },
@@ -63,9 +70,36 @@ failures.push(
   }),
 );
 for (const target of ['api', 'worker', 'web']) {
-  if (!dockerfile.includes(` AS ${target}\n`)) failures.push(`Docker target missing: ${target}`);
+  if (!new RegExp(` AS ${target}\\r?\\n`, 'u').test(dockerfile))
+    failures.push(`Docker target missing: ${target}`);
   if (!workflow.includes(`--target ${target}`)) failures.push(`CI Docker build missing: ${target}`);
 }
+for (const marker of [
+  'target: preview',
+  'LEQU_PREVIEW_HOSTNAME: bao.lequ.com',
+  'DATABASE_URL: postgres://postgres:',
+  './database:/opt/lequ-database:ro',
+])
+  if (!previewCompose.includes(marker))
+    failures.push(`Public preview compose marker missing: ${marker}`);
+if (/^\s+ports:\s*$/gimu.test(previewCompose.split(/\n\s*app:/u)[0] ?? ''))
+  failures.push('Public preview PostgreSQL must not publish a host port');
+for (const marker of [
+  'LEQU_PUBLIC_PREVIEW',
+  'LEQU_PREVIEW_HOSTNAME',
+  'WORKBENCH_API_PROXY_URL=http://127.0.0.1:3000',
+  'tooling/development-mock-gateway.mjs',
+  'apps/worker/src/main.ts',
+])
+  if (!previewStart.includes(marker))
+    failures.push(`Public preview start marker missing: ${marker}`);
+for (const marker of [
+  '--file=/opt/lequ-database/schema.sql',
+  '--set=development_seed=enabled',
+  '--file=/opt/lequ-database/development-seed-verify.sql',
+])
+  if (!previewDatabaseInit.includes(marker))
+    failures.push(`Public preview database marker missing: ${marker}`);
 for (const marker of [
   'node:22.23.1-bookworm-slim',
   'pnpm@11.19.0',
@@ -97,6 +131,14 @@ for (const marker of ['UNSAFE_API_ORIGIN', 'candidate.origin !== trusted'])
   if (!webApiClient.includes(marker))
     failures.push(`Web API-client same-origin enforcement missing: ${marker}`);
 if (!workflow.includes('Smoke Web candidate image')) failures.push('Web image smoke step missing');
+for (const marker of [
+  'bao-preview-stack:',
+  'docker compose -f compose.yaml up --detach --build',
+  "--header 'Host: bao.lequ.com'",
+  'http://127.0.0.1:8080/__development/login',
+])
+  if (!workflow.includes(marker))
+    failures.push(`Public preview CI smoke marker missing: ${marker}`);
 for (const marker of [
   'Verify API production configuration fails closed',
   'Verify Worker production configuration fails closed',
