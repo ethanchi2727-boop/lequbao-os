@@ -90,6 +90,8 @@ for (const marker of [
   'WORKBENCH_API_PROXY_URL=http://127.0.0.1:3000',
   'tooling/development-mock-gateway.mjs',
   'apps/worker/src/main.ts',
+  'touch "$worker_ready_marker"',
+  'preview health will fail after the readiness marker expires',
 ])
   if (!previewStart.includes(marker))
     failures.push(`Public preview start marker missing: ${marker}`);
@@ -136,6 +138,7 @@ for (const marker of [
   'docker compose -f compose.yaml up --detach --build',
   "--header 'Host: bao.lequ.com'",
   'http://127.0.0.1:8080/__development/login',
+  'test -f /tmp/lequ-worker-ready',
 ])
   if (!workflow.includes(marker))
     failures.push(`Public preview CI smoke marker missing: ${marker}`);

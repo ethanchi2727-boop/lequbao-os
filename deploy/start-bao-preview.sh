@@ -3,6 +3,7 @@ set -euo pipefail
 
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 profile="$root/.env.development-mock.example"
+worker_ready_marker=/tmp/lequ-worker-ready
 cd "$root"
 
 if [[ "${NODE_ENV:-}" != "development" || "${LEQU_DEVELOPMENT_MOCKS:-}" != "1" ]]; then
@@ -14,6 +15,7 @@ if [[ "${LEQU_PUBLIC_PREVIEW:-}" != "1" || "${LEQU_PREVIEW_HOSTNAME:-}" != "bao.
   exit 1
 fi
 : "${DATABASE_URL:?DATABASE_URL is required}"
+rm -f "$worker_ready_marker"
 
 pids=()
 cleanup() {
@@ -52,8 +54,12 @@ wait_for_url api http://127.0.0.1:3000/ready
 
 worker_loop() {
   while true; do
-    env DATABASE_URL="$DATABASE_URL" \
-      node --env-file="$profile" --import tsx apps/worker/src/main.ts || true
+    if env DATABASE_URL="$DATABASE_URL" \
+      node --env-file="$profile" --import tsx apps/worker/src/main.ts; then
+      touch "$worker_ready_marker"
+    else
+      echo 'Worker iteration failed; preview health will fail after the readiness marker expires' >&2
+    fi
     sleep 5
   done
 }
