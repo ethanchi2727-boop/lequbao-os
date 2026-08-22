@@ -1,0 +1,23 @@
+<view class="page safe-bottom">
+  <view class="topbar"><view><text class="brand">乐趣生活</text><text class="city">杭州⌄</text></view><button class="ai" bindtap="askAssistant">小满助手</button></view>
+  <view wx:if="{{state === '加载中'}}" class="state-card"><view class="skeleton wide"></view><view class="skeleton"></view><text>正在把今天的生活好物准备好…</text></view>
+  <view wx:elif="{{state === '空数据'}}" class="state-card"><text class="state-icon">篮</text><text class="state-title">这里还没有内容</text><text>换个分类或稍后再来看看</text></view>
+  <view wx:elif="{{state === '局部错误' || state === '可恢复失败'}}" class="state-card"><text class="state-title">有一部分没有加载出来</text><text>已显示可用内容，你可以安全重试</text><button class="secondary" bindtap="retry">重新加载</button></view>
+  <view wx:elif="{{state === '无权限'}}" class="state-card"><text class="state-title">需要完成手机号绑定</text><text>仅在查询你的订单时申请，不影响浏览</text></view>
+  <view wx:elif="{{state === '停用'}}" class="state-card"><text class="state-title">当前服务暂时停用</text><text>订单查询、售后和客服仍可使用</text><button class="secondary" data-route="/life/page-262" bindtap="openRoute">联系客服</button></view>
+  <view wx:elif="{{state === '成功'}}" class="state-card success"><text class="state-title">操作成功</text><text>结果已保存，以服务端订单状态为准</text></view>
+  <block wx:else>
+    <view class="hero" data-route="{{content.route}}" bindtap="openRoute">
+      <image src="/assets/life-banner.webp" mode="aspectFill"></image><view class="shade"></view>
+      <view class="hero-copy"><text class="eyebrow">{{content.eyebrow}}</text><text class="hero-title">{{content.title}}</text><text class="hero-subtitle">{{content.subtitle}}</text></view>
+    </view>
+    <scroll-view class="category-scroll" scroll-x enhanced show-scrollbar="false">
+      <view class="category-row"><view class="category" wx:for="{{categories}}" wx:key="title" data-index="{{item.index}}" bindtap="chooseCategory"><view class="sprite-window"><image class="sprite sprite-{{item.index}}" src="/assets/life-category-sprite.webp" mode="widthFix"></image></view><text>{{item.title}}</text></view></view>
+    </scroll-view>
+    <view class="section-head"><view><text class="section-title">今天值得买</text><text class="section-note">价格、规格和配送一次看清</text></view><text class="more" data-route="/life/page-201" bindtap="openRoute">全部 ›</text></view>
+    <view class="product-grid"><view class="product" wx:for="{{products}}" wx:key="id" data-route="/life/page-209" data-product-id="{{item.id}}" bindtap="openRoute"><image src="/assets/life-product.webp" mode="aspectFill"></image><view class="product-copy"><text class="tag">{{item.tag}}</text><text class="product-title">{{item.title}}</text><text class="detail">{{item.detail}}</text><view class="price-row"><text class="price"><text>¥</text>{{item.price}}</text><text class="cart-add">＋</text></view></view></view></view>
+    <view class="section-head"><view><text class="section-title">附近热团</text><text class="section-note">到店规则下单前说明</text></view></view>
+    <view wx:if="{{groupBuy}}" class="group-card" data-route="/life/page-221" data-product-id="{{groupBuy.id}}" bindtap="openRoute"><image src="/assets/local-dining.webp" mode="aspectFill"></image><view class="group-copy"><text class="product-title">{{groupBuy.title}}</text><text class="detail">{{groupBuy.detail}}</text><view class="price-row"><text class="price"><text>¥</text>{{groupBuy.price}}</text></view></view></view>
+    <view class="trust"><text>放心消费</text><view><text>来源可查</text><text>规则透明</text><text>售后有门</text></view></view>
+  </block>
+</view>

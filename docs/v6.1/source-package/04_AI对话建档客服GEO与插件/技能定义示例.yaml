@@ -1,0 +1,46 @@
+schema_version: 1
+skill_id: merchant.first_groupbuy_launch
+name: 首个团购上线
+version: 1.0.0
+owner: 乐趣宝经营产品组
+roles:
+  - merchant_owner
+  - store_manager
+entry_conditions:
+  - merchant_profile_completed
+  - store_profile_completed
+  - miniapp_active
+required_plugins:
+  - merchant_profile
+  - product_groupbuy
+  - miniapp_content
+  - launch_material
+limits:
+  max_agent_steps: 10
+  max_tool_calls: 16
+  timeout_minutes: 60
+steps:
+  - id: collect_offer
+    action: groupbuy.collect_requirements
+    mode: assisted
+  - id: generate_draft
+    action: groupbuy.generate_draft
+    mode: automatic
+  - id: validate_rules
+    action: groupbuy.validate
+    mode: automatic
+  - id: merchant_confirm
+    action: approval.request
+    mode: human_required
+  - id: publish
+    action: groupbuy.publish
+    mode: human_confirmed
+  - id: create_material
+    action: launch_material.generate
+    mode: automatic
+success_conditions:
+  - groupbuy_published
+  - share_material_ready
+rollback:
+  - groupbuy.unpublish
+evaluation_set: evals/first_groupbuy_launch.jsonl

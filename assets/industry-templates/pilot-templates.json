@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "templates": [
+    {
+      "code": "dining-v1",
+      "industry": "餐饮",
+      "requiredFacts": ["门店名称", "地址", "电话", "营业时间", "菜单", "预约规则", "退款规则"],
+      "enabledCapabilities": ["共享模板小程序", "AI店员", "团购核销", "GEO资料检查"]
+    },
+    {
+      "code": "local-retail-v1",
+      "industry": "本地零售",
+      "requiredFacts": ["门店名称", "地址", "电话", "营业时间", "商品", "配送规则", "售后规则"],
+      "enabledCapabilities": ["共享模板小程序", "商城", "库存", "GEO资料检查"]
+    },
+    {
+      "code": "leisure-service-v1",
+      "industry": "休闲服务",
+      "requiredFacts": ["门店名称", "地址", "电话", "营业时间", "服务项目", "预约规则", "核销规则"],
+      "enabledCapabilities": ["共享模板小程序", "AI店员", "预约核销", "GEO资料检查"]
+    }
+  ]
+}

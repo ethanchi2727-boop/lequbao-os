@@ -1,2439 +1,4759 @@
-import { randomUUID } from 'node:crypto'
-import type { DatabaseSync } from 'node:sqlite'
-import cors from '@fastify/cors'
-import Fastify, { type FastifyReply, type FastifyRequest } from 'fastify'
-import { z } from 'zod'
-import { AccessDeniedError, requireAccess, type Principal } from '@lequ/auth'
-import { authenticate, toAuthSession } from './auth-service.js'
-import { createDatabase } from './database.js'
-import { DomainError } from './errors.js'
+import { createHash, timingSafeEqual } from 'node:crypto';
+import { Readable } from 'node:stream';
+import cors from '@fastify/cors';
+import Fastify, { type FastifyInstance } from 'fastify';
+import { ZodError } from 'zod';
 import {
-  advanceExperience,
-  getSnapshot,
-  resetExperience,
-} from './experience-service.js'
+  CustomerServiceAiSecurityError,
+  type CustomerServiceAiOrchestrator,
+} from './customer-service-ai.js';
 import {
-  addLeadCollaborator,
-  addLeadFollowUp,
-  captureAssets,
-  confirmAsset,
-  createContractDraft,
-  createLead,
-  decideContractDiscount,
-  getOnboardingOverview,
-  markLeadLost,
-  runDiagnosis,
-  signContract,
-  submitLeadAppeal,
-  transferLead,
-  uploadOnboardingAsset,
-} from './onboarding-service.js'
+  InactiveSessionError,
+  PermissionDeniedError,
+  TenantWriteSuspendedError,
+  type AccessControlService,
+  type AuthorizationContext,
+  type AuthorizationOptions,
+} from './access-control.js';
 import {
-  advanceMiniAppProject,
-  createMiniAppProject,
-  generateMiniAppDraft,
-  getMiniAppFactoryOverview,
-  reviseMiniAppProject,
-  rollbackMiniAppProject,
-} from './miniapp-factory-service.js'
+  AuthSubjectInactiveError,
+  RefreshSessionInvalidError,
+  type AuthSessionService,
+} from './auth-session-service.js';
 import {
-  approveGeoPlan,
-  createGeoWorkspace,
-  getGeoOverview,
-  proposeGeoFixes,
-  publishGeoPlan,
-  scanGeoWorkspace,
-  startGeoMonitoring,
-} from './geo-service.js'
+  IdentityExchangeRejectedError,
+  IdentityExchangeRateLimitedError,
+  IdentityExchangeUnavailableError,
+  parseIdentityExchangeInput,
+  type IdentityExchangeGateway,
+} from './identity-exchange-http-adapter.js';
 import {
-  advanceSkillSuite,
-  createSkillSuite,
-  generateSkillSuite,
-  getSkillNetworkOverview,
-  invokeSkill,
-  testSkillSuite,
-} from './skill-network-service.js'
+  ConsumerSessionAuthenticationError,
+  type ConsumerSessionIdentity,
+  type ConsumerSessionIdentityVerifier,
+} from './consumer-session-identity.js';
 import {
-  approveMerchantRefund,
-  confirmMerchantOrder,
-  getMerchantOperationsOverview,
-  verifyMerchantOrder,
-} from './merchant-operations-service.js'
+  LifeConsumerSessionAuthenticationError,
+  type LifeConsumerSessionIdentity,
+  type LifeConsumerSessionIdentityVerifier,
+} from './life-consumer-session-identity.js';
 import {
-  adjustSkuStock,
-  applyCatalogImport,
-  changeSkuPrice,
-  createCatalogSpu,
-  getMerchantCatalogOverview,
-  previewCatalogImport,
-  publishCatalogSpu,
-  updateServiceSlot,
-} from './merchant-catalog-service.js'
+  ConsumerCatalogAuthenticationError,
+  ConsumerCatalogNotFoundError,
+  type ConsumerCatalogService,
+} from './consumer-catalog-service.js';
 import {
-  createMemberRecallTask,
-  getMerchantMemberOverview,
-  grantMemberBenefit,
-  updateMemberTags,
-} from './merchant-member-service.js'
+  ConsumerStoreSwitchAuthenticationError,
+  ConsumerStoreSwitchConflictError,
+  ConsumerStoreSwitchNotFoundError,
+  type ConsumerStoreSwitchService,
+} from './consumer-store-switch-service.js';
 import {
-  completeSalesTask,
-  getSalesWorkbenchOverview,
-  snoozeSalesTask,
-} from './sales-workbench-service.js'
-import { getSalesCrmOverview } from './sales-crm-service.js'
+  CustomerServiceAuthenticationError,
+  CustomerServiceAuthorizationError,
+  CustomerServiceConcurrencyError,
+  CustomerServiceNotificationError,
+  CustomerServiceStateError,
+  type CustomerService,
+} from './customer-service.js';
 import {
-  createLeadTransferRequest,
-  decideLeadAppeal,
-  decideLeadTransferRequest,
-  getSalesOwnershipOverview,
-} from './sales-ownership-service.js'
+  CommerceInventoryUnavailableError,
+  CommerceOrderAuthenticationError,
+  CommerceOrderAuthorizationError,
+  CommerceOrderStateError,
+  type CommerceOrderService,
+} from './commerce-order-service.js';
 import {
-  getSalesPerformanceOverview,
-  reverseSalesCommission,
-  settleSalesCommission,
-  updateSalesTarget,
-} from './sales-performance-service.js'
+  CommercePaymentAuthenticationError,
+  CommercePaymentAuthorizationError,
+  CommercePaymentReplayConflictError,
+  CommercePaymentSignatureError,
+  CommercePaymentStateError,
+  type CommercePaymentService,
+} from './commerce-payment-service.js';
 import {
-  checkInSalesCoachingPlan,
-  createSalesCoachingPlan,
-  decideSalesLevelChange,
-  getSalesTeamOverview,
-  requestSalesLevelChange,
-} from './sales-team-service.js'
+  CommerceReconciliationAuthorizationError,
+  CommerceReconciliationStateError,
+  type CommerceReconciliationService,
+} from './commerce-reconciliation-service.js';
 import {
-  confirmSalesAiArtifact,
-  generateSalesAiArtifact,
-  getSalesAiCopilotOverview,
-  replySalesAiRoleplay,
-  startSalesAiRoleplay,
-} from './sales-ai-copilot-service.js'
+  CommerceRefundAuthenticationError,
+  CommerceRefundAuthorizationError,
+  CommerceRefundStateError,
+  type CommerceRefundService,
+} from './commerce-refund-service.js';
 import {
-  assignProviderLead,
-  getProviderLocalGrowthOverview,
-} from './provider-local-growth-service.js'
-import { getProviderDeliveryBoardOverview } from './provider-delivery-board-service.js'
+  CommerceVerificationAuthenticationError,
+  CommerceVerificationAuthorizationError,
+  CommerceVerificationStateError,
+  type CommerceVerificationService,
+} from './commerce-verification-service.js';
 import {
-  assignProviderWorkOrder,
-  confirmProviderWorkOrder,
-  createProviderWorkOrder,
-  getProviderWorkOrderAttachment,
-  getProviderWorkOrderOverview,
-  startProviderWorkOrder,
-  submitProviderWorkOrder,
-  uploadProviderWorkOrderAttachment,
-} from './provider-work-order-service.js'
+  DeliveryAcceptanceError,
+  DeliveryAuthorizationError,
+  DeliveryExecutionUnavailableError,
+  DeliveryPrerequisiteError,
+  DeliveryStateError,
+  type DeliveryWorkflowService,
+} from './delivery-workflow-service.js';
 import {
-  acknowledgeProviderSlaIncident,
-  getProviderSlaOverview,
-  PROVIDER_SLA_SCAN_INTERVAL_SECONDS,
-  runProviderSlaScan,
-} from './provider-sla-service.js'
+  DistributionConfigurationError,
+  DistributionSourceError,
+  ProvisionalCostError,
+  type DistributionLockService,
+} from './distribution-lock-service.js';
 import {
-  closeProviderRenewalCase,
-  generateProviderRenewalProposal,
-  getProviderRenewalOverview,
-  PROVIDER_RENEWAL_SCAN_INTERVAL_SECONDS,
-  runProviderRenewalScan,
-} from './provider-renewal-service.js'
-import { getProviderCityMetricsOverview } from './provider-city-metrics-service.js'
+  DistributionApprovalError,
+  DistributionAuthorizationError,
+  DistributionPaymentEvidenceError,
+  DistributionStateError,
+  type DistributionSettlementService,
+} from './distribution-settlement-service.js';
 import {
-  decideProviderSettlementAdjustment,
-  decideProviderSettlementInvoice,
-  generateProviderSettlement,
-  getProviderSettlementOverview,
-  requestProviderSettlementAdjustment,
-  settleProviderStatement,
-  submitProviderSettlementInvoice,
-} from './provider-city-settlement-service.js'
+  MerchantIntakeAuthorizationError,
+  MerchantIntakeConfirmationError,
+  MerchantIntakeConflictError,
+  MerchantIntakeStateError,
+  type MerchantIntakeService,
+} from './merchant-intake-service.js';
 import {
-  executeConsumerSearch,
-  getConsumerHomeOverview,
-  getConsumerMessages,
-  markConsumerMessageRead,
-  updateConsumerContext,
-} from './consumer-home-service.js'
+  IntakeObjectStoreUnavailableError,
+  IntakeUploadEvidenceError,
+  type MerchantIntakeUploadService,
+} from './merchant-intake-upload-service.js';
+import type { MerchantIntakeMessageService } from './merchant-intake-message-service.js';
 import {
-  cancelConsumerReservation,
-  confirmConsumerReservation,
-  getConsumerAssistantOverview,
-  sendConsumerAssistantMessage,
-  updateConsumerReservationDraft,
-} from './consumer-assistant-service.js'
-import { getConsumerNearbyOverview } from './consumer-nearby-service.js'
+  MiniProgramCallbackAuthenticationError,
+  MiniProgramCallbackUnavailableError,
+  type MiniProgramCallbackService,
+} from './mini-program-callback.js';
 import {
-  confirmConsumerDealDraft,
-  CONSUMER_DEAL_EXPIRY_SCAN_INTERVAL_SECONDS,
-  createConsumerDealDraft,
-  getConsumerStoreDetail,
-  releaseExpiredConsumerDealCheckouts,
-} from './consumer-store-service.js'
+  MiniProgramAuthorizationError,
+  MiniProgramCallbackConflictError,
+  MiniProgramConfirmationError,
+  MiniProgramOwnershipConflictError,
+  MiniProgramProviderError,
+  MiniProgramStateError,
+  type MiniProgramLifecycleService,
+} from './mini-program-lifecycle-service.js';
 import {
-  cancelConsumerDeal,
-  requestConsumerDealRefund,
-} from './consumer-deal-aftercare-service.js'
-import { applyConsumerDealPaymentCallback } from './consumer-deal-payment-service.js'
+  IdempotencyConflictError,
+  InactiveBeneficiaryError,
+  RevenueRightConflictError,
+  type RevenueRightService,
+} from './revenue-right-service.js';
 import {
-  applyConsumerPaymentCallback,
-  prepareConsumerReservationPayment,
-  requestConsumerReservationRefund,
-} from './consumer-payment-service.js'
+  RevenueRightGovernanceAuthorizationError,
+  RevenueRightGovernanceConflictError,
+  RevenueRightGovernanceStateError,
+  type RevenueRightGovernanceService,
+} from './revenue-right-governance-service.js';
 import {
-  applySpeechTranscriptionCallback,
-  confirmConsumerVoiceTranscript,
-  uploadConsumerVoiceInput,
-} from './consumer-voice-service.js'
+  SessionAuthenticationError,
+  type SessionIdentity,
+  type SessionIdentityVerifier,
+} from './session-identity.js';
 import {
-  applyImageRecognitionCallback,
-  confirmConsumerImageDescription,
-  uploadConsumerImageInput,
-} from './consumer-image-service.js'
+  WeComCallbackAuthenticationError,
+  WeComCallbackConflictError,
+  type WeComIntakeCallbackService,
+} from './wecom-intake-callback.js';
+import type { GeoPluginReportService } from './geo-plugin-report-service.js';
+import {
+  GeoPolicyError,
+  PluginPolicyError,
+  ReportPolicyError,
+} from './geo-plugin-report-policy.js';
+import { GeoPluginReportStateError } from './geo-plugin-report-service.js';
+import { OperationalMetrics, securityHeaders } from './operational-observability.js';
+import {
+  MerchantOperationsAuthorizationError,
+  MerchantOperationsConflictError,
+  MerchantOperationsStateError,
+  type MerchantOperationsService,
+} from './merchant-operations-service.js';
+import {
+  OrganizationGovernanceAuthorizationError,
+  OrganizationGovernanceConflictError,
+  OrganizationGovernanceStateError,
+  type OrganizationGovernanceService,
+} from './organization-governance-service.js';
+import {
+  RevenueOperationsAuthorizationError,
+  RevenueOperationsConflictError,
+  type RevenueOperationsService,
+} from './revenue-operations-service.js';
+import {
+  SalesLifecycleAuthorizationError,
+  SalesLifecycleConflictError,
+  SalesLifecycleStateError,
+  type SalesLifecycleService,
+} from './sales-lifecycle-service.js';
+import {
+  SubscriptionLifecycleAuthorizationError,
+  SubscriptionLifecycleConflictError,
+  SubscriptionLifecycleStateError,
+  type SubscriptionLifecycleService,
+} from './subscription-lifecycle-service.js';
+import {
+  PlatformCartAuthenticationError,
+  PlatformCartItemNotFoundError,
+  PlatformCartItemUnavailableError,
+  type PlatformCartService,
+} from './platform-cart-service.js';
+import {
+  PlatformOrderQueryAuthenticationError,
+  PlatformOrderQueryNotFoundError,
+  type PlatformOrderQueryService,
+} from './platform-order-query-service.js';
+import {
+  PlatformCheckoutAuthenticationError,
+  PlatformCheckoutConflictError,
+  PlatformCheckoutNotFoundError,
+  PlatformCheckoutUnavailableError,
+  type PlatformCheckoutService,
+} from './platform-checkout-service.js';
+import {
+  PlatformPaymentAuthenticationError,
+  PlatformPaymentOrderNotFoundError,
+  type PlatformPaymentService,
+} from './platform-payment-service.js';
+import {
+  PlatformAddressAuthenticationError,
+  PlatformAddressNotFoundError,
+  type PlatformAddressService,
+} from './platform-address-service.js';
+import {
+  PlatformInvoiceProfileAuthenticationError,
+  PlatformInvoiceProfileNotFoundError,
+  type PlatformInvoiceProfileService,
+} from './platform-invoice-profile-service.js';
+import {
+  PlatformAftercareAuthenticationError,
+  PlatformAftercareOrderNotFoundError,
+  type PlatformAftercareService,
+} from './platform-aftercare-service.js';
+import {
+  PlatformDiscoveryAuthenticationError,
+  type PlatformDiscoveryService,
+} from './platform-discovery-service.js';
+import {
+  MerchantConsumerJourneyAuthenticationError,
+  MerchantConsumerJourneyNotFoundError,
+  type MerchantConsumerJourneyService,
+} from './merchant-consumer-journey-service.js';
+import {
+  EmployeeAgentAuthorizationError,
+  EmployeeAgentConflictError,
+  type EmployeeAgentService,
+} from './employee-agent-service.js';
+import {
+  OperationalHomeAuthorizationError,
+  type OperationalHomeService,
+} from './operational-home-service.js';
+import {
+  GeoOperationsAuthorizationError,
+  GeoOperationsStateError,
+  type GeoOperationsService,
+} from './geo-operations-service.js';
+import {
+  CustomerServiceOperationsAuthorizationError,
+  CustomerServiceOperationsConflictError,
+  CustomerServiceOperationsStateError,
+  type CustomerServiceOperationsService,
+} from './customer-service-operations-service.js';
+import {
+  PlatformControlAuthorizationError,
+  PlatformControlConflictError,
+  PlatformControlStateError,
+  type PlatformControlService,
+} from './platform-control-service.js';
 
-const advanceBodySchema = z.object({
-  expectedStep: z.number().int().min(1).max(12),
-})
-
-const leadIdParamsSchema = z.object({ leadId: z.string().min(1).max(100) })
-const contractIdParamsSchema = z.object({ contractId: z.string().min(1).max(100) })
-const assetIdParamsSchema = z.object({ assetId: z.string().min(1).max(100) })
-const overviewQuerySchema = z.object({ focusLeadId: z.string().min(1).max(100).optional() })
-const createLeadBodySchema = z.object({
-  name: z.string().trim().min(2).max(120),
-  category: z.string().trim().min(2).max(80),
-  source: z.string().trim().min(2).max(80),
-  contactName: z.string().trim().min(2).max(60),
-  contactPhoneMasked: z.string().trim().min(7).max(30),
-  address: z.string().trim().min(5).max(240),
-  cityId: z.string().trim().min(2).max(80),
-})
-const versionBodySchema = z.object({ expectedVersion: z.number().int().positive() })
-const contractBodySchema = versionBodySchema.extend({
-  packageCode: z.enum(['BASIC', 'PRO', 'AGENT', 'CHAIN']),
-  discountBps: z.number().int().min(0).max(3000),
-})
-const signContractBodySchema = versionBodySchema.extend({ leadId: z.string().min(1).max(100) })
-const confirmAssetBodySchema = versionBodySchema.extend({
-  leadId: z.string().min(1).max(100),
-  corrected: z.record(z.string(), z.unknown()),
-})
-const transferLeadBodySchema = versionBodySchema.extend({
-  targetOwnerId: z.string().min(1).max(100),
-  reason: z.string().trim().min(5).max(300),
-})
-const appealBodySchema = z.object({
-  reason: z.string().trim().min(5).max(500),
-  evidence: z.array(z.string().trim().min(1).max(300)).min(1).max(10),
-})
-const followUpBodySchema = versionBodySchema.extend({
-  channel: z.enum(['PHONE', 'WECHAT', 'VISIT', 'VIDEO']),
-  summary: z.string().trim().min(3).max(500),
-  nextAction: z.string().trim().min(2).max(160),
-  nextActionAt: z.string().refine((value) => Number.isFinite(Date.parse(value)), '无效的跟进时间'),
-})
-const lostBodySchema = versionBodySchema.extend({
-  reason: z.enum(['NO_BUDGET', 'NO_DECISION', 'COMPETITOR', 'TIMING', 'INVALID', 'OTHER']),
-  note: z.string().trim().min(3).max(500),
-})
-const collaboratorBodySchema = versionBodySchema.extend({
-  userId: z.string().min(1).max(100),
-  role: z.enum(['CO_OWNER', 'DELIVERY_PARTNER', 'OBSERVER']),
-})
-const discountDecisionBodySchema = versionBodySchema.extend({
-  leadId: z.string().min(1).max(100),
-  decision: z.enum(['APPROVE', 'REJECT']),
-  note: z.string().trim().min(3).max(500),
-})
-const uploadHeadersSchema = z.object({
-  'x-asset-type': z.enum(['BUSINESS_LICENSE', 'STOREFRONT', 'MENU']),
-  'x-file-name': z.string().min(1).max(600),
-  'x-mime-type': z.string().min(3).max(120),
-  'x-expected-version': z.coerce.number().int().positive(),
-})
-const projectIdParamsSchema = z.object({ projectId: z.string().min(1).max(100) })
-const factoryOverviewQuerySchema = z.object({ focusProjectId: z.string().min(1).max(100).optional() })
-const createProjectBodySchema = z.object({
-  leadId: z.string().min(1).max(100),
-  expectedLeadVersion: z.number().int().positive(),
-  deliveryType: z.enum(['MERCHANT_PAGE', 'STANDARD_MINIAPP', 'CHAIN_ENTERPRISE']),
-  templateCode: z.enum(['DINING_AURORA', 'CAFE_EDITORIAL', 'RETAIL_GALLERY']),
-})
-const generateProjectBodySchema = versionBodySchema.extend({
-  templateCode: z.enum(['DINING_AURORA', 'CAFE_EDITORIAL', 'RETAIL_GALLERY']),
-})
-const merchantApproveBodySchema = versionBodySchema.extend({
-  merchantApprover: z.string().trim().min(2).max(80),
-})
-const rollbackProjectBodySchema = versionBodySchema.extend({
-  targetVersion: z.number().int().positive(),
-  reason: z.string().trim().min(5).max(500),
-})
-const geoWorkspaceIdParamsSchema = z.object({ workspaceId: z.string().min(1).max(100) })
-const geoOverviewQuerySchema = z.object({ focusWorkspaceId: z.string().min(1).max(100).optional() })
-const createGeoWorkspaceBodySchema = z.object({
-  projectId: z.string().min(1).max(100),
-  expectedProjectVersion: z.number().int().positive(),
-})
-const approveGeoBodySchema = versionBodySchema.extend({
-  merchantApprover: z.string().trim().min(2).max(80),
-})
-const skillSuiteIdParamsSchema = z.object({ suiteId: z.string().min(1).max(100) })
-const skillInvokeParamsSchema = skillSuiteIdParamsSchema.extend({ skillVersionId: z.string().min(1).max(100) })
-const skillOverviewQuerySchema = z.object({ focusSuiteId: z.string().min(1).max(100).optional() })
-const createSkillSuiteBodySchema = z.object({
-  geoWorkspaceId: z.string().min(1).max(100),
-  expectedGeoVersion: z.number().int().positive(),
-})
-const invokeSkillBodySchema = z.object({
-  intent: z.string().trim().min(3).max(300),
-  payload: z.record(z.string(), z.unknown()),
-  approvalConfirmed: z.boolean(),
-})
-const merchantOrderIdParamsSchema = z.object({ orderId: z.string().min(1).max(100) })
-const merchantOverviewQuerySchema = z.object({ focusOrderId: z.string().min(1).max(100).optional() })
-const verifyMerchantOrderBodySchema = versionBodySchema.extend({
-  verificationCode: z.string().regex(/^\d{6}$/, '核销码必须是 6 位数字'),
-  confirmed: z.boolean(),
-})
-const approveRefundBodySchema = versionBodySchema.extend({
-  refundAmountFen: z.number().int().positive(),
-  reason: z.string().trim().min(3).max(300),
-  confirmed: z.boolean(),
-})
-const catalogSpuIdParamsSchema = z.object({ spuId: z.string().min(1).max(100) })
-const catalogSkuIdParamsSchema = z.object({ skuId: z.string().min(1).max(100) })
-const catalogSlotIdParamsSchema = z.object({ slotId: z.string().min(1).max(100) })
-const catalogImportIdParamsSchema = z.object({ importId: z.string().min(1).max(100) })
-const catalogOverviewQuerySchema = z.object({ focusSpuId: z.string().min(1).max(100).optional() })
-const stockModeSchema = z.enum(['FINITE', 'UNLIMITED', 'SLOT'])
-const createCatalogSpuBodySchema = z.object({
-  type: z.enum(['PRODUCT', 'SERVICE', 'PACKAGE']),
-  name: z.string().trim().min(2).max(120),
-  category: z.string().trim().min(2).max(80),
-  description: z.string().trim().min(5).max(1000),
-  mediaCompletion: z.number().int().min(0).max(100),
-  sku: z.object({
-    code: z.string().trim().min(3).max(80).regex(/^[A-Z0-9-]+$/, 'SKU 编码只能包含大写字母、数字和连字符'),
-    name: z.string().trim().min(2).max(120),
-    priceFen: z.number().int().positive(),
-    stockMode: stockModeSchema,
-    stockQuantity: z.number().int().nonnegative(),
-    lowStockThreshold: z.number().int().nonnegative(),
-  }),
-})
-const changeSkuPriceBodySchema = versionBodySchema.extend({
-  priceFen: z.number().int().positive(),
-  compareAtFen: z.number().int().nonnegative().nullable(),
-  reason: z.string().trim().min(3).max(300),
-  confirmed: z.boolean(),
-})
-const adjustSkuStockBodySchema = versionBodySchema.extend({
-  delta: z.number().int().min(-100000).max(100000).refine((value) => value !== 0, '库存变化量不能为 0'),
-  reason: z.string().trim().min(3).max(300),
-})
-const updateServiceSlotBodySchema = versionBodySchema.extend({
-  capacity: z.number().int().positive().max(10000),
-  priceOverrideFen: z.number().int().nonnegative().nullable(),
-  confirmed: z.boolean(),
-})
-const catalogImportRowSchema = z.object({
-  type: z.enum(['PRODUCT', 'SERVICE', 'PACKAGE']),
-  name: z.string().trim().min(1).max(120),
-  category: z.string().trim().min(1).max(80),
-  description: z.string().trim().min(1).max(1000),
-  mediaCompletion: z.number().int(),
-  skuCode: z.string().trim().min(1).max(80),
-  skuName: z.string().trim().min(1).max(120),
-  priceFen: z.number().int(),
-  stockMode: stockModeSchema,
-  stockQuantity: z.number().int().nonnegative(),
-  lowStockThreshold: z.number().int().nonnegative(),
-})
-const previewCatalogImportBodySchema = z.object({
-  fileName: z.string().trim().min(3).max(180),
-  rows: z.array(catalogImportRowSchema).min(1).max(50),
-})
-const applyCatalogImportBodySchema = versionBodySchema.extend({ confirmed: z.boolean() })
-const memberIdParamsSchema = z.object({ memberId: z.string().min(1).max(100) })
-const memberOverviewQuerySchema = z.object({ focusMemberId: z.string().min(1).max(100).optional() })
-const updateMemberTagsBodySchema = versionBodySchema.extend({
-  tags: z.array(z.string().trim().min(1).max(30)).max(8),
-})
-const grantMemberBenefitBodySchema = versionBodySchema.extend({
-  kind: z.enum(['COUPON', 'LEVEL', 'EXPERIENCE']),
-  title: z.string().trim().min(2).max(120),
-  valueFen: z.number().int().nonnegative(),
-  expiresAt: z.string().refine((value) => Number.isFinite(Date.parse(value)), '无效的权益到期时间'),
-  confirmed: z.boolean(),
-})
-const createMemberRecallBodySchema = z.object({
-  name: z.string().trim().min(2).max(120),
-  memberIds: z.array(z.string().min(1).max(100)).min(1).max(100),
-  channel: z.enum(['WECHAT', 'SMS']),
-  content: z.string().trim().min(5).max(500),
-  reason: z.string().trim().min(3).max(300),
-  scheduledAt: z.string().refine((value) => Number.isFinite(Date.parse(value)), '无效的召回计划时间'),
-  confirmed: z.boolean(),
-})
-const salesTaskIdParamsSchema = z.object({ taskId: z.string().min(1).max(120) })
-const completeSalesTaskBodySchema = versionBodySchema.extend({
-  completionNote: z.string().trim().min(3).max(500),
-})
-const snoozeSalesTaskBodySchema = versionBodySchema.extend({
-  snoozeUntil: z.string().refine((value) => Number.isFinite(Date.parse(value)), '无效的稍后提醒时间'),
-  reason: z.string().trim().min(3).max(300),
-})
-const salesCrmQuerySchema = z.object({
-  keyword: z.string().trim().max(80).optional().default(''),
-  stage: z.enum([
-    'NEW',
-    'DIAGNOSED',
-    'CONTRACT_DRAFT',
-    'SIGNED',
-    'ASSET_REVIEW',
-    'READY_FOR_DELIVERY',
-    'LOST',
-  ]).optional(),
-  source: z.string().trim().min(1).max(80).optional(),
-  timing: z.enum(['ALL', 'OVERDUE', 'TODAY', 'UPCOMING']).optional().default('ALL'),
-})
-const createLeadTransferRequestBodySchema = z.object({
-  targetOwnerId: z.string().min(1).max(100),
-  reason: z.string().trim().min(5).max(500),
-  evidence: z.array(z.string().trim().min(2).max(300)).min(1).max(10),
-  expectedLeadVersion: z.number().int().positive(),
-})
-const ownershipDecisionBodySchema = z.object({
-  decision: z.enum(['APPROVE', 'REJECT']),
-  note: z.string().trim().min(5).max(500),
-  expectedVersion: z.number().int().positive(),
-})
-const appealDecisionBodySchema = z.object({
-  decision: z.enum(['APPROVE', 'REJECT']),
-  note: z.string().trim().min(5).max(500),
-  expectedLeadVersion: z.number().int().positive(),
-})
-const ownershipTransferRequestParamsSchema = z.object({
-  requestId: z.string().min(1).max(160),
-})
-const ownershipAppealParamsSchema = z.object({
-  appealId: z.string().min(1).max(160),
-})
-const salesPerformanceQuerySchema = z.object({
-  period: z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/).optional(),
-  salespersonId: z.string().min(1).max(100).optional(),
-})
-const salesTargetParamsSchema = z.object({
-  salespersonId: z.string().min(1).max(100),
-})
-const salesLedgerEntryParamsSchema = z.object({
-  entryId: z.string().min(1).max(180),
-})
-const updateSalesTargetBodySchema = z.object({
-  period: z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/),
-  signingTargetFen: z.number().int().min(0).max(100_000_000_000),
-  renewalTargetFen: z.number().int().min(0).max(100_000_000_000),
-  transactionTargetFen: z.number().int().min(0).max(100_000_000_000),
-  expectedVersion: z.number().int().min(0),
-  reason: z.string().trim().min(5).max(500),
-}).refine(
-  (value) => value.signingTargetFen + value.renewalTargetFen + value.transactionTargetFen > 0,
-  '业绩目标合计必须大于 0',
-)
-const commissionTransitionBodySchema = z.object({
-  reason: z.string().trim().min(5).max(500),
-  evidence: z.array(z.string().trim().min(2).max(300)).min(1).max(10),
-  confirmed: z.boolean(),
-})
-const salesCareerLevelSchema = z.enum([
-  'ASSOCIATE',
-  'CONSULTANT',
-  'SENIOR',
-  'EXPERT',
-  'TEAM_LEAD',
-])
-const salesCapabilitySchema = z.enum([
-  'DISCOVERY',
-  'DIAGNOSIS',
-  'PROPOSAL',
-  'NEGOTIATION',
-  'COMPLIANCE',
-])
-const salesTeamQuerySchema = z.object({
-  period: z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/).optional(),
-  focusMemberId: z.string().min(1).max(120).optional(),
-})
-const salesTeamMemberParamsSchema = z.object({
-  memberId: z.string().min(1).max(120),
-})
-const salesLevelChangeParamsSchema = z.object({
-  requestId: z.string().min(1).max(180),
-})
-const salesCoachingPlanParamsSchema = z.object({
-  planId: z.string().min(1).max(180),
-})
-const requestSalesLevelChangeBodySchema = z.object({
-  toLevel: salesCareerLevelSchema,
-  expectedVersion: z.number().int().positive(),
-  reason: z.string().trim().min(5).max(500),
-  evidence: z.array(z.string().trim().min(2).max(300)).min(1).max(10),
-  confirmed: z.boolean(),
-})
-const decideSalesLevelChangeBodySchema = z.object({
-  decision: z.enum(['APPROVE', 'REJECT']),
-  expectedMemberVersion: z.number().int().positive(),
-  reason: z.string().trim().min(5).max(500),
-  evidence: z.array(z.string().trim().min(2).max(300)).min(1).max(10),
-  confirmed: z.boolean(),
-})
-const createSalesCoachingPlanBodySchema = z.object({
-  expectedMemberVersion: z.number().int().positive(),
-  title: z.string().trim().min(3).max(120),
-  focusCapability: salesCapabilitySchema,
-  goal: z.string().trim().min(5).max(500),
-  actions: z.array(z.string().trim().min(2).max(300)).min(1).max(10),
-  successMetric: z.string().trim().min(5).max(300),
-  dueAt: z.string().refine((value) => Number.isFinite(Date.parse(value)), '无效的截止时间'),
-  nextSessionAt: z.string()
-    .refine((value) => Number.isFinite(Date.parse(value)), '无效的辅导时间')
-    .optional(),
-})
-const checkInSalesCoachingPlanBodySchema = z.object({
-  expectedVersion: z.number().int().positive(),
-  note: z.string().trim().min(3).max(500),
-  evidence: z.array(z.string().trim().min(2).max(300)).min(1).max(10),
-  nextSessionAt: z.string()
-    .refine((value) => Number.isFinite(Date.parse(value)), '无效的辅导时间')
-    .optional(),
-  complete: z.boolean(),
-})
-const salesAiCopilotQuerySchema = z.object({
-  focusLeadId: z.string().min(1).max(120).optional(),
-})
-const salesAiArtifactKindSchema = z.enum([
-  'PRE_VISIT_BRIEF',
-  'TALK_TRACK',
-  'MEETING_SUMMARY',
-  'NEXT_ACTION',
-  'PROPOSAL',
-])
-const salesAiObjectionTypeSchema = z.enum([
-  'PRICE',
-  'ROI',
-  'TIMING',
-  'AUTHORITY',
-  'COMPETITOR',
-])
-const salesAiArtifactParamsSchema = z.object({
-  artifactKey: z.string().min(3).max(180),
-})
-const salesAiRoleplayParamsSchema = z.object({
-  sessionId: z.string().min(3).max(180),
-})
-const generateSalesAiArtifactBodySchema = z.object({
-  kind: salesAiArtifactKindSchema,
-  objective: z.string().trim().min(3).max(500),
-  contextNotes: z.array(z.string().trim().min(2).max(600)).max(12).default([]),
-})
-const confirmSalesAiArtifactBodySchema = z.object({
-  expectedRevision: z.number().int().positive(),
-  expectedLeadVersion: z.number().int().positive(),
-  confirmed: z.boolean(),
-  crmWriteback: z.object({
-    channel: z.enum(['PHONE', 'WECHAT', 'VISIT', 'VIDEO']),
-    summary: z.string().trim().min(3).max(1000),
-    nextAction: z.string().trim().min(2).max(160),
-    nextActionAt: z.string().refine(
-      (value) => Number.isFinite(Date.parse(value)),
-      '无效的下一步时间',
-    ),
-  }).optional(),
-})
-const startSalesAiRoleplayBodySchema = z.object({
-  objectionType: salesAiObjectionTypeSchema,
-  scenario: z.string().trim().min(3).max(500),
-})
-const replySalesAiRoleplayBodySchema = z.object({
-  response: z.string().trim().min(3).max(1200),
-})
-const providerLocalGrowthQuerySchema = z.object({
-  focusLeadId: z.string().min(1).max(100).optional(),
-})
-const providerDeliveryBoardQuerySchema = z.object({
-  focusCaseId: z.string().min(1).max(160).optional(),
-})
-const providerWorkOrderQuerySchema = z.object({
-  focusCaseId: z.string().min(1).max(160).optional(),
-  focusWorkOrderId: z.string().min(1).max(180).optional(),
-})
-const providerWorkOrderIdParamsSchema = z.object({
-  workOrderId: z.string().min(1).max(180),
-})
-const providerWorkOrderAttachmentParamsSchema = z.object({
-  attachmentId: z.string().min(1).max(200),
-})
-const providerWorkOrderTypeSchema = z.enum([
-  'ASSET_COLLECTION',
-  'MINIAPP_CONFIGURATION',
-  'MERCHANT_REVIEW',
-  'PLATFORM_REVIEW',
-  'GEO_OPTIMIZATION',
-  'SKILL_ACTIVATION',
-  'DELIVERY_ACCEPTANCE',
-  'OTHER',
-])
-const createProviderWorkOrderBodySchema = z.object({
-  caseId: z.string().min(1).max(160),
-  type: providerWorkOrderTypeSchema,
-  title: z.string().trim().min(3).max(120),
-  description: z.string().trim().min(5).max(800),
-  priority: z.enum(['CRITICAL', 'HIGH', 'NORMAL']),
-  ownerId: z.string().min(1).max(100),
-  dueAt: z.string().refine((value) => Number.isFinite(Date.parse(value)), '无效的截止时间'),
-  confirmationRequired: z.boolean().optional(),
-})
-const assignProviderWorkOrderBodySchema = versionBodySchema.extend({
-  targetOwnerId: z.string().min(1).max(100),
-  reason: z.string().trim().min(5).max(500),
-  confirmed: z.boolean(),
-})
-const submitProviderWorkOrderBodySchema = versionBodySchema.extend({
-  handoffNote: z.string().trim().min(5).max(800),
-  confirmed: z.boolean(),
-})
-const confirmProviderWorkOrderBodySchema = versionBodySchema.extend({
-  decision: z.enum(['APPROVED', 'CHANGES_REQUESTED']),
-  confirmerName: z.string().trim().min(2).max(80),
-  confirmerRole: z.string().trim().min(2).max(80),
-  comment: z.string().trim().min(3).max(800),
-  confirmed: z.boolean(),
-})
-const providerSlaQuerySchema = z.object({
-  focusIncidentId: z.string().min(1).max(180).optional(),
-})
-const providerSlaIncidentParamsSchema = z.object({
-  incidentId: z.string().min(1).max(180),
-})
-const acknowledgeProviderSlaBodySchema = versionBodySchema.extend({
-  responsePlan: z.string().trim().min(10).max(1200),
-  confirmed: z.boolean(),
-})
-const providerRenewalQuerySchema = z.object({
-  focusCaseId: z.string().min(1).max(180).optional(),
-})
-const providerCityMetricsQuerySchema = z.object({
-  period: z.enum(['30D', '90D', '365D']).optional(),
-  focusLeadId: z.string().min(1).max(100).optional(),
-})
-const providerSettlementQuerySchema = z.object({
-  focusStatementId: z.string().min(1).max(180).optional(),
-})
-const providerSettlementStatementParamsSchema = z.object({
-  statementId: z.string().min(1).max(180),
-})
-const providerSettlementAdjustmentParamsSchema = providerSettlementStatementParamsSchema.extend({
-  adjustmentId: z.string().min(1).max(180),
-})
-const generateProviderSettlementBodySchema = z.object({
-  cityId: z.string().trim().min(2).max(80),
-  period: z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/, '账期必须为 YYYY-MM'),
-  confirmed: z.boolean(),
-})
-const providerSettlementAdjustmentBodySchema = versionBodySchema.extend({
-  direction: z.enum(['CREDIT', 'DEBIT']),
-  amountFen: z.number().int().positive().max(100_000_000),
-  reason: z.string().trim().min(5).max(500),
-  evidence: z.array(z.string().trim().min(2).max(300)).min(1).max(10),
-  confirmed: z.boolean(),
-})
-const providerSettlementAdjustmentDecisionBodySchema = versionBodySchema.extend({
-  decision: z.enum(['APPROVE', 'REJECT']),
-  note: z.string().trim().min(3).max(500),
-  confirmed: z.boolean(),
-})
-const providerSettlementInvoiceBodySchema = versionBodySchema.extend({
-  invoiceNo: z.string().trim().min(5).max(80),
-  sellerName: z.string().trim().min(4).max(160),
-  sellerTaxIdMasked: z.string().trim().min(8).max(40),
-  amountFen: z.number().int().positive().max(1_000_000_000),
-  issuedAt: z.string().refine((value) => Number.isFinite(Date.parse(value)), '无效的开票时间'),
-  confirmed: z.boolean(),
-})
-const providerSettlementInvoiceDecisionBodySchema = versionBodySchema.extend({
-  decision: z.enum(['VERIFY', 'REJECT']),
-  note: z.string().trim().min(3).max(500),
-  confirmed: z.boolean(),
-})
-const settleProviderStatementBodySchema = versionBodySchema.extend({
-  confirmed: z.boolean(),
-})
-const consumerContextBodySchema = versionBodySchema.extend({
-  cityId: z.string().trim().min(2).max(80),
-  householdMemberId: z.string().trim().min(2).max(120),
-})
-const consumerMessageQuerySchema = z.object({
-  category: z.enum(['TRANSACTION', 'SERVICE', 'FAMILY', 'SYSTEM']).optional(),
-  unreadOnly: z.enum(['true', 'false']).transform((value) => value === 'true').optional(),
-})
-const consumerMessageParamsSchema = z.object({
-  messageId: z.string().min(1).max(180),
-})
-const consumerMessageReadBodySchema = versionBodySchema
-const consumerSearchBodySchema = z.object({
-  query: z.string().trim().min(1).max(120),
-  cityId: z.string().trim().min(2).max(80).optional(),
-  householdMemberId: z.string().trim().min(2).max(120).optional(),
-  limit: z.number().int().min(1).max(30).default(20),
-})
-const consumerNearbyBodySchema = z.object({
-  cityId: z.string().trim().min(2).max(80).optional(),
-  householdMemberId: z.string().trim().min(2).max(120).optional(),
-  location: z.object({
-    latitude: z.number().min(-90).max(90),
-    longitude: z.number().min(-180).max(180),
-    accuracyMeters: z.number().nonnegative().max(10_000).optional(),
-  }).optional(),
-  limit: z.number().int().min(1).max(30).default(20),
-})
-const consumerStoreParamsSchema = z.object({
-  storeId: z.string().min(1).max(180),
-})
-const consumerDealDraftParamsSchema = consumerStoreParamsSchema.extend({
-  offerId: z.string().min(1).max(180),
-})
-const consumerDealDraftBodySchema = z.object({
-  cityId: z.string().trim().min(2).max(80),
-  householdMemberId: z.string().trim().min(2).max(120),
-  quantity: z.number().int().min(1).max(10),
-  serviceAt: z.string().datetime({ offset: true }).optional(),
-  acknowledgedTerms: z.boolean(),
-})
-const consumerDealConfirmParamsSchema = z.object({
-  draftId: z.string().uuid(),
-})
-const consumerDealConfirmBodySchema = versionBodySchema.extend({
-  confirmed: z.boolean(),
-})
-const consumerDealAftercareBodySchema = versionBodySchema.extend({
-  confirmed: z.boolean(),
-  reason: z.string().trim().min(3).max(300),
-})
-const consumerAssistantMessageBodySchema = z.object({
-  prompt: z.string().trim().min(1).max(600),
-  cityId: z.string().trim().min(2).max(80),
-  householdMemberId: z.string().trim().min(2).max(120),
-  sessionId: z.string().uuid().optional(),
-  sourceVoiceInputId: z.string().uuid().optional(),
-  sourceImageInputId: z.string().uuid().optional(),
-})
-const consumerVoiceUploadHeadersSchema = z.object({
-  'x-file-name': z.string().min(1).max(600),
-  'x-mime-type': z.string().min(3).max(120),
-  'x-duration-ms': z.coerce.number().int().min(500).max(60_000),
-  'x-city-id': z.string().trim().min(2).max(80),
-  'x-household-member-id': z.string().trim().min(2).max(120),
-})
-const consumerVoiceParamsSchema = z.object({ voiceInputId: z.string().uuid() })
-const consumerVoiceConfirmBodySchema = versionBodySchema.extend({
-  transcript: z.string().trim().min(1).max(600),
-  confirmed: z.boolean(),
-})
-const speechConnectorCallbackBodySchema = z.object({
-  providerEventId: z.string().trim().min(8).max(180),
-  voiceInputId: z.string().uuid(),
-  status: z.enum(['SUCCEEDED', 'FAILED']),
-  transcript: z.string().trim().min(1).max(600).optional(),
-  confidence: z.number().min(0).max(1).optional(),
-  language: z.literal('zh-CN').optional(),
-  failureCode: z.string().trim().min(2).max(120).optional(),
-})
-const consumerImageUploadHeadersSchema = z.object({
-  'x-file-name': z.string().min(1).max(600),
-  'x-mime-type': z.string().min(3).max(120),
-  'x-city-id': z.string().trim().min(2).max(80),
-  'x-household-member-id': z.string().trim().min(2).max(120),
-})
-const consumerImageParamsSchema = z.object({ imageInputId: z.string().uuid() })
-const consumerImageConfirmBodySchema = versionBodySchema.extend({
-  description: z.string().trim().min(1).max(600),
-  confirmed: z.boolean(),
-})
-const imageRecognitionCallbackBodySchema = z.object({
-  providerEventId: z.string().trim().min(8).max(180),
-  imageInputId: z.string().uuid(),
-  status: z.enum(['SUCCEEDED', 'FAILED']),
-  category: z.enum(['MENU', 'PRODUCT', 'RECEIPT', 'ENVIRONMENT', 'OTHER']).optional(),
-  description: z.string().trim().min(1).max(600).optional(),
-  confidence: z.number().min(0).max(1).optional(),
-  containsSensitiveData: z.boolean().optional(),
-  failureCode: z.string().trim().min(2).max(120).optional(),
-})
-const consumerReservationParamsSchema = z.object({
-  draftId: z.string().uuid(),
-})
-const consumerReservationConfirmBodySchema = versionBodySchema.extend({
-  confirmed: z.boolean(),
-})
-const consumerReservationUpdateBodySchema = versionBodySchema.extend({
-  partySize: z.number().int().min(1).max(20),
-  reservationAt: z.string().refine(
-    (value) => Number.isFinite(Date.parse(value)),
-    '无效的订座时间',
-  ),
-})
-const consumerReservationCancelBodySchema = versionBodySchema.extend({
-  confirmed: z.boolean(),
-  reason: z.string().trim().min(3).max(300),
-})
-const consumerPaymentPrepareBodySchema = versionBodySchema.extend({
-  confirmed: z.boolean(),
-})
-const consumerRefundRequestBodySchema = versionBodySchema.extend({
-  confirmed: z.boolean(),
-  reason: z.string().trim().min(3).max(300),
-})
-const paymentConnectorCallbackBodySchema = z.object({
-  providerEventId: z.string().trim().min(8).max(180),
-  type: z.enum(['PAYMENT_SUCCEEDED', 'PAYMENT_FAILED', 'REFUND_SUCCEEDED', 'REFUND_FAILED']),
-  intentId: z.string().uuid(),
-  amountFen: z.number().int().positive(),
-  currency: z.literal('CNY'),
-  providerTransactionId: z.string().trim().min(3).max(180).optional(),
-  providerRefundId: z.string().trim().min(3).max(180).optional(),
-  failureCode: z.string().trim().min(2).max(120).optional(),
-})
-const consumerDealConnectorCallbackBaseSchema = z.object({
-  providerEventId: z.string().trim().min(8).max(180),
-  intentId: z.string().uuid(),
-  providerRequestId: z.string().trim().min(3).max(180),
-  amountFen: z.number().int().positive(),
-  currency: z.literal('CNY'),
-  occurredAt: z.string().datetime({ offset: true }),
-})
-const consumerDealPaymentConnectorCallbackBodySchema = z.discriminatedUnion('type', [
-  consumerDealConnectorCallbackBaseSchema.extend({
-    type: z.literal('PAYMENT_SUCCEEDED'),
-    providerTransactionId: z.string().trim().min(3).max(180),
-  }),
-  consumerDealConnectorCallbackBaseSchema.extend({
-    type: z.literal('PAYMENT_FAILED'),
-    failureCode: z.string().trim().min(2).max(120),
-  }),
-  consumerDealConnectorCallbackBaseSchema.extend({
-    type: z.literal('REFUND_SUCCEEDED'),
-    refundId: z.string().uuid(),
-    refundAttemptId: z.string().uuid(),
-    providerRefundId: z.string().trim().min(3).max(180),
-  }),
-  consumerDealConnectorCallbackBaseSchema.extend({
-    type: z.literal('REFUND_FAILED'),
-    refundId: z.string().uuid(),
-    refundAttemptId: z.string().uuid(),
-    failureCode: z.string().trim().min(2).max(120),
-  }),
-])
-const providerRenewalCaseParamsSchema = z.object({
-  caseId: z.string().min(1).max(180),
-})
-const providerRenewalProposalBodySchema = versionBodySchema.extend({
-  confirmed: z.boolean(),
-})
-const providerRenewalOutcomeBodySchema = z.discriminatedUnion('outcome', [
-  versionBodySchema.extend({
-    outcome: z.literal('RENEWED'),
-    confirmed: z.boolean(),
-    acceptedPackageCode: z.enum(['BASIC', 'PRO', 'AGENT', 'CHAIN']).optional(),
-  }),
-  versionBodySchema.extend({
-    outcome: z.literal('LOST'),
-    confirmed: z.boolean(),
-    lossReason: z.enum([
-      'PRICE',
-      'LOW_USAGE',
-      'SERVICE_GAP',
-      'BUSINESS_CLOSED',
-      'COMPETITOR',
-      'CASH_FLOW',
-      'TIMING',
-      'OTHER',
-    ]),
-    lossDetail: z.string().trim().min(5).max(1200),
-    recoverable: z.boolean(),
-    recoveryAction: z.string().trim().min(5).max(600).optional(),
-  }),
-])
-const providerWorkOrderUploadHeadersSchema = z.object({
-  'x-file-name': z.string().min(1).max(600),
-  'x-mime-type': z.string().min(3).max(120),
-  'x-attachment-category': z.enum(['EVIDENCE', 'DELIVERABLE', 'MERCHANT_FEEDBACK']),
-  'x-expected-version': z.coerce.number().int().positive(),
-})
-const providerAssignLeadBodySchema = versionBodySchema.extend({
-  targetOwnerId: z.string().min(1).max(100),
-  reason: z.string().trim().min(5).max(500),
-  confirmed: z.boolean(),
-})
-
-declare module 'fastify' {
-  interface FastifyRequest {
-    principal: Principal | null
-    sessionExpiresAt: string | null
-  }
+export interface AppOptions {
+  databaseCheck?: () => Promise<void>;
+  logger?: boolean;
+  trustedProxy?: string[];
+  authAuditHasher?: (purpose: 'ip' | 'user-agent' | 'assertion', value: string) => string;
+  revenueRights?: RevenueRightService;
+  revenueRightGovernance?: RevenueRightGovernanceService;
+  distributionLocks?: DistributionLockService;
+  distributionSettlements?: DistributionSettlementService;
+  merchantIntake?: MerchantIntakeService;
+  merchantIntakeUploads?: MerchantIntakeUploadService;
+  merchantIntakeMessages?: MerchantIntakeMessageService;
+  wecomIntakeCallback?: WeComIntakeCallbackService;
+  sessionIdentity?: SessionIdentityVerifier;
+  accessControl?: AccessControlService;
+  authSessions?: AuthSessionService;
+  identityExchange?: IdentityExchangeGateway;
+  deliveryWorkflows?: DeliveryWorkflowService;
+  miniPrograms?: MiniProgramLifecycleService;
+  miniProgramCallback?: MiniProgramCallbackService;
+  consumerSession?: ConsumerSessionIdentityVerifier;
+  lifeConsumerSession?: LifeConsumerSessionIdentityVerifier;
+  consumerCatalog?: ConsumerCatalogService;
+  consumerStoreSwitch?: ConsumerStoreSwitchService;
+  platformCart?: PlatformCartService;
+  platformAddresses?: PlatformAddressService;
+  platformInvoiceProfiles?: PlatformInvoiceProfileService;
+  platformCheckout?: PlatformCheckoutService;
+  platformOrders?: PlatformOrderQueryService;
+  platformPayments?: PlatformPaymentService;
+  platformAftercare?: PlatformAftercareService;
+  platformDiscovery?: PlatformDiscoveryService;
+  merchantConsumerJourney?: MerchantConsumerJourneyService;
+  customerService?: CustomerService;
+  customerServiceAi?: CustomerServiceAiOrchestrator;
+  commerceOrders?: CommerceOrderService;
+  commercePayments?: CommercePaymentService;
+  commerceRefunds?: CommerceRefundService;
+  commerceVerification?: CommerceVerificationService;
+  commerceReconciliation?: CommerceReconciliationService;
+  geoPluginReports?: GeoPluginReportService;
+  merchantOperations?: MerchantOperationsService;
+  organizationGovernance?: OrganizationGovernanceService;
+  revenueOperations?: RevenueOperationsService;
+  salesLifecycle?: SalesLifecycleService;
+  subscriptionLifecycle?: SubscriptionLifecycleService;
+  employeeAgent?: EmployeeAgentService;
+  operationalHome?: OperationalHomeService;
+  geoOperations?: GeoOperationsService;
+  customerServiceOperations?: CustomerServiceOperationsService;
+  platformControl?: PlatformControlService;
+  internalWorkerToken?: string;
 }
 
-function requirePrincipal(request: FastifyRequest): Principal {
-  if (!request.principal) {
-    throw new DomainError(401, 'authentication_required', '请先登录后再访问此服务')
-  }
-  return request.principal
-}
-
-function requireIdempotencyKey(request: FastifyRequest): string {
-  const value = request.headers['idempotency-key']
-  if (typeof value !== 'string' || value.trim().length < 8) {
-    throw new DomainError(
-      400,
-      'idempotency_key_required',
-      '写接口必须提供至少 8 个字符的 Idempotency-Key',
-    )
-  }
-  return value.trim()
-}
-
-function sendProblem(
-  request: FastifyRequest,
-  reply: FastifyReply,
-  status: number,
-  code: string,
-  detail: string,
-): void {
-  void reply
-    .status(status)
-    .type('application/problem+json')
-    .send({
-      type: `https://lequ.life/problems/${code}`,
-      title: code,
-      status,
-      detail,
-      traceId: request.id,
-    })
-}
-
-export async function buildApp(options?: { database?: DatabaseSync }) {
-  const database = options?.database ?? createDatabase()
+export async function buildApp(options: AppOptions = {}): Promise<FastifyInstance> {
   const app = Fastify({
-    logger: process.env.NODE_ENV !== 'test',
-    genReqId: () => randomUUID(),
-    bodyLimit: 8 * 1024 * 1024,
-  })
-
+    logger: options.logger ?? false,
+    trustProxy: options.trustedProxy ?? false,
+  });
+  app.setErrorHandler((error, _request, reply) => {
+    if (error instanceof ZodError) return reply.code(400).send({ code: 'INVALID_REQUEST' });
+    if (error instanceof EmployeeAgentAuthorizationError)
+      return reply.code(404).send({ code: 'EMPLOYEE_AGENT_RESOURCE_NOT_FOUND' });
+    if (error instanceof EmployeeAgentConflictError)
+      return reply.code(409).send({ code: 'INVALID_EMPLOYEE_AGENT_STATE' });
+    if (error instanceof OperationalHomeAuthorizationError)
+      return reply.code(403).send({ code: 'OPERATIONAL_SCOPE_DENIED' });
+    if (error instanceof GeoOperationsAuthorizationError)
+      return reply.code(404).send({ code: 'GEO_RESOURCE_NOT_FOUND' });
+    if (error instanceof GeoOperationsStateError)
+      return reply.code(409).send({ code: 'INVALID_GEO_DIFFERENCE_STATE' });
+    if (error instanceof CustomerServiceOperationsAuthorizationError)
+      return reply.code(404).send({ code: 'CUSTOMER_SERVICE_RESOURCE_NOT_FOUND' });
+    if (error instanceof CustomerServiceOperationsConflictError)
+      return reply.code(409).send({ code: 'IDEMPOTENCY_CONFLICT' });
+    if (error instanceof CustomerServiceOperationsStateError)
+      return reply.code(409).send({ code: 'INVALID_CUSTOMER_SERVICE_STATE' });
+    if (error instanceof PlatformControlAuthorizationError)
+      return reply.code(404).send({ code: 'PLATFORM_CONTROL_RESOURCE_NOT_FOUND' });
+    if (error instanceof PlatformControlConflictError)
+      return reply.code(409).send({ code: 'IDEMPOTENCY_CONFLICT' });
+    if (error instanceof PlatformControlStateError)
+      return reply.code(409).send({ code: 'INVALID_PLATFORM_CONTROL_STATE' });
+    const candidate =
+      typeof error === 'object' && error !== null && 'statusCode' in error
+        ? (error as { statusCode?: unknown }).statusCode
+        : undefined;
+    const status = typeof candidate === 'number' && candidate >= 400 ? candidate : 500;
+    return reply.code(status).send({ code: status === 500 ? 'INTERNAL_ERROR' : 'REQUEST_FAILED' });
+  });
+  const operationalMetrics = new OperationalMetrics();
+  const requestStartedAt = new WeakMap<object, number>();
+  const paymentCallbackRawBodies = new WeakMap<object, string>();
+  await app.register(cors, { origin: false });
+  app.addHook('onRequest', async (request, reply) => {
+    requestStartedAt.set(request.raw, performance.now());
+    for (const [name, value] of Object.entries(securityHeaders)) reply.header(name, value);
+    reply.header('x-trace-id', request.id);
+  });
+  app.addHook('onResponse', async (request, reply) => {
+    operationalMetrics.record({
+      method: request.method,
+      route: request.routeOptions.url ?? 'unmatched',
+      statusCode: reply.statusCode,
+      durationMs: Math.max(
+        0,
+        performance.now() - (requestStartedAt.get(request.raw) ?? performance.now()),
+      ),
+    });
+  });
+  app.addContentTypeParser('application/xml', { parseAs: 'string' }, (_request, body, done) =>
+    done(null, body),
+  );
   app.addContentTypeParser(
-    'application/octet-stream',
-    { parseAs: 'buffer' },
+    'application/vnd.lequ.payment-callback+json',
+    { parseAs: 'string' },
     (_request, body, done) => done(null, body),
-  )
-
-  await app.register(cors, {
-    origin: [/^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/],
-    methods: ['GET', 'POST'],
-    allowedHeaders: [
-      'Content-Type', 'Idempotency-Key', 'Authorization', 'X-Asset-Type',
-      'X-File-Name', 'X-Mime-Type', 'X-Expected-Version', 'X-Attachment-Category',
-      'X-Payment-Signature', 'X-Speech-Signature', 'X-Duration-Ms',
-      'X-City-Id', 'X-Household-Member-Id', 'X-Image-Signature',
-    ],
-  })
-
-  app.decorateRequest('principal', null)
-  app.decorateRequest('sessionExpiresAt', null)
-
-  app.addHook('preHandler', async (request) => {
-    if (!request.url.startsWith('/api/v1')) return
-    if (request.url === '/api/v1/payment-connectors/wechat/callback') return
-    if (request.url === '/api/v1/payment-connectors/wechat/deals/callback') return
-    if (request.url === '/api/v1/speech-connectors/transcription/callback') return
-    if (request.url === '/api/v1/image-connectors/recognition/callback') return
-    const session = authenticate(database, request.headers.authorization)
-    request.principal = session.principal
-    request.sessionExpiresAt = session.expiresAt
-  })
-
-  app.get('/health', async () => ({
-    status: 'ok',
-    service: 'lequ-modular-monolith',
-    version: '5.0.0',
-  }))
-
-  app.get('/api/v1/auth/session', async (request) => {
-    const principal = requirePrincipal(request)
-    return toAuthSession(principal, request.sessionExpiresAt ?? '')
-  })
-
-  app.get('/api/v1/onboarding/overview', async (request) => {
-    const principal = requirePrincipal(request)
-    requireAccess(principal, 'lead.read')
-    const query = overviewQuerySchema.parse(request.query)
-    return getOnboardingOverview(database, principal, query.focusLeadId)
-  })
-
-  app.post('/api/v1/onboarding/leads', async (request) => {
-    const principal = requirePrincipal(request)
-    requireAccess(principal, 'lead.write')
-    return createLead(
-      database,
-      principal,
-      createLeadBodySchema.parse(request.body),
-      requireIdempotencyKey(request),
+  );
+  app.addHook('preParsing', async (request, _reply, payload) => {
+    if (
+      !request.url.startsWith('/api/v1/webhooks/payments/') ||
+      !request.headers['content-type']?.toLowerCase().startsWith('application/json')
     )
-  })
+      return payload;
+    const chunks: Buffer[] = [];
+    for await (const chunk of payload)
+      chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+    const raw = Buffer.concat(chunks);
+    paymentCallbackRawBodies.set(request.raw, raw.toString('utf8'));
+    return Readable.from(raw);
+  });
 
-  app.post('/api/v1/onboarding/leads/:leadId/diagnosis', async (request) => {
-    const principal = requirePrincipal(request)
-    requireAccess(principal, 'lead.write')
-    requireAccess(principal, 'ai.use')
-    const { leadId } = leadIdParamsSchema.parse(request.params)
-    const body = versionBodySchema.parse(request.body)
-    return runDiagnosis(database, principal, { leadId, ...body }, requireIdempotencyKey(request))
-  })
+  app.get('/health', async () => ({ status: 'ok', version: '6.1.0' }));
 
-  app.post('/api/v1/onboarding/leads/:leadId/followups', async (request) => {
-    const principal = requirePrincipal(request)
-    requireAccess(principal, 'lead.write')
-    const { leadId } = leadIdParamsSchema.parse(request.params)
-    const body = followUpBodySchema.parse(request.body)
-    return addLeadFollowUp(database, principal, { leadId, ...body }, requireIdempotencyKey(request))
-  })
-
-  app.post('/api/v1/onboarding/leads/:leadId/lost', async (request) => {
-    const principal = requirePrincipal(request)
-    requireAccess(principal, 'lead.write')
-    const { leadId } = leadIdParamsSchema.parse(request.params)
-    const body = lostBodySchema.parse(request.body)
-    return markLeadLost(database, principal, { leadId, ...body }, requireIdempotencyKey(request))
-  })
-
-  app.post('/api/v1/onboarding/leads/:leadId/collaborators', async (request) => {
-    const principal = requirePrincipal(request)
-    requireAccess(principal, 'lead.assign')
-    const { leadId } = leadIdParamsSchema.parse(request.params)
-    const body = collaboratorBodySchema.parse(request.body)
-    return addLeadCollaborator(database, principal, { leadId, ...body }, requireIdempotencyKey(request))
-  })
-
-  app.post('/api/v1/onboarding/leads/:leadId/contracts', async (request) => {
-    const principal = requirePrincipal(request)
-    requireAccess(principal, 'contract.create')
-    const { leadId } = leadIdParamsSchema.parse(request.params)
-    const body = contractBodySchema.parse(request.body)
-    return createContractDraft(database, principal, { leadId, ...body }, requireIdempotencyKey(request))
-  })
-
-  app.post('/api/v1/onboarding/contracts/:contractId/sign', async (request) => {
-    const principal = requirePrincipal(request)
-    requireAccess(principal, 'contract.create')
-    const { contractId } = contractIdParamsSchema.parse(request.params)
-    const body = signContractBodySchema.parse(request.body)
-    return signContract(database, principal, { contractId, ...body }, requireIdempotencyKey(request))
-  })
-
-  app.post('/api/v1/onboarding/contracts/:contractId/discount-decision', async (request) => {
-    const principal = requirePrincipal(request)
-    requireAccess(principal, 'contract.discount.approve')
-    const { contractId } = contractIdParamsSchema.parse(request.params)
-    const body = discountDecisionBodySchema.parse(request.body)
-    return decideContractDiscount(
-      database, principal, { contractId, ...body }, requireIdempotencyKey(request),
-    )
-  })
-
-  app.post('/api/v1/onboarding/leads/:leadId/assets/capture', async (request) => {
-    const principal = requirePrincipal(request)
-    requireAccess(principal, 'lead.write')
-    const { leadId } = leadIdParamsSchema.parse(request.params)
-    const body = versionBodySchema.parse(request.body)
-    return captureAssets(database, principal, { leadId, ...body }, requireIdempotencyKey(request))
-  })
-
-  app.post('/api/v1/onboarding/leads/:leadId/assets/upload', async (request) => {
-    const principal = requirePrincipal(request)
-    requireAccess(principal, 'lead.write')
-    const { leadId } = leadIdParamsSchema.parse(request.params)
-    const headers = uploadHeadersSchema.parse(request.headers)
-    if (!Buffer.isBuffer(request.body)) {
-      throw new DomainError(400, 'asset_body_required', '资料文件内容不能为空')
-    }
-    let fileName: string
+  app.get('/ready', async (_request, reply) => {
     try {
-      fileName = decodeURIComponent(headers['x-file-name'])
+      await options.databaseCheck?.();
+      return { status: 'ready' };
     } catch {
-      throw new DomainError(400, 'asset_file_name_invalid', '资料文件名编码无效')
+      return reply.code(503).send({ status: 'unavailable' });
     }
-    return uploadOnboardingAsset(database, principal, {
-      leadId,
-      expectedVersion: headers['x-expected-version'],
-      assetType: headers['x-asset-type'],
-      fileName,
-      mimeType: headers['x-mime-type'],
-      bytes: request.body,
-    }, requireIdempotencyKey(request))
-  })
-
-  app.post('/api/v1/onboarding/assets/:assetId/confirm', async (request) => {
-    const principal = requirePrincipal(request)
-    requireAccess(principal, 'lead.write')
-    const { assetId } = assetIdParamsSchema.parse(request.params)
-    const body = confirmAssetBodySchema.parse(request.body)
-    return confirmAsset(database, principal, { assetId, ...body }, requireIdempotencyKey(request))
-  })
-
-  app.post('/api/v1/onboarding/leads/:leadId/transfer', async (request) => {
-    const principal = requirePrincipal(request)
-    requireAccess(principal, 'lead.transfer')
-    const { leadId } = leadIdParamsSchema.parse(request.params)
-    const body = transferLeadBodySchema.parse(request.body)
-    return transferLead(database, principal, { leadId, ...body }, requireIdempotencyKey(request))
-  })
-
-  app.post('/api/v1/onboarding/leads/:leadId/appeals', async (request) => {
-    const principal = requirePrincipal(request)
-    requireAccess(principal, 'lead.write')
-    const { leadId } = leadIdParamsSchema.parse(request.params)
-    const body = appealBodySchema.parse(request.body)
-    return submitLeadAppeal(database, principal, { leadId, ...body }, requireIdempotencyKey(request))
-  })
-
-  app.get('/api/v1/sales/workbench', async (request) => {
-    const principal = requirePrincipal(request)
-    requireAccess(principal, 'lead.read')
-    return getSalesWorkbenchOverview(database, principal)
-  })
-
-  app.get('/api/v1/sales/crm', async (request) => {
-    const principal = requirePrincipal(request)
-    requireAccess(principal, 'lead.read')
-    return getSalesCrmOverview(database, principal, salesCrmQuerySchema.parse(request.query))
-  })
-
-  app.get('/api/v1/sales/ownership/:leadId', async (request) => {
-    const principal = requirePrincipal(request)
-    requireAccess(principal, 'lead.read')
-    const { leadId } = leadIdParamsSchema.parse(request.params)
-    return getSalesOwnershipOverview(database, principal, leadId)
-  })
-
-  app.post('/api/v1/sales/ownership/:leadId/transfer-requests', async (request) => {
-    const principal = requirePrincipal(request)
-    requireAccess(principal, 'lead.write')
-    const { leadId } = leadIdParamsSchema.parse(request.params)
-    const body = createLeadTransferRequestBodySchema.parse(request.body)
-    return createLeadTransferRequest(
-      database,
-      principal,
-      { leadId, ...body },
-      requireIdempotencyKey(request),
+  });
+  app.get('/internal/v1/metrics', async (request, reply) => {
+    if (
+      !options.internalWorkerToken ||
+      !validInternalBearer(options.internalWorkerToken, request.headers.authorization)
     )
-  })
+      return reply.code(401).send({ code: 'INVALID_INTERNAL_WORKER' });
+    return reply.type('text/plain; version=0.0.4; charset=utf-8').send(operationalMetrics.render());
+  });
 
-  app.post('/api/v1/sales/ownership/transfer-requests/:requestId/decision', async (request) => {
-    const principal = requirePrincipal(request)
-    requireAccess(principal, 'lead.transfer')
-    const { requestId } = ownershipTransferRequestParamsSchema.parse(request.params)
-    const body = ownershipDecisionBodySchema.parse(request.body)
-    return decideLeadTransferRequest(
-      database,
-      principal,
-      { requestId, ...body },
-      requireIdempotencyKey(request),
-    )
-  })
+  app.post('/api/v1/auth/sessions/exchange', async (request, reply) => {
+    if (!options.identityExchange || !options.authSessions)
+      return reply.code(503).send({ code: 'AUTHENTICATION_UNAVAILABLE' });
+    return handleAuthSession(reply, async () => {
+      const exchangeInput = parseIdentityExchangeInput(request.body);
+      const userAgent = request.headers['user-agent'] ?? '';
+      const verified = await options.identityExchange!.exchange(exchangeInput, {
+        sourceIp: request.ip,
+        userAgent,
+      });
+      return options.authSessions!.issue({
+        tenantId: verified.tenantId,
+        userId: verified.userId,
+        authLevel: verified.authLevel,
+        deviceId: verified.deviceId,
+        ...(options.authAuditHasher
+          ? {
+              audit: {
+                action: 'auth.session.issued' as const,
+                traceId: request.id,
+                ipHash: options.authAuditHasher('ip', request.ip),
+                userAgentHash: options.authAuditHasher('user-agent', userAgent),
+                assertionIdHash: options.authAuditHasher('assertion', verified.assertionId),
+                provider: verified.provider,
+              },
+            }
+          : {}),
+      });
+    });
+  });
 
-  app.post('/api/v1/sales/ownership/appeals/:appealId/decision', async (request) => {
-    const principal = requirePrincipal(request)
-    requireAccess(principal, 'lead.transfer')
-    const { appealId } = ownershipAppealParamsSchema.parse(request.params)
-    const body = appealDecisionBodySchema.parse(request.body)
-    return decideLeadAppeal(
-      database,
-      principal,
-      { appealId, ...body },
-      requireIdempotencyKey(request),
-    )
-  })
+  app.post('/api/v1/auth/sessions/refresh', async (request, reply) => {
+    if (!options.authSessions) return reply.code(503).send({ code: 'AUTHENTICATION_UNAVAILABLE' });
+    return handleAuthSession(reply, () =>
+      options.authSessions!.refresh(request.body as Parameters<AuthSessionService['refresh']>[0]),
+    );
+  });
 
-  app.get('/api/v1/sales/performance', async (request) => {
-    const principal = requirePrincipal(request)
-    requireAccess(principal, 'sales.performance.read')
-    return getSalesPerformanceOverview(
-      database,
-      principal,
-      salesPerformanceQuerySchema.parse(request.query),
-    )
-  })
+  app.post('/api/v1/auth/sessions/switch-tenant', async (request, reply) => {
+    const identity = await authorizedIdentity(options, request.headers.authorization, reply);
+    if (!identity) return;
+    if (!options.authSessions) return reply.code(503).send({ code: 'AUTHENTICATION_UNAVAILABLE' });
+    const body = request.body && typeof request.body === 'object' ? request.body : {};
+    return handleAuthSession(reply, () =>
+      options.authSessions!.issue({
+        ...body,
+        userId: identity.userId,
+        authLevel: identity.authLevel ?? 'PASSWORD',
+        ...(options.authAuditHasher
+          ? {
+              audit: {
+                action: 'auth.tenant.switched' as const,
+                traceId: request.id,
+                ipHash: options.authAuditHasher('ip', request.ip),
+                userAgentHash: options.authAuditHasher(
+                  'user-agent',
+                  request.headers['user-agent'] ?? '',
+                ),
+              },
+            }
+          : {}),
+      } as Parameters<AuthSessionService['issue']>[0]),
+    );
+  });
 
-  app.post('/api/v1/sales/performance/targets/:salespersonId', async (request) => {
-    const principal = requirePrincipal(request)
-    requireAccess(principal, 'sales.target.manage')
-    const { salespersonId } = salesTargetParamsSchema.parse(request.params)
-    const body = updateSalesTargetBodySchema.parse(request.body)
-    return updateSalesTarget(
-      database,
-      principal,
-      { salespersonId, ...body },
-      requireIdempotencyKey(request),
-    )
-  })
+  app.post('/api/v1/auth/sessions/revoke', async (request, reply) => {
+    const identity = await authorizedIdentity(options, request.headers.authorization, reply);
+    if (!identity) return;
+    if (!options.authSessions) return reply.code(503).send({ code: 'AUTHENTICATION_UNAVAILABLE' });
+    const body = request.body as { reason?: string } | undefined;
+    return handleAuthSession(reply, async () => {
+      await options.authSessions!.revoke(identity, body?.reason ?? 'USER_LOGOUT');
+      return reply.code(204).send();
+    });
+  });
 
-  app.post('/api/v1/sales/performance/ledger/:entryId/settle', async (request) => {
-    const principal = requirePrincipal(request)
-    requireAccess(principal, 'sales.commission.settle')
-    const { entryId } = salesLedgerEntryParamsSchema.parse(request.params)
-    const body = commissionTransitionBodySchema.parse(request.body)
-    return settleSalesCommission(
-      database,
-      principal,
-      { entryId, ...body },
-      requireIdempotencyKey(request),
-    )
-  })
+  app.get('/api/v1/context', async (request, reply) => {
+    const identity = await authorizedIdentity(options, request.headers.authorization, reply);
+    if (!identity) return;
+    return {
+      tenantId: identity.tenantId,
+      userId: identity.userId,
+      roleCodes: identity.roleCodes,
+      storeIds: identity.storeIds,
+      sessionId: identity.sessionId,
+    };
+  });
 
-  app.post('/api/v1/sales/performance/ledger/:entryId/reverse', async (request) => {
-    const principal = requirePrincipal(request)
-    requireAccess(principal, 'sales.commission.settle')
-    const { entryId } = salesLedgerEntryParamsSchema.parse(request.params)
-    const body = commissionTransitionBodySchema.parse(request.body)
-    return reverseSalesCommission(
-      database,
-      principal,
-      { entryId, ...body },
-      requireIdempotencyKey(request),
-    )
-  })
+  app.get('/api/v1/operational-home/today', async (request, reply) => {
+    const identity = await authorizedIdentity(options, request.headers.authorization, reply);
+    if (!identity) return;
+    if (!options.operationalHome) return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+    return options.operationalHome.getToday(identity);
+  });
 
-  app.get('/api/v1/sales/team', async (request) => {
-    const principal = requirePrincipal(request)
-    requireAccess(principal, 'sales.team.read')
-    return getSalesTeamOverview(
-      database,
-      principal,
-      salesTeamQuerySchema.parse(request.query),
-    )
-  })
+  app.get<{ Querystring: { storeId?: string } }>(
+    '/api/v1/geo-operations/overview',
+    async (request, reply) => {
+      const identity = await authorizedIdentity(
+        options,
+        request.headers.authorization,
+        reply,
+        'geo.read',
+      );
+      if (!identity) return;
+      if (!options.geoOperations) return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+      return options.geoOperations.overview(identity, request.query);
+    },
+  );
+  app.get<{ Querystring: { storeId?: string; status?: string } }>(
+    '/api/v1/geo-operations/differences',
+    async (request, reply) => {
+      const identity = await authorizedIdentity(
+        options,
+        request.headers.authorization,
+        reply,
+        'geo.read',
+      );
+      if (!identity) return;
+      if (!options.geoOperations) return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+      return options.geoOperations.listDifferences(identity, request.query);
+    },
+  );
+  app.post<{ Params: { differenceId: string } }>(
+    '/api/v1/geo-operations/differences/:differenceId/actions/decide',
+    async (request, reply) => {
+      const identity = await authorizedIdentity(
+        options,
+        request.headers.authorization,
+        reply,
+        'geo.publish',
+        { mfaRequired: true, write: true },
+      );
+      if (!identity) return;
+      if (!options.geoOperations) return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+      return options.geoOperations.decideDifference({
+        identity,
+        differenceId: request.params.differenceId,
+        traceId: request.id,
+        body: request.body,
+      });
+    },
+  );
 
-  app.post('/api/v1/sales/team/members/:memberId/level-changes', async (request) => {
-    const principal = requirePrincipal(request)
-    requireAccess(principal, 'sales.team.manage')
-    const { memberId } = salesTeamMemberParamsSchema.parse(request.params)
-    const body = requestSalesLevelChangeBodySchema.parse(request.body)
-    return requestSalesLevelChange(
-      database,
-      principal,
-      { memberId, ...body },
-      requireIdempotencyKey(request),
-    )
-  })
-
-  app.post('/api/v1/sales/team/level-changes/:requestId/decision', async (request) => {
-    const principal = requirePrincipal(request)
-    requireAccess(principal, 'sales.team.level.approve')
-    const { requestId } = salesLevelChangeParamsSchema.parse(request.params)
-    const body = decideSalesLevelChangeBodySchema.parse(request.body)
-    return decideSalesLevelChange(
-      database,
-      principal,
-      { requestId, ...body },
-      requireIdempotencyKey(request),
-    )
-  })
-
-  app.post('/api/v1/sales/team/members/:memberId/coaching-plans', async (request) => {
-    const principal = requirePrincipal(request)
-    requireAccess(principal, 'sales.team.manage')
-    const { memberId } = salesTeamMemberParamsSchema.parse(request.params)
-    const body = createSalesCoachingPlanBodySchema.parse(request.body)
-    return createSalesCoachingPlan(
-      database,
-      principal,
-      { memberId, ...body },
-      requireIdempotencyKey(request),
-    )
-  })
-
-  app.post('/api/v1/sales/team/coaching-plans/:planId/check-ins', async (request) => {
-    const principal = requirePrincipal(request)
-    requireAccess(principal, 'sales.team.manage')
-    const { planId } = salesCoachingPlanParamsSchema.parse(request.params)
-    const body = checkInSalesCoachingPlanBodySchema.parse(request.body)
-    return checkInSalesCoachingPlan(
-      database,
-      principal,
-      { planId, ...body },
-      requireIdempotencyKey(request),
-    )
-  })
-
-  app.get('/api/v1/sales/copilot', async (request) => {
-    const principal = requirePrincipal(request)
-    requireAccess(principal, 'lead.read')
-    requireAccess(principal, 'ai.use')
-    requireAccess(principal, 'sales.copilot.use')
-    const query = salesAiCopilotQuerySchema.parse(request.query)
-    return getSalesAiCopilotOverview(database, principal, query.focusLeadId)
-  })
-
-  app.post('/api/v1/sales/copilot/leads/:leadId/artifacts', async (request) => {
-    const principal = requirePrincipal(request)
-    requireAccess(principal, 'lead.read')
-    requireAccess(principal, 'ai.use')
-    requireAccess(principal, 'sales.copilot.use')
-    const { leadId } = leadIdParamsSchema.parse(request.params)
-    const body = generateSalesAiArtifactBodySchema.parse(request.body)
-    return generateSalesAiArtifact(
-      database,
-      principal,
-      { leadId, ...body },
-      requireIdempotencyKey(request),
-    )
-  })
-
-  app.post('/api/v1/sales/copilot/artifacts/:artifactKey/confirm', async (request) => {
-    const principal = requirePrincipal(request)
-    requireAccess(principal, 'lead.write')
-    requireAccess(principal, 'ai.use')
-    requireAccess(principal, 'sales.copilot.use')
-    const { artifactKey } = salesAiArtifactParamsSchema.parse(request.params)
-    const body = confirmSalesAiArtifactBodySchema.parse(request.body)
-    return confirmSalesAiArtifact(
-      database,
-      principal,
-      { artifactKey, ...body },
-      requireIdempotencyKey(request),
-    )
-  })
-
-  app.post('/api/v1/sales/copilot/leads/:leadId/roleplay-sessions', async (request) => {
-    const principal = requirePrincipal(request)
-    requireAccess(principal, 'lead.read')
-    requireAccess(principal, 'ai.use')
-    requireAccess(principal, 'sales.copilot.use')
-    const { leadId } = leadIdParamsSchema.parse(request.params)
-    const body = startSalesAiRoleplayBodySchema.parse(request.body)
-    return startSalesAiRoleplay(
-      database,
-      principal,
-      { leadId, ...body },
-      requireIdempotencyKey(request),
-    )
-  })
-
-  app.post('/api/v1/sales/copilot/roleplay-sessions/:sessionId/turns', async (request) => {
-    const principal = requirePrincipal(request)
-    requireAccess(principal, 'lead.read')
-    requireAccess(principal, 'ai.use')
-    requireAccess(principal, 'sales.copilot.use')
-    const { sessionId } = salesAiRoleplayParamsSchema.parse(request.params)
-    const body = replySalesAiRoleplayBodySchema.parse(request.body)
-    return replySalesAiRoleplay(
-      database,
-      principal,
-      { sessionId, ...body },
-      requireIdempotencyKey(request),
-    )
-  })
-
-  app.get('/api/v1/provider/local-growth', async (request) => {
-    const principal = requirePrincipal(request)
-    requireAccess(principal, 'lead.assign')
-    const query = providerLocalGrowthQuerySchema.parse(request.query)
-    return getProviderLocalGrowthOverview(database, principal, query.focusLeadId)
-  })
-
-  app.get('/api/v1/provider/delivery-board', async (request) => {
-    const principal = requirePrincipal(request)
-    requireAccess(principal, 'lead.assign')
-    const query = providerDeliveryBoardQuerySchema.parse(request.query)
-    return getProviderDeliveryBoardOverview(database, principal, query.focusCaseId)
-  })
-
-  app.get('/api/v1/provider/delivery-work-orders', async (request) => {
-    const principal = requirePrincipal(request)
-    requireAccess(principal, 'delivery.workorder.read')
-    const query = providerWorkOrderQuerySchema.parse(request.query)
-    return getProviderWorkOrderOverview(database, principal, query)
-  })
-
-  app.post('/api/v1/provider/delivery-work-orders', async (request) => {
-    const principal = requirePrincipal(request)
-    requireAccess(principal, 'delivery.workorder.manage')
-    return createProviderWorkOrder(
-      database,
-      principal,
-      createProviderWorkOrderBodySchema.parse(request.body),
-      requireIdempotencyKey(request),
-    )
-  })
-
-  app.post('/api/v1/provider/delivery-work-orders/:workOrderId/assign', async (request) => {
-    const principal = requirePrincipal(request)
-    requireAccess(principal, 'delivery.workorder.manage')
-    const { workOrderId } = providerWorkOrderIdParamsSchema.parse(request.params)
-    const body = assignProviderWorkOrderBodySchema.parse(request.body)
-    return assignProviderWorkOrder(
-      database,
-      principal,
-      { workOrderId, ...body },
-      requireIdempotencyKey(request),
-    )
-  })
-
-  app.post('/api/v1/provider/delivery-work-orders/:workOrderId/start', async (request) => {
-    const principal = requirePrincipal(request)
-    requireAccess(principal, 'delivery.workorder.manage')
-    const { workOrderId } = providerWorkOrderIdParamsSchema.parse(request.params)
-    const body = versionBodySchema.parse(request.body)
-    return startProviderWorkOrder(
-      database,
-      principal,
-      { workOrderId, ...body },
-      requireIdempotencyKey(request),
-    )
-  })
-
-  app.post('/api/v1/provider/delivery-work-orders/:workOrderId/attachments', async (request) => {
-    const principal = requirePrincipal(request)
-    requireAccess(principal, 'delivery.workorder.manage')
-    const { workOrderId } = providerWorkOrderIdParamsSchema.parse(request.params)
-    const headers = providerWorkOrderUploadHeadersSchema.parse(request.headers)
-    if (!Buffer.isBuffer(request.body)) {
-      throw new DomainError(400, 'work_order_attachment_body_required', '请使用二进制请求体上传附件')
-    }
-    let fileName: string
-    try {
-      fileName = decodeURIComponent(headers['x-file-name'])
-    } catch {
-      throw new DomainError(400, 'work_order_attachment_file_name_invalid', '附件文件名编码无效')
-    }
-    return uploadProviderWorkOrderAttachment(
-      database,
-      principal,
-      {
-        workOrderId,
-        expectedVersion: headers['x-expected-version'],
-        category: headers['x-attachment-category'],
-        fileName,
-        mimeType: headers['x-mime-type'],
-        content: request.body,
-      },
-      requireIdempotencyKey(request),
-    )
-  })
-
-  app.get('/api/v1/provider/delivery-work-order-attachments/:attachmentId', async (request, reply) => {
-    const principal = requirePrincipal(request)
-    requireAccess(principal, 'delivery.workorder.read')
-    const { attachmentId } = providerWorkOrderAttachmentParamsSchema.parse(request.params)
-    const attachment = getProviderWorkOrderAttachment(database, principal, attachmentId)
+  app.get<{ Querystring: { storeId?: string; status?: string } }>(
+    '/api/v1/customer-service-operations/shifts',
+    async (request, reply) => {
+      const identity = await authorizedIdentity(
+        options,
+        request.headers.authorization,
+        reply,
+        'customer_service.read',
+      );
+      if (!identity) return;
+      if (!options.customerServiceOperations)
+        return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+      return options.customerServiceOperations.listShifts(identity, request.query);
+    },
+  );
+  app.post('/api/v1/customer-service-operations/shifts', async (request, reply) => {
+    const identity = await authorizedIdentity(
+      options,
+      request.headers.authorization,
+      reply,
+      'merchant_profile.manage',
+      { mfaRequired: true, write: true },
+    );
+    if (!identity) return;
+    if (!options.customerServiceOperations)
+      return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+    const key = headerValue(request.headers['idempotency-key']);
+    if (!key || key.length > 255) return reply.code(400).send({ code: 'IDEMPOTENCY_KEY_REQUIRED' });
     return reply
-      .type(attachment.mimeType)
-      .header('Content-Disposition', `attachment; filename*=UTF-8''${encodeURIComponent(attachment.fileName)}`)
-      .send(attachment.content)
-  })
+      .code(201)
+      .send(
+        await options.customerServiceOperations.createShift(
+          identity,
+          key,
+          request.id,
+          request.body,
+        ),
+      );
+  });
+  app.get<{ Querystring: { storeId?: string; status?: string } }>(
+    '/api/v1/customer-service-operations/tasks',
+    async (request, reply) => {
+      const identity = await authorizedIdentity(
+        options,
+        request.headers.authorization,
+        reply,
+        'customer_service.read',
+      );
+      if (!identity) return;
+      if (!options.customerServiceOperations)
+        return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+      return options.customerServiceOperations.listTasks(identity, request.query);
+    },
+  );
+  app.post('/api/v1/customer-service-operations/tasks', async (request, reply) => {
+    const identity = await authorizedIdentity(
+      options,
+      request.headers.authorization,
+      reply,
+      'customer_service.send',
+      { write: true },
+    );
+    if (!identity) return;
+    if (!options.customerServiceOperations)
+      return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+    const key = headerValue(request.headers['idempotency-key']);
+    if (!key || key.length > 255) return reply.code(400).send({ code: 'IDEMPOTENCY_KEY_REQUIRED' });
+    return reply
+      .code(201)
+      .send(
+        await options.customerServiceOperations.createTask(identity, key, request.id, request.body),
+      );
+  });
+  app.post<{ Params: { taskId: string } }>(
+    '/api/v1/customer-service-operations/tasks/:taskId/actions/complete',
+    async (request, reply) => {
+      const identity = await authorizedIdentity(
+        options,
+        request.headers.authorization,
+        reply,
+        'customer_service.close',
+        { write: true },
+      );
+      if (!identity) return;
+      if (!options.customerServiceOperations)
+        return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+      const key = headerValue(request.headers['idempotency-key']);
+      if (!key || key.length > 255)
+        return reply.code(400).send({ code: 'IDEMPOTENCY_KEY_REQUIRED' });
+      return options.customerServiceOperations.completeTask(
+        identity,
+        request.params.taskId,
+        key,
+        request.id,
+        request.body,
+      );
+    },
+  );
+  app.get<{ Querystring: { storeId?: string; status?: string } }>(
+    '/api/v1/customer-service-operations/quality-reviews',
+    async (request, reply) => {
+      const identity = await authorizedIdentity(
+        options,
+        request.headers.authorization,
+        reply,
+        'customer_service.read',
+      );
+      if (!identity) return;
+      if (!options.customerServiceOperations)
+        return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+      return options.customerServiceOperations.listQualityReviews(identity, request.query);
+    },
+  );
+  app.post<{ Params: { reviewId: string } }>(
+    '/api/v1/customer-service-operations/quality-reviews/:reviewId/actions/decide',
+    async (request, reply) => {
+      const identity = await authorizedIdentity(
+        options,
+        request.headers.authorization,
+        reply,
+        'customer_service.close',
+        { mfaRequired: true, write: true },
+      );
+      if (!identity) return;
+      if (!options.customerServiceOperations)
+        return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+      const key = headerValue(request.headers['idempotency-key']);
+      if (!key || key.length > 255)
+        return reply.code(400).send({ code: 'IDEMPOTENCY_KEY_REQUIRED' });
+      return options.customerServiceOperations.decideQualityReview(
+        identity,
+        request.params.reviewId,
+        key,
+        request.id,
+        request.body,
+      );
+    },
+  );
 
-  app.post('/api/v1/provider/delivery-work-orders/:workOrderId/submit', async (request) => {
-    const principal = requirePrincipal(request)
-    requireAccess(principal, 'delivery.workorder.manage')
-    const { workOrderId } = providerWorkOrderIdParamsSchema.parse(request.params)
-    const body = submitProviderWorkOrderBodySchema.parse(request.body)
-    return submitProviderWorkOrder(
-      database,
-      principal,
-      { workOrderId, ...body },
-      requireIdempotencyKey(request),
-    )
-  })
+  app.get('/api/v1/integrations/wecom/connection-health', async (request, reply) => {
+    const identity = await authorizedIdentity(
+      options,
+      request.headers.authorization,
+      reply,
+      'audit.read',
+    );
+    if (!identity) return;
+    if (!options.platformControl) return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+    return options.platformControl.listConnectorHealth(identity);
+  });
+  app.post('/api/v1/integrations/wecom/connection-health/actions/retry', async (request, reply) => {
+    const identity = await authorizedIdentity(
+      options,
+      request.headers.authorization,
+      reply,
+      'merchant_profile.manage',
+      { mfaRequired: true, write: true },
+    );
+    if (!identity) return;
+    if (!options.platformControl) return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+    const key = headerValue(request.headers['idempotency-key']);
+    if (!key || key.length > 255) return reply.code(400).send({ code: 'IDEMPOTENCY_KEY_REQUIRED' });
+    return options.platformControl.retryConnector(identity, key, request.id, request.body);
+  });
+  app.get('/api/v1/reward-rules', async (request, reply) => {
+    const identity = await authorizedIdentity(
+      options,
+      request.headers.authorization,
+      reply,
+      'reward_rule.manage',
+    );
+    if (!identity) return;
+    if (!options.platformControl) return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+    return options.platformControl.listRewardRules(identity);
+  });
+  app.post('/api/v1/reward-rules/actions/publish', async (request, reply) => {
+    const identity = await authorizedIdentity(
+      options,
+      request.headers.authorization,
+      reply,
+      'reward_rule.manage',
+      { mfaRequired: true, write: true },
+    );
+    if (!identity) return;
+    if (!options.platformControl) return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+    const key = headerValue(request.headers['idempotency-key']);
+    if (!key || key.length > 255) return reply.code(400).send({ code: 'IDEMPOTENCY_KEY_REQUIRED' });
+    return options.platformControl.publishRewardRule(identity, key, request.id, request.body);
+  });
+  app.get<{ Querystring: { query?: string; limit?: string } }>(
+    '/api/v1/skills/catalog',
+    async (request, reply) => {
+      const identity = await authorizedIdentity(
+        options,
+        request.headers.authorization,
+        reply,
+        'plugin.install',
+      );
+      if (!identity) return;
+      if (!options.platformControl) return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+      return options.platformControl.listSkills(identity, request.query);
+    },
+  );
+  app.get<{ Querystring: { query?: string; status?: string; limit?: string } }>(
+    '/api/v1/platform/merchants',
+    async (request, reply) => {
+      const identity = await authorizedIdentity(
+        options,
+        request.headers.authorization,
+        reply,
+        'audit.read',
+      );
+      if (!identity) return;
+      if (!options.platformControl) return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+      return options.platformControl.listMerchants(identity, request.query);
+    },
+  );
+  app.get('/api/v1/platform/plans', async (request, reply) => {
+    const identity = await authorizedIdentity(
+      options,
+      request.headers.authorization,
+      reply,
+      'revenue_policy.manage',
+    );
+    if (!identity) return;
+    if (!options.platformControl) return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+    return options.platformControl.listPlans(identity);
+  });
+  app.post<{ Params: { planCode: string } }>(
+    '/api/v1/platform/plans/:planCode/actions/update-entitlements',
+    async (request, reply) => {
+      const identity = await authorizedIdentity(
+        options,
+        request.headers.authorization,
+        reply,
+        'revenue_policy.manage',
+        { mfaRequired: true, write: true },
+      );
+      if (!identity) return;
+      if (!options.platformControl) return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+      const key = headerValue(request.headers['idempotency-key']);
+      if (!key || key.length > 255)
+        return reply.code(400).send({ code: 'IDEMPOTENCY_KEY_REQUIRED' });
+      return options.platformControl.updatePlan(
+        identity,
+        request.params.planCode,
+        key,
+        request.id,
+        request.body,
+      );
+    },
+  );
+  app.get<{ Querystring: { status?: string; limit?: string } }>(
+    '/api/v1/finance/reconciliation-discrepancies',
+    async (request, reply) => {
+      const identity = await authorizedIdentity(
+        options,
+        request.headers.authorization,
+        reply,
+        'finance.reconcile',
+      );
+      if (!identity) return;
+      if (!options.platformControl) return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+      return options.platformControl.listDiscrepancies(identity, request.query);
+    },
+  );
+  app.post<{ Params: { discrepancyId: string } }>(
+    '/api/v1/finance/reconciliation-discrepancies/:discrepancyId/actions/resolve',
+    async (request, reply) => {
+      const identity = await authorizedIdentity(
+        options,
+        request.headers.authorization,
+        reply,
+        'finance.reconcile',
+        { mfaRequired: true, write: true },
+      );
+      if (!identity) return;
+      if (!options.platformControl) return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+      const key = headerValue(request.headers['idempotency-key']);
+      if (!key || key.length > 255)
+        return reply.code(400).send({ code: 'IDEMPOTENCY_KEY_REQUIRED' });
+      return options.platformControl.resolveDiscrepancy(
+        identity,
+        request.params.discrepancyId,
+        key,
+        request.id,
+        request.body,
+      );
+    },
+  );
+  app.get<{ Querystring: { query?: string; status?: string; limit?: string } }>(
+    '/api/v1/platform/channel-partners',
+    async (request, reply) => {
+      const identity = await authorizedIdentity(
+        options,
+        request.headers.authorization,
+        reply,
+        'audit.read',
+      );
+      if (!identity) return;
+      if (!options.platformControl) return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+      return options.platformControl.listPartners(identity, request.query);
+    },
+  );
+  app.post('/api/v1/platform/channel-partners/actions/save', async (request, reply) => {
+    const identity = await authorizedIdentity(
+      options,
+      request.headers.authorization,
+      reply,
+      'role.manage',
+      { mfaRequired: true, write: true },
+    );
+    if (!identity) return;
+    if (!options.platformControl) return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+    const key = headerValue(request.headers['idempotency-key']);
+    if (!key || key.length > 255) return reply.code(400).send({ code: 'IDEMPOTENCY_KEY_REQUIRED' });
+    return options.platformControl.savePartner(identity, key, request.id, request.body);
+  });
+  app.get<{ Querystring: { query?: string; status?: string; limit?: string } }>(
+    '/api/v1/platform/model-route-budgets',
+    async (request, reply) => {
+      const identity = await authorizedIdentity(
+        options,
+        request.headers.authorization,
+        reply,
+        'revenue_policy.manage',
+      );
+      if (!identity) return;
+      if (!options.platformControl) return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+      return options.platformControl.listModelBudgets(identity, request.query);
+    },
+  );
+  app.post('/api/v1/platform/model-route-budgets/actions/save', async (request, reply) => {
+    const identity = await authorizedIdentity(
+      options,
+      request.headers.authorization,
+      reply,
+      'revenue_policy.manage',
+      { mfaRequired: true, write: true },
+    );
+    if (!identity) return;
+    if (!options.platformControl) return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+    const key = headerValue(request.headers['idempotency-key']);
+    if (!key || key.length > 255) return reply.code(400).send({ code: 'IDEMPOTENCY_KEY_REQUIRED' });
+    return options.platformControl.saveModelBudget(identity, key, request.id, request.body);
+  });
 
-  app.post('/api/v1/provider/delivery-work-orders/:workOrderId/merchant-confirmation', async (request) => {
-    const principal = requirePrincipal(request)
-    requireAccess(principal, 'delivery.workorder.confirm')
-    const { workOrderId } = providerWorkOrderIdParamsSchema.parse(request.params)
-    const body = confirmProviderWorkOrderBodySchema.parse(request.body)
-    return confirmProviderWorkOrder(
-      database,
-      principal,
-      { workOrderId, ...body },
-      requireIdempotencyKey(request),
-    )
-  })
+  app.get('/api/v1/employee-agent/conversations', async (request, reply) => {
+    const identity = await authorizedIdentity(options, request.headers.authorization, reply);
+    if (!identity) return;
+    if (!options.employeeAgent) return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+    return options.employeeAgent.listConversations(identity);
+  });
+  app.post('/api/v1/employee-agent/conversations', async (request, reply) => {
+    const identity = await authorizedIdentity(
+      options,
+      request.headers.authorization,
+      reply,
+      undefined,
+      { write: true },
+    );
+    if (!identity) return;
+    if (!options.employeeAgent) return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+    return reply
+      .code(201)
+      .send(await options.employeeAgent.createConversation(identity, request.body));
+  });
+  app.get<{ Params: { conversationId: string } }>(
+    '/api/v1/employee-agent/conversations/:conversationId',
+    async (request, reply) => {
+      const identity = await authorizedIdentity(options, request.headers.authorization, reply);
+      if (!identity) return;
+      if (!options.employeeAgent) return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+      return options.employeeAgent.getConversation(identity, request.params.conversationId);
+    },
+  );
+  app.get<{ Querystring: { status?: string } }>(
+    '/api/v1/employee-agent/tasks',
+    async (request, reply) => {
+      const identity = await authorizedIdentity(options, request.headers.authorization, reply);
+      if (!identity) return;
+      if (!options.employeeAgent) return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+      return options.employeeAgent.listTasks(identity, request.query.status);
+    },
+  );
+  app.post('/api/v1/employee-agent/tasks', async (request, reply) => {
+    const identity = await authorizedIdentity(
+      options,
+      request.headers.authorization,
+      reply,
+      undefined,
+      { write: true },
+    );
+    if (!identity) return;
+    const key = headerValue(request.headers['idempotency-key']);
+    if (!key || key.length > 255) return reply.code(400).send({ code: 'INVALID_REQUEST_CONTEXT' });
+    if (!options.employeeAgent) return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+    return reply
+      .code(201)
+      .send(await options.employeeAgent.createTask(identity, key, request.body));
+  });
+  app.get<{ Params: { taskId: string } }>(
+    '/api/v1/employee-agent/tasks/:taskId',
+    async (request, reply) => {
+      const identity = await authorizedIdentity(options, request.headers.authorization, reply);
+      if (!identity) return;
+      if (!options.employeeAgent) return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+      return options.employeeAgent.getTask(identity, request.params.taskId);
+    },
+  );
+  app.post<{ Params: { taskId: string } }>(
+    '/api/v1/employee-agent/tasks/:taskId/plan',
+    async (request, reply) => {
+      const identity = await authorizedIdentity(
+        options,
+        request.headers.authorization,
+        reply,
+        undefined,
+        { write: true },
+      );
+      if (!identity) return;
+      if (!options.employeeAgent) return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+      return options.employeeAgent.setPlan(identity, request.params.taskId, request.body);
+    },
+  );
+  for (const [pathAction, serviceAction] of [
+    ['pause', 'PAUSE'],
+    ['resume', 'RESUME'],
+    ['cancel', 'CANCEL'],
+    ['retry', 'RETRY'],
+  ] as const) {
+    app.post<{ Params: { taskId: string } }>(
+      `/api/v1/employee-agent/tasks/:taskId/actions/${pathAction}`,
+      async (request, reply) => {
+        const identity = await authorizedIdentity(
+          options,
+          request.headers.authorization,
+          reply,
+          undefined,
+          { write: true },
+        );
+        if (!identity) return;
+        if (!options.employeeAgent) return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+        return options.employeeAgent.actTask(identity, request.params.taskId, serviceAction);
+      },
+    );
+  }
+  app.post<{ Body: { token?: string; decision?: 'APPROVE' | 'REJECT' } }>(
+    '/api/v1/employee-agent/approvals/actions/decide',
+    async (request, reply) => {
+      const identity = await authorizedIdentity(
+        options,
+        request.headers.authorization,
+        reply,
+        undefined,
+        { write: true },
+      );
+      if (!identity) return;
+      if (!request.body?.token || !request.body.decision)
+        return reply.code(400).send({ code: 'INVALID_REQUEST' });
+      if (!options.employeeAgent) return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+      return options.employeeAgent.decideApproval(
+        identity,
+        request.body.token,
+        request.body.decision,
+      );
+    },
+  );
 
-  app.get('/api/v1/provider/delivery-sla', async (request) => {
-    const principal = requirePrincipal(request)
-    requireAccess(principal, 'delivery.sla.read')
-    const query = providerSlaQuerySchema.parse(request.query)
-    return getProviderSlaOverview(database, principal, query.focusIncidentId)
-  })
+  app.post('/api/v1/delivery-projects', async (request, reply) => {
+    const identity = await authorizedIdentity(
+      options,
+      request.headers.authorization,
+      reply,
+      'delivery.create',
+      { mfaRequired: true, write: true },
+    );
+    if (!identity) return;
+    const idempotencyKey = headerValue(request.headers['idempotency-key']);
+    if (!idempotencyKey) return reply.code(400).send({ code: 'INVALID_REQUEST_CONTEXT' });
+    if (!options.deliveryWorkflows) return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+    return handleDelivery(reply, async () =>
+      reply.code(201).send(
+        await options.deliveryWorkflows!.create({
+          identity,
+          idempotencyKey,
+          traceId: request.id,
+          body: request.body,
+        }),
+      ),
+    );
+  });
 
-  app.post('/api/v1/provider/delivery-sla/scan', async (request) => {
-    const principal = requirePrincipal(request)
-    requireAccess(principal, 'delivery.sla.scan')
-    requireIdempotencyKey(request)
-    return runProviderSlaScan(database, principal)
-  })
+  app.get<{ Params: { projectId: string } }>(
+    '/api/v1/delivery-projects/:projectId',
+    async (request, reply) => {
+      const identity = await authorizedIdentity(
+        options,
+        request.headers.authorization,
+        reply,
+        'delivery.read',
+      );
+      if (!identity) return;
+      if (!options.deliveryWorkflows) return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+      return handleDelivery(reply, () =>
+        options.deliveryWorkflows!.get(identity, request.params.projectId),
+      );
+    },
+  );
 
-  app.post('/api/v1/provider/delivery-sla/incidents/:incidentId/acknowledge', async (request) => {
-    const principal = requirePrincipal(request)
-    requireAccess(principal, 'delivery.sla.acknowledge')
-    const { incidentId } = providerSlaIncidentParamsSchema.parse(request.params)
-    const body = acknowledgeProviderSlaBodySchema.parse(request.body)
-    return acknowledgeProviderSlaIncident(
-      database,
-      principal,
-      { incidentId, ...body },
-      requireIdempotencyKey(request),
-    )
-  })
+  for (const action of ['start', 'resume'] as const) {
+    app.post<{ Params: { projectId: string } }>(
+      `/api/v1/delivery-projects/:projectId/actions/${action}`,
+      async (request, reply) => {
+        const identity = await authorizedIdentity(
+          options,
+          request.headers.authorization,
+          reply,
+          'delivery.execute',
+          { mfaRequired: true, write: true },
+        );
+        if (!identity) return;
+        const idempotencyKey = headerValue(request.headers['idempotency-key']);
+        if (!idempotencyKey) return reply.code(400).send({ code: 'INVALID_REQUEST_CONTEXT' });
+        if (!options.deliveryWorkflows)
+          return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+        return handleDelivery(reply, () =>
+          options.deliveryWorkflows!.start({
+            identity,
+            idempotencyKey,
+            traceId: request.id,
+            body: { projectId: request.params.projectId },
+          }),
+        );
+      },
+    );
+  }
 
-  app.get('/api/v1/provider/renewals', async (request) => {
-    const principal = requirePrincipal(request)
-    requireAccess(principal, 'delivery.renewal.read')
-    const query = providerRenewalQuerySchema.parse(request.query)
-    return getProviderRenewalOverview(database, principal, query.focusCaseId)
-  })
+  app.post<{ Params: { projectId: string } }>(
+    '/api/v1/delivery-projects/:projectId/actions/suspend',
+    async (request, reply) => {
+      const identity = await authorizedIdentity(
+        options,
+        request.headers.authorization,
+        reply,
+        'delivery.execute',
+        { mfaRequired: true, write: true },
+      );
+      if (!identity) return;
+      const idempotencyKey = headerValue(request.headers['idempotency-key']);
+      if (!idempotencyKey) return reply.code(400).send({ code: 'INVALID_REQUEST_CONTEXT' });
+      if (!options.deliveryWorkflows) return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+      return handleDelivery(reply, () =>
+        options.deliveryWorkflows!.suspend({
+          identity,
+          idempotencyKey,
+          traceId: request.id,
+          body: { projectId: request.params.projectId },
+        }),
+      );
+    },
+  );
 
-  app.post('/api/v1/provider/renewals/scan', async (request) => {
-    const principal = requirePrincipal(request)
-    requireAccess(principal, 'delivery.renewal.scan')
-    requireIdempotencyKey(request)
-    return runProviderRenewalScan(database, principal)
-  })
+  for (const action of ['execute', 'retry'] as const) {
+    app.post<{ Params: { projectId: string; stepCode: string } }>(
+      `/api/v1/delivery-projects/:projectId/steps/:stepCode/actions/${action}`,
+      async (request, reply) => {
+        const identity = await authorizedIdentity(
+          options,
+          request.headers.authorization,
+          reply,
+          'delivery.execute',
+          { mfaRequired: true, write: true },
+        );
+        if (!identity) return;
+        const idempotencyKey = headerValue(request.headers['idempotency-key']);
+        if (!idempotencyKey) return reply.code(400).send({ code: 'INVALID_REQUEST_CONTEXT' });
+        if (!options.deliveryWorkflows)
+          return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+        return handleDelivery(reply, () =>
+          options.deliveryWorkflows![action === 'execute' ? 'executeStep' : 'retryStep']({
+            identity,
+            idempotencyKey,
+            traceId: request.id,
+            body: objectBody(request.body, {
+              projectId: request.params.projectId,
+              stepCode: request.params.stepCode,
+            }),
+          }),
+        );
+      },
+    );
+  }
 
-  app.post('/api/v1/provider/renewals/:caseId/proposals', async (request) => {
-    const principal = requirePrincipal(request)
-    requireAccess(principal, 'delivery.renewal.manage')
-    const { caseId } = providerRenewalCaseParamsSchema.parse(request.params)
-    const body = providerRenewalProposalBodySchema.parse(request.body)
-    return generateProviderRenewalProposal(
-      database,
-      principal,
-      { caseId, ...body },
-      requireIdempotencyKey(request),
-    )
-  })
+  app.post<{ Params: { projectId: string } }>(
+    '/api/v1/delivery-projects/:projectId/actions/accept',
+    async (request, reply) => {
+      const identity = await authorizedIdentity(
+        options,
+        request.headers.authorization,
+        reply,
+        'delivery.accept',
+        { mfaRequired: true, write: true },
+      );
+      if (!identity) return;
+      const idempotencyKey = headerValue(request.headers['idempotency-key']);
+      if (!idempotencyKey) return reply.code(400).send({ code: 'INVALID_REQUEST_CONTEXT' });
+      if (!options.deliveryWorkflows) return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+      return handleDelivery(reply, () =>
+        options.deliveryWorkflows!.accept({
+          identity,
+          idempotencyKey,
+          traceId: request.id,
+          body: objectBody(request.body, { projectId: request.params.projectId }),
+        }),
+      );
+    },
+  );
 
-  app.post('/api/v1/provider/renewals/:caseId/outcome', async (request) => {
-    const principal = requirePrincipal(request)
-    requireAccess(principal, 'delivery.renewal.manage')
-    const { caseId } = providerRenewalCaseParamsSchema.parse(request.params)
-    const body = providerRenewalOutcomeBodySchema.parse(request.body)
-    return closeProviderRenewalCase(
-      database,
-      principal,
-      { caseId, ...body },
-      requireIdempotencyKey(request),
-    )
-  })
+  app.post<{ Params: { projectId: string } }>(
+    '/api/v1/delivery-projects/:projectId/assignments',
+    async (request, reply) => {
+      const identity = await authorizedIdentity(
+        options,
+        request.headers.authorization,
+        reply,
+        'delivery.execute',
+        { mfaRequired: true, write: true },
+      );
+      if (!identity) return;
+      const idempotencyKey = headerValue(request.headers['idempotency-key']);
+      if (!idempotencyKey) return reply.code(400).send({ code: 'INVALID_REQUEST_CONTEXT' });
+      if (!options.deliveryWorkflows) return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+      return handleDelivery(reply, () =>
+        options.deliveryWorkflows!.assignTemporaryAccess({
+          identity,
+          idempotencyKey,
+          traceId: request.id,
+          body: objectBody(request.body, { projectId: request.params.projectId }),
+        }),
+      );
+    },
+  );
 
-  app.get('/api/v1/provider/city-metrics', async (request) => {
-    const principal = requirePrincipal(request)
-    requireAccess(principal, 'provider.metrics.read')
-    return getProviderCityMetricsOverview(
-      database,
-      principal,
-      providerCityMetricsQuerySchema.parse(request.query),
-    )
-  })
+  app.get<{ Querystring: { status?: string } }>(
+    '/api/v1/delivery-exceptions',
+    async (request, reply) => {
+      const identity = await authorizedIdentity(
+        options,
+        request.headers.authorization,
+        reply,
+        'delivery.read',
+      );
+      if (!identity) return;
+      if (!options.deliveryWorkflows) return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+      return handleDelivery(reply, () =>
+        options.deliveryWorkflows!.listExceptions(identity, request.query.status),
+      );
+    },
+  );
 
-  app.get('/api/v1/provider/settlements', async (request) => {
-    const principal = requirePrincipal(request)
-    requireAccess(principal, 'provider.settlement.read')
-    const query = providerSettlementQuerySchema.parse(request.query)
-    return getProviderSettlementOverview(database, principal, query.focusStatementId)
-  })
+  app.post<{ Params: { merchantProfileId: string } }>(
+    '/api/v1/merchants/:merchantProfileId/revenue-rights',
+    async (request, reply) => {
+      const identity = await authorizedIdentity(
+        options,
+        request.headers.authorization,
+        reply,
+        'revenue_right.create',
+        { mfaRequired: true, write: true },
+      );
+      if (!identity) return;
+      const idempotencyKey = headerValue(request.headers['idempotency-key']);
+      if (!idempotencyKey || idempotencyKey.length > 255) {
+        return reply.code(400).send({ code: 'INVALID_REQUEST_CONTEXT' });
+      }
+      if (!options.revenueRights) return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
 
-  app.post('/api/v1/provider/settlements/generate', async (request) => {
-    const principal = requirePrincipal(request)
-    requireAccess(principal, 'provider.settlement.manage')
-    return generateProviderSettlement(
-      database,
-      principal,
-      generateProviderSettlementBodySchema.parse(request.body),
-      requireIdempotencyKey(request),
-    )
-  })
+      try {
+        const result = await options.revenueRights.create({
+          tenantId: identity.tenantId,
+          merchantProfileId: request.params.merchantProfileId,
+          idempotencyKey,
+          body: objectBody(request.body, { createdBy: identity.userId }),
+          traceId: request.id,
+        });
+        return reply.code(201).send(result);
+      } catch (error) {
+        if (error instanceof ZodError) return reply.code(400).send({ code: 'INVALID_REQUEST' });
+        if (error instanceof IdempotencyConflictError) {
+          return reply.code(409).send({ code: 'IDEMPOTENCY_CONFLICT' });
+        }
+        if (error instanceof RevenueRightConflictError) {
+          return reply.code(409).send({ code: 'ACTIVE_REVENUE_RIGHT_EXISTS' });
+        }
+        if (error instanceof InactiveBeneficiaryError) {
+          return reply.code(422).send({ code: 'INVALID_REVENUE_BENEFICIARY' });
+        }
+        throw error;
+      }
+    },
+  );
 
-  app.post('/api/v1/provider/settlements/:statementId/adjustments', async (request) => {
-    const principal = requirePrincipal(request)
-    requireAccess(principal, 'provider.settlement.manage')
-    const { statementId } = providerSettlementStatementParamsSchema.parse(request.params)
-    const body = providerSettlementAdjustmentBodySchema.parse(request.body)
-    return requestProviderSettlementAdjustment(
-      database,
-      principal,
-      { statementId, ...body },
-      requireIdempotencyKey(request),
-    )
-  })
+  app.post<{ Params: { subscriptionId: string } }>(
+    '/api/v1/subscriptions/:subscriptionId/distribution-statements:lock',
+    async (request, reply) => {
+      const identity = await authorizedIdentity(
+        options,
+        request.headers.authorization,
+        reply,
+        'distribution.lock',
+        { mfaRequired: true, write: true },
+      );
+      if (!identity) return;
+      const idempotencyKey = headerValue(request.headers['idempotency-key']);
+      if (!idempotencyKey || idempotencyKey.length > 255) {
+        return reply.code(400).send({ code: 'INVALID_REQUEST_CONTEXT' });
+      }
+      if (!options.distributionLocks) return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+      const body =
+        request.body && typeof request.body === 'object'
+          ? {
+              ...request.body,
+              subscriptionId: request.params.subscriptionId,
+              lockedBy: identity.userId,
+            }
+          : { subscriptionId: request.params.subscriptionId, lockedBy: identity.userId };
+      try {
+        const result = await options.distributionLocks.lock({
+          tenantId: identity.tenantId,
+          idempotencyKey,
+          traceId: request.id,
+          body,
+        });
+        return reply.code(201).send(result);
+      } catch (error) {
+        if (error instanceof ZodError) return reply.code(400).send({ code: 'INVALID_REQUEST' });
+        if (error instanceof IdempotencyConflictError) {
+          return reply.code(409).send({ code: 'IDEMPOTENCY_CONFLICT' });
+        }
+        if (error instanceof ProvisionalCostError) {
+          return reply.code(409).send({ code: 'DIRECT_COSTS_NOT_ACTUAL' });
+        }
+        if (error instanceof DistributionSourceError) {
+          return reply.code(422).send({ code: 'INVALID_DISTRIBUTION_SOURCE' });
+        }
+        if (error instanceof DistributionConfigurationError) {
+          return reply.code(422).send({ code: 'INVALID_DISTRIBUTION_CONFIGURATION' });
+        }
+        throw error;
+      }
+    },
+  );
+
+  app.post<{ Params: { statementId: string } }>(
+    '/api/v1/distribution-statements/:statementId/action-approvals',
+    async (request, reply) => {
+      const actionType =
+        request.body && typeof request.body === 'object' && 'actionType' in request.body
+          ? request.body.actionType
+          : undefined;
+      const permission = actionType === 'REVERSE' ? 'distribution.reverse' : 'distribution.pay';
+      const identity = await authorizedIdentity(
+        options,
+        request.headers.authorization,
+        reply,
+        permission,
+        { mfaRequired: true, write: true },
+      );
+      if (!identity) return;
+      const context = idempotencyContext(request.headers, identity);
+      if (!context) return reply.code(400).send({ code: 'INVALID_REQUEST_CONTEXT' });
+      if (!options.distributionSettlements)
+        return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+      return handleSettlement(reply, async () => {
+        const body = objectBody(request.body, {
+          statementId: request.params.statementId,
+          requestedBy: identity.userId,
+        });
+        const result = await options.distributionSettlements!.requestApproval({
+          ...context,
+          traceId: request.id,
+          body,
+        });
+        return reply.code(201).send(result);
+      });
+    },
+  );
+
+  app.post<{ Params: { approvalId: string } }>(
+    '/api/v1/distribution-action-approvals/:approvalId/actions/approve',
+    async (request, reply) => {
+      const identity = await authorizedIdentity(
+        options,
+        request.headers.authorization,
+        reply,
+        'settlement.approve',
+        { mfaRequired: true, write: true },
+      );
+      if (!identity) return;
+      const context = idempotencyContext(request.headers, identity);
+      if (!context) return reply.code(400).send({ code: 'INVALID_REQUEST_CONTEXT' });
+      if (!options.distributionSettlements)
+        return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+      return handleSettlement(reply, async () => {
+        const result = await options.distributionSettlements!.approve({
+          ...context,
+          traceId: request.id,
+          body: objectBody(request.body, {
+            approvalId: request.params.approvalId,
+            approvedBy: identity.userId,
+          }),
+        });
+        return reply.send(result);
+      });
+    },
+  );
+
+  for (const action of ['pay', 'reverse'] as const) {
+    app.post<{ Params: { statementId: string } }>(
+      `/api/v1/distribution-statements/:statementId/actions/${action}`,
+      async (request, reply) => {
+        const identity = await authorizedIdentity(
+          options,
+          request.headers.authorization,
+          reply,
+          action === 'pay' ? 'distribution.pay' : 'distribution.reverse',
+          { mfaRequired: true, write: true },
+        );
+        if (!identity) return;
+        const context = idempotencyContext(request.headers, identity);
+        if (!context) return reply.code(400).send({ code: 'INVALID_REQUEST_CONTEXT' });
+        if (!options.distributionSettlements)
+          return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+        return handleSettlement(reply, async () => {
+          const result = await options.distributionSettlements![action]({
+            ...context,
+            traceId: request.id,
+            body: objectBody(request.body, {
+              statementId: request.params.statementId,
+              executedBy: identity.userId,
+            }),
+          });
+          return reply.send(result);
+        });
+      },
+    );
+  }
+
+  app.post<{ Params: { rightHolderId: string } }>(
+    '/api/v1/revenue-right-holders/:rightHolderId/transfers',
+    async (request, reply) => {
+      const identity = await authorizedIdentity(
+        options,
+        request.headers.authorization,
+        reply,
+        'revenue_right.transfer_request',
+        { mfaRequired: true, write: true },
+      );
+      if (!identity) return;
+      const idempotencyKey = headerValue(request.headers['idempotency-key']);
+      if (!idempotencyKey || idempotencyKey.length > 255)
+        return reply.code(400).send({ code: 'INVALID_REQUEST_CONTEXT' });
+      if (!options.revenueRightGovernance)
+        return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+      return handleRevenueRightGovernance(reply, async () =>
+        reply.code(202).send(
+          await options.revenueRightGovernance!.requestTransfer({
+            identity,
+            idempotencyKey,
+            traceId: request.id,
+            body: objectBody(request.body, { rightHolderId: request.params.rightHolderId }),
+          }),
+        ),
+      );
+    },
+  );
+
+  app.post<{ Params: { transferId: string } }>(
+    '/api/v1/revenue-right-transfers/:transferId/confirmations',
+    async (request, reply) => {
+      const identity = await authorizedIdentity(
+        options,
+        request.headers.authorization,
+        reply,
+        'revenue_right.transfer_request',
+        { mfaRequired: true, write: true },
+      );
+      if (!identity) return;
+      const idempotencyKey = headerValue(request.headers['idempotency-key']);
+      if (!idempotencyKey || idempotencyKey.length > 255)
+        return reply.code(400).send({ code: 'INVALID_REQUEST_CONTEXT' });
+      if (!options.revenueRightGovernance)
+        return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+      return handleRevenueRightGovernance(reply, async () =>
+        reply.send(
+          await options.revenueRightGovernance!.confirmTransfer({
+            identity,
+            idempotencyKey,
+            traceId: request.id,
+            body: objectBody(request.body, { transferId: request.params.transferId }),
+          }),
+        ),
+      );
+    },
+  );
+
+  app.post<{ Params: { transferId: string } }>(
+    '/api/v1/revenue-right-transfers/:transferId/actions/approve',
+    async (request, reply) => {
+      const identity = await authorizedIdentity(
+        options,
+        request.headers.authorization,
+        reply,
+        'revenue_right.transfer_approve',
+        { mfaRequired: true, write: true },
+      );
+      if (!identity) return;
+      const idempotencyKey = headerValue(request.headers['idempotency-key']);
+      if (!idempotencyKey || idempotencyKey.length > 255)
+        return reply.code(400).send({ code: 'INVALID_REQUEST_CONTEXT' });
+      if (!options.revenueRightGovernance)
+        return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+      return handleRevenueRightGovernance(reply, async () =>
+        reply.send(
+          await options.revenueRightGovernance!.approveTransfer({
+            identity,
+            idempotencyKey,
+            traceId: request.id,
+            body: objectBody(request.body, { transferId: request.params.transferId }),
+          }),
+        ),
+      );
+    },
+  );
+
+  app.post<{ Params: { rightGroupId: string } }>(
+    '/api/v1/revenue-right-groups/:rightGroupId/disputes',
+    async (request, reply) => {
+      const identity = await authorizedIdentity(
+        options,
+        request.headers.authorization,
+        reply,
+        'revenue_right.suspend',
+        { mfaRequired: true, write: true },
+      );
+      if (!identity) return;
+      const idempotencyKey = headerValue(request.headers['idempotency-key']);
+      if (!idempotencyKey || idempotencyKey.length > 255)
+        return reply.code(400).send({ code: 'INVALID_REQUEST_CONTEXT' });
+      if (!options.revenueRightGovernance)
+        return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+      return handleRevenueRightGovernance(reply, async () =>
+        reply.code(202).send(
+          await options.revenueRightGovernance!.openDispute({
+            identity,
+            idempotencyKey,
+            traceId: request.id,
+            body: objectBody(request.body, { rightGroupId: request.params.rightGroupId }),
+          }),
+        ),
+      );
+    },
+  );
+
+  app.post('/api/v1/merchant-intake/sessions', async (request, reply) => {
+    const identity = await authorizedIdentity(
+      options,
+      request.headers.authorization,
+      reply,
+      'merchant.intake.create',
+      { write: true },
+    );
+    if (!identity) return;
+    const idempotencyKey = headerValue(request.headers['idempotency-key']);
+    if (!idempotencyKey || idempotencyKey.length > 255)
+      return reply.code(400).send({ code: 'INVALID_REQUEST_CONTEXT' });
+    if (!options.merchantIntake) return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+    return handleIntake(reply, async () => {
+      const result = await options.merchantIntake!.createSession({
+        identity,
+        idempotencyKey,
+        traceId: request.id,
+        body: request.body,
+      });
+      return reply.code(201).send(result);
+    });
+  });
+
+  app.get<{ Params: { sessionId: string } }>(
+    '/api/v1/merchant-intake/sessions/:sessionId',
+    async (request, reply) => {
+      const identity = await authorizedIdentity(
+        options,
+        request.headers.authorization,
+        reply,
+        'merchant.intake.read',
+      );
+      if (!identity) return;
+      if (!options.merchantIntake) return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+      return handleIntake(reply, async () =>
+        reply.send(await options.merchantIntake!.getSession(identity, request.params.sessionId)),
+      );
+    },
+  );
+
+  app.post<{ Params: { sessionId: string } }>(
+    '/api/v1/merchant-intake/sessions/:sessionId/uploads',
+    async (request, reply) => {
+      const identity = await authorizedIdentity(
+        options,
+        request.headers.authorization,
+        reply,
+        'merchant.intake.write',
+        { write: true },
+      );
+      if (!identity) return;
+      const idempotencyKey = headerValue(request.headers['idempotency-key']);
+      if (!idempotencyKey || idempotencyKey.length > 255)
+        return reply.code(400).send({ code: 'INVALID_REQUEST_CONTEXT' });
+      if (!options.merchantIntakeUploads)
+        return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+      return handleIntake(reply, async () => {
+        const result = await options.merchantIntakeUploads!.create({
+          identity,
+          idempotencyKey,
+          traceId: request.id,
+          body: objectBody(request.body, { sessionId: request.params.sessionId }),
+        });
+        return reply.code(201).send(result);
+      });
+    },
+  );
+
+  app.post<{ Params: { uploadId: string } }>(
+    '/api/v1/merchant-intake/uploads/:uploadId/actions/complete',
+    async (request, reply) => {
+      const identity = await authorizedIdentity(
+        options,
+        request.headers.authorization,
+        reply,
+        'merchant.intake.write',
+        { write: true },
+      );
+      if (!identity) return;
+      const idempotencyKey = headerValue(request.headers['idempotency-key']);
+      if (!idempotencyKey || idempotencyKey.length > 255)
+        return reply.code(400).send({ code: 'INVALID_REQUEST_CONTEXT' });
+      if (!options.merchantIntakeUploads)
+        return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+      return handleIntake(reply, async () => {
+        const result = await options.merchantIntakeUploads!.complete({
+          identity,
+          idempotencyKey,
+          traceId: request.id,
+          body: objectBody(request.body, { uploadId: request.params.uploadId }),
+        });
+        return reply.code(202).send(result);
+      });
+    },
+  );
+
+  app.post<{ Params: { sessionId: string } }>(
+    '/api/v1/merchant-intake/sessions/:sessionId/messages',
+    async (request, reply) => {
+      const identity = await authorizedIdentity(
+        options,
+        request.headers.authorization,
+        reply,
+        'merchant.intake.write',
+        { write: true },
+      );
+      if (!identity) return;
+      const idempotencyKey = headerValue(request.headers['idempotency-key']);
+      if (!idempotencyKey || idempotencyKey.length > 255)
+        return reply.code(400).send({ code: 'INVALID_REQUEST_CONTEXT' });
+      if (!options.merchantIntakeMessages)
+        return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+      return handleIntake(reply, async () =>
+        reply.code(202).send(
+          await options.merchantIntakeMessages!.add({
+            identity,
+            idempotencyKey,
+            traceId: request.id,
+            body: objectBody(request.body, { sessionId: request.params.sessionId }),
+          }),
+        ),
+      );
+    },
+  );
+
+  app.post<{
+    Querystring: { msg_signature?: string; timestamp?: string; nonce?: string };
+  }>('/api/v1/webhooks/wecom/intake', async (request, reply) => {
+    const { msg_signature: signature, timestamp, nonce } = request.query;
+    if (!signature || !timestamp || !nonce || typeof request.body !== 'string')
+      return reply.code(400).send({ code: 'INVALID_WECOM_CALLBACK' });
+    if (!options.wecomIntakeCallback) return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+    try {
+      return reply.send(
+        await options.wecomIntakeCallback.receive({
+          signature,
+          timestamp,
+          nonce,
+          xml: request.body,
+          traceId: request.id,
+        }),
+      );
+    } catch (error) {
+      if (error instanceof WeComCallbackAuthenticationError)
+        return reply.code(401).send({ code: 'INVALID_WECOM_SIGNATURE' });
+      if (error instanceof WeComCallbackConflictError)
+        return reply.code(409).send({ code: 'WECOM_EVENT_CONFLICT' });
+      throw error;
+    }
+  });
+
+  app.post<{ Params: { sessionId: string } }>(
+    '/api/v1/merchant-intake/sessions/:sessionId/confirmations',
+    async (request, reply) => {
+      const identity = await authorizedIdentity(
+        options,
+        request.headers.authorization,
+        reply,
+        'merchant.intake.confirm',
+        { mfaRequired: true, write: true },
+      );
+      if (!identity) return;
+      const idempotencyKey = headerValue(request.headers['idempotency-key']);
+      if (!idempotencyKey || idempotencyKey.length > 255)
+        return reply.code(400).send({ code: 'INVALID_REQUEST_CONTEXT' });
+      if (!options.merchantIntake) return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+      return handleIntake(reply, async () =>
+        reply.send(
+          await options.merchantIntake!.confirm({
+            identity,
+            idempotencyKey,
+            traceId: request.id,
+            body: objectBody(request.body, { sessionId: request.params.sessionId }),
+          }),
+        ),
+      );
+    },
+  );
+
+  app.post<{ Params: { sessionId: string } }>(
+    '/api/v1/merchant-intake/sessions/:sessionId/actions/commit',
+    async (request, reply) => {
+      const identity = await authorizedIdentity(
+        options,
+        request.headers.authorization,
+        reply,
+        'merchant.intake.confirm',
+        { mfaRequired: true, write: true },
+      );
+      if (!identity) return;
+      const idempotencyKey = headerValue(request.headers['idempotency-key']);
+      if (!idempotencyKey || idempotencyKey.length > 255)
+        return reply.code(400).send({ code: 'INVALID_REQUEST_CONTEXT' });
+      if (!options.merchantIntake) return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+      return handleIntake(reply, async () =>
+        reply.send(
+          await options.merchantIntake!.commit({
+            identity,
+            idempotencyKey,
+            traceId: request.id,
+            body: objectBody(request.body, { sessionId: request.params.sessionId }),
+          }),
+        ),
+      );
+    },
+  );
+
+  app.post('/api/v1/customer-service/conversations', async (request, reply) => {
+    const identity = consumerIdentity(options, request.headers.authorization, reply);
+    if (!identity) return;
+    const idempotencyKey = headerValue(request.headers['idempotency-key']);
+    if (!idempotencyKey || idempotencyKey.length > 255)
+      return reply.code(400).send({ code: 'INVALID_REQUEST_CONTEXT' });
+    if (!options.customerService) return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+    return handleCustomerService(reply, async () =>
+      reply.code(201).send(
+        await options.customerService!.createConversation({
+          identity,
+          idempotencyKey,
+          traceId: request.id,
+          body: request.body,
+        }),
+      ),
+    );
+  });
+
+  app.get<{ Querystring: { status?: string } }>(
+    '/api/v1/customer-service/conversations',
+    async (request, reply) => {
+      const consumer = tryConsumerIdentity(options, request.headers.authorization);
+      if (consumer) {
+        if (!options.customerService) return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+        return handleCustomerService(reply, () =>
+          options.customerService!.listConsumerConversations(consumer),
+        );
+      }
+      const identity = await authorizedIdentity(
+        options,
+        request.headers.authorization,
+        reply,
+        'customer_service.read',
+      );
+      if (!identity) return;
+      if (!options.customerService) return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+      return handleCustomerService(reply, () =>
+        options.customerService!.listQueue(identity, request.query.status),
+      );
+    },
+  );
+
+  app.get<{ Params: { conversationId: string } }>(
+    '/api/v1/customer-service/conversations/:conversationId',
+    async (request, reply) => {
+      const consumer = tryConsumerIdentity(options, request.headers.authorization);
+      if (consumer) {
+        if (!options.customerService) return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+        return handleCustomerService(reply, () =>
+          options.customerService!.getConsumerConversation(consumer, request.params.conversationId),
+        );
+      }
+      const staff = await authorizedIdentity(
+        options,
+        request.headers.authorization,
+        reply,
+        'customer_service.read',
+      );
+      if (!staff) return;
+      if (!options.customerService) return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+      return handleCustomerService(reply, () =>
+        options.customerService!.getConversation(staff, request.params.conversationId),
+      );
+    },
+  );
+
+  app.get<{ Params: { conversationId: string } }>(
+    '/api/v1/customer-service/conversations/:conversationId/messages',
+    async (request, reply) => {
+      const consumer = tryConsumerIdentity(options, request.headers.authorization);
+      if (consumer) {
+        if (!options.customerService) return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+        return handleCustomerService(reply, () =>
+          options.customerService!.listConsumerMessages(consumer, request.params.conversationId),
+        );
+      }
+      const staff = await authorizedIdentity(
+        options,
+        request.headers.authorization,
+        reply,
+        'customer_service.read',
+      );
+      if (!staff) return;
+      if (!options.customerService) return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+      return handleCustomerService(reply, () =>
+        options.customerService!.listMessages(staff, request.params.conversationId),
+      );
+    },
+  );
+
+  app.post<{ Params: { conversationId: string } }>(
+    '/api/v1/customer-service/conversations/:conversationId/messages',
+    async (request, reply) => {
+      const idempotencyKey = headerValue(request.headers['idempotency-key']);
+      if (!idempotencyKey || idempotencyKey.length > 255)
+        return reply.code(400).send({ code: 'INVALID_REQUEST_CONTEXT' });
+      if (!options.customerService) return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+      const consumer = tryConsumerIdentity(options, request.headers.authorization);
+      if (consumer) {
+        return handleCustomerService(reply, async () =>
+          reply.code(201).send(
+            await options.customerService!.sendCustomerMessage({
+              identity: consumer,
+              idempotencyKey,
+              traceId: request.id,
+              body: objectBody(request.body, { conversationId: request.params.conversationId }),
+            }),
+          ),
+        );
+      }
+      const staff = await authorizedIdentity(
+        options,
+        request.headers.authorization,
+        reply,
+        'customer_service.send',
+        { write: true },
+      );
+      if (!staff) return;
+      return handleCustomerService(reply, async () =>
+        reply.code(201).send(
+          await options.customerService!.sendEmployeeMessage({
+            identity: staff,
+            idempotencyKey,
+            traceId: request.id,
+            body: objectBody(request.body, { conversationId: request.params.conversationId }),
+          }),
+        ),
+      );
+    },
+  );
+
+  app.get<{ Params: { conversationId: string; messageId: string } }>(
+    '/api/v1/customer-service/conversations/:conversationId/messages/:messageId/content',
+    async (request, reply) => {
+      if (!options.customerService) return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+      const consumer = tryConsumerIdentity(options, request.headers.authorization);
+      if (consumer)
+        return handleCustomerService(reply, () =>
+          options.customerService!.getConsumerMessageContent(
+            consumer,
+            request.params.conversationId,
+            request.params.messageId,
+          ),
+        );
+      const staff = await authorizedIdentity(
+        options,
+        request.headers.authorization,
+        reply,
+        'customer_service.read',
+      );
+      if (!staff) return;
+      return handleCustomerService(reply, () =>
+        options.customerService!.getStaffMessageContent(
+          staff,
+          request.params.conversationId,
+          request.params.messageId,
+          request.id,
+        ),
+      );
+    },
+  );
+
+  app.post<{ Params: { conversationId: string } }>(
+    '/api/v1/customer-service/conversations/:conversationId/actions/request-human',
+    async (request, reply) => {
+      const identity = consumerIdentity(options, request.headers.authorization, reply);
+      if (!identity) return;
+      const idempotencyKey = headerValue(request.headers['idempotency-key']);
+      if (!idempotencyKey || idempotencyKey.length > 255)
+        return reply.code(400).send({ code: 'INVALID_REQUEST_CONTEXT' });
+      if (!options.customerService) return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+      return handleCustomerService(reply, async () =>
+        reply.code(202).send(
+          await options.customerService!.requestHuman({
+            identity,
+            idempotencyKey,
+            traceId: request.id,
+            body: objectBody(request.body, { conversationId: request.params.conversationId }),
+          }),
+        ),
+      );
+    },
+  );
+
+  for (const action of ['accept', 'return-to-ai', 'close'] as const) {
+    app.post<{ Params: { conversationId: string } }>(
+      `/api/v1/customer-service/conversations/:conversationId/actions/${action}`,
+      async (request, reply) => {
+        const permission =
+          action === 'accept'
+            ? 'customer_service.accept'
+            : action === 'close'
+              ? 'customer_service.close'
+              : 'customer_service.send';
+        const identity = await authorizedIdentity(
+          options,
+          request.headers.authorization,
+          reply,
+          permission,
+          { write: true },
+        );
+        if (!identity) return;
+        const idempotencyKey = headerValue(request.headers['idempotency-key']);
+        if (!idempotencyKey || idempotencyKey.length > 255)
+          return reply.code(400).send({ code: 'INVALID_REQUEST_CONTEXT' });
+        if (!options.customerService) return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+        const method = action === 'accept' ? 'accept' : action === 'close' ? 'close' : 'returnToAi';
+        return handleCustomerService(reply, () =>
+          options.customerService![method]({
+            identity,
+            idempotencyKey,
+            traceId: request.id,
+            body: objectBody(request.body, { conversationId: request.params.conversationId }),
+          }),
+        );
+      },
+    );
+  }
+
+  app.get('/api/v1/customer-profile', async (request, reply) => {
+    const identity = consumerIdentity(options, request.headers.authorization, reply);
+    if (!identity) return;
+    if (!options.customerService) return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+    return handleCustomerService(reply, () => options.customerService!.getProfile(identity));
+  });
+
+  app.post('/api/v1/customer-profile/consents', async (request, reply) => {
+    const identity = consumerIdentity(options, request.headers.authorization, reply);
+    if (!identity) return;
+    const idempotencyKey = headerValue(request.headers['idempotency-key']);
+    if (!idempotencyKey || idempotencyKey.length > 255)
+      return reply.code(400).send({ code: 'INVALID_REQUEST_CONTEXT' });
+    if (!options.customerService) return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+    return handleCustomerService(reply, () =>
+      options.customerService!.changeConsent({
+        identity,
+        idempotencyKey,
+        traceId: request.id,
+        body: request.body,
+      }),
+    );
+  });
+
+  app.post('/api/v1/customer-profile/privacy-requests', async (request, reply) => {
+    const identity = consumerIdentity(options, request.headers.authorization, reply);
+    if (!identity) return;
+    const idempotencyKey = headerValue(request.headers['idempotency-key']);
+    if (!idempotencyKey || idempotencyKey.length > 255)
+      return reply.code(400).send({ code: 'INVALID_REQUEST_CONTEXT' });
+    if (!options.customerService) return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+    return handleCustomerService(reply, async () =>
+      reply.code(202).send(
+        await options.customerService!.requestPrivacy({
+          identity,
+          idempotencyKey,
+          traceId: request.id,
+          body: request.body,
+        }),
+      ),
+    );
+  });
+
+  app.get<{ Querystring: { storeId?: string } }>(
+    '/api/v1/customer-service/knowledge-publications',
+    async (request, reply) => {
+      const identity = await authorizedIdentity(
+        options,
+        request.headers.authorization,
+        reply,
+        'merchant_profile.manage',
+      );
+      if (!identity) return;
+      if (!options.customerService) return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+      return handleCustomerService(reply, () =>
+        options.customerService!.listKnowledge(identity, request.query.storeId),
+      );
+    },
+  );
+
+  app.post('/api/v1/customer-service/knowledge-publications', async (request, reply) => {
+    const identity = await authorizedIdentity(
+      options,
+      request.headers.authorization,
+      reply,
+      'merchant_profile.manage',
+      { write: true },
+    );
+    if (!identity) return;
+    const idempotencyKey = headerValue(request.headers['idempotency-key']);
+    if (!idempotencyKey || idempotencyKey.length > 255)
+      return reply.code(400).send({ code: 'INVALID_REQUEST_CONTEXT' });
+    if (!options.customerService) return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+    return handleCustomerService(reply, async () =>
+      reply.code(201).send(
+        await options.customerService!.publishKnowledge({
+          identity,
+          idempotencyKey,
+          traceId: request.id,
+          body: request.body,
+        }),
+      ),
+    );
+  });
+
+  app.post<{ Params: { publicationId: string } }>(
+    '/api/v1/customer-service/knowledge-publications/:publicationId/actions/revoke',
+    async (request, reply) => {
+      const identity = await authorizedIdentity(
+        options,
+        request.headers.authorization,
+        reply,
+        'merchant_profile.manage',
+        { write: true },
+      );
+      if (!identity) return;
+      const idempotencyKey = headerValue(request.headers['idempotency-key']);
+      if (!idempotencyKey || idempotencyKey.length > 255)
+        return reply.code(400).send({ code: 'INVALID_REQUEST_CONTEXT' });
+      if (!options.customerService) return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+      return handleCustomerService(reply, () =>
+        options.customerService!.revokeKnowledge({
+          identity,
+          idempotencyKey,
+          traceId: request.id,
+          body: objectBody(request.body, { publicationId: request.params.publicationId }),
+        }),
+      );
+    },
+  );
+
+  app.post('/internal/v1/customer-service/ai-jobs/process', async (request, reply) => {
+    if (!options.internalWorkerToken || !options.customerServiceAi)
+      return reply.code(503).send({ code: 'AI_WORKER_UNAVAILABLE' });
+    if (!validInternalBearer(options.internalWorkerToken, request.headers.authorization))
+      return reply.code(401).send({ code: 'INVALID_WORKER_IDENTITY' });
+    try {
+      return reply
+        .code(202)
+        .send(
+          await options.customerServiceAi.process(
+            request.body as Parameters<CustomerServiceAiOrchestrator['process']>[0],
+          ),
+        );
+    } catch (error) {
+      if (error instanceof CustomerServiceAiSecurityError)
+        return reply.code(202).send({ status: 'HANDOFF' });
+      if (error instanceof ZodError) return reply.code(400).send({ code: 'INVALID_REQUEST' });
+      throw error;
+    }
+  });
+
+  app.post('/api/v1/mini-program-authorizations/actions/activate', async (request, reply) => {
+    const identity = await authorizedIdentity(
+      options,
+      request.headers.authorization,
+      reply,
+      'miniprogram.manage',
+      { mfaRequired: true, write: true },
+    );
+    if (!identity) return;
+    const idempotencyKey = headerValue(request.headers['idempotency-key']);
+    if (!idempotencyKey || idempotencyKey.length > 255)
+      return reply.code(400).send({ code: 'INVALID_REQUEST_CONTEXT' });
+    if (!options.miniPrograms) return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+    return handleMiniProgram(reply, async () =>
+      reply.code(201).send(
+        await options.miniPrograms!.activateAuthorization({
+          identity,
+          idempotencyKey,
+          traceId: request.id,
+          body: request.body,
+        }),
+      ),
+    );
+  });
+
+  app.get<{ Params: { miniProgramId: string } }>(
+    '/api/v1/mini-programs/:miniProgramId',
+    async (request, reply) => {
+      const identity = await authorizedIdentity(
+        options,
+        request.headers.authorization,
+        reply,
+        'miniprogram.manage',
+      );
+      if (!identity) return;
+      if (!options.miniPrograms) return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+      return handleMiniProgram(reply, () =>
+        options.miniPrograms!.get(identity, request.params.miniProgramId),
+      );
+    },
+  );
+
+  app.post<{ Params: { miniProgramId: string } }>(
+    '/api/v1/mini-programs/:miniProgramId/releases',
+    async (request, reply) => {
+      const identity = await authorizedIdentity(
+        options,
+        request.headers.authorization,
+        reply,
+        'miniprogram.manage',
+        { mfaRequired: true, write: true },
+      );
+      if (!identity) return;
+      const idempotencyKey = headerValue(request.headers['idempotency-key']);
+      if (!idempotencyKey || idempotencyKey.length > 255)
+        return reply.code(400).send({ code: 'INVALID_REQUEST_CONTEXT' });
+      if (!options.miniPrograms) return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+      return handleMiniProgram(reply, async () =>
+        reply.code(202).send(
+          await options.miniPrograms!.createPreview({
+            identity,
+            idempotencyKey,
+            traceId: request.id,
+            body: objectBody(request.body, { miniProgramId: request.params.miniProgramId }),
+          }),
+        ),
+      );
+    },
+  );
+
+  app.post<{ Params: { miniProgramId: string; releaseId: string } }>(
+    '/api/v1/mini-programs/:miniProgramId/releases/:releaseId/actions/confirm-preview',
+    async (request, reply) => {
+      const identity = await authorizedIdentity(
+        options,
+        request.headers.authorization,
+        reply,
+        'miniprogram.manage',
+        { mfaRequired: true, write: true },
+      );
+      if (!identity) return;
+      const idempotencyKey = headerValue(request.headers['idempotency-key']);
+      if (!idempotencyKey || idempotencyKey.length > 255)
+        return reply.code(400).send({ code: 'INVALID_REQUEST_CONTEXT' });
+      if (!options.miniPrograms) return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+      return handleMiniProgram(reply, () =>
+        options.miniPrograms!.confirmPreview({
+          identity,
+          idempotencyKey,
+          traceId: request.id,
+          body: objectBody(request.body, {
+            miniProgramId: request.params.miniProgramId,
+            releaseId: request.params.releaseId,
+          }),
+        }),
+      );
+    },
+  );
+
+  for (const action of ['submit-review', 'publish'] as const) {
+    app.post<{ Params: { miniProgramId: string; releaseId: string } }>(
+      `/api/v1/mini-programs/:miniProgramId/releases/:releaseId/actions/${action}`,
+      async (request, reply) => {
+        const permission =
+          action === 'submit-review' ? 'miniprogram.release.submit' : 'miniprogram.release.publish';
+        const identity = await authorizedIdentity(
+          options,
+          request.headers.authorization,
+          reply,
+          permission,
+          { mfaRequired: true, write: true },
+        );
+        if (!identity) return;
+        const idempotencyKey = headerValue(request.headers['idempotency-key']);
+        if (!idempotencyKey || idempotencyKey.length > 255)
+          return reply.code(400).send({ code: 'INVALID_REQUEST_CONTEXT' });
+        if (!options.miniPrograms) return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+        const command = {
+          identity,
+          idempotencyKey,
+          traceId: request.id,
+          body: {
+            miniProgramId: request.params.miniProgramId,
+            releaseId: request.params.releaseId,
+          },
+        };
+        return handleMiniProgram(reply, async () =>
+          reply
+            .code(202)
+            .send(
+              await options.miniPrograms![action === 'submit-review' ? 'submitReview' : 'publish'](
+                command,
+              ),
+            ),
+        );
+      },
+    );
+  }
+
+  app.post<{ Params: { miniProgramId: string } }>(
+    '/api/v1/mini-programs/:miniProgramId/actions/rollback',
+    async (request, reply) => {
+      const identity = await authorizedIdentity(
+        options,
+        request.headers.authorization,
+        reply,
+        'miniprogram.release.rollback',
+        { mfaRequired: true, write: true },
+      );
+      if (!identity) return;
+      const idempotencyKey = headerValue(request.headers['idempotency-key']);
+      if (!idempotencyKey || idempotencyKey.length > 255)
+        return reply.code(400).send({ code: 'INVALID_REQUEST_CONTEXT' });
+      if (!options.miniPrograms) return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+      return handleMiniProgram(reply, async () =>
+        reply.code(202).send(
+          await options.miniPrograms!.rollback({
+            identity,
+            idempotencyKey,
+            traceId: request.id,
+            body: objectBody(request.body, { miniProgramId: request.params.miniProgramId }),
+          }),
+        ),
+      );
+    },
+  );
+
+  app.post<{ Params: { miniProgramId: string; releaseId: string } }>(
+    '/api/v1/mini-programs/:miniProgramId/releases/:releaseId/rollout-health',
+    async (request, reply) => {
+      const identity = await authorizedIdentity(
+        options,
+        request.headers.authorization,
+        reply,
+        'miniprogram.release.publish',
+        { mfaRequired: true, write: true },
+      );
+      if (!identity) return;
+      const idempotencyKey = headerValue(request.headers['idempotency-key']);
+      if (!idempotencyKey || idempotencyKey.length > 255)
+        return reply.code(400).send({ code: 'INVALID_REQUEST_CONTEXT' });
+      if (!options.miniPrograms) return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+      return handleMiniProgram(reply, () =>
+        options.miniPrograms!.recordRolloutHealth({
+          identity,
+          idempotencyKey,
+          traceId: request.id,
+          body: objectBody(request.body, {
+            miniProgramId: request.params.miniProgramId,
+            releaseId: request.params.releaseId,
+          }),
+        }),
+      );
+    },
+  );
+
+  app.post<{
+    Querystring: { msg_signature?: string; timestamp?: string; nonce?: string };
+  }>('/api/v1/webhooks/wechat/mini-program', async (request, reply) => {
+    const { msg_signature: signature, timestamp, nonce } = request.query;
+    if (!signature || !timestamp || !nonce || typeof request.body !== 'string')
+      return reply.code(400).send({ code: 'INVALID_MINI_PROGRAM_CALLBACK' });
+    if (!options.miniProgramCallback) return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+    try {
+      await options.miniProgramCallback.receive({
+        signature,
+        timestamp,
+        nonce,
+        xml: request.body,
+        traceId: request.id,
+      });
+      return reply.type('text/plain').send('success');
+    } catch (error) {
+      if (error instanceof MiniProgramCallbackAuthenticationError)
+        return reply.code(401).send({ code: 'INVALID_MINI_PROGRAM_SIGNATURE' });
+      if (error instanceof MiniProgramCallbackUnavailableError)
+        return reply.code(503).send({ code: 'MINI_PROGRAM_CALLBACK_UNAVAILABLE' });
+      if (error instanceof MiniProgramCallbackConflictError)
+        return reply.code(409).send({ code: 'MINI_PROGRAM_CALLBACK_CONFLICT' });
+      throw error;
+    }
+  });
+
+  app.get('/api/v1/consumer/storefront', async (request, reply) => {
+    if (!options.consumerCatalog) return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+    const identity = consumerIdentity(options, request.headers.authorization, reply);
+    if (!identity) return;
+    return handleConsumerCatalog(reply, () => options.consumerCatalog!.getStorefront(identity));
+  });
+
+  app.get('/api/v1/consumer/membership', async (request, reply) => {
+    if (!options.consumerCatalog) return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+    const identity = consumerIdentity(options, request.headers.authorization, reply);
+    if (!identity) return;
+    return handleConsumerCatalog(reply, () => options.consumerCatalog!.getMembership(identity));
+  });
+
+  app.get('/api/v1/consumer/stores', async (request, reply) => {
+    if (!options.consumerStoreSwitch) return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+    const identity = consumerIdentity(options, request.headers.authorization, reply);
+    if (!identity) return;
+    return handleConsumerStoreSwitch(reply, () => options.consumerStoreSwitch!.list(identity));
+  });
+
+  app.post('/api/v1/consumer/session/actions/switch-store', async (request, reply) => {
+    if (!options.consumerStoreSwitch) return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+    const identity = consumerIdentity(options, request.headers.authorization, reply);
+    if (!identity) return;
+    const idempotencyKey = headerValue(request.headers['idempotency-key']);
+    if (!idempotencyKey || idempotencyKey.length > 255)
+      return reply.code(400).send({ code: 'INVALID_REQUEST_CONTEXT' });
+    return handleConsumerStoreSwitch(reply, () =>
+      options.consumerStoreSwitch!.switch({
+        identity,
+        idempotencyKey,
+        body: request.body,
+      }),
+    );
+  });
+
+  app.get<{
+    Querystring: { productType?: string; query?: string; limit?: string; offset?: string };
+  }>('/api/v1/consumer/products', async (request, reply) => {
+    if (!options.consumerCatalog) return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+    const identity = consumerIdentity(options, request.headers.authorization, reply);
+    if (!identity) return;
+    return handleConsumerCatalog(reply, () =>
+      options.consumerCatalog!.listProducts(identity, request.query),
+    );
+  });
+
+  app.get<{ Params: { productId: string } }>(
+    '/api/v1/consumer/products/:productId',
+    async (request, reply) => {
+      if (!options.consumerCatalog) return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+      const identity = consumerIdentity(options, request.headers.authorization, reply);
+      if (!identity) return;
+      return handleConsumerCatalog(reply, () =>
+        options.consumerCatalog!.getProduct(identity, request.params.productId),
+      );
+    },
+  );
+
+  app.get<{ Params: { productId: string } }>(
+    '/api/v1/consumer/products/:productId/trace-report',
+    async (request, reply) => {
+      if (!options.consumerCatalog) return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+      const identity = consumerIdentity(options, request.headers.authorization, reply);
+      if (!identity) return;
+      return handleConsumerCatalog(reply, () =>
+        options.consumerCatalog!.getTraceReport(identity, request.params.productId),
+      );
+    },
+  );
+
+  app.get('/api/v1/life/cart', async (request, reply) => {
+    if (!options.platformCart) return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+    const identity = lifeConsumerIdentity(options, request.headers.authorization, reply);
+    if (!identity) return;
+    return handlePlatformCart(reply, () => options.platformCart!.get(identity));
+  });
+
+  app.get('/api/v1/life/discovery/stores', async (request, reply) => {
+    if (!options.platformDiscovery) return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+    const identity = lifeConsumerIdentity(options, request.headers.authorization, reply);
+    if (!identity) return;
+    try {
+      return await options.platformDiscovery.listStores(identity, request.query);
+    } catch (error) {
+      if (error instanceof ZodError) return reply.code(400).send({ code: 'INVALID_REQUEST' });
+      if (error instanceof PlatformDiscoveryAuthenticationError)
+        return reply.code(401).send({ code: 'INVALID_LIFE_CONSUMER_SESSION' });
+      throw error;
+    }
+  });
+
+  app.get('/api/v1/life/addresses', async (request, reply) => {
+    if (!options.platformAddresses) return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+    const identity = lifeConsumerIdentity(options, request.headers.authorization, reply);
+    if (!identity) return;
+    return handlePlatformAddress(reply, () => options.platformAddresses!.list(identity));
+  });
+
+  app.get('/api/v1/life/invoice-profiles', async (request, reply) => {
+    if (!options.platformInvoiceProfiles)
+      return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+    const identity = lifeConsumerIdentity(options, request.headers.authorization, reply);
+    if (!identity) return;
+    return handlePlatformInvoiceProfile(reply, () =>
+      options.platformInvoiceProfiles!.list(identity),
+    );
+  });
+
+  app.put('/api/v1/life/invoice-profiles', async (request, reply) => {
+    if (!options.platformInvoiceProfiles)
+      return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+    const identity = lifeConsumerIdentity(options, request.headers.authorization, reply);
+    if (!identity) return;
+    return handlePlatformInvoiceProfile(reply, () =>
+      options.platformInvoiceProfiles!.save(identity, request.body),
+    );
+  });
+
+  app.delete<{ Params: { profileId: string } }>(
+    '/api/v1/life/invoice-profiles/:profileId',
+    async (request, reply) => {
+      if (!options.platformInvoiceProfiles)
+        return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+      const identity = lifeConsumerIdentity(options, request.headers.authorization, reply);
+      if (!identity) return;
+      return handlePlatformInvoiceProfile(reply, async () => {
+        await options.platformInvoiceProfiles!.archive(identity, request.params.profileId);
+        return reply.code(204).send();
+      });
+    },
+  );
+
+  app.put('/api/v1/life/addresses', async (request, reply) => {
+    if (!options.platformAddresses) return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+    const identity = lifeConsumerIdentity(options, request.headers.authorization, reply);
+    if (!identity) return;
+    return handlePlatformAddress(reply, () =>
+      options.platformAddresses!.save(identity, request.body),
+    );
+  });
+
+  app.delete<{ Params: { addressId: string } }>(
+    '/api/v1/life/addresses/:addressId',
+    async (request, reply) => {
+      if (!options.platformAddresses) return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+      const identity = lifeConsumerIdentity(options, request.headers.authorization, reply);
+      if (!identity) return;
+      return handlePlatformAddress(reply, async () => {
+        await options.platformAddresses!.archive(identity, request.params.addressId);
+        return reply.code(204).send();
+      });
+    },
+  );
+
+  app.put('/api/v1/life/cart/items', async (request, reply) => {
+    if (!options.platformCart) return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+    const identity = lifeConsumerIdentity(options, request.headers.authorization, reply);
+    if (!identity) return;
+    return handlePlatformCart(reply, () => options.platformCart!.setItem(identity, request.body));
+  });
+
+  app.delete<{ Params: { itemId: string } }>(
+    '/api/v1/life/cart/items/:itemId',
+    async (request, reply) => {
+      if (!options.platformCart) return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+      const identity = lifeConsumerIdentity(options, request.headers.authorization, reply);
+      if (!identity) return;
+      return handlePlatformCart(reply, () =>
+        options.platformCart!.removeItem(identity, request.params.itemId),
+      );
+    },
+  );
+
+  app.get<{ Querystring: { status?: string; limit?: string } }>(
+    '/api/v1/life/orders',
+    async (request, reply) => {
+      if (!options.platformOrders) return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+      const identity = lifeConsumerIdentity(options, request.headers.authorization, reply);
+      if (!identity) return;
+      return handlePlatformOrders(reply, () =>
+        options.platformOrders!.list(identity, request.query),
+      );
+    },
+  );
+
+  app.post('/api/v1/life/checkouts/quote', async (request, reply) => {
+    if (!options.platformCheckout) return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+    const identity = lifeConsumerIdentity(options, request.headers.authorization, reply);
+    if (!identity) return;
+    const idempotencyKey = headerValue(request.headers['idempotency-key']);
+    if (!idempotencyKey || idempotencyKey.length > 255)
+      return reply.code(400).send({ code: 'INVALID_REQUEST_CONTEXT' });
+    return handlePlatformCheckout(reply, async () =>
+      reply.code(201).send(
+        await options.platformCheckout!.quote({
+          identity,
+          idempotencyKey,
+          body: request.body,
+        }),
+      ),
+    );
+  });
+
+  app.get<{ Params: { checkoutId: string } }>(
+    '/api/v1/life/checkouts/:checkoutId',
+    async (request, reply) => {
+      if (!options.platformCheckout) return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+      const identity = lifeConsumerIdentity(options, request.headers.authorization, reply);
+      if (!identity) return;
+      return handlePlatformCheckout(reply, () =>
+        options.platformCheckout!.get(identity, request.params.checkoutId),
+      );
+    },
+  );
+
+  app.post<{ Params: { checkoutId: string } }>(
+    '/api/v1/life/checkouts/:checkoutId/actions/submit',
+    async (request, reply) => {
+      if (!options.platformCheckout) return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+      const identity = lifeConsumerIdentity(options, request.headers.authorization, reply);
+      if (!identity) return;
+      const idempotencyKey = headerValue(request.headers['idempotency-key']);
+      if (!idempotencyKey || idempotencyKey.length > 255)
+        return reply.code(400).send({ code: 'INVALID_REQUEST_CONTEXT' });
+      return handlePlatformCheckout(reply, async () =>
+        reply.code(202).send(
+          await options.platformCheckout!.submit({
+            identity,
+            idempotencyKey,
+            checkoutId: request.params.checkoutId,
+          }),
+        ),
+      );
+    },
+  );
+
+  app.get('/api/v1/merchant-consumer/cart', async (request, reply) => {
+    if (!options.merchantConsumerJourney)
+      return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+    const consumer = consumerIdentity(options, request.headers.authorization, reply);
+    if (!consumer) return;
+    const life = lifeConsumerIdentity(
+      options,
+      headerValue(request.headers['x-life-authorization']),
+      reply,
+    );
+    if (!life) return;
+    return handleMerchantConsumerJourney(reply, () =>
+      options.merchantConsumerJourney!.getCart({ consumer, life }),
+    );
+  });
+
+  app.put('/api/v1/merchant-consumer/cart/items', async (request, reply) => {
+    if (!options.merchantConsumerJourney)
+      return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+    const consumer = consumerIdentity(options, request.headers.authorization, reply);
+    if (!consumer) return;
+    const life = lifeConsumerIdentity(
+      options,
+      headerValue(request.headers['x-life-authorization']),
+      reply,
+    );
+    if (!life) return;
+    return handleMerchantConsumerJourney(reply, () =>
+      options.merchantConsumerJourney!.setCartItem({ consumer, life }, request.body),
+    );
+  });
+
+  app.delete<{ Params: { itemId: string } }>(
+    '/api/v1/merchant-consumer/cart/items/:itemId',
+    async (request, reply) => {
+      if (!options.merchantConsumerJourney)
+        return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+      const consumer = consumerIdentity(options, request.headers.authorization, reply);
+      if (!consumer) return;
+      const life = lifeConsumerIdentity(
+        options,
+        headerValue(request.headers['x-life-authorization']),
+        reply,
+      );
+      if (!life) return;
+      return handleMerchantConsumerJourney(reply, () =>
+        options.merchantConsumerJourney!.removeCartItem({ consumer, life }, request.params.itemId),
+      );
+    },
+  );
+
+  app.post('/api/v1/merchant-consumer/checkouts/quote', async (request, reply) => {
+    if (!options.merchantConsumerJourney)
+      return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+    const consumer = consumerIdentity(options, request.headers.authorization, reply);
+    if (!consumer) return;
+    const life = lifeConsumerIdentity(
+      options,
+      headerValue(request.headers['x-life-authorization']),
+      reply,
+    );
+    if (!life) return;
+    const idempotencyKey = headerValue(request.headers['idempotency-key']);
+    if (!idempotencyKey || idempotencyKey.length > 255)
+      return reply.code(400).send({ code: 'INVALID_REQUEST_CONTEXT' });
+    return handleMerchantConsumerJourney(reply, async () =>
+      reply.code(201).send(
+        await options.merchantConsumerJourney!.quote({
+          consumer,
+          life,
+          idempotencyKey,
+          body: request.body,
+        }),
+      ),
+    );
+  });
+
+  app.get<{ Params: { checkoutId: string } }>(
+    '/api/v1/merchant-consumer/checkouts/:checkoutId',
+    async (request, reply) => {
+      if (!options.merchantConsumerJourney)
+        return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+      const consumer = consumerIdentity(options, request.headers.authorization, reply);
+      if (!consumer) return;
+      const life = lifeConsumerIdentity(
+        options,
+        headerValue(request.headers['x-life-authorization']),
+        reply,
+      );
+      if (!life) return;
+      return handleMerchantConsumerJourney(reply, () =>
+        options.merchantConsumerJourney!.getCheckout({ consumer, life }, request.params.checkoutId),
+      );
+    },
+  );
+
+  app.post<{ Params: { checkoutId: string } }>(
+    '/api/v1/merchant-consumer/checkouts/:checkoutId/actions/submit',
+    async (request, reply) => {
+      if (!options.merchantConsumerJourney)
+        return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+      const consumer = consumerIdentity(options, request.headers.authorization, reply);
+      if (!consumer) return;
+      const life = lifeConsumerIdentity(
+        options,
+        headerValue(request.headers['x-life-authorization']),
+        reply,
+      );
+      if (!life) return;
+      const idempotencyKey = headerValue(request.headers['idempotency-key']);
+      if (!idempotencyKey || idempotencyKey.length > 255)
+        return reply.code(400).send({ code: 'INVALID_REQUEST_CONTEXT' });
+      return handleMerchantConsumerJourney(reply, async () =>
+        reply.code(202).send(
+          await options.merchantConsumerJourney!.submitCheckout({
+            consumer,
+            life,
+            idempotencyKey,
+            checkoutId: request.params.checkoutId,
+          }),
+        ),
+      );
+    },
+  );
+
+  app.get<{ Params: { orderId: string } }>(
+    '/api/v1/life/orders/:orderId',
+    async (request, reply) => {
+      if (!options.platformOrders) return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+      const identity = lifeConsumerIdentity(options, request.headers.authorization, reply);
+      if (!identity) return;
+      return handlePlatformOrders(reply, () =>
+        options.platformOrders!.get(identity, request.params.orderId),
+      );
+    },
+  );
+
+  app.get<{ Params: { orderId: string } }>(
+    '/api/v1/life/orders/:orderId/aftercare',
+    async (request, reply) => {
+      if (!options.platformAftercare) return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+      const identity = lifeConsumerIdentity(options, request.headers.authorization, reply);
+      if (!identity) return;
+      return handlePlatformAftercare(reply, () =>
+        options.platformAftercare!.getOrder(identity, request.params.orderId),
+      );
+    },
+  );
+
+  app.post<{ Params: { orderId: string } }>(
+    '/api/v1/life/orders/:orderId/refunds',
+    async (request, reply) => {
+      if (!options.platformAftercare) return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+      const identity = lifeConsumerIdentity(options, request.headers.authorization, reply);
+      if (!identity) return;
+      const idempotencyKey = headerValue(request.headers['idempotency-key']);
+      if (!idempotencyKey || idempotencyKey.length > 255)
+        return reply.code(400).send({ code: 'INVALID_REQUEST_CONTEXT' });
+      return handlePlatformAftercare(reply, async () =>
+        reply.code(202).send(
+          await options.platformAftercare!.requestRefund({
+            identity,
+            orderId: request.params.orderId,
+            idempotencyKey,
+            traceId: request.id,
+            body: request.body,
+          }),
+        ),
+      );
+    },
+  );
+
+  app.get<{ Params: { orderId: string } }>(
+    '/api/v1/life/orders/:orderId/verification-entitlements',
+    async (request, reply) => {
+      if (!options.platformAftercare) return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+      const identity = lifeConsumerIdentity(options, request.headers.authorization, reply);
+      if (!identity) return;
+      return handlePlatformAftercare(reply, () =>
+        options.platformAftercare!.listEntitlements(identity, request.params.orderId),
+      );
+    },
+  );
+
+  app.get('/api/v1/life/verification-entitlements', async (request, reply) => {
+    if (!options.platformAftercare) return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+    const identity = lifeConsumerIdentity(options, request.headers.authorization, reply);
+    if (!identity) return;
+    return handlePlatformAftercare(reply, () =>
+      options.platformAftercare!.listAvailableEntitlements(identity),
+    );
+  });
+
+  app.get<{ Querystring: { limit?: string } }>('/api/v1/life/rewards', async (request, reply) => {
+    if (!options.platformAftercare) return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+    const identity = lifeConsumerIdentity(options, request.headers.authorization, reply);
+    if (!identity) return;
+    return handlePlatformAftercare(reply, () =>
+      options.platformAftercare!.listRewards(identity, request.query),
+    );
+  });
+
+  app.post('/api/v1/orders', async (request, reply) => {
+    const identity = consumerIdentity(options, request.headers.authorization, reply);
+    if (!identity) return;
+    const idempotencyKey = headerValue(request.headers['idempotency-key']);
+    if (!idempotencyKey || idempotencyKey.length > 255)
+      return reply.code(400).send({ code: 'INVALID_REQUEST_CONTEXT' });
+    if (!options.commerceOrders) return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+    return handleCommerce(reply, async () =>
+      reply.code(201).send(
+        await options.commerceOrders!.create({
+          identity,
+          idempotencyKey,
+          traceId: request.id,
+          body: request.body,
+        }),
+      ),
+    );
+  });
+
+  app.get<{ Querystring: { status?: string; limit?: string } }>(
+    '/api/v1/orders',
+    async (request, reply) => {
+      const identity = consumerIdentity(options, request.headers.authorization, reply);
+      if (!identity) return;
+      if (!options.commerceOrders) return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+      return handleCommerce(reply, () =>
+        options.commerceOrders!.listForConsumer(identity, request.query),
+      );
+    },
+  );
+
+  app.get<{ Params: { orderId: string } }>('/api/v1/orders/:orderId', async (request, reply) => {
+    if (!options.commerceOrders) return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+    const consumer = tryConsumerIdentity(options, request.headers.authorization);
+    if (consumer)
+      return handleCommerce(reply, () =>
+        options.commerceOrders!.getForConsumer(consumer, request.params.orderId),
+      );
+    const staff = await authorizedIdentity(
+      options,
+      request.headers.authorization,
+      reply,
+      'order.read',
+    );
+    if (!staff) return;
+    return handleCommerce(reply, () =>
+      options.commerceOrders!.getForStaff(staff, request.params.orderId),
+    );
+  });
+
+  app.post('/api/v1/payment-intents', async (request, reply) => {
+    const identity = consumerIdentity(options, request.headers.authorization, reply);
+    if (!identity) return;
+    const idempotencyKey = headerValue(request.headers['idempotency-key']);
+    if (!idempotencyKey || idempotencyKey.length > 255)
+      return reply.code(400).send({ code: 'INVALID_REQUEST_CONTEXT' });
+    if (!options.commercePayments) return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+    return handleCommerce(reply, async () =>
+      reply.code(202).send(
+        await options.commercePayments!.createIntent({
+          identity,
+          idempotencyKey,
+          traceId: request.id,
+          body: request.body,
+        }),
+      ),
+    );
+  });
+
+  app.post('/api/v1/life/payment-intents', async (request, reply) => {
+    if (!options.platformPayments) return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+    const identity = lifeConsumerIdentity(options, request.headers.authorization, reply);
+    if (!identity) return;
+    const idempotencyKey = headerValue(request.headers['idempotency-key']);
+    if (!idempotencyKey || idempotencyKey.length > 255)
+      return reply.code(400).send({ code: 'INVALID_REQUEST_CONTEXT' });
+    return handlePlatformPayment(reply, async () =>
+      reply.code(202).send(
+        await options.platformPayments!.create({
+          identity,
+          idempotencyKey,
+          traceId: request.id,
+          body: request.body,
+        }),
+      ),
+    );
+  });
+
+  app.post<{ Params: { provider: string } }>(
+    '/api/v1/webhooks/payments/:provider',
+    async (request, reply) => {
+      if (!options.commercePayments) return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+      const signature = headerValue(request.headers['x-payment-signature']);
+      const rawBody =
+        typeof request.body === 'string' ? request.body : paymentCallbackRawBodies.get(request.raw);
+      if (!signature || !rawBody) return reply.code(400).send({ code: 'INVALID_PAYMENT_CALLBACK' });
+      return handleCommerce(reply, async () =>
+        reply.send(
+          await options.commercePayments!.receiveCallback({
+            provider: request.params.provider,
+            signature,
+            rawBody,
+            traceId: request.id,
+          }),
+        ),
+      );
+    },
+  );
+
+  app.post<{ Params: { orderId: string } }>(
+    '/api/v1/orders/:orderId/refunds',
+    async (request, reply) => {
+      const identity = consumerIdentity(options, request.headers.authorization, reply);
+      if (!identity) return;
+      const idempotencyKey = headerValue(request.headers['idempotency-key']);
+      if (!idempotencyKey || idempotencyKey.length > 255)
+        return reply.code(400).send({ code: 'INVALID_REQUEST_CONTEXT' });
+      if (!options.commerceRefunds) return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+      return handleCommerce(reply, async () =>
+        reply.code(202).send(
+          await options.commerceRefunds!.request({
+            identity,
+            idempotencyKey,
+            traceId: request.id,
+            body: objectBody(request.body, { orderId: request.params.orderId }),
+          }),
+        ),
+      );
+    },
+  );
+
+  app.get<{ Params: { orderId: string } }>(
+    '/api/v1/orders/:orderId/refunds',
+    async (request, reply) => {
+      const identity = consumerIdentity(options, request.headers.authorization, reply);
+      if (!identity) return;
+      if (!options.commerceRefunds) return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+      return handleCommerce(reply, () =>
+        options.commerceRefunds!.listForConsumer(identity, request.params.orderId),
+      );
+    },
+  );
+
+  app.post<{ Params: { refundId: string } }>(
+    '/api/v1/refunds/:refundId/actions/approve',
+    async (request, reply) => {
+      const identity = await authorizedIdentity(
+        options,
+        request.headers.authorization,
+        reply,
+        'refund.approve',
+        { mfaRequired: true, write: true },
+      );
+      if (!identity) return;
+      const idempotencyKey = headerValue(request.headers['idempotency-key']);
+      if (!idempotencyKey || idempotencyKey.length > 255)
+        return reply.code(400).send({ code: 'INVALID_REQUEST_CONTEXT' });
+      if (!options.commerceRefunds) return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+      return handleCommerce(reply, () =>
+        options.commerceRefunds!.approve({
+          identity,
+          idempotencyKey,
+          traceId: request.id,
+          body: objectBody(request.body, { refundId: request.params.refundId }),
+        }),
+      );
+    },
+  );
+
+  app.get<{ Params: { orderId: string } }>(
+    '/api/v1/orders/:orderId/verification-entitlements',
+    async (request, reply) => {
+      const identity = consumerIdentity(options, request.headers.authorization, reply);
+      if (!identity) return;
+      if (!options.commerceVerification)
+        return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+      return handleCommerce(reply, () =>
+        options.commerceVerification!.listConsumerTokens(identity, request.params.orderId),
+      );
+    },
+  );
+
+  app.get('/api/v1/verification-entitlements', async (request, reply) => {
+    const identity = consumerIdentity(options, request.headers.authorization, reply);
+    if (!identity) return;
+    if (!options.commerceVerification) return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+    return handleCommerce(reply, () =>
+      options.commerceVerification!.listAvailableForConsumer(identity),
+    );
+  });
+
+  app.post('/api/v1/verification-uses', async (request, reply) => {
+    const identity = await authorizedIdentity(
+      options,
+      request.headers.authorization,
+      reply,
+      'verification.execute',
+      { write: true },
+    );
+    if (!identity) return;
+    const idempotencyKey = headerValue(request.headers['idempotency-key']);
+    if (!idempotencyKey || idempotencyKey.length > 255)
+      return reply.code(400).send({ code: 'INVALID_REQUEST_CONTEXT' });
+    if (!options.commerceVerification) return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+    return handleCommerce(reply, async () =>
+      reply.code(201).send(
+        await options.commerceVerification!.use({
+          identity,
+          idempotencyKey,
+          traceId: request.id,
+          body: request.body,
+        }),
+      ),
+    );
+  });
+
+  for (const route of [
+    ['subscription', 'getSubscription'],
+    ['plans', 'listPlans'],
+  ] as const) {
+    app.get(`/api/v1/revenue-operations/${route[0]}`, async (request, reply) => {
+      const identity = await authorizedIdentity(
+        options,
+        request.headers.authorization,
+        reply,
+        'report.value.read',
+      );
+      if (!identity) return;
+      if (!options.revenueOperations) return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+      return handleRevenueOperations(reply, () => options.revenueOperations![route[1]](identity));
+    });
+  }
+
+  for (const route of [
+    ['usage', 'listUsage', 'report.value.read'],
+    ['summary', 'getSummary', 'report.value.read'],
+    ['statements', 'listStatements', 'distribution.read_all'],
+    ['policies', 'listPolicies', 'distribution.read_all'],
+    ['costs', 'listCosts', 'distribution.cost.read'],
+  ] as const) {
+    app.get(`/api/v1/revenue-operations/${route[0]}`, async (request, reply) => {
+      const identity = await authorizedIdentity(
+        options,
+        request.headers.authorization,
+        reply,
+        route[2],
+      );
+      if (!identity) return;
+      if (!options.revenueOperations) return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+      return handleRevenueOperations(reply, () =>
+        options.revenueOperations![route[1]](identity, request.query),
+      );
+    });
+  }
+
+  app.get<{ Params: { statementId: string } }>(
+    '/api/v1/revenue-operations/statements/:statementId',
+    async (request, reply) => {
+      const identity = await authorizedIdentity(
+        options,
+        request.headers.authorization,
+        reply,
+        'distribution.read_all',
+      );
+      if (!identity) return;
+      if (!options.revenueOperations) return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+      return handleRevenueOperations(reply, () =>
+        options.revenueOperations!.getStatement(identity, request.params.statementId),
+      );
+    },
+  );
+
+  app.get('/api/v1/revenue-operations/disputes', async (request, reply) => {
+    const identity = await authorizedIdentity(
+      options,
+      request.headers.authorization,
+      reply,
+      'distribution.cost.read',
+    );
+    if (!identity) return;
+    if (!options.revenueOperations) return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+    return handleRevenueOperations(reply, () =>
+      options.revenueOperations!.listDisputes(identity, request.query),
+    );
+  });
+
+  app.get<{ Params: { costEntryId: string } }>(
+    '/api/v1/revenue-operations/costs/:costEntryId/evidence',
+    async (request, reply) => {
+      const identity = await authorizedIdentity(
+        options,
+        request.headers.authorization,
+        reply,
+        'distribution.cost.read',
+      );
+      if (!identity) return;
+      if (!options.revenueOperations) return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+      return handleRevenueOperations(reply, () =>
+        options.revenueOperations!.getCostEvidence(
+          identity,
+          request.params.costEntryId,
+          request.id,
+        ),
+      );
+    },
+  );
+
+  app.post('/api/v1/revenue-operations/disputes', async (request, reply) => {
+    const identity = await authorizedIdentity(
+      options,
+      request.headers.authorization,
+      reply,
+      'distribution.cost.read',
+      { write: true },
+    );
+    if (!identity) return;
+    const idempotencyKey = headerValue(request.headers['idempotency-key']);
+    if (!idempotencyKey || idempotencyKey.length > 255)
+      return reply.code(400).send({ code: 'INVALID_REQUEST_CONTEXT' });
+    if (!options.revenueOperations) return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+    return handleRevenueOperations(reply, async () =>
+      reply.code(201).send(
+        await options.revenueOperations!.createDispute({
+          identity,
+          idempotencyKey,
+          traceId: request.id,
+          body: request.body,
+        }),
+      ),
+    );
+  });
+
+  app.get('/api/v1/revenue-operations/rights', async (request, reply) => {
+    const identity = await authorizedIdentity(
+      options,
+      request.headers.authorization,
+      reply,
+      'revenue_right.read_all',
+    );
+    if (!identity) return;
+    if (!options.revenueOperations) return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+    return handleRevenueOperations(reply, () =>
+      options.revenueOperations!.listRights(identity, request.query),
+    );
+  });
+
+  app.get('/api/v1/revenue-operations/transfers', async (request, reply) => {
+    const identity = await authorizedIdentity(
+      options,
+      request.headers.authorization,
+      reply,
+      'revenue_right.read_all',
+    );
+    if (!identity) return;
+    if (!options.revenueOperations) return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+    return handleRevenueOperations(reply, () =>
+      options.revenueOperations!.listTransfers(identity, request.query),
+    );
+  });
+
+  app.get('/api/v1/sales/opportunities', async (request, reply) => {
+    const identity = await authorizedIdentity(
+      options,
+      request.headers.authorization,
+      reply,
+      'merchant.intake.read',
+    );
+    if (!identity) return;
+    if (!options.salesLifecycle) return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+    return handleSalesLifecycle(reply, () => options.salesLifecycle!.list(identity, request.query));
+  });
+
+  app.get<{ Params: { opportunityId: string } }>(
+    '/api/v1/sales/opportunities/:opportunityId',
+    async (request, reply) => {
+      const identity = await authorizedIdentity(
+        options,
+        request.headers.authorization,
+        reply,
+        'merchant.intake.read',
+      );
+      if (!identity) return;
+      if (!options.salesLifecycle) return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+      return handleSalesLifecycle(reply, () =>
+        options.salesLifecycle!.get(identity, request.params.opportunityId),
+      );
+    },
+  );
+
+  app.post('/api/v1/sales/opportunities', async (request, reply) => {
+    const identity = await authorizedIdentity(
+      options,
+      request.headers.authorization,
+      reply,
+      'merchant.intake.create',
+      { write: true },
+    );
+    if (!identity) return;
+    const idempotencyKey = headerValue(request.headers['idempotency-key']);
+    if (!idempotencyKey || idempotencyKey.length > 255)
+      return reply.code(400).send({ code: 'INVALID_REQUEST_CONTEXT' });
+    if (!options.salesLifecycle) return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+    return handleSalesLifecycle(reply, async () =>
+      reply.code(201).send(
+        await options.salesLifecycle!.create({
+          identity,
+          idempotencyKey,
+          traceId: request.id,
+          body: request.body,
+        }),
+      ),
+    );
+  });
+
+  app.post<{ Params: { opportunityId: string } }>(
+    '/api/v1/sales/opportunities/:opportunityId/actions/check-duplicates',
+    async (request, reply) => {
+      const identity = await authorizedIdentity(
+        options,
+        request.headers.authorization,
+        reply,
+        'merchant.intake.write',
+        { write: true },
+      );
+      if (!identity) return;
+      const idempotencyKey = headerValue(request.headers['idempotency-key']);
+      if (!idempotencyKey || idempotencyKey.length > 255)
+        return reply.code(400).send({ code: 'INVALID_REQUEST_CONTEXT' });
+      if (!options.salesLifecycle) return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+      return handleSalesLifecycle(reply, () =>
+        options.salesLifecycle!.checkDuplicates({
+          identity,
+          idempotencyKey,
+          traceId: request.id,
+          body: objectBody(request.body, { opportunityId: request.params.opportunityId }),
+        }),
+      );
+    },
+  );
+
+  app.post<{ Params: { opportunityId: string } }>(
+    '/api/v1/sales/opportunities/:opportunityId/quotes',
+    async (request, reply) => {
+      const identity = await authorizedIdentity(
+        options,
+        request.headers.authorization,
+        reply,
+        'merchant.intake.write',
+        { write: true },
+      );
+      if (!identity) return;
+      const idempotencyKey = headerValue(request.headers['idempotency-key']);
+      if (!idempotencyKey || idempotencyKey.length > 255)
+        return reply.code(400).send({ code: 'INVALID_REQUEST_CONTEXT' });
+      if (!options.salesLifecycle) return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+      return handleSalesLifecycle(reply, async () =>
+        reply.code(201).send(
+          await options.salesLifecycle!.createQuote({
+            identity,
+            idempotencyKey,
+            traceId: request.id,
+            body: objectBody(request.body, { opportunityId: request.params.opportunityId }),
+          }),
+        ),
+      );
+    },
+  );
+
+  app.post<{ Params: { opportunityId: string } }>(
+    '/api/v1/sales/opportunities/:opportunityId/contracts',
+    async (request, reply) => {
+      const identity = await authorizedIdentity(
+        options,
+        request.headers.authorization,
+        reply,
+        'merchant.intake.confirm',
+        { mfaRequired: true, write: true },
+      );
+      if (!identity) return;
+      const idempotencyKey = headerValue(request.headers['idempotency-key']);
+      if (!idempotencyKey || idempotencyKey.length > 255)
+        return reply.code(400).send({ code: 'INVALID_REQUEST_CONTEXT' });
+      if (!options.salesLifecycle) return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+      return handleSalesLifecycle(reply, async () =>
+        reply.code(201).send(
+          await options.salesLifecycle!.createContract({
+            identity,
+            idempotencyKey,
+            traceId: request.id,
+            body: objectBody(request.body, { opportunityId: request.params.opportunityId }),
+          }),
+        ),
+      );
+    },
+  );
+
+  app.post<{ Params: { contractId: string } }>(
+    '/api/v1/sales/contracts/:contractId/actions/sign',
+    async (request, reply) => {
+      const identity = await authorizedIdentity(
+        options,
+        request.headers.authorization,
+        reply,
+        'merchant.intake.confirm',
+        { mfaRequired: true, write: true },
+      );
+      if (!identity) return;
+      const idempotencyKey = headerValue(request.headers['idempotency-key']);
+      if (!idempotencyKey || idempotencyKey.length > 255)
+        return reply.code(400).send({ code: 'INVALID_REQUEST_CONTEXT' });
+      if (!options.salesLifecycle) return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+      return handleSalesLifecycle(reply, () =>
+        options.salesLifecycle!.signContract({
+          identity,
+          idempotencyKey,
+          traceId: request.id,
+          body: objectBody(request.body, { contractId: request.params.contractId }),
+        }),
+      );
+    },
+  );
+
+  app.post<{ Params: { contractId: string } }>(
+    '/api/v1/sales/contracts/:contractId/collections',
+    async (request, reply) => {
+      const identity = await authorizedIdentity(
+        options,
+        request.headers.authorization,
+        reply,
+        'finance.reconcile',
+        { mfaRequired: true, write: true },
+      );
+      if (!identity) return;
+      const idempotencyKey = headerValue(request.headers['idempotency-key']);
+      if (!idempotencyKey || idempotencyKey.length > 255)
+        return reply.code(400).send({ code: 'INVALID_REQUEST_CONTEXT' });
+      if (!options.salesLifecycle) return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+      return handleSalesLifecycle(reply, async () =>
+        reply.code(201).send(
+          await options.salesLifecycle!.recordCollection({
+            identity,
+            idempotencyKey,
+            traceId: request.id,
+            body: objectBody(request.body, { contractId: request.params.contractId }),
+          }),
+        ),
+      );
+    },
+  );
+
+  app.get('/api/v1/subscription-lifecycle/changes', async (request, reply) => {
+    const identity = await authorizedIdentity(
+      options,
+      request.headers.authorization,
+      reply,
+      'merchant.intake.read',
+    );
+    if (!identity) return;
+    if (!options.subscriptionLifecycle)
+      return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+    return handleSubscriptionLifecycle(reply, () =>
+      options.subscriptionLifecycle!.listChanges(identity, request.query),
+    );
+  });
+
+  app.get<{ Params: { changeId: string } }>(
+    '/api/v1/subscription-lifecycle/changes/:changeId',
+    async (request, reply) => {
+      const identity = await authorizedIdentity(
+        options,
+        request.headers.authorization,
+        reply,
+        'merchant.intake.read',
+      );
+      if (!identity) return;
+      if (!options.subscriptionLifecycle)
+        return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+      return handleSubscriptionLifecycle(reply, () =>
+        options.subscriptionLifecycle!.getChange(identity, request.params.changeId),
+      );
+    },
+  );
+
+  app.post('/api/v1/subscription-lifecycle/changes', async (request, reply) => {
+    const identity = await authorizedIdentity(
+      options,
+      request.headers.authorization,
+      reply,
+      'merchant.intake.write',
+      { write: true },
+    );
+    if (!identity) return;
+    const idempotencyKey = headerValue(request.headers['idempotency-key']);
+    if (!idempotencyKey || idempotencyKey.length > 255)
+      return reply.code(400).send({ code: 'INVALID_REQUEST_CONTEXT' });
+    if (!options.subscriptionLifecycle)
+      return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+    return handleSubscriptionLifecycle(reply, async () =>
+      reply.code(202).send(
+        await options.subscriptionLifecycle!.requestChange({
+          identity,
+          idempotencyKey,
+          traceId: request.id,
+          body: request.body,
+        }),
+      ),
+    );
+  });
+
+  app.post<{ Params: { changeId: string } }>(
+    '/api/v1/subscription-lifecycle/changes/:changeId/actions/decide',
+    async (request, reply) => {
+      const identity = await authorizedIdentity(
+        options,
+        request.headers.authorization,
+        reply,
+        'merchant.intake.confirm',
+        { mfaRequired: true, write: true },
+      );
+      if (!identity) return;
+      const idempotencyKey = headerValue(request.headers['idempotency-key']);
+      if (!idempotencyKey || idempotencyKey.length > 255)
+        return reply.code(400).send({ code: 'INVALID_REQUEST_CONTEXT' });
+      if (!options.subscriptionLifecycle)
+        return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+      return handleSubscriptionLifecycle(reply, () =>
+        options.subscriptionLifecycle!.decideChange({
+          identity,
+          idempotencyKey,
+          traceId: request.id,
+          body: objectBody(request.body, { changeId: request.params.changeId }),
+        }),
+      );
+    },
+  );
+
+  app.post<{ Params: { changeId: string }; Body: { tenantId?: string } }>(
+    '/api/v1/internal/subscription-lifecycle/changes/:changeId/actions/apply',
+    async (request, reply) => {
+      if (
+        !options.internalWorkerToken ||
+        !validInternalBearer(options.internalWorkerToken, request.headers.authorization)
+      )
+        return reply.code(401).send({ code: 'INVALID_INTERNAL_WORKER' });
+      if (!request.body?.tenantId) return reply.code(400).send({ code: 'INVALID_REQUEST' });
+      if (!options.subscriptionLifecycle)
+        return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+      return handleSubscriptionLifecycle(reply, () =>
+        options.subscriptionLifecycle!.applyApproved({
+          tenantId: request.body.tenantId!,
+          changeId: request.params.changeId,
+          traceId: request.id,
+        }),
+      );
+    },
+  );
+
+  app.get('/api/v1/subscription-lifecycle/renewal-previews', async (request, reply) => {
+    const identity = await authorizedIdentity(
+      options,
+      request.headers.authorization,
+      reply,
+      'report.value.read',
+    );
+    if (!identity) return;
+    if (!options.subscriptionLifecycle)
+      return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+    return handleSubscriptionLifecycle(reply, () =>
+      options.subscriptionLifecycle!.listPreviews(identity, request.query),
+    );
+  });
+
+  app.get<{ Params: { previewId: string } }>(
+    '/api/v1/subscription-lifecycle/renewal-previews/:previewId',
+    async (request, reply) => {
+      const identity = await authorizedIdentity(
+        options,
+        request.headers.authorization,
+        reply,
+        'report.value.read',
+      );
+      if (!identity) return;
+      if (!options.subscriptionLifecycle)
+        return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+      return handleSubscriptionLifecycle(reply, () =>
+        options.subscriptionLifecycle!.getPreview(identity, request.params.previewId),
+      );
+    },
+  );
 
   app.post(
-    '/api/v1/provider/settlements/:statementId/adjustments/:adjustmentId/decision',
-    async (request) => {
-      const principal = requirePrincipal(request)
-      requireAccess(principal, 'provider.settlement.approve')
-      const { statementId, adjustmentId } = providerSettlementAdjustmentParamsSchema
-        .parse(request.params)
-      const body = providerSettlementAdjustmentDecisionBodySchema.parse(request.body)
-      return decideProviderSettlementAdjustment(
-        database,
-        principal,
-        { statementId, adjustmentId, ...body },
-        requireIdempotencyKey(request),
-      )
-    },
-  )
-
-  app.post('/api/v1/provider/settlements/:statementId/invoices', async (request) => {
-    const principal = requirePrincipal(request)
-    requireAccess(principal, 'provider.settlement.manage')
-    const { statementId } = providerSettlementStatementParamsSchema.parse(request.params)
-    const body = providerSettlementInvoiceBodySchema.parse(request.body)
-    return submitProviderSettlementInvoice(
-      database,
-      principal,
-      { statementId, ...body },
-      requireIdempotencyKey(request),
-    )
-  })
-
-  app.post('/api/v1/provider/settlements/:statementId/invoice-decision', async (request) => {
-    const principal = requirePrincipal(request)
-    requireAccess(principal, 'provider.settlement.approve')
-    const { statementId } = providerSettlementStatementParamsSchema.parse(request.params)
-    const body = providerSettlementInvoiceDecisionBodySchema.parse(request.body)
-    return decideProviderSettlementInvoice(
-      database,
-      principal,
-      { statementId, ...body },
-      requireIdempotencyKey(request),
-    )
-  })
-
-  app.post('/api/v1/provider/settlements/:statementId/settle', async (request) => {
-    const principal = requirePrincipal(request)
-    requireAccess(principal, 'provider.settlement.settle')
-    const { statementId } = providerSettlementStatementParamsSchema.parse(request.params)
-    const body = settleProviderStatementBodySchema.parse(request.body)
-    return settleProviderStatement(
-      database,
-      principal,
-      { statementId, ...body },
-      requireIdempotencyKey(request),
-    )
-  })
-
-  app.post('/api/v1/provider/local-growth/leads/:leadId/assign', async (request) => {
-    const principal = requirePrincipal(request)
-    requireAccess(principal, 'lead.assign')
-    const { leadId } = leadIdParamsSchema.parse(request.params)
-    const body = providerAssignLeadBodySchema.parse(request.body)
-    return assignProviderLead(
-      database,
-      principal,
-      { leadId, ...body },
-      requireIdempotencyKey(request),
-    )
-  })
-
-  app.post('/api/v1/sales/tasks/:taskId/complete', async (request) => {
-    const principal = requirePrincipal(request)
-    requireAccess(principal, 'lead.write')
-    const { taskId } = salesTaskIdParamsSchema.parse(request.params)
-    const body = completeSalesTaskBodySchema.parse(request.body)
-    return completeSalesTask(
-      database, principal, { taskId, ...body }, requireIdempotencyKey(request),
-    )
-  })
-
-  app.post('/api/v1/sales/tasks/:taskId/snooze', async (request) => {
-    const principal = requirePrincipal(request)
-    requireAccess(principal, 'lead.write')
-    const { taskId } = salesTaskIdParamsSchema.parse(request.params)
-    const body = snoozeSalesTaskBodySchema.parse(request.body)
-    return snoozeSalesTask(
-      database, principal, { taskId, ...body }, requireIdempotencyKey(request),
-    )
-  })
-
-  app.get('/api/v1/miniapp-factory/overview', async (request) => {
-    const principal = requirePrincipal(request)
-    requireAccess(principal, 'miniapp.read')
-    const query = factoryOverviewQuerySchema.parse(request.query)
-    return getMiniAppFactoryOverview(database, principal, query.focusProjectId)
-  })
-
-  app.post('/api/v1/miniapp-factory/projects', async (request) => {
-    const principal = requirePrincipal(request)
-    requireAccess(principal, 'miniapp.build')
-    return createMiniAppProject(
-      database, principal, createProjectBodySchema.parse(request.body), requireIdempotencyKey(request),
-    )
-  })
-
-  app.post('/api/v1/miniapp-factory/projects/:projectId/generate', async (request) => {
-    const principal = requirePrincipal(request)
-    requireAccess(principal, 'miniapp.build')
-    const { projectId } = projectIdParamsSchema.parse(request.params)
-    const body = generateProjectBodySchema.parse(request.body)
-    return generateMiniAppDraft(database, principal, { projectId, ...body }, requireIdempotencyKey(request))
-  })
-
-  app.post('/api/v1/miniapp-factory/projects/:projectId/preview', async (request) => {
-    const principal = requirePrincipal(request)
-    requireAccess(principal, 'miniapp.build')
-    const { projectId } = projectIdParamsSchema.parse(request.params)
-    const body = versionBodySchema.parse(request.body)
-    return advanceMiniAppProject(database, principal, { projectId, ...body, action: 'preview' }, requireIdempotencyKey(request))
-  })
-
-  app.post('/api/v1/miniapp-factory/projects/:projectId/merchant-approve', async (request) => {
-    const principal = requirePrincipal(request)
-    requireAccess(principal, 'miniapp.build')
-    const { projectId } = projectIdParamsSchema.parse(request.params)
-    const body = merchantApproveBodySchema.parse(request.body)
-    return advanceMiniAppProject(database, principal, { projectId, ...body, action: 'merchantApprove' }, requireIdempotencyKey(request))
-  })
-
-  for (const [path, action, permission] of [
-    ['review', 'review', 'miniapp.build'],
-    ['gray', 'gray', 'miniapp.release'],
-    ['publish', 'publish', 'miniapp.release'],
-  ] as const) {
-    app.post(`/api/v1/miniapp-factory/projects/:projectId/${path}`, async (request) => {
-      const principal = requirePrincipal(request)
-      requireAccess(principal, permission)
-      const { projectId } = projectIdParamsSchema.parse(request.params)
-      const body = versionBodySchema.parse(request.body)
-      return advanceMiniAppProject(database, principal, { projectId, ...body, action }, requireIdempotencyKey(request))
-    })
-  }
-
-  app.post('/api/v1/miniapp-factory/projects/:projectId/revise', async (request) => {
-    const principal = requirePrincipal(request)
-    requireAccess(principal, 'miniapp.build')
-    const { projectId } = projectIdParamsSchema.parse(request.params)
-    const body = versionBodySchema.parse(request.body)
-    return reviseMiniAppProject(database, principal, { projectId, ...body }, requireIdempotencyKey(request))
-  })
-
-  app.post('/api/v1/miniapp-factory/projects/:projectId/rollback', async (request) => {
-    const principal = requirePrincipal(request)
-    requireAccess(principal, 'miniapp.release')
-    const { projectId } = projectIdParamsSchema.parse(request.params)
-    const body = rollbackProjectBodySchema.parse(request.body)
-    return rollbackMiniAppProject(database, principal, { projectId, ...body }, requireIdempotencyKey(request))
-  })
-
-  app.get('/api/v1/geo/overview', async (request) => {
-    const principal = requirePrincipal(request)
-    requireAccess(principal, 'geo.read')
-    const query = geoOverviewQuerySchema.parse(request.query)
-    return getGeoOverview(database, principal, query.focusWorkspaceId)
-  })
-
-  app.post('/api/v1/geo/workspaces', async (request) => {
-    const principal = requirePrincipal(request)
-    requireAccess(principal, 'geo.manage')
-    return createGeoWorkspace(
-      database, principal, createGeoWorkspaceBodySchema.parse(request.body), requireIdempotencyKey(request),
-    )
-  })
-
-  for (const [path, operation] of [
-    ['scan', scanGeoWorkspace],
-    ['propose', proposeGeoFixes],
-    ['publish', publishGeoPlan],
-    ['monitor', startGeoMonitoring],
-  ] as const) {
-    app.post(`/api/v1/geo/workspaces/:workspaceId/${path}`, async (request) => {
-      const principal = requirePrincipal(request)
-      requireAccess(principal, 'geo.manage')
-      const { workspaceId } = geoWorkspaceIdParamsSchema.parse(request.params)
-      const body = versionBodySchema.parse(request.body)
-      return operation(database, principal, { workspaceId, ...body }, requireIdempotencyKey(request))
-    })
-  }
-
-  app.post('/api/v1/geo/workspaces/:workspaceId/merchant-approve', async (request) => {
-    const principal = requirePrincipal(request)
-    requireAccess(principal, 'geo.manage')
-    const { workspaceId } = geoWorkspaceIdParamsSchema.parse(request.params)
-    const body = approveGeoBodySchema.parse(request.body)
-    return approveGeoPlan(database, principal, { workspaceId, ...body }, requireIdempotencyKey(request))
-  })
-
-  app.get('/api/v1/skills/overview', async (request) => {
-    const principal = requirePrincipal(request)
-    requireAccess(principal, 'skill.read')
-    const query = skillOverviewQuerySchema.parse(request.query)
-    return getSkillNetworkOverview(database, principal, query.focusSuiteId)
-  })
-
-  app.post('/api/v1/skills/suites', async (request) => {
-    const principal = requirePrincipal(request)
-    requireAccess(principal, 'skill.manage')
-    return createSkillSuite(
-      database, principal, createSkillSuiteBodySchema.parse(request.body), requireIdempotencyKey(request),
-    )
-  })
-
-  app.post('/api/v1/skills/suites/:suiteId/generate', async (request) => {
-    const principal = requirePrincipal(request)
-    requireAccess(principal, 'skill.manage')
-    const { suiteId } = skillSuiteIdParamsSchema.parse(request.params)
-    const body = versionBodySchema.parse(request.body)
-    return generateSkillSuite(database, principal, { suiteId, ...body }, requireIdempotencyKey(request))
-  })
-
-  app.post('/api/v1/skills/suites/:suiteId/test', async (request) => {
-    const principal = requirePrincipal(request)
-    requireAccess(principal, 'skill.manage')
-    const { suiteId } = skillSuiteIdParamsSchema.parse(request.params)
-    const body = versionBodySchema.parse(request.body)
-    return testSkillSuite(database, principal, { suiteId, ...body }, requireIdempotencyKey(request))
-  })
-
-  for (const [path, action, permission] of [
-    ['submit', 'submit', 'skill.manage'],
-    ['certify', 'certify', 'skill.release'],
-    ['gray', 'gray', 'skill.release'],
-    ['publish', 'publish', 'skill.release'],
-    ['pause', 'pause', 'skill.release'],
-  ] as const) {
-    app.post(`/api/v1/skills/suites/:suiteId/${path}`, async (request) => {
-      const principal = requirePrincipal(request)
-      requireAccess(principal, permission)
-      const { suiteId } = skillSuiteIdParamsSchema.parse(request.params)
-      const body = versionBodySchema.parse(request.body)
-      return advanceSkillSuite(database, principal, { suiteId, ...body, action }, requireIdempotencyKey(request))
-    })
-  }
-
-  app.post('/api/v1/skills/suites/:suiteId/invoke/:skillVersionId', async (request) => {
-    const principal = requirePrincipal(request)
-    requireAccess(principal, 'skill.manage')
-    const params = skillInvokeParamsSchema.parse(request.params)
-    const body = invokeSkillBodySchema.parse(request.body)
-    return invokeSkill(database, principal, { ...params, ...body }, requireIdempotencyKey(request))
-  })
-
-  app.get('/api/v1/merchant/overview', async (request) => {
-    const principal = requirePrincipal(request)
-    requireAccess(principal, 'merchant.read')
-    requireAccess(principal, 'analytics.read')
-    const query = merchantOverviewQuerySchema.parse(request.query)
-    return getMerchantOperationsOverview(database, principal, query.focusOrderId)
-  })
-
-  app.post('/api/v1/merchant/orders/:orderId/confirm', async (request) => {
-    const principal = requirePrincipal(request)
-    requireAccess(principal, 'order.manage')
-    const { orderId } = merchantOrderIdParamsSchema.parse(request.params)
-    const body = versionBodySchema.parse(request.body)
-    return confirmMerchantOrder(
-      database, principal, { orderId, ...body }, requireIdempotencyKey(request),
-    )
-  })
-
-  app.post('/api/v1/merchant/orders/:orderId/verify', async (request) => {
-    const principal = requirePrincipal(request)
-    requireAccess(principal, 'order.manage')
-    const { orderId } = merchantOrderIdParamsSchema.parse(request.params)
-    const body = verifyMerchantOrderBodySchema.parse(request.body)
-    return verifyMerchantOrder(
-      database, principal, { orderId, ...body }, requireIdempotencyKey(request),
-    )
-  })
-
-  app.post('/api/v1/merchant/orders/:orderId/approve-refund', async (request) => {
-    const principal = requirePrincipal(request)
-    requireAccess(principal, 'order.refund')
-    const { orderId } = merchantOrderIdParamsSchema.parse(request.params)
-    const body = approveRefundBodySchema.parse(request.body)
-    return approveMerchantRefund(
-      database, principal, { orderId, ...body }, requireIdempotencyKey(request),
-    )
-  })
-
-  app.get('/api/v1/merchant/catalog/overview', async (request) => {
-    const principal = requirePrincipal(request)
-    requireAccess(principal, 'merchant.read')
-    const query = catalogOverviewQuerySchema.parse(request.query)
-    return getMerchantCatalogOverview(database, principal, query.focusSpuId)
-  })
-
-  app.post('/api/v1/merchant/catalog/spus', async (request) => {
-    const principal = requirePrincipal(request)
-    requireAccess(principal, 'merchant.write')
-    return createCatalogSpu(
-      database, principal, createCatalogSpuBodySchema.parse(request.body),
-      requireIdempotencyKey(request),
-    )
-  })
-
-  app.post('/api/v1/merchant/catalog/spus/:spuId/publish', async (request) => {
-    const principal = requirePrincipal(request)
-    requireAccess(principal, 'merchant.write')
-    const { spuId } = catalogSpuIdParamsSchema.parse(request.params)
-    const body = versionBodySchema.parse(request.body)
-    return publishCatalogSpu(
-      database, principal, { spuId, ...body }, requireIdempotencyKey(request),
-    )
-  })
-
-  app.post('/api/v1/merchant/catalog/skus/:skuId/price', async (request) => {
-    const principal = requirePrincipal(request)
-    requireAccess(principal, 'merchant.write')
-    const { skuId } = catalogSkuIdParamsSchema.parse(request.params)
-    const body = changeSkuPriceBodySchema.parse(request.body)
-    return changeSkuPrice(
-      database, principal, { skuId, ...body }, requireIdempotencyKey(request),
-    )
-  })
-
-  app.post('/api/v1/merchant/catalog/skus/:skuId/stock', async (request) => {
-    const principal = requirePrincipal(request)
-    requireAccess(principal, 'merchant.write')
-    const { skuId } = catalogSkuIdParamsSchema.parse(request.params)
-    const body = adjustSkuStockBodySchema.parse(request.body)
-    return adjustSkuStock(
-      database, principal, { skuId, ...body }, requireIdempotencyKey(request),
-    )
-  })
-
-  app.post('/api/v1/merchant/catalog/slots/:slotId/capacity', async (request) => {
-    const principal = requirePrincipal(request)
-    requireAccess(principal, 'merchant.write')
-    const { slotId } = catalogSlotIdParamsSchema.parse(request.params)
-    const body = updateServiceSlotBodySchema.parse(request.body)
-    return updateServiceSlot(
-      database, principal, { slotId, ...body }, requireIdempotencyKey(request),
-    )
-  })
-
-  app.post('/api/v1/merchant/catalog/imports/preview', async (request) => {
-    const principal = requirePrincipal(request)
-    requireAccess(principal, 'merchant.write')
-    return previewCatalogImport(
-      database, principal, previewCatalogImportBodySchema.parse(request.body),
-      requireIdempotencyKey(request),
-    )
-  })
-
-  app.post('/api/v1/merchant/catalog/imports/:importId/apply', async (request) => {
-    const principal = requirePrincipal(request)
-    requireAccess(principal, 'merchant.write')
-    const { importId } = catalogImportIdParamsSchema.parse(request.params)
-    const body = applyCatalogImportBodySchema.parse(request.body)
-    return applyCatalogImport(
-      database, principal, { importId, ...body }, requireIdempotencyKey(request),
-    )
-  })
-
-  app.get('/api/v1/merchant/members/overview', async (request) => {
-    const principal = requirePrincipal(request)
-    requireAccess(principal, 'merchant.read')
-    const query = memberOverviewQuerySchema.parse(request.query)
-    return getMerchantMemberOverview(database, principal, query.focusMemberId)
-  })
-
-  app.post('/api/v1/merchant/members/:memberId/tags', async (request) => {
-    const principal = requirePrincipal(request)
-    requireAccess(principal, 'merchant.write')
-    const { memberId } = memberIdParamsSchema.parse(request.params)
-    const body = updateMemberTagsBodySchema.parse(request.body)
-    return updateMemberTags(
-      database, principal, { memberId, ...body }, requireIdempotencyKey(request),
-    )
-  })
-
-  app.post('/api/v1/merchant/members/:memberId/benefits', async (request) => {
-    const principal = requirePrincipal(request)
-    requireAccess(principal, 'merchant.write')
-    const { memberId } = memberIdParamsSchema.parse(request.params)
-    const body = grantMemberBenefitBodySchema.parse(request.body)
-    return grantMemberBenefit(
-      database, principal, { memberId, ...body }, requireIdempotencyKey(request),
-    )
-  })
-
-  app.post('/api/v1/merchant/members/recall-tasks', async (request) => {
-    const principal = requirePrincipal(request)
-    requireAccess(principal, 'merchant.write')
-    return createMemberRecallTask(
-      database, principal, createMemberRecallBodySchema.parse(request.body),
-      requireIdempotencyKey(request),
-    )
-  })
-
-  app.get('/api/v1/consumer/home', async (request) => {
-    const principal = requirePrincipal(request)
-    requireAccess(principal, 'consumer.home.read')
-    return getConsumerHomeOverview(database, principal)
-  })
-
-  app.post('/api/v1/consumer/context', async (request) => {
-    const principal = requirePrincipal(request)
-    requireAccess(principal, 'consumer.context.manage')
-    return updateConsumerContext(
-      database,
-      principal,
-      consumerContextBodySchema.parse(request.body),
-      requireIdempotencyKey(request),
-    )
-  })
-
-  app.get('/api/v1/consumer/messages', async (request) => {
-    const principal = requirePrincipal(request)
-    requireAccess(principal, 'consumer.message.read')
-    return getConsumerMessages(
-      database,
-      principal,
-      consumerMessageQuerySchema.parse(request.query),
-    )
-  })
-
-  app.post('/api/v1/consumer/messages/:messageId/read', async (request) => {
-    const principal = requirePrincipal(request)
-    requireAccess(principal, 'consumer.message.manage')
-    const { messageId } = consumerMessageParamsSchema.parse(request.params)
-    const body = consumerMessageReadBodySchema.parse(request.body)
-    return markConsumerMessageRead(
-      database,
-      principal,
-      { messageId, ...body },
-      requireIdempotencyKey(request),
-    )
-  })
-
-  app.post('/api/v1/consumer/search', async (request) => {
-    const principal = requirePrincipal(request)
-    requireAccess(principal, 'consumer.search')
-    return executeConsumerSearch(
-      database,
-      principal,
-      consumerSearchBodySchema.parse(request.body),
-      requireIdempotencyKey(request),
-    )
-  })
-
-  app.post('/api/v1/consumer/nearby', async (request) => {
-    const principal = requirePrincipal(request)
-    requireAccess(principal, 'consumer.nearby.read')
-    return getConsumerNearbyOverview(
-      database,
-      principal,
-      consumerNearbyBodySchema.parse(request.body),
-    )
-  })
-
-  app.get('/api/v1/consumer/stores/:storeId', async (request) => {
-    const principal = requirePrincipal(request)
-    requireAccess(principal, 'consumer.store.read')
-    const { storeId } = consumerStoreParamsSchema.parse(request.params)
-    return getConsumerStoreDetail(database, principal, storeId)
-  })
-
-  app.post('/api/v1/consumer/stores/:storeId/offers/:offerId/drafts', async (request) => {
-    const principal = requirePrincipal(request)
-    requireAccess(principal, 'consumer.deal.manage')
-    const { storeId, offerId } = consumerDealDraftParamsSchema.parse(request.params)
-    return createConsumerDealDraft(
-      database,
-      principal,
-      { storeId, offerId, ...consumerDealDraftBodySchema.parse(request.body) },
-      requireIdempotencyKey(request),
-    )
-  })
-
-  app.post('/api/v1/consumer/deal-drafts/:draftId/confirm', async (request) => {
-    const principal = requirePrincipal(request)
-    requireAccess(principal, 'consumer.deal.manage')
-    const { draftId } = consumerDealConfirmParamsSchema.parse(request.params)
-    return confirmConsumerDealDraft(
-      database,
-      principal,
-      { draftId, ...consumerDealConfirmBodySchema.parse(request.body) },
-      requireIdempotencyKey(request),
-    )
-  })
-
-  app.post('/api/v1/consumer/deal-drafts/:draftId/cancel', async (request) => {
-    const principal = requirePrincipal(request)
-    requireAccess(principal, 'consumer.deal.manage')
-    const { draftId } = consumerDealConfirmParamsSchema.parse(request.params)
-    return cancelConsumerDeal(
-      database,
-      principal,
-      { draftId, ...consumerDealAftercareBodySchema.parse(request.body) },
-      requireIdempotencyKey(request),
-    )
-  })
-
-  app.post('/api/v1/consumer/deal-drafts/:draftId/refunds', async (request) => {
-    const principal = requirePrincipal(request)
-    requireAccess(principal, 'consumer.deal.manage')
-    const { draftId } = consumerDealConfirmParamsSchema.parse(request.params)
-    return requestConsumerDealRefund(
-      database,
-      principal,
-      { draftId, ...consumerDealAftercareBodySchema.parse(request.body) },
-      requireIdempotencyKey(request),
-    )
-  })
-
-  app.get('/api/v1/consumer/assistant', async (request) => {
-    const principal = requirePrincipal(request)
-    requireAccess(principal, 'consumer.assistant.read')
-    return getConsumerAssistantOverview(database, principal)
-  })
-
-  app.post('/api/v1/consumer/assistant/messages', async (request) => {
-    const principal = requirePrincipal(request)
-    requireAccess(principal, 'consumer.assistant.manage')
-    return sendConsumerAssistantMessage(
-      database,
-      principal,
-      consumerAssistantMessageBodySchema.parse(request.body),
-      requireIdempotencyKey(request),
-    )
-  })
-
-  app.post('/api/v1/consumer/assistant/voice-inputs', async (request) => {
-    const principal = requirePrincipal(request)
-    requireAccess(principal, 'consumer.voice.manage')
-    const headers = consumerVoiceUploadHeadersSchema.parse(request.headers)
-    let fileName: string
-    try {
-      fileName = decodeURIComponent(headers['x-file-name'])
-    } catch {
-      throw new DomainError(400, 'consumer_voice_file_name_invalid', '语音文件名编码无效')
-    }
-    if (!Buffer.isBuffer(request.body)) {
-      throw new DomainError(400, 'consumer_voice_body_required', '语音上传必须包含二进制音频')
-    }
-    return uploadConsumerVoiceInput(
-      database,
-      principal,
-      {
-        fileName,
-        mimeType: headers['x-mime-type'],
-        durationMs: headers['x-duration-ms'],
-        cityId: headers['x-city-id'],
-        householdMemberId: headers['x-household-member-id'],
-        content: request.body,
-      },
-      requireIdempotencyKey(request),
-    )
-  })
-
-  app.post('/api/v1/consumer/assistant/voice-inputs/:voiceInputId/confirm', async (request) => {
-    const principal = requirePrincipal(request)
-    requireAccess(principal, 'consumer.voice.manage')
-    const { voiceInputId } = consumerVoiceParamsSchema.parse(request.params)
-    return confirmConsumerVoiceTranscript(
-      database,
-      principal,
-      {
-        voiceInputId,
-        ...consumerVoiceConfirmBodySchema.parse(request.body),
-      },
-      requireIdempotencyKey(request),
-    )
-  })
-
-  app.post('/api/v1/consumer/assistant/image-inputs', async (request) => {
-    const principal = requirePrincipal(request)
-    requireAccess(principal, 'consumer.image.manage')
-    const headers = consumerImageUploadHeadersSchema.parse(request.headers)
-    let fileName: string
-    try {
-      fileName = decodeURIComponent(headers['x-file-name'])
-    } catch {
-      throw new DomainError(400, 'consumer_image_file_name_invalid', '图片文件名编码无效')
-    }
-    if (!Buffer.isBuffer(request.body)) {
-      throw new DomainError(400, 'consumer_image_body_required', '图片上传必须包含二进制内容')
-    }
-    return uploadConsumerImageInput(
-      database,
-      principal,
-      {
-        fileName,
-        mimeType: headers['x-mime-type'],
-        cityId: headers['x-city-id'],
-        householdMemberId: headers['x-household-member-id'],
-        content: request.body,
-      },
-      requireIdempotencyKey(request),
-    )
-  })
-
-  app.post('/api/v1/consumer/assistant/image-inputs/:imageInputId/confirm', async (request) => {
-    const principal = requirePrincipal(request)
-    requireAccess(principal, 'consumer.image.manage')
-    const { imageInputId } = consumerImageParamsSchema.parse(request.params)
-    return confirmConsumerImageDescription(
-      database,
-      principal,
-      {
-        imageInputId,
-        ...consumerImageConfirmBodySchema.parse(request.body),
-      },
-      requireIdempotencyKey(request),
-    )
-  })
-
-  app.post('/api/v1/consumer/reservations/:draftId/confirm', async (request) => {
-    const principal = requirePrincipal(request)
-    requireAccess(principal, 'consumer.reservation.confirm')
-    const { draftId } = consumerReservationParamsSchema.parse(request.params)
-    return confirmConsumerReservation(
-      database,
-      principal,
-      {
-        draftId,
-        ...consumerReservationConfirmBodySchema.parse(request.body),
-      },
-      requireIdempotencyKey(request),
-    )
-  })
-
-  app.post('/api/v1/consumer/reservations/:draftId/update', async (request) => {
-    const principal = requirePrincipal(request)
-    requireAccess(principal, 'consumer.reservation.manage')
-    const { draftId } = consumerReservationParamsSchema.parse(request.params)
-    return updateConsumerReservationDraft(
-      database,
-      principal,
-      {
-        draftId,
-        ...consumerReservationUpdateBodySchema.parse(request.body),
-      },
-      requireIdempotencyKey(request),
-    )
-  })
-
-  app.post('/api/v1/consumer/reservations/:draftId/cancel', async (request) => {
-    const principal = requirePrincipal(request)
-    requireAccess(principal, 'consumer.reservation.manage')
-    const { draftId } = consumerReservationParamsSchema.parse(request.params)
-    return cancelConsumerReservation(
-      database,
-      principal,
-      {
-        draftId,
-        ...consumerReservationCancelBodySchema.parse(request.body),
-      },
-      requireIdempotencyKey(request),
-    )
-  })
-
-  app.post('/api/v1/consumer/reservations/:draftId/payment/prepare', async (request) => {
-    const principal = requirePrincipal(request)
-    requireAccess(principal, 'consumer.payment.manage')
-    const { draftId } = consumerReservationParamsSchema.parse(request.params)
-    return prepareConsumerReservationPayment(
-      database,
-      principal,
-      { draftId, ...consumerPaymentPrepareBodySchema.parse(request.body) },
-      requireIdempotencyKey(request),
-    )
-  })
-
-  app.post('/api/v1/consumer/reservations/:draftId/refund', async (request) => {
-    const principal = requirePrincipal(request)
-    requireAccess(principal, 'consumer.payment.manage')
-    const { draftId } = consumerReservationParamsSchema.parse(request.params)
-    return requestConsumerReservationRefund(
-      database,
-      principal,
-      { draftId, ...consumerRefundRequestBodySchema.parse(request.body) },
-      requireIdempotencyKey(request),
-    )
-  })
-
-  app.post('/api/v1/payment-connectors/wechat/callback', async (request) => {
-    const signature = request.headers['x-payment-signature']
-    if (typeof signature !== 'string' || !signature) {
-      throw new DomainError(401, 'payment_callback_signature_required', '缺少支付连接器回调签名')
-    }
-    return applyConsumerPaymentCallback(
-      database,
-      paymentConnectorCallbackBodySchema.parse(request.body),
-      signature,
-    )
-  })
-
-  app.post('/api/v1/payment-connectors/wechat/deals/callback', async (request) => {
-    const signature = request.headers['x-payment-signature']
-    if (typeof signature !== 'string' || !signature) {
-      throw new DomainError(401, 'payment_callback_signature_required', '缺少支付连接器回调签名')
-    }
-    return applyConsumerDealPaymentCallback(
-      database,
-      consumerDealPaymentConnectorCallbackBodySchema.parse(request.body),
-      signature,
-    )
-  })
-
-  app.post('/api/v1/speech-connectors/transcription/callback', async (request) => {
-    const signature = request.headers['x-speech-signature']
-    if (typeof signature !== 'string' || !signature) {
-      throw new DomainError(401, 'speech_callback_signature_required', '缺少转写连接器回调签名')
-    }
-    return applySpeechTranscriptionCallback(
-      database,
-      speechConnectorCallbackBodySchema.parse(request.body),
-      signature,
-    )
-  })
-
-  app.post('/api/v1/image-connectors/recognition/callback', async (request) => {
-    const signature = request.headers['x-image-signature']
-    if (typeof signature !== 'string' || !signature) {
-      throw new DomainError(401, 'image_callback_signature_required', '缺少图片识别连接器回调签名')
-    }
-    return applyImageRecognitionCallback(
-      database,
-      imageRecognitionCallbackBodySchema.parse(request.body),
-      signature,
-    )
-  })
-
-  app.get('/api/v1/experience', async (request) => {
-    requireAccess(requirePrincipal(request), 'merchant.read')
-    return getSnapshot(database)
-  })
-
-  app.post('/api/v1/experience/advance', async (request) => {
-    requireAccess(requirePrincipal(request), 'workflow.execute')
-    const idempotencyKey = requireIdempotencyKey(request)
-    const body = advanceBodySchema.parse(request.body)
-    return advanceExperience(database, body, idempotencyKey)
-  })
-
-  app.post('/api/v1/experience/reset', async (request) => {
-    requireAccess(requirePrincipal(request), 'demo.reset')
-    const idempotencyKey = requireIdempotencyKey(request)
-    return resetExperience(database, idempotencyKey)
-  })
-
-  app.setNotFoundHandler((request, reply) => {
-    sendProblem(request, reply, 404, 'route_not_found', '请求的 API 路由不存在')
-  })
-
-  app.setErrorHandler((error, request, reply) => {
-    if (error instanceof DomainError) {
-      sendProblem(request, reply, error.status, error.code, error.message)
-      return
-    }
-    if (error instanceof AccessDeniedError) {
-      sendProblem(request, reply, 403, error.code, error.message)
-      return
-    }
-    if (error instanceof z.ZodError) {
-      sendProblem(
-        request,
+    '/api/v1/subscription-lifecycle/renewal-previews/actions/generate',
+    async (request, reply) => {
+      const identity = await authorizedIdentity(
+        options,
+        request.headers.authorization,
         reply,
-        400,
-        'validation_failed',
-        error.issues.map((issue) => issue.message).join('；'),
+        'report.value.read',
+        { write: true },
+      );
+      if (!identity) return;
+      const idempotencyKey = headerValue(request.headers['idempotency-key']);
+      if (!idempotencyKey || idempotencyKey.length > 255)
+        return reply.code(400).send({ code: 'INVALID_REQUEST_CONTEXT' });
+      if (!options.subscriptionLifecycle)
+        return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+      return handleSubscriptionLifecycle(reply, async () =>
+        reply.code(201).send(
+          await options.subscriptionLifecycle!.generatePreview({
+            identity,
+            idempotencyKey,
+            traceId: request.id,
+            body: request.body,
+          }),
+        ),
+      );
+    },
+  );
+
+  app.post<{ Params: { previewId: string } }>(
+    '/api/v1/subscription-lifecycle/renewal-previews/:previewId/actions/change-status',
+    async (request, reply) => {
+      const identity = await authorizedIdentity(
+        options,
+        request.headers.authorization,
+        reply,
+        'merchant.intake.write',
+        { write: true },
+      );
+      if (!identity) return;
+      const idempotencyKey = headerValue(request.headers['idempotency-key']);
+      if (!idempotencyKey || idempotencyKey.length > 255)
+        return reply.code(400).send({ code: 'INVALID_REQUEST_CONTEXT' });
+      if (!options.subscriptionLifecycle)
+        return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+      return handleSubscriptionLifecycle(reply, () =>
+        options.subscriptionLifecycle!.updatePreviewStatus({
+          identity,
+          idempotencyKey,
+          traceId: request.id,
+          body: objectBody(request.body, { previewId: request.params.previewId }),
+        }),
+      );
+    },
+  );
+
+  app.get('/api/v1/organization/members', async (request, reply) => {
+    const identity = await authorizedIdentity(
+      options,
+      request.headers.authorization,
+      reply,
+      'member.manage',
+    );
+    if (!identity) return;
+    if (!options.organizationGovernance)
+      return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+    return handleOrganizationGovernance(reply, () =>
+      options.organizationGovernance!.listMembers(identity, request.query),
+    );
+  });
+
+  app.get('/api/v1/organization/authorization-catalog', async (request, reply) => {
+    const identity = await authorizedIdentity(
+      options,
+      request.headers.authorization,
+      reply,
+      'role.manage',
+      { mfaRequired: true },
+    );
+    if (!identity) return;
+    if (!options.organizationGovernance)
+      return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+    return handleOrganizationGovernance(reply, () =>
+      options.organizationGovernance!.getAuthorizationCatalog(identity),
+    );
+  });
+
+  app.post('/api/v1/organization/role-assignments', async (request, reply) => {
+    const identity = await authorizedIdentity(
+      options,
+      request.headers.authorization,
+      reply,
+      'role.manage',
+      { mfaRequired: true, write: true },
+    );
+    if (!identity) return;
+    const idempotencyKey = headerValue(request.headers['idempotency-key']);
+    if (!idempotencyKey || idempotencyKey.length > 255)
+      return reply.code(400).send({ code: 'INVALID_REQUEST_CONTEXT' });
+    if (!options.organizationGovernance)
+      return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+    return handleOrganizationGovernance(reply, async () =>
+      reply.code(201).send(
+        await options.organizationGovernance!.assignRole({
+          identity,
+          idempotencyKey,
+          traceId: request.id,
+          body: request.body,
+        }),
+      ),
+    );
+  });
+
+  app.post<{ Params: { assignmentId: string } }>(
+    '/api/v1/organization/role-assignments/:assignmentId/actions/revoke',
+    async (request, reply) => {
+      const identity = await authorizedIdentity(
+        options,
+        request.headers.authorization,
+        reply,
+        'role.manage',
+        { mfaRequired: true, write: true },
+      );
+      if (!identity) return;
+      const idempotencyKey = headerValue(request.headers['idempotency-key']);
+      if (!idempotencyKey || idempotencyKey.length > 255)
+        return reply.code(400).send({ code: 'INVALID_REQUEST_CONTEXT' });
+      if (!options.organizationGovernance)
+        return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+      return handleOrganizationGovernance(reply, () =>
+        options.organizationGovernance!.revokeRole({
+          identity,
+          idempotencyKey,
+          traceId: request.id,
+          body: { assignmentId: request.params.assignmentId },
+        }),
+      );
+    },
+  );
+
+  app.post<{ Params: { userId: string } }>(
+    '/api/v1/organization/members/:userId/actions/change-status',
+    async (request, reply) => {
+      const identity = await authorizedIdentity(
+        options,
+        request.headers.authorization,
+        reply,
+        'member.manage',
+        { mfaRequired: true, write: true },
+      );
+      if (!identity) return;
+      const idempotencyKey = headerValue(request.headers['idempotency-key']);
+      if (!idempotencyKey || idempotencyKey.length > 255)
+        return reply.code(400).send({ code: 'INVALID_REQUEST_CONTEXT' });
+      if (!options.organizationGovernance)
+        return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+      return handleOrganizationGovernance(reply, () =>
+        options.organizationGovernance!.changeMemberStatus({
+          identity,
+          idempotencyKey,
+          traceId: request.id,
+          body: objectBody(request.body, { userId: request.params.userId }),
+        }),
+      );
+    },
+  );
+
+  app.get('/api/v1/organization/audit-logs', async (request, reply) => {
+    const identity = await authorizedIdentity(
+      options,
+      request.headers.authorization,
+      reply,
+      'audit.read',
+    );
+    if (!identity) return;
+    if (!options.organizationGovernance)
+      return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+    return handleOrganizationGovernance(reply, () =>
+      options.organizationGovernance!.listAudit(identity, request.query),
+    );
+  });
+
+  app.get('/api/v1/organization/privacy-requests', async (request, reply) => {
+    const identity = await authorizedIdentity(
+      options,
+      request.headers.authorization,
+      reply,
+      'customer_profile.export',
+      { mfaRequired: true },
+    );
+    if (!identity) return;
+    if (!options.organizationGovernance)
+      return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+    return handleOrganizationGovernance(reply, () =>
+      options.organizationGovernance!.listPrivacyRequests(identity, request.query),
+    );
+  });
+
+  app.get('/api/v1/organization/notifications', async (request, reply) => {
+    const identity = await authorizedIdentity(
+      options,
+      request.headers.authorization,
+      reply,
+      'customer_service.read',
+    );
+    if (!identity) return;
+    if (!options.organizationGovernance)
+      return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+    return handleOrganizationGovernance(reply, () =>
+      options.organizationGovernance!.listNotifications(identity, request.query),
+    );
+  });
+
+  app.get('/api/v1/merchant-operations/profile', async (request, reply) => {
+    const identity = await authorizedIdentity(
+      options,
+      request.headers.authorization,
+      reply,
+      'merchant_profile.manage',
+    );
+    if (!identity) return;
+    if (!options.merchantOperations) return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+    return handleMerchantOperations(reply, () =>
+      options.merchantOperations!.getMerchantProfile(identity),
+    );
+  });
+
+  app.get('/api/v1/merchant-operations/stores', async (request, reply) => {
+    const identity = await authorizedIdentity(
+      options,
+      request.headers.authorization,
+      reply,
+      'merchant_profile.manage',
+    );
+    if (!identity) return;
+    if (!options.merchantOperations) return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+    return handleMerchantOperations(reply, () => options.merchantOperations!.listStores(identity));
+  });
+
+  app.get('/api/v1/merchant-operations/products', async (request, reply) => {
+    const identity = await authorizedIdentity(
+      options,
+      request.headers.authorization,
+      reply,
+      'merchant_profile.manage',
+    );
+    if (!identity) return;
+    if (!options.merchantOperations) return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+    return handleMerchantOperations(reply, () =>
+      options.merchantOperations!.listProducts(identity, request.query),
+    );
+  });
+
+  app.post<{ Params: { productId: string } }>(
+    '/api/v1/merchant-operations/products/:productId/actions/publish',
+    async (request, reply) => {
+      const identity = await authorizedIdentity(
+        options,
+        request.headers.authorization,
+        reply,
+        'order.manage',
+        { mfaRequired: true, write: true },
+      );
+      if (!identity) return;
+      const key = headerValue(request.headers['idempotency-key']);
+      if (!key) return reply.code(400).send({ code: 'INVALID_REQUEST_CONTEXT' });
+      if (!options.merchantOperations) return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+      return handleMerchantOperations(reply, () =>
+        options.merchantOperations!.publishProduct(
+          identity,
+          request.params.productId,
+          key,
+          request.id,
+          request.body,
+        ),
+      );
+    },
+  );
+
+  app.get('/api/v1/merchant-operations/orders', async (request, reply) => {
+    const identity = await authorizedIdentity(
+      options,
+      request.headers.authorization,
+      reply,
+      'order.read',
+    );
+    if (!identity) return;
+    if (!options.merchantOperations) return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+    return handleMerchantOperations(reply, () =>
+      options.merchantOperations!.listOrders(identity, request.query),
+    );
+  });
+
+  app.get<{ Params: { orderId: string } }>(
+    '/api/v1/merchant-operations/orders/:orderId',
+    async (request, reply) => {
+      const identity = await authorizedIdentity(
+        options,
+        request.headers.authorization,
+        reply,
+        'order.read',
+      );
+      if (!identity) return;
+      if (!options.merchantOperations) return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+      return handleMerchantOperations(reply, () =>
+        options.merchantOperations!.getOrder(identity, request.params.orderId),
+      );
+    },
+  );
+
+  app.get('/api/v1/merchant-operations/refunds', async (request, reply) => {
+    const identity = await authorizedIdentity(
+      options,
+      request.headers.authorization,
+      reply,
+      'order.read',
+    );
+    if (!identity) return;
+    if (!options.merchantOperations) return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+    return handleMerchantOperations(reply, () =>
+      options.merchantOperations!.listRefunds(identity, request.query),
+    );
+  });
+
+  app.get('/api/v1/merchant-operations/verification-uses', async (request, reply) => {
+    const identity = await authorizedIdentity(
+      options,
+      request.headers.authorization,
+      reply,
+      'order.read',
+    );
+    if (!identity) return;
+    if (!options.merchantOperations) return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+    return handleMerchantOperations(reply, () =>
+      options.merchantOperations!.listVerificationUses(identity, request.query),
+    );
+  });
+
+  app.get('/api/v1/merchant-operations/reconciliations', async (request, reply) => {
+    const identity = await authorizedIdentity(
+      options,
+      request.headers.authorization,
+      reply,
+      'finance.reconcile',
+      { mfaRequired: true },
+    );
+    if (!identity) return;
+    if (!options.merchantOperations) return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+    return handleMerchantOperations(reply, () =>
+      options.merchantOperations!.listReconciliations(identity, request.query),
+    );
+  });
+
+  app.get('/api/v1/merchant-operations/customers', async (request, reply) => {
+    const identity = await authorizedIdentity(
+      options,
+      request.headers.authorization,
+      reply,
+      'customer_service.read',
+    );
+    if (!identity) return;
+    if (!options.merchantOperations) return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+    return handleMerchantOperations(reply, () =>
+      options.merchantOperations!.listCustomers(identity, request.query),
+    );
+  });
+
+  app.get<{ Params: { customerId: string } }>(
+    '/api/v1/merchant-operations/customers/:customerId',
+    async (request, reply) => {
+      const identity = await authorizedIdentity(
+        options,
+        request.headers.authorization,
+        reply,
+        'customer_service.read',
+      );
+      if (!identity) return;
+      if (!options.merchantOperations) return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+      return handleMerchantOperations(reply, () =>
+        options.merchantOperations!.getCustomer(identity, request.params.customerId),
+      );
+    },
+  );
+
+  app.get<{ Params: { customerId: string } }>(
+    '/api/v1/merchant-operations/customers/:customerId/rewards',
+    async (request, reply) => {
+      const identity = await authorizedIdentity(
+        options,
+        request.headers.authorization,
+        reply,
+        'customer_service.read',
+      );
+      if (!identity) return;
+      if (!options.merchantOperations) return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+      return handleMerchantOperations(reply, () =>
+        options.merchantOperations!.listCustomerRewards(identity, request.params.customerId),
+      );
+    },
+  );
+
+  app.post('/api/v1/commerce-reconciliations', async (request, reply) => {
+    const identity = await authorizedIdentity(
+      options,
+      request.headers.authorization,
+      reply,
+      'finance.reconcile',
+      { mfaRequired: true, write: true },
+    );
+    if (!identity) return;
+    if (!options.commerceReconciliation)
+      return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+    return handleCommerce(reply, async () =>
+      reply.code(201).send(
+        await options.commerceReconciliation!.run({
+          identity,
+          traceId: request.id,
+          body: request.body,
+        }),
+      ),
+    );
+  });
+
+  app.post<{ Params: { orderId: string }; Body: { tenantId?: string } }>(
+    '/api/v1/internal/commerce/orders/:orderId/actions/expire',
+    async (request, reply) => {
+      if (
+        !options.internalWorkerToken ||
+        !validInternalBearer(options.internalWorkerToken, request.headers.authorization)
       )
-      return
-    }
+        return reply.code(401).send({ code: 'INVALID_INTERNAL_WORKER' });
+      if (!request.body?.tenantId) return reply.code(400).send({ code: 'INVALID_REQUEST' });
+      if (!options.commerceOrders) return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+      return handleCommerce(reply, () =>
+        options.commerceOrders!.expire({
+          tenantId: request.body.tenantId!,
+          orderId: request.params.orderId,
+          traceId: request.id,
+        }),
+      );
+    },
+  );
 
-    request.log.error(error)
-    sendProblem(request, reply, 500, 'internal_error', '服务暂时不可用，请稍后重试')
-  })
+  app.post<{ Params: { refundId: string }; Body: { tenantId?: string } }>(
+    '/api/v1/internal/commerce/refunds/:refundId/actions/submit',
+    async (request, reply) => {
+      if (
+        !options.internalWorkerToken ||
+        !validInternalBearer(options.internalWorkerToken, request.headers.authorization)
+      )
+        return reply.code(401).send({ code: 'INVALID_INTERNAL_WORKER' });
+      if (!request.body?.tenantId) return reply.code(400).send({ code: 'INVALID_REQUEST' });
+      if (!options.commerceRefunds) return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+      return handleCommerce(reply, async () =>
+        reply.code(202).send(
+          await options.commerceRefunds!.submit({
+            tenantId: request.body.tenantId!,
+            refundId: request.params.refundId,
+            traceId: request.id,
+          }),
+        ),
+      );
+    },
+  );
 
-  let slaScheduler: ReturnType<typeof setInterval> | undefined
-  let initialSlaScan: ReturnType<typeof setTimeout> | undefined
-  if (process.env.NODE_ENV !== 'test' && process.env.SLA_SCHEDULER_ENABLED !== 'false') {
-    const schedulerPrincipal: Principal = {
-      subject: 'user-demo-hq',
-      displayName: 'SLA 自动升级调度器',
-      tenantId: 'tenant-lequ',
-      roles: ['HQ_SUPER_ADMIN'],
-      dataScope: 'PLATFORM',
-      cityIds: [],
-      merchantIds: [],
-      storeIds: [],
-    }
-    const scan = () => {
-      try {
-        runProviderSlaScan(database, schedulerPrincipal)
-      } catch (error) {
-        app.log.error(error, 'SLA automatic escalation scan failed')
-      }
-    }
-    initialSlaScan = setTimeout(scan, 1_000)
-    initialSlaScan.unref()
-    slaScheduler = setInterval(scan, PROVIDER_SLA_SCAN_INTERVAL_SECONDS * 1_000)
-    slaScheduler.unref()
+  app.post<{ Params: { profileId: string } }>(
+    '/api/v1/geo/profiles/:profileId/actions/publish',
+    async (request, reply) => {
+      const identity = await authorizedIdentity(
+        options,
+        request.headers.authorization,
+        reply,
+        'geo.publish',
+        { mfaRequired: true, write: true },
+      );
+      if (!identity) return;
+      const idempotencyKey = headerValue(request.headers['idempotency-key']);
+      if (!idempotencyKey || idempotencyKey.length > 255)
+        return reply.code(400).send({ code: 'INVALID_REQUEST_CONTEXT' });
+      if (!options.geoPluginReports) return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+      return handleGeoPluginReport(reply, async () =>
+        reply.code(202).send(
+          await options.geoPluginReports!.publishGeo({
+            identity,
+            profileId: request.params.profileId,
+            idempotencyKey,
+            traceId: request.id,
+            body: request.body,
+          }),
+        ),
+      );
+    },
+  );
+
+  app.post('/api/v1/plugins/installations', async (request, reply) => {
+    const identity = await authorizedIdentity(
+      options,
+      request.headers.authorization,
+      reply,
+      'plugin.install',
+      { mfaRequired: true, write: true },
+    );
+    if (!identity) return;
+    const idempotencyKey = headerValue(request.headers['idempotency-key']);
+    if (!idempotencyKey || idempotencyKey.length > 255)
+      return reply.code(400).send({ code: 'INVALID_REQUEST_CONTEXT' });
+    if (!options.geoPluginReports) return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+    return handleGeoPluginReport(reply, async () =>
+      reply.code(202).send(
+        await options.geoPluginReports!.installPlugin({
+          identity,
+          idempotencyKey,
+          traceId: request.id,
+          body: request.body,
+        }),
+      ),
+    );
+  });
+  app.get('/api/v1/plugins/catalog', async (request, reply) => {
+    const identity = await authorizedIdentity(
+      options,
+      request.headers.authorization,
+      reply,
+      'plugin.install',
+    );
+    if (!identity) return;
+    if (!options.geoPluginReports) return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+    return handleGeoPluginReport(reply, () => options.geoPluginReports!.listPlugins({ identity }));
+  });
+  app.get<{ Params: { pluginCode: string } }>(
+    '/api/v1/plugins/catalog/:pluginCode',
+    async (request, reply) => {
+      const identity = await authorizedIdentity(
+        options,
+        request.headers.authorization,
+        reply,
+        'plugin.install',
+      );
+      if (!identity) return;
+      if (!options.geoPluginReports) return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+      return handleGeoPluginReport(reply, () =>
+        options.geoPluginReports!.getPlugin({ identity, pluginCode: request.params.pluginCode }),
+      );
+    },
+  );
+
+  app.post<{ Params: { installationId: string } }>(
+    '/api/v1/plugins/installations/:installationId/invocations',
+    async (request, reply) => {
+      const identity = await authorizedIdentity(
+        options,
+        request.headers.authorization,
+        reply,
+        'plugin.permission.grant',
+        { write: true },
+      );
+      if (!identity) return;
+      const idempotencyKey = headerValue(request.headers['idempotency-key']);
+      if (!idempotencyKey || idempotencyKey.length > 255)
+        return reply.code(400).send({ code: 'INVALID_REQUEST_CONTEXT' });
+      if (!options.geoPluginReports) return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+      return handleGeoPluginReport(reply, async () =>
+        reply.code(202).send(
+          await options.geoPluginReports!.invokePlugin({
+            identity,
+            installationId: request.params.installationId,
+            idempotencyKey,
+            traceId: request.id,
+            body: request.body,
+          }),
+        ),
+      );
+    },
+  );
+
+  app.post<{ Params: { installationId: string } }>(
+    '/api/v1/plugins/installations/:installationId/actions/upgrade',
+    async (request, reply) => {
+      const identity = await authorizedIdentity(
+        options,
+        request.headers.authorization,
+        reply,
+        'plugin.install',
+        { mfaRequired: true, write: true },
+      );
+      if (!identity) return;
+      if (!options.geoPluginReports) return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+      return handleGeoPluginReport(reply, async () =>
+        reply.code(202).send(
+          await options.geoPluginReports!.upgradePlugin({
+            identity,
+            installationId: request.params.installationId,
+            traceId: request.id,
+            body: request.body,
+          }),
+        ),
+      );
+    },
+  );
+
+  app.post<{ Params: { installationId: string } }>(
+    '/api/v1/plugins/installations/:installationId/actions/uninstall',
+    async (request, reply) => {
+      const identity = await authorizedIdentity(
+        options,
+        request.headers.authorization,
+        reply,
+        'plugin.install',
+        { mfaRequired: true, write: true },
+      );
+      if (!identity) return;
+      if (!options.geoPluginReports) return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+      return handleGeoPluginReport(reply, async () =>
+        reply.code(200).send(
+          await options.geoPluginReports!.uninstallPlugin({
+            identity,
+            installationId: request.params.installationId,
+            traceId: request.id,
+          }),
+        ),
+      );
+    },
+  );
+
+  app.get<{ Querystring: { month?: string; storeId?: string } }>(
+    '/api/v1/reports/monthly-value',
+    async (request, reply) => {
+      const identity = await authorizedIdentity(
+        options,
+        request.headers.authorization,
+        reply,
+        'report.value.read',
+      );
+      if (!identity) return;
+      if (!request.query.month) return reply.code(400).send({ code: 'INVALID_REQUEST' });
+      if (!options.geoPluginReports) return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+      return handleGeoPluginReport(reply, () =>
+        options.geoPluginReports!.monthlyReport({
+          identity,
+          month: request.query.month!,
+          ...(request.query.storeId ? { storeId: request.query.storeId } : {}),
+        }),
+      );
+    },
+  );
+
+  app.post<{ Body: { tenantId?: string; month?: string; storeId?: string } }>(
+    '/api/v1/internal/reports/monthly-value/actions/materialize',
+    async (request, reply) => {
+      if (
+        !options.internalWorkerToken ||
+        !validInternalBearer(options.internalWorkerToken, request.headers.authorization)
+      )
+        return reply.code(401).send({ code: 'INVALID_INTERNAL_WORKER' });
+      if (!request.body?.tenantId || !request.body.month)
+        return reply.code(400).send({ code: 'INVALID_REQUEST' });
+      if (!options.geoPluginReports) return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+      return handleGeoPluginReport(reply, async () =>
+        reply.code(201).send(
+          await options.geoPluginReports!.materializeMonthlyReport({
+            tenantId: request.body.tenantId!,
+            month: request.body.month!,
+            ...(request.body.storeId ? { storeId: request.body.storeId } : {}),
+          }),
+        ),
+      );
+    },
+  );
+  app.post<{ Params: { targetId: string }; Body: { tenantId?: string } }>(
+    '/api/v1/internal/geo/targets/:targetId/actions/check',
+    async (request, reply) => {
+      if (
+        !options.internalWorkerToken ||
+        !validInternalBearer(options.internalWorkerToken, request.headers.authorization)
+      )
+        return reply.code(401).send({ code: 'INVALID_INTERNAL_WORKER' });
+      if (!request.body?.tenantId) return reply.code(400).send({ code: 'INVALID_REQUEST' });
+      if (!options.geoPluginReports) return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+      return handleGeoPluginReport(reply, () =>
+        options.geoPluginReports!.checkGeoTarget({
+          tenantId: request.body.tenantId!,
+          targetId: request.params.targetId,
+          traceId: request.id,
+        }),
+      );
+    },
+  );
+
+  return app;
+}
+
+function headerValue(value: string | string[] | undefined): string | undefined {
+  return Array.isArray(value) ? value[0] : value;
+}
+
+function validInternalBearer(expectedToken: string, authorization: string | undefined): boolean {
+  if (Buffer.byteLength(expectedToken, 'utf8') < 32 || !authorization?.startsWith('Bearer '))
+    return false;
+  const expected = createHash('sha256').update(expectedToken).digest();
+  const actual = createHash('sha256').update(authorization.slice('Bearer '.length)).digest();
+  return timingSafeEqual(expected, actual);
+}
+
+async function authorizedIdentity(
+  options: AppOptions,
+  authorization: string | undefined,
+  reply: { code(statusCode: number): { send(payload: unknown): unknown } },
+  permissionCode?: string,
+  authorizationOptions: AuthorizationOptions = {},
+): Promise<(SessionIdentity & Partial<AuthorizationContext>) | undefined> {
+  if (!options.sessionIdentity || !options.accessControl) {
+    reply.code(503).send({ code: 'AUTHENTICATION_UNAVAILABLE' });
+    return undefined;
   }
-
-  let renewalScheduler: ReturnType<typeof setInterval> | undefined
-  let initialRenewalScan: ReturnType<typeof setTimeout> | undefined
-  if (process.env.NODE_ENV !== 'test' && process.env.RENEWAL_SCHEDULER_ENABLED !== 'false') {
-    const schedulerPrincipal: Principal = {
-      subject: 'user-demo-hq',
-      displayName: '续费经营自动调度器',
-      tenantId: 'tenant-lequ',
-      roles: ['HQ_SUPER_ADMIN'],
-      dataScope: 'PLATFORM',
-      cityIds: [],
-      merchantIds: [],
-      storeIds: [],
+  try {
+    const identity = options.sessionIdentity.verify(authorization);
+    return permissionCode
+      ? await options.accessControl.authorize(identity, permissionCode, authorizationOptions)
+      : await options.accessControl.validate(identity, authorizationOptions);
+  } catch (error) {
+    if (error instanceof SessionAuthenticationError || error instanceof InactiveSessionError) {
+      reply.code(401).send({ code: 'INVALID_SESSION' });
+      return undefined;
     }
-    const scan = () => {
-      try {
-        runProviderRenewalScan(database, schedulerPrincipal)
-      } catch (error) {
-        app.log.error(error, 'Provider renewal reminder scan failed')
-      }
+    if (error instanceof PermissionDeniedError) {
+      reply.code(403).send({ code: 'PERMISSION_DENIED' });
+      return undefined;
     }
-    initialRenewalScan = setTimeout(scan, 1_500)
-    initialRenewalScan.unref()
-    renewalScheduler = setInterval(scan, PROVIDER_RENEWAL_SCAN_INTERVAL_SECONDS * 1_000)
-    renewalScheduler.unref()
+    if (error instanceof TenantWriteSuspendedError) {
+      reply.code(423).send({ code: 'TENANT_WRITE_SUSPENDED' });
+      return undefined;
+    }
+    throw error;
   }
+}
 
-  let consumerDealExpiryScheduler: ReturnType<typeof setInterval> | undefined
-  let initialConsumerDealExpiryScan: ReturnType<typeof setTimeout> | undefined
-  if (
-    process.env.NODE_ENV !== 'test'
-    && process.env.CONSUMER_DEAL_EXPIRY_SCHEDULER_ENABLED !== 'false'
-  ) {
-    const scan = () => {
-      try {
-        releaseExpiredConsumerDealCheckouts(database)
-      } catch (error) {
-        app.log.error(error, 'Consumer deal expiry scan failed')
-      }
+function tryConsumerIdentity(
+  options: AppOptions,
+  authorization: string | undefined,
+): ConsumerSessionIdentity | undefined {
+  if (!options.consumerSession) return undefined;
+  try {
+    return options.consumerSession.verify(authorization);
+  } catch (error) {
+    if (error instanceof ConsumerSessionAuthenticationError) return undefined;
+    throw error;
+  }
+}
+
+function consumerIdentity(
+  options: AppOptions,
+  authorization: string | undefined,
+  reply: { code(statusCode: number): { send(payload: unknown): unknown } },
+): ConsumerSessionIdentity | undefined {
+  if (!options.consumerSession) {
+    reply.code(503).send({ code: 'CONSUMER_AUTHENTICATION_UNAVAILABLE' });
+    return undefined;
+  }
+  try {
+    return options.consumerSession.verify(authorization);
+  } catch (error) {
+    if (error instanceof ConsumerSessionAuthenticationError) {
+      reply.code(401).send({ code: 'INVALID_CONSUMER_SESSION' });
+      return undefined;
     }
-    initialConsumerDealExpiryScan = setTimeout(scan, 2_000)
-    initialConsumerDealExpiryScan.unref()
-    consumerDealExpiryScheduler = setInterval(
-      scan,
-      CONSUMER_DEAL_EXPIRY_SCAN_INTERVAL_SECONDS * 1_000,
+    throw error;
+  }
+}
+
+function lifeConsumerIdentity(
+  options: AppOptions,
+  authorization: string | undefined,
+  reply: { code(statusCode: number): { send(payload: unknown): unknown } },
+): LifeConsumerSessionIdentity | undefined {
+  if (!options.lifeConsumerSession) {
+    reply.code(503).send({ code: 'LIFE_CONSUMER_AUTHENTICATION_UNAVAILABLE' });
+    return undefined;
+  }
+  try {
+    return options.lifeConsumerSession.verify(authorization);
+  } catch (error) {
+    if (error instanceof LifeConsumerSessionAuthenticationError) {
+      reply.code(401).send({ code: 'INVALID_LIFE_CONSUMER_SESSION' });
+      return undefined;
+    }
+    throw error;
+  }
+}
+
+function objectBody(body: unknown, authoritative: Record<string, string>): Record<string, unknown> {
+  return body && typeof body === 'object' ? { ...body, ...authoritative } : authoritative;
+}
+
+async function handleConsumerCatalog(
+  reply: { code(statusCode: number): { send(payload: unknown): unknown } },
+  work: () => Promise<unknown>,
+) {
+  try {
+    return await work();
+  } catch (error) {
+    if (error instanceof ZodError) return reply.code(400).send({ code: 'INVALID_REQUEST' });
+    if (error instanceof ConsumerCatalogAuthenticationError)
+      return reply.code(401).send({ code: 'INVALID_CONSUMER_SESSION' });
+    if (error instanceof ConsumerCatalogNotFoundError)
+      return reply.code(404).send({ code: 'CATALOG_RESOURCE_NOT_FOUND' });
+    throw error;
+  }
+}
+
+async function handleConsumerStoreSwitch(
+  reply: { code(statusCode: number): { send(payload: unknown): unknown } },
+  work: () => Promise<unknown>,
+) {
+  try {
+    return await work();
+  } catch (error) {
+    if (error instanceof ZodError) return reply.code(400).send({ code: 'INVALID_REQUEST' });
+    if (error instanceof ConsumerStoreSwitchAuthenticationError)
+      return reply.code(401).send({ code: 'INVALID_CONSUMER_SESSION' });
+    if (error instanceof ConsumerStoreSwitchNotFoundError)
+      return reply.code(404).send({ code: 'STORE_NOT_FOUND' });
+    if (error instanceof ConsumerStoreSwitchConflictError)
+      return reply.code(409).send({ code: 'STORE_SWITCH_CONFLICT' });
+    throw error;
+  }
+}
+
+async function handlePlatformCart(
+  reply: { code(statusCode: number): { send(payload: unknown): unknown } },
+  work: () => Promise<unknown>,
+) {
+  try {
+    return await work();
+  } catch (error) {
+    if (error instanceof ZodError) return reply.code(400).send({ code: 'INVALID_REQUEST' });
+    if (error instanceof PlatformCartAuthenticationError)
+      return reply.code(401).send({ code: 'INVALID_LIFE_CONSUMER_SESSION' });
+    if (error instanceof PlatformCartItemUnavailableError)
+      return reply.code(409).send({ code: 'CART_ITEM_UNAVAILABLE' });
+    if (error instanceof PlatformCartItemNotFoundError)
+      return reply.code(404).send({ code: 'CART_ITEM_NOT_FOUND' });
+    throw error;
+  }
+}
+
+async function handleMerchantConsumerJourney(
+  reply: { code(statusCode: number): { send(payload: unknown): unknown } },
+  work: () => Promise<unknown>,
+) {
+  try {
+    return await work();
+  } catch (error) {
+    if (error instanceof ZodError) return reply.code(400).send({ code: 'INVALID_REQUEST' });
+    if (error instanceof MerchantConsumerJourneyAuthenticationError)
+      return reply.code(401).send({ code: 'INVALID_MERCHANT_CONSUMER_IDENTITY_PAIR' });
+    if (error instanceof MerchantConsumerJourneyNotFoundError)
+      return reply.code(404).send({ code: 'MERCHANT_CONSUMER_RESOURCE_NOT_FOUND' });
+    if (
+      error instanceof PlatformCartAuthenticationError ||
+      error instanceof PlatformCheckoutAuthenticationError
     )
-    consumerDealExpiryScheduler.unref()
+      return reply.code(401).send({ code: 'INVALID_LIFE_CONSUMER_SESSION' });
+    if (error instanceof PlatformCartItemUnavailableError)
+      return reply.code(409).send({ code: 'CART_ITEM_UNAVAILABLE' });
+    if (error instanceof PlatformCartItemNotFoundError)
+      return reply.code(404).send({ code: 'CART_ITEM_NOT_FOUND' });
+    if (error instanceof PlatformCheckoutConflictError)
+      return reply.code(409).send({ code: 'CHECKOUT_CONFLICT' });
+    if (error instanceof PlatformCheckoutNotFoundError)
+      return reply.code(404).send({ code: 'CHECKOUT_NOT_FOUND' });
+    if (error instanceof PlatformCheckoutUnavailableError)
+      return reply.code(422).send({ code: 'CHECKOUT_UNAVAILABLE' });
+    throw error;
   }
+}
 
-  app.addHook('onClose', async () => {
-    if (initialSlaScan) clearTimeout(initialSlaScan)
-    if (slaScheduler) clearInterval(slaScheduler)
-    if (initialRenewalScan) clearTimeout(initialRenewalScan)
-    if (renewalScheduler) clearInterval(renewalScheduler)
-    if (initialConsumerDealExpiryScan) clearTimeout(initialConsumerDealExpiryScan)
-    if (consumerDealExpiryScheduler) clearInterval(consumerDealExpiryScheduler)
-    database.close()
-  })
+async function handlePlatformAddress(
+  reply: { code(statusCode: number): { send(payload?: unknown): unknown } },
+  work: () => Promise<unknown>,
+) {
+  try {
+    return await work();
+  } catch (error) {
+    if (error instanceof ZodError) return reply.code(400).send({ code: 'INVALID_REQUEST' });
+    if (error instanceof PlatformAddressAuthenticationError)
+      return reply.code(401).send({ code: 'INVALID_LIFE_CONSUMER_SESSION' });
+    if (error instanceof PlatformAddressNotFoundError)
+      return reply.code(404).send({ code: 'ADDRESS_NOT_FOUND' });
+    throw error;
+  }
+}
 
-  return app
+async function handlePlatformInvoiceProfile(
+  reply: { code(statusCode: number): { send(payload?: unknown): unknown } },
+  work: () => Promise<unknown>,
+) {
+  try {
+    return await work();
+  } catch (error) {
+    if (error instanceof ZodError) return reply.code(400).send({ code: 'INVALID_REQUEST' });
+    if (error instanceof PlatformInvoiceProfileAuthenticationError)
+      return reply.code(401).send({ code: 'INVALID_LIFE_CONSUMER_SESSION' });
+    if (error instanceof PlatformInvoiceProfileNotFoundError)
+      return reply.code(404).send({ code: 'INVOICE_PROFILE_NOT_FOUND' });
+    throw error;
+  }
+}
+
+async function handlePlatformOrders(
+  reply: { code(statusCode: number): { send(payload: unknown): unknown } },
+  work: () => Promise<unknown>,
+) {
+  try {
+    return await work();
+  } catch (error) {
+    if (error instanceof ZodError) return reply.code(400).send({ code: 'INVALID_REQUEST' });
+    if (error instanceof PlatformOrderQueryAuthenticationError)
+      return reply.code(401).send({ code: 'INVALID_LIFE_CONSUMER_SESSION' });
+    if (error instanceof PlatformOrderQueryNotFoundError)
+      return reply.code(404).send({ code: 'ORDER_NOT_FOUND' });
+    throw error;
+  }
+}
+
+async function handlePlatformCheckout(
+  reply: { code(statusCode: number): { send(payload: unknown): unknown } },
+  work: () => Promise<unknown>,
+) {
+  try {
+    return await work();
+  } catch (error) {
+    if (error instanceof ZodError) return reply.code(400).send({ code: 'INVALID_REQUEST' });
+    if (error instanceof PlatformCheckoutAuthenticationError)
+      return reply.code(401).send({ code: 'INVALID_LIFE_CONSUMER_SESSION' });
+    if (error instanceof PlatformCheckoutNotFoundError)
+      return reply.code(404).send({ code: 'CHECKOUT_NOT_FOUND' });
+    if (error instanceof PlatformCheckoutConflictError)
+      return reply.code(409).send({ code: 'CHECKOUT_CONFLICT' });
+    if (error instanceof PlatformCheckoutUnavailableError)
+      return reply.code(422).send({ code: 'CHECKOUT_UNAVAILABLE' });
+    throw error;
+  }
+}
+
+async function handlePlatformPayment(
+  reply: {
+    code(statusCode: number): { send(payload: unknown): unknown };
+    send(payload: unknown): unknown;
+  },
+  work: () => Promise<unknown>,
+) {
+  try {
+    return await work();
+  } catch (error) {
+    if (error instanceof ZodError) return reply.code(400).send({ code: 'INVALID_REQUEST' });
+    if (error instanceof PlatformPaymentAuthenticationError)
+      return reply.code(401).send({ code: 'INVALID_LIFE_CONSUMER_SESSION' });
+    if (error instanceof PlatformPaymentOrderNotFoundError)
+      return reply.code(404).send({ code: 'ORDER_NOT_FOUND' });
+    return handleCommerce(reply, async () => {
+      throw error;
+    });
+  }
+}
+
+async function handlePlatformAftercare(
+  reply: {
+    code(statusCode: number): { send(payload: unknown): unknown };
+    send(payload: unknown): unknown;
+  },
+  work: () => Promise<unknown>,
+) {
+  try {
+    return await work();
+  } catch (error) {
+    if (error instanceof ZodError) return reply.code(400).send({ code: 'INVALID_REQUEST' });
+    if (error instanceof PlatformAftercareAuthenticationError)
+      return reply.code(401).send({ code: 'INVALID_LIFE_CONSUMER_SESSION' });
+    if (error instanceof PlatformAftercareOrderNotFoundError)
+      return reply.code(404).send({ code: 'ORDER_NOT_FOUND' });
+    return handleCommerce(reply, async () => {
+      throw error;
+    });
+  }
+}
+
+function idempotencyContext(
+  headers: Record<string, string | string[] | undefined>,
+  identity: SessionIdentity,
+) {
+  const idempotencyHeader = headers['idempotency-key'];
+  const idempotencyKey = Array.isArray(idempotencyHeader)
+    ? idempotencyHeader[0]
+    : idempotencyHeader;
+  if (!idempotencyKey || idempotencyKey.length > 255) return undefined;
+  return { tenantId: identity.tenantId, idempotencyKey };
+}
+
+async function handleSettlement(
+  reply: { code(statusCode: number): { send(payload: unknown): unknown } },
+  work: () => Promise<unknown>,
+) {
+  try {
+    return await work();
+  } catch (error) {
+    if (error instanceof ZodError) return reply.code(400).send({ code: 'INVALID_REQUEST' });
+    if (error instanceof IdempotencyConflictError)
+      return reply.code(409).send({ code: 'IDEMPOTENCY_CONFLICT' });
+    if (error instanceof DistributionStateError)
+      return reply.code(409).send({ code: 'INVALID_DISTRIBUTION_STATE' });
+    if (error instanceof DistributionAuthorizationError)
+      return reply.code(403).send({ code: 'DISTRIBUTION_PERMISSION_DENIED' });
+    if (error instanceof DistributionApprovalError)
+      return reply.code(409).send({ code: 'INVALID_DISTRIBUTION_APPROVAL' });
+    if (error instanceof DistributionPaymentEvidenceError)
+      return reply.code(422).send({ code: 'INVALID_PAYMENT_EVIDENCE' });
+    throw error;
+  }
+}
+
+async function handleAuthSession(
+  reply: { code(statusCode: number): { send(payload?: unknown): unknown } },
+  work: () => Promise<unknown>,
+) {
+  try {
+    return await work();
+  } catch (error) {
+    if (error instanceof ZodError) return reply.code(400).send({ code: 'INVALID_REQUEST' });
+    if (error instanceof RefreshSessionInvalidError || error instanceof AuthSubjectInactiveError)
+      return reply.code(401).send({ code: 'INVALID_SESSION' });
+    if (error instanceof IdentityExchangeRejectedError)
+      return reply.code(401).send({ code: 'INVALID_IDENTITY_ASSERTION' });
+    if (error instanceof IdentityExchangeRateLimitedError)
+      return reply.code(429).send({ code: 'IDENTITY_RATE_LIMITED' });
+    if (error instanceof IdentityExchangeUnavailableError)
+      return reply.code(503).send({ code: 'IDENTITY_PROVIDER_UNAVAILABLE' });
+    throw error;
+  }
+}
+
+async function handleDelivery(
+  reply: { code(statusCode: number): { send(payload?: unknown): unknown } },
+  work: () => Promise<unknown>,
+) {
+  try {
+    return await work();
+  } catch (error) {
+    if (error instanceof ZodError) return reply.code(400).send({ code: 'INVALID_REQUEST' });
+    if (error instanceof IdempotencyConflictError)
+      return reply.code(409).send({ code: 'IDEMPOTENCY_CONFLICT' });
+    if (error instanceof DeliveryAuthorizationError)
+      return reply.code(404).send({ code: 'DELIVERY_PROJECT_NOT_FOUND' });
+    if (error instanceof DeliveryStateError)
+      return reply.code(409).send({ code: 'INVALID_DELIVERY_STATE' });
+    if (error instanceof DeliveryPrerequisiteError || error instanceof DeliveryAcceptanceError)
+      return reply.code(422).send({ code: 'DELIVERY_PREREQUISITE_REQUIRED' });
+    if (error instanceof DeliveryExecutionUnavailableError)
+      return reply.code(503).send({ code: 'DELIVERY_EXECUTION_UNAVAILABLE' });
+    throw error;
+  }
+}
+
+async function handleRevenueRightGovernance(
+  reply: { code(statusCode: number): { send(payload: unknown): unknown } },
+  work: () => Promise<unknown>,
+) {
+  try {
+    return await work();
+  } catch (error) {
+    if (error instanceof ZodError) return reply.code(400).send({ code: 'INVALID_REQUEST' });
+    if (error instanceof RevenueRightGovernanceAuthorizationError)
+      return reply.code(403).send({ code: 'REVENUE_RIGHT_PERMISSION_DENIED' });
+    if (error instanceof RevenueRightGovernanceConflictError)
+      return reply.code(409).send({ code: 'REVENUE_RIGHT_IDEMPOTENCY_CONFLICT' });
+    if (error instanceof RevenueRightGovernanceStateError)
+      return reply.code(409).send({ code: 'INVALID_REVENUE_RIGHT_STATE' });
+    throw error;
+  }
+}
+
+async function handleIntake(
+  reply: { code(statusCode: number): { send(payload: unknown): unknown } },
+  work: () => Promise<unknown>,
+) {
+  try {
+    return await work();
+  } catch (error) {
+    if (error instanceof ZodError) return reply.code(400).send({ code: 'INVALID_REQUEST' });
+    if (error instanceof IdempotencyConflictError)
+      return reply.code(409).send({ code: 'IDEMPOTENCY_CONFLICT' });
+    if (error instanceof MerchantIntakeAuthorizationError)
+      return reply.code(403).send({ code: 'MERCHANT_INTAKE_PERMISSION_DENIED' });
+    if (error instanceof MerchantIntakeConflictError)
+      return reply.code(409).send({ code: 'MERCHANT_INTAKE_VERSION_CONFLICT' });
+    if (error instanceof MerchantIntakeStateError)
+      return reply.code(409).send({ code: 'INVALID_MERCHANT_INTAKE_STATE' });
+    if (error instanceof MerchantIntakeConfirmationError)
+      return reply.code(422).send({ code: 'MERCHANT_INTAKE_CONFIRMATION_REQUIRED' });
+    if (error instanceof IntakeUploadEvidenceError)
+      return reply.code(422).send({ code: 'INVALID_UPLOAD_EVIDENCE' });
+    if (error instanceof IntakeObjectStoreUnavailableError)
+      return reply.code(503).send({ code: 'OBJECT_STORE_UNAVAILABLE' });
+    throw error;
+  }
+}
+
+async function handleMiniProgram(
+  reply: { code(statusCode: number): { send(payload: unknown): unknown } },
+  work: () => Promise<unknown>,
+) {
+  try {
+    return await work();
+  } catch (error) {
+    if (error instanceof ZodError) return reply.code(400).send({ code: 'INVALID_REQUEST' });
+    if (error instanceof IdempotencyConflictError)
+      return reply.code(409).send({ code: 'IDEMPOTENCY_CONFLICT' });
+    if (error instanceof MiniProgramOwnershipConflictError)
+      return reply.code(409).send({ code: 'MINI_PROGRAM_APP_ID_ALREADY_BOUND' });
+    if (error instanceof MiniProgramStateError)
+      return reply.code(409).send({ code: 'INVALID_MINI_PROGRAM_STATE' });
+    if (error instanceof MiniProgramConfirmationError)
+      return reply.code(422).send({ code: 'MINI_PROGRAM_CONFIRMATION_REQUIRED' });
+    if (error instanceof MiniProgramAuthorizationError)
+      return reply.code(422).send({ code: 'MINI_PROGRAM_AUTHORIZATION_REQUIRED' });
+    if (error instanceof MiniProgramProviderError)
+      return reply.code(503).send({ code: 'MINI_PROGRAM_PROVIDER_UNAVAILABLE' });
+    if (error instanceof MiniProgramCallbackConflictError)
+      return reply.code(409).send({ code: 'MINI_PROGRAM_CALLBACK_CONFLICT' });
+    throw error;
+  }
+}
+
+async function handleCustomerService(
+  reply: { code(statusCode: number): { send(payload: unknown): unknown } },
+  work: () => Promise<unknown>,
+) {
+  try {
+    return await work();
+  } catch (error) {
+    if (error instanceof ZodError) return reply.code(400).send({ code: 'INVALID_REQUEST' });
+    if (error instanceof IdempotencyConflictError)
+      return reply.code(409).send({ code: 'IDEMPOTENCY_CONFLICT' });
+    if (error instanceof CustomerServiceAuthenticationError)
+      return reply.code(401).send({ code: 'INVALID_CONSUMER_SESSION' });
+    if (error instanceof CustomerServiceAuthorizationError)
+      return reply.code(404).send({ code: 'CONVERSATION_NOT_FOUND' });
+    if (error instanceof CustomerServiceConcurrencyError)
+      return reply.code(409).send({ code: 'CONVERSATION_ALREADY_CLAIMED' });
+    if (error instanceof CustomerServiceStateError)
+      return reply.code(409).send({ code: 'INVALID_CONVERSATION_STATE' });
+    if (error instanceof CustomerServiceNotificationError)
+      return reply.code(503).send({ code: 'OPTIONAL_NOTIFICATION_FAILED' });
+    throw error;
+  }
+}
+
+async function handleMerchantOperations(
+  reply: { code(statusCode: number): { send(payload: unknown): unknown } },
+  work: () => Promise<unknown>,
+) {
+  try {
+    return await work();
+  } catch (error) {
+    if (error instanceof ZodError) return reply.code(400).send({ code: 'INVALID_REQUEST' });
+    if (error instanceof MerchantOperationsAuthorizationError)
+      return reply.code(404).send({ code: 'MERCHANT_RESOURCE_NOT_FOUND' });
+    if (error instanceof MerchantOperationsConflictError)
+      return reply.code(409).send({ code: 'IDEMPOTENCY_CONFLICT' });
+    if (error instanceof MerchantOperationsStateError)
+      return reply.code(409).send({ code: 'INVALID_PRODUCT_PUBLICATION_STATE' });
+    throw error;
+  }
+}
+
+async function handleOrganizationGovernance(
+  reply: { code(statusCode: number): { send(payload: unknown): unknown } },
+  work: () => Promise<unknown>,
+) {
+  try {
+    return await work();
+  } catch (error) {
+    if (error instanceof ZodError) return reply.code(400).send({ code: 'INVALID_REQUEST' });
+    if (error instanceof OrganizationGovernanceAuthorizationError)
+      return reply.code(403).send({ code: 'ORGANIZATION_PERMISSION_DENIED' });
+    if (error instanceof OrganizationGovernanceConflictError)
+      return reply.code(409).send({ code: 'IDEMPOTENCY_CONFLICT' });
+    if (error instanceof OrganizationGovernanceStateError)
+      return reply.code(409).send({ code: 'INVALID_ORGANIZATION_STATE' });
+    throw error;
+  }
+}
+
+async function handleRevenueOperations(
+  reply: { code(statusCode: number): { send(payload: unknown): unknown } },
+  work: () => Promise<unknown>,
+) {
+  try {
+    return await work();
+  } catch (error) {
+    if (error instanceof ZodError) return reply.code(400).send({ code: 'INVALID_REQUEST' });
+    if (error instanceof RevenueOperationsAuthorizationError)
+      return reply.code(404).send({ code: 'REVENUE_RESOURCE_NOT_FOUND' });
+    if (error instanceof RevenueOperationsConflictError)
+      return reply.code(409).send({ code: 'IDEMPOTENCY_CONFLICT' });
+    throw error;
+  }
+}
+
+async function handleSalesLifecycle(
+  reply: { code(statusCode: number): { send(payload: unknown): unknown } },
+  work: () => Promise<unknown>,
+) {
+  try {
+    return await work();
+  } catch (error) {
+    if (error instanceof ZodError) return reply.code(400).send({ code: 'INVALID_REQUEST' });
+    if (error instanceof SalesLifecycleAuthorizationError)
+      return reply.code(404).send({ code: 'SALES_RESOURCE_NOT_FOUND' });
+    if (error instanceof SalesLifecycleConflictError)
+      return reply.code(409).send({ code: 'IDEMPOTENCY_CONFLICT' });
+    if (error instanceof SalesLifecycleStateError)
+      return reply.code(409).send({ code: 'INVALID_SALES_STATE' });
+    throw error;
+  }
+}
+
+async function handleSubscriptionLifecycle(
+  reply: { code(statusCode: number): { send(payload: unknown): unknown } },
+  work: () => Promise<unknown>,
+) {
+  try {
+    return await work();
+  } catch (error) {
+    if (error instanceof ZodError) return reply.code(400).send({ code: 'INVALID_REQUEST' });
+    if (error instanceof SubscriptionLifecycleAuthorizationError)
+      return reply.code(404).send({ code: 'SUBSCRIPTION_RESOURCE_NOT_FOUND' });
+    if (error instanceof SubscriptionLifecycleConflictError)
+      return reply.code(409).send({ code: 'IDEMPOTENCY_CONFLICT' });
+    if (error instanceof SubscriptionLifecycleStateError)
+      return reply.code(409).send({ code: 'INVALID_SUBSCRIPTION_STATE' });
+    throw error;
+  }
+}
+
+async function handleCommerce(
+  reply: {
+    code(statusCode: number): { send(payload: unknown): unknown };
+    send(payload: unknown): unknown;
+  },
+  work: () => Promise<unknown>,
+) {
+  try {
+    return await work();
+  } catch (error) {
+    if (error instanceof ZodError) return reply.code(400).send({ code: 'INVALID_REQUEST' });
+    if (error instanceof IdempotencyConflictError)
+      return reply.code(409).send({ code: 'IDEMPOTENCY_CONFLICT' });
+    if (error instanceof CommercePaymentSignatureError)
+      return reply.code(401).send({ code: 'INVALID_PAYMENT_SIGNATURE' });
+    if (error instanceof CommercePaymentReplayConflictError)
+      return reply.code(409).send({ code: 'PAYMENT_CALLBACK_CONFLICT' });
+    if (error instanceof CommerceInventoryUnavailableError)
+      return reply.code(409).send({ code: 'INVENTORY_UNAVAILABLE' });
+    if (
+      error instanceof CommerceOrderAuthenticationError ||
+      error instanceof CommercePaymentAuthenticationError ||
+      error instanceof CommerceRefundAuthenticationError ||
+      error instanceof CommerceVerificationAuthenticationError
+    )
+      return reply.code(401).send({ code: 'INVALID_CONSUMER_SESSION' });
+    if (
+      error instanceof CommerceOrderAuthorizationError ||
+      error instanceof CommercePaymentAuthorizationError ||
+      error instanceof CommerceRefundAuthorizationError ||
+      error instanceof CommerceVerificationAuthorizationError ||
+      error instanceof CommerceReconciliationAuthorizationError
+    )
+      return reply.code(403).send({ code: 'COMMERCE_PERMISSION_DENIED' });
+    if (
+      error instanceof CommerceOrderStateError ||
+      error instanceof CommercePaymentStateError ||
+      error instanceof CommerceRefundStateError ||
+      error instanceof CommerceVerificationStateError ||
+      error instanceof CommerceReconciliationStateError
+    )
+      return reply.code(409).send({ code: 'INVALID_COMMERCE_STATE' });
+    throw error;
+  }
+}
+
+async function handleGeoPluginReport(
+  reply: { code(statusCode: number): { send(payload: unknown): unknown } },
+  work: () => Promise<unknown>,
+) {
+  try {
+    return await work();
+  } catch (error) {
+    if (
+      error instanceof ZodError ||
+      error instanceof GeoPolicyError ||
+      error instanceof ReportPolicyError
+    )
+      return reply.code(422).send({
+        code: error instanceof GeoPolicyError ? error.code : 'INVALID_REQUEST',
+        ...(error instanceof GeoPolicyError ? { fields: error.fields } : {}),
+      });
+    if (error instanceof PluginPolicyError) {
+      const status = error.code.includes('PERMISSION') || error.code.includes('EGRESS') ? 403 : 409;
+      return reply.code(status).send({ code: error.code });
+    }
+    if (error instanceof GeoPluginReportStateError)
+      return reply.code(409).send({ code: error.message });
+    throw error;
+  }
 }

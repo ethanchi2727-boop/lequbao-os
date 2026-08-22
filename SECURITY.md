@@ -1,28 +1,16 @@
-# Security notes
+# 安全策略
 
-## Supported runtime
+## 报告漏洞
 
-- Node.js 22.5+
-- API binds to `127.0.0.1` by default.
-- The H5 development server binds to `127.0.0.1` and must not be exposed to an untrusted network.
+不要在公开 Issue 中提交密钥、个人信息或可直接利用的漏洞细节。请通过仓库 Security 页面私密报告。
 
-## Identity boundary
+## V6.1 强制边界
 
-- Local development uses opaque demo bearer tokens whose SHA-256 digests are stored in SQLite.
-- Demo identities are never seeded when `NODE_ENV=production`; setting `LEQU_SEED_DEMO_AUTH=false` disables them in any environment.
-- Production deployment must provide an OAuth 2.1/OIDC adapter, short-lived access tokens, key rotation, revocation and step-up authentication before the authentication item can be accepted.
-- Authorization is enforced by the API with role, tenant, data-scope, field and AI-risk checks. Client-side visibility is never treated as an authorization control.
-
-## Dependency review
-
-The API runtime is limited to Fastify, CORS, Zod and Node built-ins. The uni-app official toolchain currently pins older Vite and transitive image/build utilities that `npm audit` reports as build-time advisories. They are not shipped as Node services in the generated static H5 bundle.
-
-Until the upstream uni-app preset moves to a patched compiler stack:
-
-1. do not expose the development server publicly;
-2. build in an isolated CI worker;
-3. deploy only the generated static bundle and API artifact;
-4. do not process untrusted ZIP/JPEG inputs in the build worker;
-5. re-run `npm audit` when upgrading the official uni-app compiler.
-
-No critical advisory was reported at delivery time. Do not apply `npm audit fix --force`; it would replace compiler-pinned packages and can invalidate multi-platform builds.
+- 每个租户事务必须 `SET LOCAL app.tenant_id`，业务表由 PostgreSQL RLS 做最终隔离。
+- 金额在接口中使用十进制字符串，在数据库中使用 `bigint`，禁止浮点数。
+- 收益分配、奖励账本和审计日志只追加；更正通过冲正记录完成。
+- 外部回调必须验签、幂等并持久化原始事件摘要。
+- 企业微信入口只允许内部应用消息；必须校验时间窗、消息签名、AES 密文企业 ID 和成员到平台用户的绑定，外部身份不能自动授予角色。
+- 客户端不得提交任意对象键。上传授权必须绑定租户、会话、摘要、内容类型、大小和时效，登记前以对象存储侧证据复核。
+- 恶意文件扫描必须早于 OCR、语音转写或模型提取；失败不得删除原始材料。
+- 密钥只从部署环境或密钥服务读取，严禁进入仓库、日志和业务表明文字段。

@@ -1,0 +1,17 @@
+<view class="cart-page safe-bottom">
+  <view class="heading"><text>购物车</text><text>跨商家按店铺分别结算</text></view>
+  <view wx:if="{{state === '加载中'}}" class="panel"><text>正在重新核对价格与库存…</text></view>
+  <view wx:elif="{{state === '空数据'}}" class="panel"><text class="title">购物车还是空的</text><text>从真实商品详情选择规格后加入</text></view>
+  <view wx:elif="{{state === '可恢复失败'}}" class="panel warning"><text class="title">购物车暂时无法加载</text><text>没有创建订单或扣款，可以安全重试</text><button bindtap="loadCart">重新加载</button></view>
+  <block wx:elif="{{cart}}">
+    <view class="group" wx:for="{{cart.groups}}" wx:key="storeId" wx:for-item="group">
+      <view class="store"><text>{{group.storeName || '门店信息已失效'}}</text><text>小计 ¥{{group.subtotalCents / 100}}</text></view>
+      <view class="item" wx:for="{{group.items}}" wx:key="id" wx:for-item="item">
+        <view class="copy"><text class="title">{{item.productTitle}}</text><text>{{item.variantTitle || '规格已失效'}}</text><text wx:if="{{!item.available}}" class="error">库存变化或商品已下架，请移除后再结算</text><text wx:else>当前价 ¥{{item.unitPriceCents / 100}}</text></view>
+        <view class="quantity"><button data-merchant-tenant-id="{{group.merchantTenantId}}" data-store-id="{{group.storeId}}" data-variant-id="{{item.variantId}}" data-quantity="{{item.quantity}}" data-delta="-1" bindtap="changeQuantity">−</button><text>{{item.quantity}}</text><button data-merchant-tenant-id="{{group.merchantTenantId}}" data-store-id="{{group.storeId}}" data-variant-id="{{item.variantId}}" data-quantity="{{item.quantity}}" data-delta="1" bindtap="changeQuantity">＋</button></view>
+        <button class="remove" data-item-id="{{item.id}}" bindtap="removeItem">移除</button>
+      </view>
+    </view>
+    <view class="summary"><text>共 {{cart.itemCount}} 件</text><text>当前商品小计 ¥{{cart.totalPrice}}</text><text>服务端将在订单确认页按商家重算运费和最优有效优惠</text><button disabled="{{cart.hasUnavailable}}" bindtap="beginCheckout">去确认订单</button></view>
+  </block>
+</view>

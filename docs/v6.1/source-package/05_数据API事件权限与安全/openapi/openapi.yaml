@@ -1,0 +1,1365 @@
+openapi: 3.1.0
+info:
+  title: 乐趣宝与乐趣生活业务 API
+  version: 1.0.0
+  description: |
+    V1 开发契约。员工接口从登录令牌读取 tenant_id、角色和门店范围；
+    消费者接口从小程序会话读取商家、门店和客户身份。写接口必须支持幂等键。
+servers:
+  - url: https://api.lequbao.example.com
+    description: 生产环境占位域名，部署时替换
+tags:
+  - name: Delivery
+  - name: MiniProgram
+  - name: GEO
+  - name: CustomerService
+  - name: Commerce
+  - name: Plugins
+  - name: Reports
+  - name: MerchantIntake
+  - name: RevenueRights
+  - name: RevenueDistribution
+  - name: Webhooks
+paths:
+  /v1/delivery-projects:
+    get:
+      tags: [Delivery]
+      summary: 查询当前租户交付项目
+      operationId: listDeliveryProjects
+      x-required-permission: delivery.read
+      parameters:
+        - $ref: '#/components/parameters/PageCursor'
+        - $ref: '#/components/parameters/PageSize'
+      responses:
+        '200':
+          description: 项目列表
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeliveryProjectPage'
+        default:
+          $ref: '#/components/responses/Error'
+    post:
+      tags: [Delivery]
+      summary: 创建标准一键交付项目
+      operationId: createDeliveryProject
+      x-required-permission: delivery.create
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [store_id, package_code]
+              properties:
+                store_id: {type: string, format: uuid}
+                package_code: {type: string, enum: [STANDARD_898, PRO_1980]}
+                requested_modules:
+                  type: array
+                  items: {type: string, enum: [MERCHANT_PROFILE, MINI_PROGRAM, AI_SERVICE, GEO, GROUP_BUY, LAUNCH_ASSETS]}
+      responses:
+        '201':
+          description: 已创建
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/DeliveryProject'}
+        '409': {$ref: '#/components/responses/Conflict'}
+        default: {$ref: '#/components/responses/Error'}
+  /v1/delivery-projects/{project_id}:
+    get:
+      tags: [Delivery]
+      summary: 查询交付进度和每步结果
+      operationId: getDeliveryProject
+      x-required-permission: delivery.read
+      parameters:
+        - $ref: '#/components/parameters/ProjectId'
+      responses:
+        '200':
+          description: 项目详情
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/DeliveryProject'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        default: {$ref: '#/components/responses/Error'}
+  /v1/delivery-projects/{project_id}/commands/start:
+    post:
+      tags: [Delivery]
+      summary: 资料与授权齐备后开始交付
+      operationId: startDeliveryProject
+      x-required-permission: delivery.execute
+      parameters:
+        - $ref: '#/components/parameters/ProjectId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+        - $ref: '#/components/parameters/ExpectedVersion'
+      responses:
+        '202':
+          description: 已进入异步执行队列
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/AsyncCommand'}
+        '409': {$ref: '#/components/responses/Conflict'}
+        '422': {$ref: '#/components/responses/ValidationFailed'}
+        default: {$ref: '#/components/responses/Error'}
+  /v1/delivery-projects/{project_id}/commands/retry-step:
+    post:
+      tags: [Delivery]
+      summary: 仅重试失败步骤
+      operationId: retryDeliveryStep
+      x-required-permission: delivery.execute
+      parameters:
+        - $ref: '#/components/parameters/ProjectId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+        - $ref: '#/components/parameters/ExpectedVersion'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [step_code]
+              properties:
+                step_code: {type: string}
+                operator_note: {type: string, maxLength: 500}
+      responses:
+        '202':
+          description: 已接受
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/AsyncCommand'}
+        default: {$ref: '#/components/responses/Error'}
+  /v1/delivery-projects/{project_id}/commands/accept:
+    post:
+      tags: [Delivery]
+      summary: 确认交付结果
+      operationId: acceptDeliveryProject
+      x-required-permission: delivery.accept
+      parameters:
+        - $ref: '#/components/parameters/ProjectId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+        - $ref: '#/components/parameters/ExpectedVersion'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [checklist_confirmed]
+              properties:
+                checklist_confirmed: {type: boolean, const: true}
+                note: {type: string, maxLength: 500}
+      responses:
+        '200':
+          description: 已交付
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/DeliveryProject'}
+        default: {$ref: '#/components/responses/Error'}
+  /v1/mini-programs:
+    post:
+      tags: [MiniProgram]
+      summary: 绑定商家自有 AppID 并选择标准模板
+      operationId: createMiniProgram
+      x-required-permission: miniprogram.manage
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [authorization_id, merchant_chosen_name, template_code]
+              properties:
+                authorization_id: {type: string, format: uuid}
+                merchant_chosen_name: {type: string, minLength: 2, maxLength: 30}
+                template_code: {type: string}
+      responses:
+        '201':
+          description: 已绑定
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/MiniProgram'}
+        default: {$ref: '#/components/responses/Error'}
+  /v1/mini-programs/{mini_program_id}/releases:
+    post:
+      tags: [MiniProgram]
+      summary: 生成新版本
+      operationId: createMiniProgramRelease
+      x-required-permission: miniprogram.release.create
+      parameters:
+        - $ref: '#/components/parameters/MiniProgramId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [template_version, config]
+              properties:
+                template_version: {type: string}
+                config: {type: object, additionalProperties: true}
+      responses:
+        '202':
+          description: 构建中
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/MiniProgramRelease'}
+        default: {$ref: '#/components/responses/Error'}
+  /v1/mini-programs/{mini_program_id}/releases/{release_id}:
+    get:
+      tags: [MiniProgram]
+      summary: 查询构建、审核和发布状态
+      operationId: getMiniProgramRelease
+      x-required-permission: miniprogram.read
+      parameters:
+        - $ref: '#/components/parameters/MiniProgramId'
+        - $ref: '#/components/parameters/ReleaseId'
+      responses:
+        '200':
+          description: 版本详情
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/MiniProgramRelease'}
+        default: {$ref: '#/components/responses/Error'}
+  /v1/mini-programs/{mini_program_id}/releases/{release_id}/commands/submit-review:
+    post:
+      tags: [MiniProgram]
+      summary: 商家确认预览后提交微信审核
+      operationId: submitMiniProgramReview
+      x-required-permission: miniprogram.release.submit
+      parameters:
+        - $ref: '#/components/parameters/MiniProgramId'
+        - $ref: '#/components/parameters/ReleaseId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+        - $ref: '#/components/parameters/ExpectedVersion'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [preview_confirmed, privacy_confirmed, category_confirmed]
+              properties:
+                preview_confirmed: {type: boolean, const: true}
+                privacy_confirmed: {type: boolean, const: true}
+                category_confirmed: {type: boolean, const: true}
+      responses:
+        '202':
+          description: 已提交或等待受理
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/MiniProgramRelease'}
+        default: {$ref: '#/components/responses/Error'}
+  /v1/mini-programs/{mini_program_id}/releases/{release_id}/commands/publish:
+    post:
+      tags: [MiniProgram]
+      summary: 发布已审核通过的版本
+      operationId: publishMiniProgramRelease
+      x-required-permission: miniprogram.release.publish
+      parameters:
+        - $ref: '#/components/parameters/MiniProgramId'
+        - $ref: '#/components/parameters/ReleaseId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+        - $ref: '#/components/parameters/ExpectedVersion'
+      responses:
+        '202':
+          description: 发布中
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/MiniProgramRelease'}
+        default: {$ref: '#/components/responses/Error'}
+  /v1/mini-programs/{mini_program_id}/commands/rollback:
+    post:
+      tags: [MiniProgram]
+      summary: 回退到上一稳定版本
+      operationId: rollbackMiniProgram
+      x-required-permission: miniprogram.release.rollback
+      parameters:
+        - $ref: '#/components/parameters/MiniProgramId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [target_release_id, reason]
+              properties:
+                target_release_id: {type: string, format: uuid}
+                reason: {type: string, minLength: 5, maxLength: 500}
+      responses:
+        '202':
+          description: 回退任务已创建
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/AsyncCommand'}
+        default: {$ref: '#/components/responses/Error'}
+  /v1/geo/stores/{store_id}/commands/publish:
+    post:
+      tags: [GEO]
+      summary: 校验并发布门店事实到已启用目标
+      operationId: publishGeoProfile
+      x-required-permission: geo.publish
+      parameters:
+        - $ref: '#/components/parameters/StoreId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+        - $ref: '#/components/parameters/ExpectedVersion'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [target_codes]
+              properties:
+                target_codes:
+                  type: array
+                  minItems: 1
+                  uniqueItems: true
+                  items: {type: string}
+      responses:
+        '202':
+          description: 发布中
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/GeoHealth'}
+        '422': {$ref: '#/components/responses/ValidationFailed'}
+        default: {$ref: '#/components/responses/Error'}
+  /v1/geo/stores/{store_id}/health:
+    get:
+      tags: [GEO]
+      summary: 查询资料完整度、一致性和目标健康状态
+      operationId: getGeoHealth
+      x-required-permission: geo.read
+      parameters:
+        - $ref: '#/components/parameters/StoreId'
+      responses:
+        '200':
+          description: 健康状态，不代表第三方排序或流量
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/GeoHealth'}
+        default: {$ref: '#/components/responses/Error'}
+  /v1/customer-service/conversations:
+    post:
+      tags: [CustomerService]
+      summary: 在商家小程序或乐趣生活发起在线会话
+      operationId: createConversation
+      security:
+        - ConsumerSession: []
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [channel, store_id, privacy_policy_version]
+              properties:
+                channel: {type: string, enum: [MERCHANT_MINI_PROGRAM, LEQU_LIFE, WEB]}
+                store_id: {type: string, format: uuid}
+                privacy_policy_version: {type: string}
+                profile_memory_consent: {type: boolean, default: false}
+      responses:
+        '201':
+          description: 会话已创建
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Conversation'}
+        default: {$ref: '#/components/responses/Error'}
+  /v1/customer-service/conversations/{conversation_id}/messages:
+    get:
+      tags: [CustomerService]
+      summary: 查询脱敏后的会话消息
+      operationId: listConversationMessages
+      parameters:
+        - $ref: '#/components/parameters/ConversationId'
+        - $ref: '#/components/parameters/PageCursor'
+        - $ref: '#/components/parameters/PageSize'
+      responses:
+        '200':
+          description: 消息列表
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items: {$ref: '#/components/schemas/ConversationMessage'}
+                  next_cursor: {type: [string, 'null']}
+        default: {$ref: '#/components/responses/Error'}
+    post:
+      tags: [CustomerService]
+      summary: 客户或已接管员工发送消息
+      operationId: createConversationMessage
+      parameters:
+        - $ref: '#/components/parameters/ConversationId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [sender_type, message_type, content]
+              properties:
+                sender_type: {type: string, enum: [CUSTOMER, EMPLOYEE]}
+                message_type: {type: string, enum: [TEXT, IMAGE, FILE, ORDER_CARD, PRODUCT_CARD]}
+                content: {type: object, additionalProperties: true}
+      responses:
+        '201':
+          description: 已写入；AI 回复为异步消息
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/ConversationMessage'}
+        default: {$ref: '#/components/responses/Error'}
+  /v1/customer-service/conversations/{conversation_id}/commands/request-human:
+    post:
+      tags: [CustomerService]
+      summary: 请求人工接管
+      operationId: requestHumanHandoff
+      parameters:
+        - $ref: '#/components/parameters/ConversationId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+        - $ref: '#/components/parameters/ExpectedVersion'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [reason_code]
+              properties:
+                reason_code: {type: string}
+                priority: {type: string, enum: [NORMAL, HIGH, URGENT], default: NORMAL}
+      responses:
+        '202':
+          description: 工单已进入门店队列
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Conversation'}
+        default: {$ref: '#/components/responses/Error'}
+  /v1/customer-service/conversations/{conversation_id}/commands/accept:
+    post:
+      tags: [CustomerService]
+      summary: 员工接管会话
+      operationId: acceptConversation
+      x-required-permission: customer_service.accept
+      parameters:
+        - $ref: '#/components/parameters/ConversationId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+        - $ref: '#/components/parameters/ExpectedVersion'
+      responses:
+        '200':
+          description: 已接管
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Conversation'}
+        default: {$ref: '#/components/responses/Error'}
+  /v1/customer-service/conversations/{conversation_id}/commands/close:
+    post:
+      tags: [CustomerService]
+      summary: 关闭会话并记录解决结果
+      operationId: closeConversation
+      x-required-permission: customer_service.close
+      parameters:
+        - $ref: '#/components/parameters/ConversationId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+        - $ref: '#/components/parameters/ExpectedVersion'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [resolution_code]
+              properties:
+                resolution_code: {type: string}
+                internal_note: {type: string, maxLength: 2000}
+      responses:
+        '200':
+          description: 已关闭
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Conversation'}
+        default: {$ref: '#/components/responses/Error'}
+  /v1/orders:
+    post:
+      tags: [Commerce]
+      summary: 创建订单并预占库存
+      operationId: createOrder
+      security:
+        - ConsumerSession: []
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/CreateOrderRequest'}
+      responses:
+        '201':
+          description: 待支付订单
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Order'}
+        '409': {$ref: '#/components/responses/Conflict'}
+        default: {$ref: '#/components/responses/Error'}
+  /v1/payment-intents:
+    post:
+      tags: [Commerce]
+      summary: 在商家自己的支付账户创建支付凭证
+      operationId: createPaymentIntent
+      security:
+        - ConsumerSession: []
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [order_id, provider]
+              properties:
+                order_id: {type: string, format: uuid}
+                provider: {type: string}
+      responses:
+        '201':
+          description: 支付凭证
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/PaymentIntent'}
+        default: {$ref: '#/components/responses/Error'}
+  /v1/orders/{order_id}/refunds:
+    post:
+      tags: [Commerce]
+      summary: 申请退款
+      operationId: createRefund
+      x-required-permission: refund.request
+      parameters:
+        - $ref: '#/components/parameters/OrderId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+        - $ref: '#/components/parameters/ExpectedVersion'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [reason_code, items]
+              properties:
+                reason_code: {type: string}
+                items:
+                  type: array
+                  minItems: 1
+                  items:
+                    type: object
+                    required: [order_item_id, quantity, amount_cents]
+                    properties:
+                      order_item_id: {type: string, format: uuid}
+                      quantity: {type: integer, minimum: 1}
+                      amount_cents: {type: integer, format: int64, minimum: 0}
+      responses:
+        '202':
+          description: 自动提交或进入人工审批
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Refund'}
+        default: {$ref: '#/components/responses/Error'}
+  /v1/verification-uses:
+    post:
+      tags: [Commerce]
+      summary: 核销团购或服务权益
+      operationId: createVerificationUse
+      x-required-permission: verification.execute
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [verification_token, store_id, quantity]
+              properties:
+                verification_token: {type: string, minLength: 32}
+                store_id: {type: string, format: uuid}
+                quantity: {type: integer, minimum: 1}
+      responses:
+        '201':
+          description: 核销结果；重复请求返回首次结果
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/VerificationResult'}
+        default: {$ref: '#/components/responses/Error'}
+  /v1/plugins/installations:
+    post:
+      tags: [Plugins]
+      summary: 审批并安装插件
+      operationId: installPlugin
+      x-required-permission: plugin.install
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [plugin_version_id, accepted_permissions]
+              properties:
+                plugin_version_id: {type: string, format: uuid}
+                accepted_permissions:
+                  type: array
+                  uniqueItems: true
+                  items: {type: string}
+                resource_scope: {type: object, additionalProperties: true}
+      responses:
+        '202':
+          description: 安装中
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/PluginInstallation'}
+        default: {$ref: '#/components/responses/Error'}
+  /v1/reports/monthly-value:
+    get:
+      tags: [Reports]
+      summary: 查询续费可解释的月度价值报告
+      operationId: getMonthlyValueReport
+      x-required-permission: report.value.read
+      parameters:
+        - name: month
+          in: query
+          required: true
+          schema: {type: string, pattern: '^\d{4}-\d{2}$'}
+        - name: store_id
+          in: query
+          schema: {type: string, format: uuid}
+      responses:
+        '200':
+          description: 包含 AI 接待、人工转接、订单核销退款、客户、GEO、自动任务、配额和建议
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/MonthlyValueReport'}
+        default: {$ref: '#/components/responses/Error'}
+  /v1/webhooks/wechat/component:
+    post:
+      tags: [Webhooks]
+      summary: 微信开放平台授权、审核和发布回调
+      operationId: receiveWechatComponentWebhook
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/WechatSignature'
+        - $ref: '#/components/parameters/WechatTimestamp'
+        - $ref: '#/components/parameters/WechatNonce'
+      requestBody:
+        required: true
+        content:
+          application/xml:
+            schema: {type: string}
+          application/json:
+            schema: {type: object, additionalProperties: true}
+      responses:
+        '200': {description: 已验签并持久化；业务处理异步执行}
+        '401': {$ref: '#/components/responses/UnauthorizedWebhook'}
+  /v1/webhooks/payments/{provider}:
+    post:
+      tags: [Webhooks]
+      summary: 支付与退款回调
+      operationId: receivePaymentWebhook
+      security: []
+      parameters:
+        - name: provider
+          in: path
+          required: true
+          schema: {type: string}
+        - name: X-Provider-Signature
+          in: header
+          required: true
+          schema: {type: string}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {type: object, additionalProperties: true}
+      responses:
+        '200': {description: 已验签并按渠道事件号去重}
+        '401': {$ref: '#/components/responses/UnauthorizedWebhook'}
+  /v1/merchant-intake/sessions:
+    post:
+      tags: [MerchantIntake]
+      summary: 开始商家资料对话
+      operationId: createMerchantIntakeSession
+      x-required-permission: merchant.intake.create
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [channel]
+              properties:
+                merchant_profile_id: {type: [string, 'null'], format: uuid}
+                delivery_project_id: {type: [string, 'null'], format: uuid}
+                channel: {type: string, enum: [WEB, MOBILE_H5, WECOM]}
+                initial_text: {type: [string, 'null'], maxLength: 4000}
+      responses:
+        '201':
+          description: 已开始
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/MerchantIntakeSession'}
+        '409': {$ref: '#/components/responses/Conflict'}
+        default: {$ref: '#/components/responses/Error'}
+  /v1/merchant-intake/sessions/{session_id}:
+    get:
+      tags: [MerchantIntake]
+      summary: 查看识别结果、缺项和确认进度
+      operationId: getMerchantIntakeSession
+      x-required-permission: merchant.intake.read
+      parameters:
+        - name: session_id
+          in: path
+          required: true
+          schema: {type: string, format: uuid}
+      responses:
+        '200':
+          description: 建档会话
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/MerchantIntakeSession'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        default: {$ref: '#/components/responses/Error'}
+  /v1/merchant-intake/sessions/{session_id}/assets:
+    post:
+      tags: [MerchantIntake]
+      summary: 在对话中发送图片、文件或语音
+      operationId: addMerchantIntakeAsset
+      x-required-permission: merchant.intake.write
+      parameters:
+        - name: session_id
+          in: path
+          required: true
+          schema: {type: string, format: uuid}
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [asset_type, sha256, file]
+              properties:
+                asset_type: {type: string, enum: [IMAGE, DOCUMENT, AUDIO]}
+                sha256: {type: string, pattern: '^[a-f0-9]{64}$'}
+                source_message_id: {type: [string, 'null']}
+                file: {type: string, format: binary}
+      responses:
+        '202':
+          description: 已保存并进入安全检查和识别队列
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/AsyncCommand'}
+        '409': {$ref: '#/components/responses/Conflict'}
+        '422': {$ref: '#/components/responses/ValidationFailed'}
+        default: {$ref: '#/components/responses/Error'}
+  /v1/merchant-intake/sessions/{session_id}/messages:
+    post:
+      tags: [MerchantIntake]
+      summary: 发送文字或语音转写后的补充说明
+      operationId: addMerchantIntakeMessage
+      x-required-permission: merchant.intake.write
+      parameters:
+        - name: session_id
+          in: path
+          required: true
+          schema: {type: string, format: uuid}
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [content]
+              properties:
+                content: {type: string, minLength: 1, maxLength: 4000}
+                source_message_id: {type: [string, 'null']}
+      responses:
+        '202':
+          description: 已接受
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/AsyncCommand'}
+        default: {$ref: '#/components/responses/Error'}
+  /v1/merchant-intake/sessions/{session_id}/confirmations:
+    post:
+      tags: [MerchantIntake]
+      summary: 确认法律主体、价格、退款、支付或发布影响
+      operationId: confirmMerchantIntakeFields
+      x-required-permission: merchant.intake.confirm
+      parameters:
+        - name: session_id
+          in: path
+          required: true
+          schema: {type: string, format: uuid}
+        - $ref: '#/components/parameters/IdempotencyKey'
+        - $ref: '#/components/parameters/ExpectedVersion'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [confirmation_type, confirmed_payload]
+              properties:
+                confirmation_type: {type: string, enum: [LEGAL_SUBJECT, PAYMENT, PRICE, REFUND_RULE, PUBLIC_CONTACT, PUBLISH_IMPACT]}
+                confirmed_payload: {type: object, additionalProperties: true}
+      responses:
+        '200':
+          description: 已确认并返回最新会话
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/MerchantIntakeSession'}
+        '409': {$ref: '#/components/responses/Conflict'}
+        default: {$ref: '#/components/responses/Error'}
+  /v1/business/revenue-rights:
+    get:
+      tags: [RevenueRights]
+      summary: 查询本人商户永久收益权
+      operationId: listMyRevenueRights
+      x-required-permission: revenue_right.read_own
+      parameters:
+        - $ref: '#/components/parameters/PageCursor'
+        - $ref: '#/components/parameters/PageSize'
+      responses:
+        '200':
+          description: 永久收益权列表
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items: {type: array, items: {$ref: '#/components/schemas/RevenueRight'}}
+                  next_cursor: {type: [string, 'null']}
+        default: {$ref: '#/components/responses/Error'}
+  /v1/business/revenue-rights/{right_id}/transfers:
+    post:
+      tags: [RevenueRights]
+      summary: 发起永久收益权转让
+      operationId: requestRevenueRightTransfer
+      x-required-permission: revenue_right.transfer_request
+      parameters:
+        - name: right_id
+          in: path
+          required: true
+          schema: {type: string, format: uuid}
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [to_beneficiary_id, agreement_object_key]
+              properties:
+                to_beneficiary_id: {type: string, format: uuid}
+                agreement_object_key: {type: string}
+      responses:
+        '202':
+          description: 已进入三方确认
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/AsyncCommand'}
+        default: {$ref: '#/components/responses/Error'}
+  /v1/business/distribution-statements:
+    get:
+      tags: [RevenueDistribution]
+      summary: 查询本人订阅和算力包收益结算单
+      operationId: listMyDistributionStatements
+      x-required-permission: distribution.read_own
+      parameters:
+        - $ref: '#/components/parameters/PageCursor'
+        - $ref: '#/components/parameters/PageSize'
+        - name: period
+          in: query
+          schema: {type: string, pattern: '^\\d{4}-\\d{2}$'}
+      responses:
+        '200':
+          description: 结算单列表
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items: {type: array, items: {$ref: '#/components/schemas/RevenueDistributionStatement'}}
+                  next_cursor: {type: [string, 'null']}
+        default: {$ref: '#/components/responses/Error'}
+  /v1/business/distribution-statements/{statement_id}:
+    get:
+      tags: [RevenueDistribution]
+      summary: 查看实收、直接成本、比例、收益和冲回
+      operationId: getDistributionStatement
+      x-required-permission: distribution.read_own
+      parameters:
+        - name: statement_id
+          in: path
+          required: true
+          schema: {type: string, format: uuid}
+      responses:
+        '200':
+          description: 结算单详情
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/RevenueDistributionStatement'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        default: {$ref: '#/components/responses/Error'}
+  /v1/platform/distribution-statements/{statement_id}/commands/lock:
+    post:
+      tags: [RevenueDistribution]
+      summary: 财务复核并锁定月结单
+      operationId: lockDistributionStatement
+      x-required-permission: distribution.lock
+      parameters:
+        - name: statement_id
+          in: path
+          required: true
+          schema: {type: string, format: uuid}
+        - $ref: '#/components/parameters/IdempotencyKey'
+        - $ref: '#/components/parameters/ExpectedVersion'
+      responses:
+        '200':
+          description: 已锁定
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/RevenueDistributionStatement'}
+        '409': {$ref: '#/components/responses/Conflict'}
+        '422': {$ref: '#/components/responses/ValidationFailed'}
+        default: {$ref: '#/components/responses/Error'}
+  /v1/webhooks/wecom/intake:
+    post:
+      tags: [Webhooks, MerchantIntake]
+      summary: 企业微信内部应用消息回调
+      operationId: receiveWecomIntakeWebhook
+      security: []
+      parameters:
+        - name: msg_signature
+          in: query
+          required: true
+          schema: {type: string}
+        - name: timestamp
+          in: query
+          required: true
+          schema: {type: string}
+        - name: nonce
+          in: query
+          required: true
+          schema: {type: string}
+      requestBody:
+        required: true
+        content:
+          application/xml:
+            schema: {type: string}
+      responses:
+        '200': {description: 已验签、去重并进入异步处理}
+        '401': {$ref: '#/components/responses/UnauthorizedWebhook'}
+components:
+  securitySchemes:
+    EmployeeBearer:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: 令牌必须包含 tenant_id、user_id、role_codes、store_ids、session_id
+    ConsumerSession:
+      type: apiKey
+      in: header
+      name: X-Consumer-Session
+      description: 小程序登录换取的短时会话，不直接接受 openid 作为鉴权凭证
+  parameters:
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: true
+      description: 同一业务意图重试时保持不变；不同请求体复用同一键返回 409
+      schema: {type: string, minLength: 16, maxLength: 128}
+    ExpectedVersion:
+      name: If-Match-Version
+      in: header
+      required: true
+      schema: {type: integer, minimum: 1}
+    PageCursor:
+      name: cursor
+      in: query
+      schema: {type: string}
+    PageSize:
+      name: page_size
+      in: query
+      schema: {type: integer, minimum: 1, maximum: 100, default: 20}
+    ProjectId:
+      name: project_id
+      in: path
+      required: true
+      schema: {type: string, format: uuid}
+    MiniProgramId:
+      name: mini_program_id
+      in: path
+      required: true
+      schema: {type: string, format: uuid}
+    ReleaseId:
+      name: release_id
+      in: path
+      required: true
+      schema: {type: string, format: uuid}
+    StoreId:
+      name: store_id
+      in: path
+      required: true
+      schema: {type: string, format: uuid}
+    ConversationId:
+      name: conversation_id
+      in: path
+      required: true
+      schema: {type: string, format: uuid}
+    OrderId:
+      name: order_id
+      in: path
+      required: true
+      schema: {type: string, format: uuid}
+    WechatSignature:
+      name: msg_signature
+      in: query
+      required: true
+      schema: {type: string}
+    WechatTimestamp:
+      name: timestamp
+      in: query
+      required: true
+      schema: {type: string}
+    WechatNonce:
+      name: nonce
+      in: query
+      required: true
+      schema: {type: string}
+  responses:
+    Error:
+      description: 统一错误
+      content:
+        application/problem+json:
+          schema: {$ref: '#/components/schemas/Problem'}
+    Conflict:
+      description: 幂等键冲突、并发修改或状态不允许
+      content:
+        application/problem+json:
+          schema: {$ref: '#/components/schemas/Problem'}
+    ValidationFailed:
+      description: 输入或业务规则校验失败
+      content:
+        application/problem+json:
+          schema: {$ref: '#/components/schemas/Problem'}
+    NotFound:
+      description: 资源不存在；跨租户资源同样返回 404
+      content:
+        application/problem+json:
+          schema: {$ref: '#/components/schemas/Problem'}
+    UnauthorizedWebhook:
+      description: 回调签名无效
+      content:
+        application/problem+json:
+          schema: {$ref: '#/components/schemas/Problem'}
+  schemas:
+    Problem:
+      type: object
+      required: [type, title, status, code, trace_id]
+      properties:
+        type: {type: string, format: uri-reference}
+        title: {type: string}
+        status: {type: integer}
+        code: {type: string}
+        detail: {type: string}
+        trace_id: {type: string}
+        field_errors:
+          type: array
+          items:
+            type: object
+            required: [field, code]
+            properties:
+              field: {type: string}
+              code: {type: string}
+              message: {type: string}
+        retry_after_seconds: {type: integer, minimum: 0}
+    AsyncCommand:
+      type: object
+      required: [command_id, status, trace_id]
+      properties:
+        command_id: {type: string, format: uuid}
+        status: {type: string, enum: [QUEUED, RUNNING, WAITING_INPUT, WAITING_EXTERNAL]}
+        trace_id: {type: string}
+        status_url: {type: string, format: uri-reference}
+    DeliveryStep:
+      type: object
+      required: [step_code, status, attempt_count]
+      properties:
+        step_code: {type: string}
+        status: {type: string, enum: [PENDING, WAITING_INPUT, WAITING_AUTH, RUNNING, SUCCEEDED, FAILED, BLOCKED, SKIPPED]}
+        attempt_count: {type: integer}
+        last_error_code: {type: [string, 'null']}
+        output_summary: {type: object, additionalProperties: true}
+    DeliveryProject:
+      type: object
+      required: [id, status, progress_percent, version, steps, created_at, updated_at]
+      properties:
+        id: {type: string, format: uuid}
+        store_id: {type: [string, 'null'], format: uuid}
+        status: {type: string, enum: [DRAFT, WAITING_MERCHANT_INPUT, WAITING_AUTHORIZATION, PROVISIONING, PARTIALLY_FAILED, BLOCKED, ACCEPTANCE, DELIVERED, OPERATING, SUSPENDED, CANCELLED]}
+        progress_percent: {type: integer, minimum: 0, maximum: 100}
+        blocking_reason_code: {type: [string, 'null']}
+        version: {type: integer}
+        steps:
+          type: array
+          items: {$ref: '#/components/schemas/DeliveryStep'}
+        created_at: {type: string, format: date-time}
+        updated_at: {type: string, format: date-time}
+    DeliveryProjectPage:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items: {$ref: '#/components/schemas/DeliveryProject'}
+        next_cursor: {type: [string, 'null']}
+    MiniProgram:
+      type: object
+      required: [id, app_id, merchant_chosen_name, template_code, status]
+      properties:
+        id: {type: string, format: uuid}
+        app_id: {type: string}
+        merchant_chosen_name: {type: string}
+        template_code: {type: string}
+        status: {type: string, enum: [DRAFT, AUTHORIZED, ACTIVE, SUSPENDED, AUTH_REVOKED]}
+        current_release_id: {type: [string, 'null'], format: uuid}
+    MiniProgramRelease:
+      type: object
+      required: [id, release_number, template_version, status, version]
+      properties:
+        id: {type: string, format: uuid}
+        release_number: {type: integer, format: int64}
+        template_version: {type: string}
+        status: {type: string, enum: [DRAFT, BUILDING, PREVIEW_READY, BUILD_FAILED, SUBMITTED, IN_REVIEW, APPROVED, REJECTED, PUBLISHING, PUBLISHED, PUBLISH_FAILED, ROLLED_BACK]}
+        preview_qr_url: {type: [string, 'null'], format: uri}
+        rejection_reason: {type: [string, 'null']}
+        version: {type: integer}
+        created_at: {type: string, format: date-time}
+        updated_at: {type: string, format: date-time}
+    GeoTargetHealth:
+      type: object
+      required: [target_code, status]
+      properties:
+        target_code: {type: string}
+        status: {type: string, enum: [PENDING, PUBLISHING, ACTIVE, FAILED, AUTH_REQUIRED, STALE]}
+        last_error_code: {type: [string, 'null']}
+        last_published_at: {type: [string, 'null'], format: date-time}
+    GeoHealth:
+      type: object
+      required: [status, completeness_score, consistency_score, targets]
+      properties:
+        status: {type: string, enum: [DRAFT, VALIDATING, READY, INVALID, PUBLISHING, ACTIVE, DEGRADED, FAILED, STALE]}
+        completeness_score: {type: integer, minimum: 0, maximum: 100}
+        consistency_score: {type: integer, minimum: 0, maximum: 100}
+        targets:
+          type: array
+          items: {$ref: '#/components/schemas/GeoTargetHealth'}
+        disclaimer: {type: string, const: '健康状态不代表第三方收录、排序或流量承诺'}
+    Conversation:
+      type: object
+      required: [id, channel, status, risk_level, version, created_at]
+      properties:
+        id: {type: string, format: uuid}
+        channel: {type: string, enum: [MERCHANT_MINI_PROGRAM, LEQU_LIFE, WEB]}
+        status: {type: string, enum: [BOT_ACTIVE, HUMAN_REQUESTED, HUMAN_QUEUED, HUMAN_ACTIVE, WAITING_CUSTOMER, CLOSED]}
+        risk_level: {type: string, enum: [NORMAL, ELEVATED, HIGH]}
+        assigned_user_id: {type: [string, 'null'], format: uuid}
+        version: {type: integer}
+        created_at: {type: string, format: date-time}
+    ConversationMessage:
+      type: object
+      required: [id, sender_type, message_type, content, created_at]
+      properties:
+        id: {type: string, format: uuid}
+        sender_type: {type: string, enum: [CUSTOMER, AI, EMPLOYEE, SYSTEM]}
+        message_type: {type: string, enum: [TEXT, IMAGE, FILE, ORDER_CARD, PRODUCT_CARD, SYSTEM_EVENT]}
+        content: {type: object, additionalProperties: true}
+        risk_labels: {type: array, items: {type: string}}
+        created_at: {type: string, format: date-time}
+    CreateOrderRequest:
+      type: object
+      required: [store_id, source_channel, items]
+      properties:
+        store_id: {type: string, format: uuid}
+        source_channel: {type: string, enum: [MERCHANT_MINI_PROGRAM, LEQU_LIFE]}
+        items:
+          type: array
+          minItems: 1
+          items:
+            type: object
+            required: [variant_id, quantity]
+            properties:
+              variant_id: {type: string, format: uuid}
+              quantity: {type: integer, minimum: 1}
+        coupon_codes: {type: array, items: {type: string}}
+    Order:
+      type: object
+      required: [id, order_no, status, payable_amount_cents, version]
+      properties:
+        id: {type: string, format: uuid}
+        order_no: {type: string}
+        status: {type: string, enum: [PENDING_PAYMENT, PAID, FULFILLING, COMPLETED, CANCELLED, CLOSED]}
+        payable_amount_cents: {type: integer, format: int64}
+        paid_amount_cents: {type: integer, format: int64}
+        refunded_amount_cents: {type: integer, format: int64}
+        currency: {type: string, const: CNY}
+        version: {type: integer}
+    PaymentIntent:
+      type: object
+      required: [id, order_id, amount_cents, status, payment_parameters]
+      properties:
+        id: {type: string, format: uuid}
+        order_id: {type: string, format: uuid}
+        amount_cents: {type: integer, format: int64}
+        status: {type: string, enum: [CREATED, PROCESSING, SUCCEEDED, FAILED, EXPIRED, PARTIALLY_REFUNDED, REFUNDED]}
+        payment_parameters: {type: object, additionalProperties: true}
+        expires_at: {type: string, format: date-time}
+    Refund:
+      type: object
+      required: [id, refund_no, amount_cents, status, version]
+      properties:
+        id: {type: string, format: uuid}
+        refund_no: {type: string}
+        amount_cents: {type: integer, format: int64}
+        status: {type: string, enum: [REQUESTED, APPROVAL_REQUIRED, SUBMITTING, PROCESSING, SUCCEEDED, FAILED, REJECTED]}
+        version: {type: integer}
+    VerificationResult:
+      type: object
+      required: [verification_use_id, entitlement_status, used_uses, remaining_uses]
+      properties:
+        verification_use_id: {type: string, format: uuid}
+        entitlement_status: {type: string, enum: [AVAILABLE, PARTIALLY_USED, FULLY_USED, VOIDED]}
+        used_uses: {type: integer}
+        remaining_uses: {type: integer}
+        repeated_request: {type: boolean, default: false}
+    PluginInstallation:
+      type: object
+      required: [id, plugin_code, version, status, granted_permissions]
+      properties:
+        id: {type: string, format: uuid}
+        plugin_code: {type: string}
+        version: {type: string}
+        status: {type: string, enum: [REQUESTED, GRANTED, INSTALLING, ACTIVE, SUSPENDED, UNINSTALLED]}
+        granted_permissions: {type: array, items: {type: string}}
+    MonthlyValueReport:
+      type: object
+      required: [month, ai_service, commerce, customers, geo, automation, quota, suggestions]
+      properties:
+        month: {type: string}
+        ai_service: {type: object, additionalProperties: true}
+        commerce: {type: object, additionalProperties: true}
+        customers: {type: object, additionalProperties: true}
+        geo: {type: object, additionalProperties: true}
+        automation: {type: object, additionalProperties: true}
+        quota: {type: object, additionalProperties: true}
+        suggestions: {type: array, items: {type: string}}
+    MerchantIntakeField:
+      type: object
+      required: [field_path, candidate_value, decision_status]
+      properties:
+        field_path: {type: string}
+        candidate_value: {}
+        confidence: {type: [number, 'null'], minimum: 0, maximum: 1}
+        decision_status: {type: string, enum: [PROPOSED, CONFIRMED, CORRECTED, REJECTED, CONFLICT]}
+        source_asset_id: {type: [string, 'null'], format: uuid}
+    MerchantIntakeSession:
+      type: object
+      required: [id, channel, status, fields, missing_items, version, created_at, updated_at]
+      properties:
+        id: {type: string, format: uuid}
+        merchant_profile_id: {type: [string, 'null'], format: uuid}
+        delivery_project_id: {type: [string, 'null'], format: uuid}
+        channel: {type: string, enum: [WEB, MOBILE_H5, WECOM]}
+        status: {type: string, enum: [COLLECTING, EXTRACTING, WAITING_ANSWERS, WAITING_CONFIRMATION, CONFIRMED, PUBLISHING, COMPLETED, FAILED, CANCELLED]}
+        fields: {type: array, items: {$ref: '#/components/schemas/MerchantIntakeField'}}
+        missing_items: {type: array, items: {type: string}}
+        impact_targets: {type: array, items: {type: string, enum: [MINI_PROGRAM, GEO, AI_SERVICE, PRODUCT, GROUP_BUY]}}
+        version: {type: integer, minimum: 1}
+        created_at: {type: string, format: date-time}
+        updated_at: {type: string, format: date-time}
+    RevenueRight:
+      type: object
+      required: [id, merchant_profile_id, status, total_business_share_bps, holders, starts_at]
+      properties:
+        id: {type: string, format: uuid}
+        merchant_profile_id: {type: string, format: uuid}
+        merchant_display_name: {type: string}
+        status: {type: string, enum: [PENDING, ACTIVE, DISPUTED, SUSPENDED, TRANSFERRED, TERMINATED]}
+        total_business_share_bps: {type: integer, const: 7000}
+        holders:
+          type: array
+          items:
+            type: object
+            required: [beneficiary_id, share_bps, status]
+            properties:
+              beneficiary_id: {type: string, format: uuid}
+              display_name: {type: string}
+              share_bps: {type: integer, minimum: 1, maximum: 7000}
+              status: {type: string, enum: [ACTIVE, SUSPENDED, TRANSFERRED, TERMINATED]}
+        starts_at: {type: string, format: date-time}
+        ended_at: {type: [string, 'null'], format: date-time}
+    DirectCostLine:
+      type: object
+      required: [cost_code, cost_name, amount_cents, cost_status, service_period_start, service_period_end]
+      properties:
+        cost_code: {type: string}
+        cost_name: {type: string}
+        amount_cents: {type: integer, format: int64, minimum: 0}
+        cost_status: {type: string, enum: [PROVISIONAL, ACTUAL, REVERSED]}
+        supplier_ref: {type: [string, 'null']}
+        evidence_available: {type: boolean}
+        service_period_start: {type: string, format: date}
+        service_period_end: {type: string, format: date}
+    RevenueDistributionStatement:
+      type: object
+      required: [id, source_type, period_start, period_end, actual_receipt_cents, refund_cents, direct_cost_cents, distributable_cents, status, allocations, cost_lines, version]
+      properties:
+        id: {type: string, format: uuid}
+        source_type: {type: string, enum: [SUBSCRIPTION, COMPUTE_PACK]}
+        period_start: {type: string, format: date}
+        period_end: {type: string, format: date}
+        actual_receipt_cents: {type: integer, format: int64, minimum: 0}
+        refund_cents: {type: integer, format: int64, minimum: 0}
+        direct_cost_cents: {type: integer, format: int64, minimum: 0}
+        distributable_cents: {type: integer, format: int64, minimum: 0}
+        status: {type: string, enum: [ESTIMATED, WAITING_COST, REVIEW, LOCKED, PAYABLE, PAID, REVERSED]}
+        cost_lines: {type: array, items: {$ref: '#/components/schemas/DirectCostLine'}}
+        allocations:
+          type: array
+          items:
+            type: object
+            required: [beneficiary_role, beneficiary_id, share_bps, allocated_cents, status]
+            properties:
+              beneficiary_role: {type: string, enum: [ORIGINATING_BUSINESS, SHANGZHI, LEQU_LIFE, LEQUBAO, REGIONAL_PROVIDER]}
+              beneficiary_id: {type: string, format: uuid}
+              share_bps: {type: integer, minimum: 1, maximum: 10000}
+              allocated_cents: {type: integer, format: int64, minimum: 0}
+              status: {type: string, enum: [ACCRUED, HELD, PAYABLE, PAID, REVERSED]}
+        version: {type: integer, minimum: 1}
+security:
+  - EmployeeBearer: []

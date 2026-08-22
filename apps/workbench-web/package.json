@@ -1,0 +1,13 @@
+{
+  "name": "@lequ/workbench-web",
+  "version": "6.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node server.mjs",
+    "start": "node production-server.mjs",
+    "build": "node build.mjs",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run"
+  }
+}

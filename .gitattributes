@@ -19,3 +19,7 @@
 *.jpeg binary
 *.gif binary
 *.webp binary
+
+# Preserve the vendored V6.1 source package byte-oriented formatting while
+# reviewing repository-authored files with the normal whitespace rules.
+docs/v6.1/source-package/** -whitespace

@@ -1,0 +1,31 @@
+{
+  "pages": [
+    "pages/home/index",
+    "pages/products/index",
+    "pages/group-buy/index",
+    "pages/orders/index",
+    "pages/profile/index",
+    "pages/route/index"
+  ],
+  "window": {
+    "navigationBarTitleText": "商家小程序",
+    "navigationBarBackgroundColor": "#ffffff",
+    "navigationBarTextStyle": "black",
+    "backgroundColor": "#f5f7f6"
+  },
+  "tabBar": {
+    "color": "#66736d",
+    "selectedColor": "#0d8b62",
+    "backgroundColor": "#ffffff",
+    "list": [
+      { "pagePath": "pages/home/index", "text": "首页" },
+      { "pagePath": "pages/products/index", "text": "商品" },
+      { "pagePath": "pages/group-buy/index", "text": "团购" },
+      { "pagePath": "pages/orders/index", "text": "订单" },
+      { "pagePath": "pages/profile/index", "text": "我的" }
+    ]
+  },
+  "usingComponents": { "merchant-experience": "/components/merchant-experience/index" },
+  "sitemapLocation": "sitemap.json",
+  "lazyCodeLoading": "requiredComponents"
+}

@@ -1,0 +1,50 @@
+{
+  "schema_version": 1,
+  "plugin_id": "com.lequbao.wecom.internal_notice",
+  "name": "企业微信内部通知",
+  "version": "1.0.0",
+  "publisher": "乐趣宝",
+  "description": "向已绑定的商户员工发送内部任务提醒，并打开乐趣宝任务页面",
+  "runtime": {
+    "type": "remote_service",
+    "allowed_domains": [
+      "qyapi.weixin.qq.com"
+    ],
+    "timeout_seconds": 10,
+    "max_retries": 2
+  },
+  "permissions": [
+    {
+      "scope": "staff.binding.read",
+      "risk": "medium",
+      "reason": "把乐趣宝员工映射到商户企业微信成员"
+    },
+    {
+      "scope": "internal_notice.send",
+      "risk": "medium",
+      "reason": "发送不含顾客敏感资料的内部任务提醒"
+    }
+  ],
+  "actions": [
+    {
+      "name": "send_task_notice",
+      "input_schema": "schemas/send_task_notice.input.json",
+      "output_schema": "schemas/send_task_notice.output.json",
+      "idempotent": true,
+      "human_confirmation": false
+    }
+  ],
+  "events": [
+    "internal_notice.sent",
+    "internal_notice.failed"
+  ],
+  "data_policy": {
+    "stores_full_message": false,
+    "stores_customer_profile": false,
+    "log_retention_days": 180
+  },
+  "support": {
+    "owner": "乐趣宝连接器团队",
+    "incident_level": "P1"
+  }
+}

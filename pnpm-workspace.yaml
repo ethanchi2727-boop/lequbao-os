@@ -1,0 +1,17 @@
+packages:
+  - apps/*
+  - packages/*
+
+nodeLinker: hoisted
+
+# Installation must fail when a dependency introduces an unreviewed lifecycle script.
+strictDepBuilds: true
+dangerouslyAllowAllBuilds: false
+
+# Keep transitive dependencies on registry/workspace sources and re-apply pnpm's
+# supply-chain checks even when a frozen lockfile is present.
+blockExoticSubdeps: true
+trustLockfile: false
+
+allowBuilds:
+  esbuild: true

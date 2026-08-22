@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "stages": {
+    "2": ["TEN", "RBAC", "RGT", "CST", "DST", "CMP", "VCH"],
+    "3": ["INT", "DEL"],
+    "4": ["MP"],
+    "5": ["CS"],
+    "6": ["ORD", "PAY", "REF", "VER", "REW", "REC"],
+    "7": ["UI"],
+    "8": ["GEO", "PLG"],
+    "9": ["EVT", "MIG", "PRI", "SEC", "DR"],
+    "10": ["API", "PERF"]
+  }
+}

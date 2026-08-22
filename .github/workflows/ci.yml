@@ -1,45 +1,251 @@
-name: CI
+name: V6.1 quality gate
 
 on:
   push:
-    branches: [main, develop]
   pull_request:
-    branches: [main]
 
 permissions:
   contents: read
 
 concurrency:
-  group: ci-${{ github.workflow }}-${{ github.ref }}
+  group: v6-quality-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  quality-gate:
-    name: Quality Gate
+  code-quality:
     runs-on: ubuntu-latest
-    timeout-minutes: 40
+    timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v5
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v5
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
         with:
-          node-version: 22
-          cache: 'npm'
-          cache-dependency-path: package-lock.json
+          node-version-file: .node-version
+      - name: Enable pinned pnpm
+        run: corepack enable && corepack prepare pnpm@11.19.0 --activate
+      - run: pnpm install --frozen-lockfile
+      - name: Reject high-risk production dependency vulnerabilities
+        run: pnpm audit --prod --audit-level high
+      - name: Verify source secret scan and CycloneDX inventory
+        run: pnpm security:check
+      - run: pnpm check
 
-      - name: Install dependencies
+  postgres-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:15@sha256:5f72c7b5bd616308ccfd2e74d6be16fb06364e5eecbb815fe9dc6ab9761d2111
+        env:
+          POSTGRES_DB: lequ_v6
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d lequ_v6"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    env:
+      PGHOST: 127.0.0.1
+      PGPORT: 5432
+      PGDATABASE: lequ_v6
+      PGUSER: postgres
+      PGPASSWORD: postgres
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - name: Apply clean schema
+        run: psql -v ON_ERROR_STOP=1 -f database/schema.sql
+      - name: Prove tenant RLS isolation
+        run: psql -v ON_ERROR_STOP=1 -f database/tests/rls.sql
+      - name: Prove revenue-right and 70/10/20 constraints
+        run: psql -v ON_ERROR_STOP=1 -f database/tests/revenue-rights.sql
+      - name: Prove exact distribution reconciliation and immutable ledger
+        run: psql -v ON_ERROR_STOP=1 -f database/tests/revenue-distribution.sql
+      - name: Prove immutable subscription receipt and refund source ledger
+        run: psql -v ON_ERROR_STOP=1 -f database/tests/subscription-cash-ledger.sql
+      - name: Prove dual approval, payout evidence and reversal linkage
+        run: psql -v ON_ERROR_STOP=1 -f database/tests/distribution-payout-and-reversal.sql
+      - name: Prove merchant intake safety and confirmation guards
+        run: psql -v ON_ERROR_STOP=1 -f database/tests/merchant-intake.sql
+      - name: Prove revocable sessions, frozen RBAC and immutable usage
+        run: psql -v ON_ERROR_STOP=1 -f database/tests/identity-access-and-usage.sql
+      - name: Prove revenue-right transfer confirmation, dual approval and dispute freeze
+        run: psql -v ON_ERROR_STOP=1 -f database/tests/revenue-right-governance.sql
+      - name: Prove delivery acceptance, immutable attempts and temporary access expiry
+        run: psql -v ON_ERROR_STOP=1 -f database/tests/delivery-workflow.sql
+      - name: Prove mini-program ownership, confirmation and authorization-loss guards
+        run: psql -v ON_ERROR_STOP=1 -f database/tests/mini-program-lifecycle.sql
+      - name: Prove customer-service human takeover, grounding and privacy guards
+        run: psql -v ON_ERROR_STOP=1 -f database/tests/customer-service-and-privacy.sql
+      - name: Prove commerce inventory, payment, refund, verification, reward and reconciliation guards
+        run: psql -v ON_ERROR_STOP=1 -f database/tests/commerce-fulfillment-and-reconciliation.sql
+      - name: Prove GEO evidence, report definitions and plugin runtime guards
+        run: psql -v ON_ERROR_STOP=1 -f database/tests/geo-reports-and-plugin-runtime.sql
+      - name: Prove migration switch, reconciliation and privacy propagation guards
+        run: psql -v ON_ERROR_STOP=1 -f database/tests/operations-migration-and-privacy.sql
+      - name: Prove platform consumer and cross-merchant cart account isolation
+        run: psql -v ON_ERROR_STOP=1 -f database/tests/platform-consumer-cart.sql
+      - name: Prove platform checkout address, quote and group account isolation
+        run: psql -v ON_ERROR_STOP=1 -f database/tests/platform-checkout.sql
+      - name: Prove sales evidence, contract, collection and subscription dual control
+        run: psql -v ON_ERROR_STOP=1 -f database/tests/sales-and-subscription-lifecycle.sql
+      - name: Prove distribution dispute isolation and immutable request evidence
+        run: psql -v ON_ERROR_STOP=1 -f database/tests/distribution-disputes.sql
+      - name: Prove employee agent runtime limits, RLS and immutable evidence
+        run: psql -v ON_ERROR_STOP=1 -f database/tests/employee-agent-runtime.sql
+      - name: Prove idempotent product publication receipts
+        run: psql -v ON_ERROR_STOP=1 -f database/tests/product-publication-receipts.sql
+      - name: Prove customer-service operations RLS and remediation bindings
+        run: psql -v ON_ERROR_STOP=1 -f database/tests/customer-service-operations.sql
+      - name: Prove platform control versions, RLS, skills and idempotency receipts
+        run: psql -v ON_ERROR_STOP=1 -f database/tests/platform-control-plane.sql
+      - name: Prove incremental migrations from the 73-table package baseline
         run: |
-          node --version
-          npm --version
-          npm ci --include=dev
-          test -x node_modules/.bin/vitest
-          test -x node_modules/.bin/vue-tsc
-          test -x node_modules/.bin/esbuild
+          createdb lequ_v6_migration
+          psql -d lequ_v6_migration -v ON_ERROR_STOP=1 -f docs/v6.1/source-package/05_数据API事件权限与安全/database/schema.sql
+          psql -d lequ_v6_migration -v ON_ERROR_STOP=1 -f database/migrations/0003_revenue_distribution_invariants.sql
+          psql -d lequ_v6_migration -v ON_ERROR_STOP=1 -f database/migrations/0004_subscription_cash_ledger.sql
+          psql -d lequ_v6_migration -v ON_ERROR_STOP=1 -f database/migrations/0005_distribution_payout_and_reversal.sql
+          psql -d lequ_v6_migration -v ON_ERROR_STOP=1 -f database/migrations/0006_merchant_intake_commit_guards.sql
+          psql -d lequ_v6_migration -v ON_ERROR_STOP=1 -f database/migrations/0007_merchant_intake_upload_tickets.sql
+          psql -d lequ_v6_migration -v ON_ERROR_STOP=1 -f database/migrations/0008_identity_access_and_usage.sql
+          psql -d lequ_v6_migration -v ON_ERROR_STOP=1 -f database/migrations/0009_revenue_right_governance.sql
+          psql -d lequ_v6_migration -v ON_ERROR_STOP=1 -f database/migrations/0010_delivery_workflow.sql
+          psql -d lequ_v6_migration -v ON_ERROR_STOP=1 -f database/migrations/0011_mini_program_lifecycle.sql
+          psql -d lequ_v6_migration -v ON_ERROR_STOP=1 -f database/migrations/0012_customer_service_and_privacy.sql
+          psql -d lequ_v6_migration -v ON_ERROR_STOP=1 -f database/migrations/0013_commerce_fulfillment_and_reconciliation.sql
+          psql -d lequ_v6_migration -v ON_ERROR_STOP=1 -f database/migrations/0014_geo_reports_and_plugin_runtime.sql
+          psql -d lequ_v6_migration -v ON_ERROR_STOP=1 -f database/migrations/0015_operations_migration_and_privacy.sql
+          psql -d lequ_v6_migration -v ON_ERROR_STOP=1 -f database/migrations/0016_event_delivery_runtime.sql
+          psql -d lequ_v6_migration -v ON_ERROR_STOP=1 -f database/migrations/0017_platform_consumer_cart.sql
+          psql -d lequ_v6_migration -v ON_ERROR_STOP=1 -f database/migrations/0018_platform_checkout.sql
+          psql -d lequ_v6_migration -v ON_ERROR_STOP=1 -f database/migrations/0019_merchant_mini_checkout_scope.sql
+          psql -d lequ_v6_migration -v ON_ERROR_STOP=1 -f database/migrations/0020_consumer_trace_and_invoice_profiles.sql
+          psql -d lequ_v6_migration -v ON_ERROR_STOP=1 -f database/migrations/0021_sales_and_subscription_lifecycle.sql
+          psql -d lequ_v6_migration -v ON_ERROR_STOP=1 -f database/migrations/0022_distribution_disputes.sql
+          psql -d lequ_v6_migration -v ON_ERROR_STOP=1 -f database/migrations/0023_employee_agent_runtime.sql
+          psql -d lequ_v6_migration -v ON_ERROR_STOP=1 -f database/migrations/0024_product_publication_receipts.sql
+          psql -d lequ_v6_migration -v ON_ERROR_STOP=1 -f database/migrations/0025_customer_service_operations.sql
+          psql -d lequ_v6_migration -v ON_ERROR_STOP=1 -f database/migrations/0026_platform_control_plane.sql
+      - name: Prove development seed opt-in, idempotency and financial emptiness
+        run: |
+          createdb lequ_v6_development
+          psql -d lequ_v6_development -v ON_ERROR_STOP=1 -f database/schema.sql
+          psql -d lequ_v6_development -v ON_ERROR_STOP=1 -v development_seed=enabled -f database/development-seed.sql
+          psql -d lequ_v6_development -v ON_ERROR_STOP=1 -v development_seed=enabled -f database/development-seed.sql
+          psql -d lequ_v6_development -v ON_ERROR_STOP=1 -f database/development-seed-verify.sql
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version-file: .node-version
+      - name: Enable pinned pnpm
+        run: corepack enable && corepack prepare pnpm@11.19.0 --activate
+      - run: pnpm install --frozen-lockfile
+      - name: Execute trusted statement locking against PostgreSQL
+        env:
+          DATABASE_URL: postgres://postgres:postgres@127.0.0.1:5432/lequ_v6
+        run: |
+          pnpm --filter @lequ/contracts build
+          pnpm --filter @lequ/api exec tsx integration/distribution-lock.ts
+      - name: Execute trusted AI merchant intake against PostgreSQL
+        env:
+          DATABASE_URL: postgres://postgres:postgres@127.0.0.1:5432/lequ_v6
+        run: pnpm --filter @lequ/api exec tsx integration/merchant-intake.ts
+      - name: Execute concurrent commerce inventory reservation against PostgreSQL
+        env:
+          DATABASE_URL: postgres://postgres:postgres@127.0.0.1:5432/lequ_v6
+        run: pnpm --filter @lequ/api exec tsx integration/commerce-concurrency.ts
+      - name: Execute Worker tenant and event fault injection against PostgreSQL
+        env:
+          DATABASE_URL: postgres://postgres:postgres@127.0.0.1:5432/lequ_v6
+        run: pnpm --filter @lequ/worker exec tsx integration/outbox-fault-injection.ts
+      - name: Execute the performance evidence database snapshot against PostgreSQL
+        env:
+          DATABASE_URL: postgres://postgres:postgres@127.0.0.1:5432/lequ_v6
+        run: node tooling/performance-database-snapshot-integration.mjs
 
-      - name: Run project quality gate
-        run: node scripts/quality-gate.mjs
-
-      - name: Build WeChat mini programs
-        run: npm run build:weixin
+  container-build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - name: Build API candidate image
+        run: docker build -f deploy/Dockerfile --target api -t lequ-api:ci .
+      - name: Build Worker candidate image
+        run: docker build -f deploy/Dockerfile --target worker -t lequ-worker:ci .
+      - name: Build Web candidate image
+        run: docker build -f deploy/Dockerfile --target web -t lequ-web:ci .
+      - name: Verify API production configuration fails closed
+        run: |
+          if output="$(docker run --rm \
+            --env DATABASE_URL=postgres://runtime.invalid/lequ \
+            --env AUTH_JWT_SECRET=ci-placeholder-auth-secret \
+            --env OBJECT_STORE_GATEWAY_URL=http://127.0.0.1:3301 \
+            --env OBJECT_STORE_SIGNING_SECRET=ci-placeholder-object-secret \
+            lequ-api:ci 2>&1)"; then
+            echo "API unexpectedly started with launch providers disabled"
+            exit 1
           fi
+          printf '%s' "$output" | grep --quiet 'API production launch configuration missing'
+      - name: Verify Worker production configuration fails closed
+        run: |
+          if output="$(docker run --rm \
+            --env DATABASE_URL=postgres://runtime.invalid/lequ \
+            --env WORKER_TENANT_ID=00000000-0000-4000-8000-000000000000 \
+            --env OUTBOX_EVENT_GATEWAY_URL=http://127.0.0.1:3302 \
+            --env OUTBOX_EVENT_GATEWAY_TOKEN=ci-placeholder-event-token \
+            lequ-worker:ci 2>&1)"; then
+            echo "Worker unexpectedly started with launch gateways disabled"
+            exit 1
+          fi
+          printf '%s' "$output" | grep --quiet 'Worker production launch configuration missing'
+      - name: Smoke Web candidate image
+        run: |
+          docker run --detach --rm --name lequ-web-smoke --publish 18080:8080 lequ-web:ci
+          trap 'docker rm --force lequ-web-smoke >/dev/null 2>&1 || true' EXIT
+          for attempt in $(seq 1 20); do
+            if curl --fail --silent http://127.0.0.1:18080/health; then exit 0; fi
+            sleep 1
+          done
+          docker logs lequ-web-smoke
+          exit 1
+
+  development-stack:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - name: Validate Dev Container and shell entrypoints
+        run: |
+          docker compose -f .devcontainer/compose.yaml config --quiet
+          bash -n .devcontainer/bootstrap.sh \
+            .devcontainer/start-development.sh \
+            .devcontainer/stop-development.sh \
+            .devcontainer/status.sh
+      - name: Prove PostgreSQL-backed development login and same-origin API path
+        run: |
+          set -euo pipefail
+          cleanup() {
+            result=$?
+            if [ "$result" -ne 0 ]; then
+              docker compose -f .devcontainer/compose.yaml logs --no-color || true
+            fi
+            docker compose -f .devcontainer/compose.yaml down --volumes --remove-orphans || true
+            exit "$result"
+          }
+          trap cleanup EXIT
+          docker compose -f .devcontainer/compose.yaml up --detach --build
+          docker compose -f .devcontainer/compose.yaml exec --no-TTY --user root workspace \
+            chown --recursive node:node /workspaces/lequ-life-platform
+          docker compose -f .devcontainer/compose.yaml exec --no-TTY workspace \
+            bash .devcontainer/bootstrap.sh
+          docker compose -f .devcontainer/compose.yaml exec --no-TTY workspace \
+            bash .devcontainer/start-development.sh
+          docker compose -f .devcontainer/compose.yaml exec --no-TTY workspace \
+            node tooling/development-stack-smoke.mjs
+          session_count="$(docker compose -f .devcontainer/compose.yaml exec --no-TTY postgres \
+            psql --username=postgres --dbname=lequ_v6 --tuples-only --no-align \
+            --command="SELECT count(*) FROM user_sessions WHERE tenant_id='10000000-0000-4000-8000-000000000001'")"
+          test "$session_count" = "1"
+          docker compose -f .devcontainer/compose.yaml exec --no-TTY workspace \
+            bash .devcontainer/stop-development.sh

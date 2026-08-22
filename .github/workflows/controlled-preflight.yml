@@ -12,10 +12,15 @@ on:
         required: true
         default: all
         type: choice
-        options: [all, "47", "48", "49"]
+        options: [all, '47', '48', '49']
+      candidate_image_run_id:
+        description: Successful protected candidate-image publisher run ID (required for Stage 49)
+        required: false
+        type: string
 
 permissions:
   contents: read
+  actions: read
 
 jobs:
   preflight:
@@ -56,6 +61,7 @@ jobs:
       INTERNAL_WORKER_TOKEN: ${{ secrets.INTERNAL_WORKER_TOKEN }}
       OUTBOX_EVENT_GATEWAY_URL: ${{ vars.OUTBOX_EVENT_GATEWAY_URL }}
       OUTBOX_EVENT_GATEWAY_TOKEN: ${{ secrets.OUTBOX_EVENT_GATEWAY_TOKEN }}
+      WORKER_TENANT_ID: ${{ vars.WORKER_TENANT_ID }}
       GEO_PLUGIN_GATEWAY_URL: ${{ vars.GEO_PLUGIN_GATEWAY_URL }}
       GEO_PLUGIN_GATEWAY_TOKEN: ${{ secrets.GEO_PLUGIN_GATEWAY_TOKEN }}
       CUSTOMER_SERVICE_KNOWLEDGE_URL: ${{ vars.CUSTOMER_SERVICE_KNOWLEDGE_URL }}
@@ -75,6 +81,9 @@ jobs:
       PERFORMANCE_READ_BEARER_TOKEN: ${{ secrets.PERFORMANCE_READ_BEARER_TOKEN }}
       PERFORMANCE_MESSAGE_BEARER_TOKEN: ${{ secrets.PERFORMANCE_MESSAGE_BEARER_TOKEN }}
       PERFORMANCE_WRITE_BEARER_TOKEN: ${{ secrets.PERFORMANCE_WRITE_BEARER_TOKEN }}
+      PERFORMANCE_CANDIDATE_IMAGE_MANIFEST_JSON: ${{ vars.PERFORMANCE_CANDIDATE_IMAGE_MANIFEST_JSON }}
+      PERFORMANCE_DEPLOYED_IMAGES_JSON: ${{ vars.PERFORMANCE_DEPLOYED_IMAGES_JSON }}
+      RELEASE_COMMIT: ${{ vars.RELEASE_COMMIT }}
     steps:
       - name: Validate immutable candidate input
         env:
@@ -84,14 +93,18 @@ jobs:
             echo 'candidate_commit must be an immutable lowercase 40-character SHA'
             exit 1
           fi
+          if [ "$RELEASE_COMMIT" != "$CANDIDATE_COMMIT" ]; then
+            echo 'configured RELEASE_COMMIT must equal candidate_commit'
+            exit 1
+          fi
       - name: Checkout trusted preflight from the default branch
-        uses: actions/checkout@v6
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           ref: main
           path: trusted
           persist-credentials: false
       - name: Resolve candidate without executing candidate code
-        uses: actions/checkout@v6
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           ref: ${{ inputs.candidate_commit }}
           path: candidate
@@ -109,3 +122,95 @@ jobs:
       - name: Inspect stage 49 configuration
         if: ${{ inputs.stage == 'all' || inputs.stage == '49' }}
         run: node trusted/tooling/controlled-environment-preflight.mjs --stage=49
+      - name: Prove Stage 49 candidate image manifest provenance
+        if: ${{ inputs.stage == 'all' || inputs.stage == '49' }}
+        env:
+          CANDIDATE_COMMIT: ${{ inputs.candidate_commit }}
+          CANDIDATE_IMAGE_RUN_ID: ${{ inputs.candidate_image_run_id }}
+          CONFIGURED_MANIFEST: ${{ vars.PERFORMANCE_CANDIDATE_IMAGE_MANIFEST_JSON }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if ! printf '%s' "$CANDIDATE_IMAGE_RUN_ID" | grep --quiet --extended-regexp '^[1-9][0-9]{0,19}$'; then
+            echo 'candidate_image_run_id must be a numeric protected publisher run ID'
+            exit 1
+          fi
+          run="$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${CANDIDATE_IMAGE_RUN_ID}")"
+          jq --exit-status \
+            --arg trusted "$GITHUB_SHA" \
+            --arg repository "$GITHUB_REPOSITORY" \
+            '.conclusion == "success" and .event == "workflow_dispatch" and
+              .head_branch == "main" and .head_sha == $trusted and
+              .path == ".github/workflows/publish-candidate-images.yml" and
+              .repository.full_name == $repository and .head_repository.full_name == $repository' \
+            <<<"$run" >/dev/null
+          artifact_name="candidate-images-${CANDIDATE_COMMIT}-${CANDIDATE_IMAGE_RUN_ID}"
+          artifacts="$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${CANDIDATE_IMAGE_RUN_ID}/artifacts?per_page=100")"
+          jq --exit-status \
+            --arg name "$artifact_name" \
+            --arg run "$CANDIDATE_IMAGE_RUN_ID" \
+            --arg trusted "$GITHUB_SHA" \
+            '[.artifacts[] | select(
+              .name == $name and .expired == false and .id > 0 and
+              .size_in_bytes > 0 and .size_in_bytes <= 1048576 and
+              (.digest | test("^sha256:[0-9a-f]{64}$")) and
+              (.workflow_run.id | tostring) == $run and
+              .workflow_run.head_branch == "main" and
+              .workflow_run.head_sha == $trusted
+            )] | length == 1' <<<"$artifacts" >/dev/null
+          artifact="$(jq --compact-output \
+            --arg name "$artifact_name" \
+            --arg run "$CANDIDATE_IMAGE_RUN_ID" \
+            --arg trusted "$GITHUB_SHA" \
+            '[.artifacts[] | select(
+              .name == $name and .expired == false and .id > 0 and
+              .size_in_bytes > 0 and .size_in_bytes <= 1048576 and
+              (.digest | test("^sha256:[0-9a-f]{64}$")) and
+              (.workflow_run.id | tostring) == $run and
+              .workflow_run.head_branch == "main" and
+              .workflow_run.head_sha == $trusted
+            )] | .[0]' \
+            <<<"$artifacts")"
+          artifact_id="$(jq --raw-output '.id' <<<"$artifact")"
+          artifact_digest="$(jq --raw-output '.digest' <<<"$artifact")"
+          if ! [[ "$artifact_id" =~ ^[1-9][0-9]*$ ]]; then
+            echo 'candidate image artifact ID must be a positive integer'
+            exit 1
+          fi
+          gh api "repos/${GITHUB_REPOSITORY}/actions/artifacts/${artifact_id}/zip" \
+            >candidate-image-manifest.zip
+          test "$(stat --format=%s candidate-image-manifest.zip)" -le 1048576
+          downloaded_digest="sha256:$(sha256sum candidate-image-manifest.zip | awk '{print $1}')"
+          if [ "$downloaded_digest" != "$artifact_digest" ]; then
+            echo 'candidate image artifact digest differs from GitHub metadata'
+            exit 1
+          fi
+          mkdir candidate-image-manifest
+          python3 - candidate-image-manifest.zip candidate-image-manifest/candidate-image-digests.json <<'PY'
+          import pathlib
+          import stat
+          import sys
+          import zipfile
+
+          archive, output = sys.argv[1:]
+          with zipfile.ZipFile(archive) as bundle:
+              entries = bundle.infolist()
+              if len(entries) != 1 or entries[0].filename != 'candidate-image-digests.json':
+                  raise SystemExit('candidate image artifact must contain exactly one root manifest')
+              entry = entries[0]
+              mode = entry.external_attr >> 16
+              if entry.is_dir() or stat.S_ISLNK(mode) or entry.flag_bits & 1:
+                  raise SystemExit('candidate image manifest must be a regular unencrypted file')
+              if entry.file_size <= 0 or entry.file_size > 1048576:
+                  raise SystemExit('candidate image manifest size is invalid')
+              if bundle.testzip() is not None:
+                  raise SystemExit('candidate image artifact CRC validation failed')
+              pathlib.Path(output).write_bytes(bundle.read(entry))
+          PY
+          jq --sort-keys --compact-output . \
+            candidate-image-manifest/candidate-image-digests.json >downloaded-candidate-images.json
+          printf '%s' "$CONFIGURED_MANIFEST" | jq --sort-keys --compact-output . \
+            >configured-candidate-images.json
+          if ! cmp --silent downloaded-candidate-images.json configured-candidate-images.json; then
+            echo 'configured candidate image manifest differs from protected publisher artifact'
+            exit 1
+          fi

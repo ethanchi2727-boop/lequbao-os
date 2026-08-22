@@ -1,0 +1,13 @@
+工作流编号,名称,启动角色,关键确认,主要结果,默认上限
+merchant_delivery_standard,标准商户一键交付,商务推广人员,商户授权预览审核发布验收,小程序与AI客服和GEO交付完成,30天
+customer_service_auto,AI客服接待,顾客,高风险转人工,问题答复或人工任务,3分钟
+customer_service_handoff,人工接管,AI或顾客,员工接管,原会话由员工继续,营业时间15分钟内
+knowledge_update,客服知识更新,客服员工,知识管理员发布,新知识上线并通过回归,2个工作日
+geo_basic_publish,GEO基础发布,商务推广人员,商户确认公开内容,已授权渠道提交与证据,5个工作日
+first_groupbuy_launch,首个团购上线,店长,价格规则和发布确认,团购与分享材料可用,1个工作日
+order_exception,订单异常处理,系统,资金动作确认,异常状态明确并有负责人,4小时
+operation_day7,第7天经营检查,系统,问题责任人确认,问题与任务清单,1个工作日
+operation_day30,第30天经营复盘,系统,老板确认下月动作,经营报告与任务,2个工作日
+merchant_monthly_report,月度经营报告,系统,老板查看,经营数据和下月建议,每月第1天
+quota_warning,额度预警,系统,增购或升级确认,服务不超预算,实时
+subscription_exit,订阅到期与退出,系统,导出与停用确认,服务有序停止,37天

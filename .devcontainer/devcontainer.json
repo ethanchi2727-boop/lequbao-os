@@ -1,0 +1,20 @@
+{
+  "name": "Lequ Life V6.1 Development",
+  "dockerComposeFile": "compose.yaml",
+  "service": "workspace",
+  "workspaceFolder": "/workspaces/lequ-life-platform",
+  "shutdownAction": "stopCompose",
+  "postCreateCommand": "bash .devcontainer/bootstrap.sh",
+  "postStartCommand": "bash .devcontainer/start-development.sh",
+  "forwardPorts": [3000, 3399, 4173],
+  "portsAttributes": {
+    "3000": { "label": "Lequ API", "onAutoForward": "silent" },
+    "3399": { "label": "Development Mock Gateway", "onAutoForward": "silent" },
+    "4173": { "label": "Lequ Workbench", "onAutoForward": "openPreview" }
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": ["dbaeumer.vscode-eslint", "esbenp.prettier-vscode"]
+    }
+  }
+}

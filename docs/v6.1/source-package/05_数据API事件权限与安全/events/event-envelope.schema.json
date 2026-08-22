@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.lequbao.example.com/events/event-envelope-v1.json",
+  "title": "乐趣宝领域事件信封",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "event_id",
+    "event_name",
+    "event_version",
+    "tenant_id",
+    "aggregate_type",
+    "aggregate_id",
+    "aggregate_version",
+    "partition_key",
+    "occurred_at",
+    "trace_id",
+    "producer",
+    "pii_classification",
+    "payload"
+  ],
+  "properties": {
+    "event_id": {"type": "string", "format": "uuid"},
+    "event_name": {"type": "string", "pattern": "^[a-z][a-z0-9_]*(\\.[a-z][a-z0-9_]*)+\\.v[1-9][0-9]*$"},
+    "event_version": {"type": "integer", "minimum": 1},
+    "tenant_id": {"type": "string", "format": "uuid"},
+    "aggregate_type": {"type": "string", "minLength": 1},
+    "aggregate_id": {"type": "string", "format": "uuid"},
+    "aggregate_version": {"type": "integer", "minimum": 1},
+    "partition_key": {"type": "string", "minLength": 1, "maxLength": 200},
+    "occurred_at": {"type": "string", "format": "date-time"},
+    "trace_id": {"type": "string", "minLength": 8, "maxLength": 128},
+    "causation_id": {"type": ["string", "null"], "format": "uuid"},
+    "correlation_id": {"type": ["string", "null"], "format": "uuid"},
+    "producer": {"type": "string", "minLength": 1},
+    "pii_classification": {"type": "string", "enum": ["PUBLIC", "INTERNAL", "PERSONAL", "SENSITIVE"]},
+    "payload": {"type": "object"}
+  }
+}

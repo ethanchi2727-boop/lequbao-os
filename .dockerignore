@@ -1,0 +1,16 @@
+.git
+.github
+.runtime
+artifacts
+database
+docs
+ops
+**/.env
+**/.env.*
+**/data
+**/dist
+**/node_modules
+*.log
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal

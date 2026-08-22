@@ -1,37 +1,11 @@
 {
   "name": "@lequ/merchant-miniapp",
-  "version": "5.0.0",
+  "version": "6.1.0",
   "private": true,
+  "type": "module",
   "scripts": {
-    "sync:ui": "node ../../tools/sync-mobile-ui.mjs src/shared",
-    "dev:h5": "npm run sync:ui && uni --host 127.0.0.1 --port 43217 --strictPort",
-    "dev:mp-weixin": "npm run sync:ui && uni -p mp-weixin",
-    "build:h5": "npm run sync:ui && uni build",
-    "build:mp-weixin": "npm run sync:ui && uni build -p mp-weixin",
-    "typecheck": "npm run sync:ui && vue-tsc --noEmit -p tsconfig.json",
-    "test": "vitest run --config vitest.config.ts --coverage.enabled=false"
-  },
-  "dependencies": {
-    "@dcloudio/uni-app": "3.0.0-5010520260709002",
-    "@dcloudio/uni-components": "3.0.0-5010520260709002",
-    "@dcloudio/uni-h5": "3.0.0-5010520260709002",
-    "@dcloudio/uni-mp-weixin": "3.0.0-5010520260709002",
-    "@lequ/contracts": "*",
-    "@lequ/mobile-ui": "*",
-    "@lequ/product-catalog": "*",
-    "vue": "^3.5.18",
-    "vue-i18n": "^11.1.11"
-  },
-  "devDependencies": {
-    "@dcloudio/types": "^3.4.15",
-    "@dcloudio/uni-cli-shared": "3.0.0-5010520260709002",
-    "@dcloudio/vite-plugin-uni": "3.0.0-5010520260709002",
-    "@types/node": "^24.1.0",
-    "@vue/runtime-core": "^3.5.18",
-    "sass": "^1.89.2",
-    "typescript": "^5.8.3",
-    "vite": "5.2.8",
-    "vitest": "^3.2.4",
-    "vue-tsc": "^3.0.5"
+    "build": "node ../../tooling/miniapp-contract.mjs merchant-miniapp",
+    "typecheck": "node ../../tooling/miniapp-contract.mjs merchant-miniapp --verify",
+    "test": "vitest run"
   }
 }

@@ -1,0 +1,10 @@
+{
+  "repository": "https://github.com/deepseek-ai/deepseek-harness",
+  "branch": "master",
+  "commit": "47f943859bef60e4160492346772ded9b24f765a",
+  "license": "MIT",
+  "verified_at": "2026-08-15",
+  "source_included": false,
+  "target_directory": "runtime/deepseek-harness-official",
+  "upstream_status": "developer-preview"
+}
