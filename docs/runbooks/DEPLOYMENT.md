@@ -1,5 +1,32 @@
 # Production candidate deployment
 
+## Temporary public preview at bao.lequ.com
+
+The root `compose.yaml` is a deliberately non-production deployment entrypoint for the temporary
+`bao.lequ.com` development preview. A repository-pull platform such as Helms can run:
+
+```sh
+docker compose up -d --build
+```
+
+Route `https://bao.lequ.com` to host port `8080`, preserve the original `Host`, redirect HTTP to
+HTTPS and do not publish the PostgreSQL service. Set `LEQU_PREVIEW_PORT` only when Helms needs a
+different host port. The default root route enters the explicit development-mock identity flow;
+the browser, API and callbacks remain same-origin through the repository Web proxy.
+
+The preview image runs the Mock gateway, API, one-shot Worker loop and Web in one non-root container
+so every development-only provider URL remains loopback-only. PostgreSQL is a separate persistent
+container and initializes the real 164-table schema plus the idempotent, non-financial development
+seed. Hostname acknowledgement, mock mode and database readiness all fail closed. The Web proxy
+strips client-supplied forwarding headers, binds non-health traffic to `bao.lequ.com`, marks every
+response as a development-mock preview and asks crawlers not to index it.
+
+This Compose file is not a production promotion path. Never put real customer, merchant, payment or
+provider data into its volume, and never treat Mock output as controlled acceptance evidence. Do not
+delete `postgres-data` during routine redeploys; resetting that volume is an explicit destructive
+operation. Production continues to use the three digest-bound targets and the controlled workflow
+below.
+
 The repository builds three non-root container targets from `deploy/Dockerfile`: `api`, `worker` and `web`. Both API and Worker use portable production-only pnpm deploy output. The Web target serves immutable build output through the repository-owned production server with CSP, anti-framing, no-sniff, referrer and HSTS headers.
 
 ## Build

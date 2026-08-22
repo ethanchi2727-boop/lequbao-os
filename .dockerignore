@@ -7,6 +7,7 @@ docs
 ops
 **/.env
 **/.env.*
+!.env.development-mock.example
 **/data
 **/dist
 **/node_modules

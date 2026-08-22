@@ -64,4 +64,16 @@ corepack pnpm --filter @lequ/workbench-web dev
 运行 `corepack pnpm dev:mock-check` 可在启动前验证本地 49 个配置键、所有供应商组、统一网关地址和鉴权映射，检查过程不会输出配置值。
 仓库同时提供 GitHub Codespaces/Dev Container 配置，可自动启动 PostgreSQL 15、开发种子、Mock 网关、API 和 Workbench，适合从云端浏览器继续开发。
 
+## bao.lequ.com 临时预览
+
+仓库根目录的 `compose.yaml` 是只供 `bao.lequ.com` 使用的公网开发预览入口。Helms 拉取
+`main` 后执行 `docker compose up -d --build` 即可启动真实 PostgreSQL、明确标记的非财务开发种子、
+Mock 供应商边界、API、Worker 和同源 Web；宿主机入口端口默认是 `8080`。TLS 终止和域名转发由
+Helms 配置为 `https://bao.lequ.com -> http://127.0.0.1:8080`，并保留原始 `Host`。
+
+该入口会自动建立 development-mock 登录，响应带 `noindex` 与环境标记，只接受
+`bao.lequ.com`（以及本机健康检查）Host。PostgreSQL 不发布宿主机端口，初始化脚本还会验证种子中
+不存在订单、支付、奖励、余额或分账事实。这个临时环境不能用于真实用户、真实商户、真实支付或
+生产验收；正式上线继续使用不可变候选镜像、真实供应商和受控发布流程。
+
 不带 `demo=1` 时页面进入生产模式，只从当前页面同源 API 读取数据。生产页面不接受 `apiBase` 查询参数，API 客户端也会在附加员工 Bearer 会话前再次校验同源；开发环境通过仓库开发服务器的同源代理连接 API。员工签名会话必须由登录壳写入当前标签页的 `sessionStorage['lequbao.employee-session']`，不得把 Bearer 会话放入 URL。可通过 `sessionId` 恢复已有建档会话，否则页面会新建会话。

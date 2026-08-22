@@ -7,6 +7,18 @@ WORKDIR /workspace
 COPY . .
 RUN pnpm install --frozen-lockfile
 
+FROM source AS preview
+ENV NODE_ENV=development
+ENV LEQU_DEVELOPMENT_MOCKS=1
+ENV HOST=0.0.0.0
+ENV PORT=8080
+RUN pnpm --filter @lequ/contracts build
+USER node
+EXPOSE 8080
+HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
+  CMD ["node", "-e", "fetch('http://127.0.0.1:8080/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+CMD ["bash", "deploy/start-bao-preview.sh"]
+
 FROM source AS api-build
 RUN pnpm --filter @lequ/contracts build \
  && pnpm --filter @lequ/api build \
