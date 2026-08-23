@@ -41,6 +41,7 @@ export const controlledSuiteCrossEvidenceRules = {
   WECHAT_RELEASE_AND_ROLLBACK: [
     'reviewed consumer and merchant versions equal their official build artifacts',
     'published version equals the approved review version',
+    'callback evidence references the exact published version',
     'official builds precede publication and device, callback and rollback evidence follow it',
     'device scenarios use the exact consumer and merchant build versions',
     'rollback starts from the published version and creates a different safe version',
@@ -256,14 +257,17 @@ export function validateControlledSuiteDocuments(suiteCode, documents) {
         ['merchant build', merchant.builtAt],
       ]) {
         const builtAt = Date.parse(evidenceAt);
-        if (Number.isFinite(builtAt) && Number.isFinite(publishedAt) && builtAt > publishedAt)
-          failures.push(`${label} must precede publication`);
+        const reviewedAt = Date.parse(publish.reviewedAt);
+        if (Number.isFinite(builtAt) && Number.isFinite(reviewedAt) && builtAt > reviewedAt)
+          failures.push(`${label} must precede review`);
       }
       const rollbackAt = Date.parse(rollback.verifiedAt);
       if (Number.isFinite(rollbackAt) && Number.isFinite(publishedAt) && rollbackAt < publishedAt)
         failures.push('rollback verification precedes publication');
     }
     if (publish && callback) {
+      if (callback.publishedVersion !== publish.publishedVersion)
+        failures.push('callback version does not match the published version');
       const publishedAt = Date.parse(publish.publishedAt);
       const callbackAt = Date.parse(callback.verifiedAt);
       if (Number.isFinite(callbackAt) && Number.isFinite(publishedAt) && callbackAt < publishedAt)

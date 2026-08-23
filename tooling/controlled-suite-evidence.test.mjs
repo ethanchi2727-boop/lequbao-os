@@ -291,9 +291,13 @@ describe('controlled suite cross-evidence contracts', () => {
           merchantVersion: 'merchant-1',
           reviewVersion: 'review-1',
           publishedVersion: 'pilot-1',
+          reviewedAt: '2026-08-19T01:00:00.000Z',
           publishedAt: '2026-08-19T01:00:00.000Z',
         },
-        'callback-redacted.json': { verifiedAt: '2026-08-19T00:59:00.000Z' },
+        'callback-redacted.json': {
+          publishedVersion: 'pilot-2',
+          verifiedAt: '2026-08-19T00:59:00.000Z',
+        },
         'device-matrix.json': {
           verifiedAt: '2026-08-19T00:59:00.000Z',
           scenarios: [
@@ -313,7 +317,8 @@ describe('controlled suite cross-evidence contracts', () => {
         'published WeChat version does not match the approved review version',
         'rollback source does not match the published version',
         'rollback must create a different safe release version',
-        'consumer build must precede publication',
+        'consumer build must precede review',
+        'callback version does not match the published version',
         'callback verification precedes publication',
         'device verification precedes publication',
         'consumer device scenario version does not match its official build',

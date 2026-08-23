@@ -756,15 +756,18 @@ describe('controlled JSON evidence contracts', () => {
         reviewVersion: 'review-1',
         publishedVersion: 'published-2',
         reviewResult: 'APPROVED',
+        reviewedAt: '2026-08-19T01:01:00.000Z',
+        reviewReceiptHash: 'b'.repeat(64),
         publishedAt: '2026-08-19T01:00:00.000Z',
         publicationReceiptHash: 'a'.repeat(64),
-        pilotScope: { percentage: 0, scopeRefs: [] },
+        pilotScope: { percentage: 0.5, scopeRefs: ['duplicate', 'duplicate'] },
       }),
     ).toEqual(
       expect.arrayContaining([
         'review-publish.json publishedVersion must equal the approved reviewVersion',
         'review-publish.json pilotScope.percentage must be within 1..100',
-        'review-publish.json pilotScope.scopeRefs must contain evidence',
+        'review-publish.json pilotScope.scopeRefs must be unique',
+        'review-publish.json publishedAt must not precede reviewedAt',
       ]),
     );
     expect(

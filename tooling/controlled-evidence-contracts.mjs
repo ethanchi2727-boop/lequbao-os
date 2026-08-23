@@ -289,6 +289,8 @@ export const controlledJsonEvidenceContracts = {
     field('reviewVersion', 'string'),
     field('publishedVersion', 'string'),
     field('reviewResult', 'string', { equals: 'APPROVED' }),
+    timestamp('reviewedAt'),
+    sha256('reviewReceiptHash'),
     timestamp('publishedAt'),
     sha256('publicationReceiptHash'),
     field('pilotScope', 'object'),
@@ -297,6 +299,7 @@ export const controlledJsonEvidenceContracts = {
     yes('signatureVerified'),
     yes('replayRejected'),
     sha256('serverEventRef'),
+    field('publishedVersion', 'string'),
     field('appliedBusinessTransitions', 'number', { equals: 1 }),
     timestamp('verifiedAt'),
   ],
@@ -304,6 +307,8 @@ export const controlledJsonEvidenceContracts = {
     pass,
     field('fromVersion', 'string'),
     field('toVersion', 'string'),
+    sha256('toBuildSha256'),
+    yes('authorizationVerified'),
     timestamp('verifiedAt'),
     yes('serverStateVerified'),
     sha256('rollbackReceiptHash'),
@@ -1217,10 +1222,40 @@ function validateReviewPublish(value) {
   if (value.reviewVersion !== value.publishedVersion)
     failures.push(`${artifact} publishedVersion must equal the approved reviewVersion`);
   const percentage = value.pilotScope?.percentage;
-  if (!Number.isFinite(percentage) || percentage <= 0 || percentage > 100)
+  if (!Number.isSafeInteger(percentage) || percentage <= 0 || percentage > 100)
     failures.push(`${artifact} pilotScope.percentage must be within 1..100`);
   if (!Array.isArray(value.pilotScope?.scopeRefs) || value.pilotScope.scopeRefs.length === 0)
     failures.push(`${artifact} pilotScope.scopeRefs must contain evidence`);
+  else {
+    const scopeRefs = new Set();
+    for (const [index, scopeRef] of value.pilotScope.scopeRefs.entries()) {
+      if (!opaqueReference.test(scopeRef ?? ''))
+        failures.push(`${artifact} pilotScope.scopeRefs[${index}] must be opaque`);
+      else if (scopeRefs.has(scopeRef))
+        failures.push(`${artifact} pilotScope.scopeRefs must be unique`);
+      else scopeRefs.add(scopeRef);
+    }
+  }
+  const reviewedAt = Date.parse(value.reviewedAt);
+  const publishedAt = Date.parse(value.publishedAt);
+  if (Number.isFinite(reviewedAt) && Number.isFinite(publishedAt) && publishedAt < reviewedAt)
+    failures.push(`${artifact} publishedAt must not precede reviewedAt`);
+  return failures;
+}
+
+function validateWechatCallback(value) {
+  const artifact = 'callback-redacted.json';
+  const failures = [];
+  if (!opaqueReference.test(value.publishedVersion ?? ''))
+    failures.push(`${artifact} publishedVersion must be opaque`);
+  return failures;
+}
+
+function validateWechatRollback(value) {
+  const artifact = 'rollback.json';
+  const failures = [];
+  if (value.toVersion === value.fromVersion)
+    failures.push(`${artifact} must create a different safe release version`);
   return failures;
 }
 
@@ -2192,6 +2227,8 @@ const controlledArtifactValidators = {
   'refund-unknown-recovery.json': validateRefundUnknownRecovery,
   'provider-callback-redacted.json': validateProviderCallback,
   'review-publish.json': validateReviewPublish,
+  'callback-redacted.json': validateWechatCallback,
+  'rollback.json': validateWechatRollback,
   'device-matrix.json': validateDeviceMatrix,
   'identity-session-redacted.json': validateIdentitySessionEvidence,
   'secret-access-audit.json': validateSecretAccessAudit,

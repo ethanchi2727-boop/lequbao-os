@@ -436,6 +436,7 @@ function semanticFixture(artifact, binding) {
       publishedVersion: 'pilot-1',
       pilotScope: { percentage: 10, scopeRefs: ['pilot-store-ref'] },
     },
+    'callback-redacted.json': { publishedVersion: 'pilot-1' },
     'device-matrix.json': {
       devices: ['iOS', 'Android'].map((platform, index) => ({
         platform,
