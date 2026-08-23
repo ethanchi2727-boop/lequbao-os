@@ -519,6 +519,33 @@ describe('controlled JSON evidence contracts', () => {
     );
   });
 
+  it('requires distinct fault domains and an ordered WAL recovery timeline', () => {
+    const failures = validateControlledJsonEvidence('physical-wal-evidence.json', {
+      result: 'PASS',
+      backupSetRefHash: 'a'.repeat(64),
+      sourceFaultDomainRefHash: 'b'.repeat(64),
+      recoveryFaultDomainRefHash: 'b'.repeat(64),
+      recoveryPoint: '2026-08-19T01:00:00.000Z',
+      replayedThrough: '2026-08-19T00:59:00.000Z',
+      crossFaultDomain: true,
+      walReplayVerified: true,
+      timeline: [
+        {
+          event: 'RECOVERY_VALIDATED',
+          at: '2026-08-19T01:02:00.000Z',
+          evidenceRefHash: 'c'.repeat(64),
+        },
+      ],
+    });
+    expect(failures).toEqual(
+      expect.arrayContaining([
+        'physical-wal-evidence.json source and recovery fault domains must differ',
+        'physical-wal-evidence.json replayedThrough must reach or pass recoveryPoint',
+        'physical-wal-evidence.json timeline must contain the exact ordered recovery events',
+      ]),
+    );
+  });
+
   it('requires one-time signed payment convergence and query-before-retry evidence', () => {
     expect(
       validateControlledJsonEvidence('provider-callback-redacted.json', {

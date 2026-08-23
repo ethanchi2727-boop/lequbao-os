@@ -167,8 +167,11 @@ export const controlledJsonEvidenceContracts = {
   ],
   'physical-wal-evidence.json': [
     pass,
+    sha256('backupSetRefHash'),
+    sha256('sourceFaultDomainRefHash'),
+    sha256('recoveryFaultDomainRefHash'),
     timestamp('recoveryPoint'),
-    field('faultDomain', 'string'),
+    timestamp('replayedThrough'),
     yes('crossFaultDomain'),
     yes('walReplayVerified'),
     field('timeline', 'array'),
@@ -822,16 +825,56 @@ function validateRestoreReport(value) {
 function validatePhysicalWalEvidence(value) {
   const artifact = 'physical-wal-evidence.json';
   const failures = [];
-  for (const [index, event] of (Array.isArray(value.timeline) ? value.timeline : []).entries()) {
+  if (value.sourceFaultDomainRefHash === value.recoveryFaultDomainRefHash)
+    failures.push(`${artifact} source and recovery fault domains must differ`);
+  const recoveryPoint = Date.parse(value.recoveryPoint);
+  const replayedThrough = Date.parse(value.replayedThrough);
+  if (
+    Number.isFinite(recoveryPoint) &&
+    Number.isFinite(replayedThrough) &&
+    replayedThrough < recoveryPoint
+  )
+    failures.push(`${artifact} replayedThrough must reach or pass recoveryPoint`);
+  const requiredEvents = [
+    'BACKUP_SELECTED',
+    'RESTORE_STARTED',
+    'WAL_REPLAY_COMPLETED',
+    'RECOVERY_VALIDATED',
+  ];
+  const timeline = Array.isArray(value.timeline) ? value.timeline : [];
+  const observedEvents = [];
+  const eventTimes = [];
+  const evidenceRefs = new Set();
+  for (const [index, event] of timeline.entries()) {
     const prefix = `${artifact} timeline[${index}]`;
     if (!event || Array.isArray(event) || typeof event !== 'object') {
       failures.push(`${prefix} must be an object`);
       continue;
     }
-    if (typeof event.event !== 'string' || !event.event.trim())
-      failures.push(`${prefix}.event must not be empty`);
+    observedEvents.push(event.event);
     if (!validDateTime(event.at)) failures.push(`${prefix}.at must be a non-future ISO date-time`);
+    eventTimes.push(Date.parse(event.at));
+    if (!validSha256(event.evidenceRefHash))
+      failures.push(`${prefix}.evidenceRefHash has invalid format`);
+    else if (evidenceRefs.has(event.evidenceRefHash))
+      failures.push(`${artifact} timeline evidence references must be unique`);
+    else evidenceRefs.add(event.evidenceRefHash);
   }
+  if (JSON.stringify(observedEvents) !== JSON.stringify(requiredEvents))
+    failures.push(`${artifact} timeline must contain the exact ordered recovery events`);
+  if (
+    eventTimes.length === requiredEvents.length &&
+    eventTimes.every(Number.isFinite) &&
+    eventTimes.some((time, index) => index > 0 && time < eventTimes[index - 1])
+  )
+    failures.push(`${artifact} timeline timestamps must be non-decreasing`);
+  if (
+    eventTimes.length === requiredEvents.length &&
+    Number.isFinite(replayedThrough) &&
+    Number.isFinite(eventTimes[2]) &&
+    eventTimes[2] < replayedThrough
+  )
+    failures.push(`${artifact} WAL completion event must not precede replayedThrough`);
   return failures;
 }
 

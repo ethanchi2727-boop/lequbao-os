@@ -321,7 +321,14 @@ function semanticFixture(artifact, binding) {
       error: null,
     },
     'physical-wal-evidence.json': {
-      timeline: [{ event: 'cross-fault-domain restore', at: '2026-08-19T01:00:00.000Z' }],
+      sourceFaultDomainRefHash: 'a'.repeat(64),
+      recoveryFaultDomainRefHash: 'b'.repeat(64),
+      timeline: [
+        ['BACKUP_SELECTED', '2026-08-19T00:58:00.000Z', '1'],
+        ['RESTORE_STARTED', '2026-08-19T00:59:00.000Z', '2'],
+        ['WAL_REPLAY_COMPLETED', '2026-08-19T01:01:00.000Z', '3'],
+        ['RECOVERY_VALIDATED', '2026-08-19T01:02:00.000Z', '4'],
+      ].map(([event, at, ref]) => ({ event, at, evidenceRefHash: ref.repeat(64) })),
     },
     'external-deletion-samples.json': {
       result: 'PASS',
