@@ -738,6 +738,44 @@ describe('controlled JSON evidence contracts', () => {
     );
   });
 
+  it('recomputes object retention and authorized deletion timelines', () => {
+    const policyRefHash = 'a'.repeat(64);
+    const failures = validateControlledJsonEvidence('object-retention.json', {
+      result: 'PASS',
+      policy: {
+        encryptionRequired: true,
+        deletionEnforced: true,
+        policyRefHash,
+        effectiveAt: '2026-08-19T01:00:00.000Z',
+        retentionDays: 30,
+        encryptionMode: 'provider-managed',
+      },
+      objectsSampled: [
+        {
+          objectRefHash: 'b'.repeat(64),
+          policyRefHash,
+          encryptionKeyRefHash: 'c'.repeat(64),
+          deletionAuthorizationRefHash: 'd'.repeat(64),
+          encrypted: true,
+          retentionApplied: true,
+          deletionVerified: true,
+          createdAt: '2026-08-19T00:00:00.000Z',
+          retentionUntil: '2026-08-20T00:00:00.000Z',
+          deletionRequestedAt: '2026-08-19T01:02:00.000Z',
+          deletedAt: '2026-08-19T01:01:00.000Z',
+          verifiedAt: '2026-08-19T01:03:00.000Z',
+        },
+      ],
+      violations: [],
+    });
+    expect(failures).toEqual(
+      expect.arrayContaining([
+        'object-retention.json objectsSampled[0] policy, creation and deletion timestamps are out of order',
+        'object-retention.json objectsSampled[0].retentionUntil does not match policy.retentionDays',
+      ]),
+    );
+  });
+
   it('requires structured database, worker, intake, inventory and plugin evidence', () => {
     expect(
       validateControlledJsonEvidence('rls-denials.json', {

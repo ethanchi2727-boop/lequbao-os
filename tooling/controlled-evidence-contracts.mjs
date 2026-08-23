@@ -1244,6 +1244,19 @@ function validateObjectRetention(value) {
     failures.push(`${artifact} policy.encryptionRequired must equal true`);
   if (value.policy?.deletionEnforced !== true)
     failures.push(`${artifact} policy.deletionEnforced must equal true`);
+  if (!validSha256(value.policy?.policyRefHash))
+    failures.push(`${artifact} policy.policyRefHash has invalid format`);
+  if (!validDateTime(value.policy?.effectiveAt))
+    failures.push(`${artifact} policy.effectiveAt must be a non-future ISO date-time`);
+  if (
+    !Number.isSafeInteger(value.policy?.retentionDays) ||
+    value.policy.retentionDays < 1 ||
+    value.policy.retentionDays > 3650
+  )
+    failures.push(`${artifact} policy.retentionDays must be an integer within 1..3650`);
+  if (!['provider-managed', 'AES-256-GCM'].includes(value.policy?.encryptionMode))
+    failures.push(`${artifact} policy.encryptionMode is not approved`);
+  const objectRefs = new Set();
   for (const [index, object] of (Array.isArray(value.objectsSampled)
     ? value.objectsSampled
     : []
@@ -1255,11 +1268,57 @@ function validateObjectRetention(value) {
     }
     if (!validSha256(object.objectRefHash))
       failures.push(`${prefix}.objectRefHash has invalid format`);
+    else if (objectRefs.has(object.objectRefHash))
+      failures.push(`${artifact} object references must be unique`);
+    else objectRefs.add(object.objectRefHash);
+    if (object.policyRefHash !== value.policy?.policyRefHash)
+      failures.push(`${prefix}.policyRefHash does not match policy`);
+    if (!validSha256(object.encryptionKeyRefHash))
+      failures.push(`${prefix}.encryptionKeyRefHash has invalid format`);
+    if (!validSha256(object.deletionAuthorizationRefHash))
+      failures.push(`${prefix}.deletionAuthorizationRefHash has invalid format`);
     if (object.encrypted !== true) failures.push(`${prefix}.encrypted must equal true`);
     if (object.retentionApplied !== true)
       failures.push(`${prefix}.retentionApplied must equal true`);
     if (object.deletionVerified !== true)
       failures.push(`${prefix}.deletionVerified must equal true`);
+    const fields = [
+      'createdAt',
+      'retentionUntil',
+      'deletionRequestedAt',
+      'deletedAt',
+      'verifiedAt',
+    ];
+    const timeline = fields.map((fieldName) => {
+      const timestamp = parseCanonicalUtcTimestamp(object[fieldName]);
+      if (timestamp === undefined)
+        failures.push(`${prefix}.${fieldName} must be a canonical millisecond UTC timestamp`);
+      else if (fieldName !== 'retentionUntil' && timestamp > Date.now() + 5 * 60_000)
+        failures.push(`${prefix}.${fieldName} must be a non-future ISO date-time`);
+      return timestamp;
+    });
+    const policyEffectiveAt = Date.parse(value.policy?.effectiveAt);
+    if (
+      [policyEffectiveAt, timeline[0], timeline[2], timeline[3], timeline[4]].every(
+        Number.isFinite,
+      ) &&
+      !(
+        policyEffectiveAt <= timeline[0] &&
+        timeline[0] <= timeline[2] &&
+        timeline[2] <= timeline[3] &&
+        timeline[3] <= timeline[4]
+      )
+    )
+      failures.push(`${prefix} policy, creation and deletion timestamps are out of order`);
+    const expectedRetentionUntil =
+      timeline[0] + Number(value.policy?.retentionDays) * 24 * 60 * 60 * 1000;
+    if (
+      Number.isFinite(timeline[0]) &&
+      Number.isFinite(timeline[1]) &&
+      Number.isSafeInteger(value.policy?.retentionDays) &&
+      Math.abs(timeline[1] - expectedRetentionUntil) > 1000
+    )
+      failures.push(`${prefix}.retentionUntil does not match policy.retentionDays`);
   }
   return failures;
 }
