@@ -1,0 +1,98 @@
+[
+  {
+    "id": "PAGE-282",
+    "layout": "merchant-checkout",
+    "eyebrow": "确认订单",
+    "summary": "核对商品快照、履约选择、优惠、应付金额和报价有效期。",
+    "facts": ["商品与规格快照", "履约选择", "优惠配送与应付", "报价版本与有效期"],
+    "actions": [
+      { "label": "提交本店订单", "route": "/merchant/page-284" },
+      { "label": "返回购物车", "route": "/merchant/page-280" }
+    ],
+    "guardrail": "提交前必须按购物车版本重新报价，客户端金额不得作为结算依据。"
+  },
+  {
+    "id": "PAGE-284",
+    "layout": "merchant-wechat-payment",
+    "eyebrow": "商家微信支付",
+    "summary": "展示本店订单应付、支付准备、微信交互和服务端确认状态。",
+    "facts": ["订单与应付", "支付意图", "微信交互", "服务端支付事实"],
+    "actions": [
+      { "label": "查看支付结果", "route": "/merchant/page-285" },
+      { "label": "返回订单详情", "route": "/merchant/page-289" }
+    ],
+    "guardrail": "微信客户端回调不能写成支付成功，最终状态必须来自服务端。"
+  },
+  {
+    "id": "PAGE-285",
+    "layout": "merchant-payment-result",
+    "eyebrow": "支付结果",
+    "summary": "展示服务端最终支付状态、订单影响、查询恢复和交易凭证。",
+    "facts": ["最终支付状态", "订单状态影响", "未知状态恢复", "脱敏交易凭证"],
+    "actions": [
+      { "label": "查看订单详情", "route": "/merchant/page-289" },
+      { "label": "查看我的订单", "route": "/merchant/page-288" }
+    ],
+    "guardrail": "状态未知时不得重复扣款或展示虚假的支付成功。"
+  },
+  {
+    "id": "PAGE-288",
+    "layout": "merchant-order-list",
+    "eyebrow": "本店订单",
+    "summary": "按当前商家客户绑定查看订单、支付、履约、核销和售后待办。",
+    "facts": ["订单筛选", "支付与履约摘要", "核销售后待办", "游标与失败恢复"],
+    "actions": [
+      { "label": "查看订单详情", "route": "/merchant/page-289" },
+      { "label": "查看我的券", "route": "/merchant/page-293" }
+    ],
+    "guardrail": "订单列表不得接受客户端指定其他客户或其他商家租户。"
+  },
+  {
+    "id": "PAGE-289",
+    "layout": "merchant-order-detail",
+    "eyebrow": "订单详情",
+    "summary": "展示订单快照、支付、履约、核销、退款和可执行下一步。",
+    "facts": ["订单商品快照", "支付事实", "履约核销时间线", "售后与凭证"],
+    "actions": [
+      { "label": "查看售后记录", "route": "/merchant/page-290" },
+      { "label": "查看券码详情", "route": "/merchant/page-294" }
+    ],
+    "guardrail": "订单详情必须从当前会话可达订单读取，不能信任客户端状态。"
+  },
+  {
+    "id": "PAGE-290",
+    "layout": "merchant-order-aftersales",
+    "eyebrow": "售后记录",
+    "summary": "展示售后申请、材料、审批、资金执行和异常恢复历史。",
+    "facts": ["申请与范围", "材料与沟通", "审批决定", "退款执行事实"],
+    "actions": [
+      { "label": "查看退款详情", "route": "/merchant/page-291" },
+      { "label": "返回订单详情", "route": "/merchant/page-289" }
+    ],
+    "guardrail": "审批通过不得冒充退款到账，原申请和决定记录不得删除。"
+  },
+  {
+    "id": "PAGE-291",
+    "layout": "merchant-refund-detail",
+    "eyebrow": "退款详情",
+    "summary": "展示退款范围、金额分摊、渠道进度、回执和到账说明。",
+    "facts": ["退款范围", "金额分摊", "渠道执行状态", "到账与异常说明"],
+    "actions": [
+      { "label": "返回售后记录", "route": "/merchant/page-290" },
+      { "label": "联系客服", "route": "/merchant/page-298" }
+    ],
+    "guardrail": "处理中或未知退款不得重复提交，预计到账不能表述为保证。"
+  },
+  {
+    "id": "PAGE-293",
+    "layout": "merchant-voucher-wallet",
+    "eyebrow": "我的券",
+    "summary": "查看当前商家可用、冻结、已使用和失效的短时核销权益。",
+    "facts": ["券与关联订单", "剩余次数", "有效期和状态", "短时核销凭证"],
+    "actions": [
+      { "label": "查看券码详情", "route": "/merchant/page-294" },
+      { "label": "查看订单列表", "route": "/merchant/page-288" }
+    ],
+    "guardrail": "核销凭证必须短时、签名、租户客户门店绑定并防止重放。"
+  }
+]

@@ -1,8 +1,11 @@
 const contracts = require('../../generated/page-contracts.js');
 const commerceExperiences = require('../../generated/merchant-experiences-commerce.json');
+const transactionExperiences = require('../../generated/merchant-experiences-transactions.json');
 const { merchantApi } = require('../../lib/api.js');
 
-const merchantExperiences = new Map(commerceExperiences.map((item) => [item.id, item]));
+const merchantExperiences = new Map(
+  [...commerceExperiences, ...transactionExperiences].map((item) => [item.id, item]),
+);
 
 const liveProductRoutes = new Set(['/merchant/page-274', '/merchant/page-277']);
 
