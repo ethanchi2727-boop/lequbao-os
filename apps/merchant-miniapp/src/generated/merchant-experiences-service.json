@@ -1,0 +1,98 @@
+[
+  {
+    "id": "PAGE-294",
+    "layout": "merchant-voucher-detail",
+    "eyebrow": "券码详情",
+    "summary": "展示权益状态、短时核销凭证、门店范围、有效期和使用结果。",
+    "facts": ["关联订单权益", "剩余次数与状态", "短时签名凭证", "核销结果与恢复"],
+    "actions": [
+      { "label": "返回我的券", "route": "/merchant/page-293" },
+      { "label": "查看订单详情", "route": "/merchant/page-289" }
+    ],
+    "guardrail": "凭证不得长期缓存或截图复用，未知结果不得再次核销。"
+  },
+  {
+    "id": "PAGE-297",
+    "layout": "merchant-ai-quick-ask",
+    "eyebrow": "AI 店员快问",
+    "summary": "在当前页面快速询问商品、门店和订单常见问题并查看依据。",
+    "facts": ["AI 身份披露", "当前问题上下文", "回答依据与时效", "转全屏或人工"],
+    "actions": [
+      { "label": "打开全屏会话", "route": "/merchant/page-298" },
+      { "label": "查看人工回复", "route": "/merchant/page-299" }
+    ],
+    "guardrail": "未完成身份绑定时 AI 不得查询订单或暴露客户资料。"
+  },
+  {
+    "id": "PAGE-298",
+    "layout": "merchant-ai-conversation",
+    "eyebrow": "AI 店员会话",
+    "summary": "持续显示 AI 身份、消息来源、订单查询授权和人工接管状态。",
+    "facts": ["会话与参与者", "消息和依据", "隐私授权范围", "人工接管状态"],
+    "actions": [
+      { "label": "请求人工服务", "route": "/merchant/page-299" },
+      { "label": "返回本店首页", "route": "/merchant/page-267" }
+    ],
+    "guardrail": "AI 不得冒充人工；人工接管后必须立即停止自动回复。"
+  },
+  {
+    "id": "PAGE-299",
+    "layout": "merchant-human-reply",
+    "eyebrow": "人工回复提醒",
+    "summary": "展示人工排队、接管、回复送达、会话恢复和服务结果。",
+    "facts": ["排队与优先级", "人工身份", "回复送达状态", "会话结果与重开"],
+    "actions": [
+      { "label": "返回服务会话", "route": "/merchant/page-298" },
+      { "label": "查看售后进度", "route": "/merchant/page-305" }
+    ],
+    "guardrail": "排队或供应商受理不能写成人工已回复，身份必须明确。"
+  },
+  {
+    "id": "PAGE-302",
+    "layout": "merchant-membership",
+    "eyebrow": "本商家会员",
+    "summary": "查看商家客户绑定、会员状态和不可变消费奖励账本。",
+    "facts": ["会员身份状态", "加入时间", "奖励账本投影", "规则版本与来源"],
+    "actions": [
+      { "label": "查看我的订单", "route": "/merchant/page-288" },
+      { "label": "管理隐私档案", "route": "/merchant/page-307" }
+    ],
+    "guardrail": "奖励不得与支付余额混用，客户端不能直接修改账本。"
+  },
+  {
+    "id": "PAGE-304",
+    "layout": "merchant-aftersale-application",
+    "eyebrow": "申请售后",
+    "summary": "基于当前订单选择可退范围、原因、材料并确认服务端重算。",
+    "facts": ["可申请订单项", "原因与诉求", "材料和隐私", "金额重算与确认"],
+    "actions": [
+      { "label": "查看售后进度", "route": "/merchant/page-305" },
+      { "label": "返回订单详情", "route": "/merchant/page-289" }
+    ],
+    "guardrail": "前端预览不得冒充最终资格，提交不能超过服务端可退范围。"
+  },
+  {
+    "id": "PAGE-305",
+    "layout": "merchant-aftersale-progress",
+    "eyebrow": "售后进度",
+    "summary": "跟踪受理、补充、审批、资金执行、失败恢复和结果凭证。",
+    "facts": ["申请快照", "处理时间线", "审批与沟通", "资金结果与恢复"],
+    "actions": [
+      { "label": "查看退款详情", "route": "/merchant/page-291" },
+      { "label": "联系人工客服", "route": "/merchant/page-298" }
+    ],
+    "guardrail": "审批、渠道受理和到账必须分开，处理中不得重复申请。"
+  },
+  {
+    "id": "PAGE-307",
+    "layout": "merchant-privacy-profile",
+    "eyebrow": "隐私与客户档案",
+    "summary": "查看档案事实、来源、用途、授权状态并申请副本或撤回。",
+    "facts": ["档案状态与事实", "来源和用途", "授权与版本", "查看撤回和删除"],
+    "actions": [
+      { "label": "查看商家会员", "route": "/merchant/page-302" },
+      { "label": "返回本店首页", "route": "/merchant/page-267" }
+    ],
+    "guardrail": "撤回持续档案授权后不得继续推断或静默恢复授权。"
+  }
+]

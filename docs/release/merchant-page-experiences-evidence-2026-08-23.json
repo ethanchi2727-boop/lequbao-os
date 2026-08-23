@@ -18,11 +18,19 @@
     { "page": "page-289", "layout": "merchant-order-detail" },
     { "page": "page-290", "layout": "merchant-order-aftersales" },
     { "page": "page-291", "layout": "merchant-refund-detail" },
-    { "page": "page-293", "layout": "merchant-voucher-wallet" }
+    { "page": "page-293", "layout": "merchant-voucher-wallet" },
+    { "page": "page-294", "layout": "merchant-voucher-detail" },
+    { "page": "page-297", "layout": "merchant-ai-quick-ask" },
+    { "page": "page-298", "layout": "merchant-ai-conversation" },
+    { "page": "page-299", "layout": "merchant-human-reply" },
+    { "page": "page-302", "layout": "merchant-membership" },
+    { "page": "page-304", "layout": "merchant-aftersale-application" },
+    { "page": "page-305", "layout": "merchant-aftersale-progress" },
+    { "page": "page-307", "layout": "merchant-privacy-profile" }
   ],
   "verification": {
-    "unitTestFilesPassed": 3,
-    "unitTestsPassed": 22,
+    "unitTestFilesPassed": 4,
+    "unitTestsPassed": 32,
     "miniappContractLeafCount": 24,
     "typecheckPassed": true,
     "productionBuildPassed": true,
@@ -30,7 +38,7 @@
     "wechatDeviceAcceptance": "CONTROLLED"
   },
   "boundaries": [
-    "The sixteen routes have distinct information architecture, actions and guardrails wired into the existing authoritative route renderer.",
+    "All twenty-four routes have distinct information architecture, actions and guardrails wired into the existing authoritative route renderer.",
     "No real merchant session, WeChat DevTools, device, payment provider or production environment was used."
   ]
 }
