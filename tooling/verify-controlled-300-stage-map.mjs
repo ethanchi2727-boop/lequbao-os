@@ -14,6 +14,18 @@ const forbiddenExecutionClaims = new Set([
   'status',
 ]);
 
+const expectedReleaseControls = [
+  { stage: 292, code: 'CANDIDATE_BINDING', command: 'pnpm controlled:prepare' },
+  { stage: 293, code: 'NON_OVERWRITING_CAPTURE', command: 'pnpm controlled:capture' },
+  { stage: 294, code: 'INDEPENDENT_DECISIONS' },
+  { stage: 295, code: 'RESULT_ASSEMBLY', command: 'pnpm controlled:assemble' },
+  { stage: 296, code: 'EXACT_RELEASE_PACKAGE', command: 'pnpm controlled:stage-release' },
+  { stage: 297, code: 'IMMUTABLE_DRAFT_RELEASE' },
+  { stage: 298, code: 'PROTECTED_WORKFLOW_VERIFY' },
+  { stage: 299, code: 'INDEPENDENT_ATTESTATION' },
+  { stage: 300, code: 'LAUNCH_DECISION', command: 'pnpm launch:gate' },
+];
+
 export function validateControlled300StageMap(plan, mapping) {
   const failures = [];
   const expectedStages = Array.from({ length: 20 }, (_, index) => 281 + index);
@@ -46,6 +58,13 @@ export function validateControlled300StageMap(plan, mapping) {
     suites.some((item) => !planByCode.has(item.suiteCode))
   )
     failures.push('suite mapping must exactly cover the controlled acceptance plan');
+  if (
+    planSuites.length !== suites.length ||
+    suites.some((item, index) => item.suiteCode !== planSuites[index]?.code)
+  )
+    failures.push('suite stages must preserve the controlled acceptance plan order');
+  if (new Set(planSuites.map((suite) => suite.code)).size !== planSuites.length)
+    failures.push('controlled acceptance plan suite codes must be unique');
   if (new Set(suites.map((item) => item.suiteCode)).size !== suites.length)
     failures.push('suite codes must be unique');
   for (const item of suites) {
@@ -83,6 +102,18 @@ export function validateControlled300StageMap(plan, mapping) {
     failures.push('release controls need at least two unique non-empty evidence requirements');
   if (new Set(controls.map((item) => item.code)).size !== 9)
     failures.push('release control codes must be unique');
+  if (
+    expectedReleaseControls.some((expected, index) => {
+      const actual = controls[index];
+      return (
+        !actual ||
+        actual.stage !== expected.stage ||
+        actual.code !== expected.code ||
+        actual.command !== expected.command
+      );
+    })
+  )
+    failures.push('release control stages, codes and commands must match the frozen sequence');
   if (stages.some((item) => Object.keys(item).some((key) => forbiddenExecutionClaims.has(key))))
     failures.push('controlled mapping cannot claim execution or completion');
 

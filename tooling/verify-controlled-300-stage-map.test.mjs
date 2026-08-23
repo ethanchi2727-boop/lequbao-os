@@ -47,6 +47,22 @@ describe('controlled 300-stage execution map', () => {
     );
   });
 
+  it('rejects suite reassignment and release-control command drift', async () => {
+    const { plan, mapping } = await loadFixtures(root);
+    [mapping.stages[0].suiteCode, mapping.stages[1].suiteCode] = [
+      mapping.stages[1].suiteCode,
+      mapping.stages[0].suiteCode,
+    ];
+    mapping.stages[11].command = 'pnpm controlled:assemble';
+
+    expect(validateControlled300StageMap(plan, mapping).failures).toEqual(
+      expect.arrayContaining([
+        'suite stages must preserve the controlled acceptance plan order',
+        'release control stages, codes and commands must match the frozen sequence',
+      ]),
+    );
+  });
+
   it('rejects non-integer artifact counts even when their total could look plausible', async () => {
     const { plan, mapping } = await loadFixtures(root);
     mapping.stages[0].expectedArtifactCount = 3.5;
