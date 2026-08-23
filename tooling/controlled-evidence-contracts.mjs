@@ -3079,6 +3079,14 @@ function validateMonitoringSnapshot(value) {
       failures.push(`${prefix}.status must be EXPECTED or RESOLVED`);
     if (!validDateTime(alert.observedAt))
       failures.push(`${prefix}.observedAt must be a non-future ISO date-time`);
+    const observedAt = Date.parse(alert.observedAt);
+    const windowStartedAt = Date.parse(value.windowStartedAt);
+    const capturedAt = Date.parse(value.capturedAt);
+    if (
+      [observedAt, windowStartedAt, capturedAt].every(Number.isFinite) &&
+      (observedAt < windowStartedAt || observedAt > capturedAt)
+    )
+      failures.push(`${prefix}.observedAt must fall within the monitoring evidence window`);
   }
   const timeline = [value.windowStartedAt, value.windowCompletedAt, value.capturedAt].map(
     Date.parse,

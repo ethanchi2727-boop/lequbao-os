@@ -692,6 +692,7 @@ describe('controlled JSON evidence contracts', () => {
         'monitoring-snapshot.json alerts[0] fields are invalid',
         'monitoring-snapshot.json alerts[1].status must be EXPECTED or RESOLVED',
         'monitoring-snapshot.json alerts[1].observedAt must be a non-future ISO date-time',
+        'monitoring-snapshot.json alerts[0].observedAt must fall within the monitoring evidence window',
         'monitoring-snapshot.json monitoring window and capture timestamps are out of order',
       ]),
     );
