@@ -32,14 +32,22 @@
     { "page": "page-243", "layout": "consumer-redemption-result" },
     { "page": "page-245", "layout": "aftersale-application" },
     { "page": "page-246", "layout": "aftersale-detail" },
-    { "page": "page-248", "layout": "address-management" }
+    { "page": "page-248", "layout": "address-management" },
+    { "page": "page-250", "layout": "invoice-management" },
+    { "page": "page-252", "layout": "reward-ledger" },
+    { "page": "page-254", "layout": "privacy-authorization" },
+    { "page": "page-255", "layout": "message-subscriptions" },
+    { "page": "page-258", "layout": "life-assistant" },
+    { "page": "page-259", "layout": "order-aftersale-tools" },
+    { "page": "page-262", "layout": "life-customer-service" },
+    { "page": "page-264", "layout": "consumer-support-tickets" }
   ],
   "verification": {
-    "unitTestFilesPassed": 30,
-    "unitTestsPassed": 255,
+    "unitTestFilesPassed": 31,
+    "unitTestsPassed": 264,
     "typecheckPassed": true,
     "productionBuildPassed": true,
-    "httpDeepLinkCount": 30,
+    "httpDeepLinkCount": 38,
     "httpDeepLinkStatus": 200,
     "httpDeepLinkServedLifeHtml": true,
     "inAppBrowserAcceptance": "BLOCKED",
@@ -47,7 +55,7 @@
     "chromeAcceptance": "UNAVAILABLE"
   },
   "boundaries": [
-    "The thirty routes are productized and verified by unit, type, build and HTTP deep-link checks.",
+    "The thirty-eight routes are productized and verified by unit, type, build and HTTP deep-link checks.",
     "Visual browser layout acceptance is not claimed because the only available browser blocks life.html responses.",
     "No real consumer session, order, payment, location, merchant, provider or production environment was used."
   ]
