@@ -15,6 +15,7 @@ for (const file of [
   'life-experience-registry.mjs',
   'life-experiences-discovery.mjs',
   'life-experiences-checkout.mjs',
+  'life-experiences-account.mjs',
   'state.mjs',
   'api-client.js',
   'live-page-registry.mjs',

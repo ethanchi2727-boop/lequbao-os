@@ -29,6 +29,21 @@ const groups = [
     ]),
     load: () => import('./life-experiences-checkout.mjs'),
   },
+  {
+    pages: new Set([
+      'page-235',
+      'page-237',
+      'page-238',
+      'page-239',
+      'page-240',
+      'page-242',
+      'page-243',
+      'page-245',
+      'page-246',
+      'page-248',
+    ]),
+    load: () => import('./life-experiences-account.mjs'),
+  },
 ];
 export async function loadLifePageExperience(page) {
   const group = groups.find((item) => item.pages.has(page));
@@ -37,6 +52,7 @@ export async function loadLifePageExperience(page) {
   return (
     module.lifeDiscoveryExperienceById?.get(page) ??
     module.lifeCheckoutExperienceById?.get(page) ??
+    module.lifeAccountExperienceById?.get(page) ??
     null
   );
 }

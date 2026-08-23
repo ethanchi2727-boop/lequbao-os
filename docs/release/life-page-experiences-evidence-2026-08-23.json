@@ -22,14 +22,24 @@
     { "page": "page-228", "layout": "discounts-rewards" },
     { "page": "page-229", "layout": "order-confirmation" },
     { "page": "page-231", "layout": "wechat-payment" },
-    { "page": "page-232", "layout": "payment-result" }
+    { "page": "page-232", "layout": "payment-result" },
+    { "page": "page-235", "layout": "member-home" },
+    { "page": "page-237", "layout": "consumer-order-list" },
+    { "page": "page-238", "layout": "consumer-order-detail" },
+    { "page": "page-239", "layout": "consumer-aftersale-history" },
+    { "page": "page-240", "layout": "consumer-refund-detail" },
+    { "page": "page-242", "layout": "unused-vouchers" },
+    { "page": "page-243", "layout": "consumer-redemption-result" },
+    { "page": "page-245", "layout": "aftersale-application" },
+    { "page": "page-246", "layout": "aftersale-detail" },
+    { "page": "page-248", "layout": "address-management" }
   ],
   "verification": {
-    "unitTestFilesPassed": 29,
-    "unitTestsPassed": 244,
+    "unitTestFilesPassed": 30,
+    "unitTestsPassed": 255,
     "typecheckPassed": true,
     "productionBuildPassed": true,
-    "httpDeepLinkCount": 20,
+    "httpDeepLinkCount": 30,
     "httpDeepLinkStatus": 200,
     "httpDeepLinkServedLifeHtml": true,
     "inAppBrowserAcceptance": "BLOCKED",
@@ -37,7 +47,7 @@
     "chromeAcceptance": "UNAVAILABLE"
   },
   "boundaries": [
-    "The ten routes are productized and verified by unit, type, build and HTTP deep-link checks.",
+    "The thirty routes are productized and verified by unit, type, build and HTTP deep-link checks.",
     "Visual browser layout acceptance is not claimed because the only available browser blocks life.html responses.",
     "No real consumer session, order, payment, location, merchant, provider or production environment was used."
   ]

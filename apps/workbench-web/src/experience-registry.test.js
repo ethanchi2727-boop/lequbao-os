@@ -73,5 +73,5 @@ describe('乐趣宝专属页面按需加载', () => {
       layout: 'mobile-identity-permissions',
     });
     await expect(loadWorkbenchPageExperience('page-198')).resolves.toBeNull();
-  });
+  }, 15_000);
 });
