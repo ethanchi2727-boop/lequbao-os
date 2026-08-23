@@ -1181,6 +1181,12 @@ function validateIdentitySessionEvidence(value) {
 function validateSecretAccessAudit(value) {
   const artifact = 'secret-access-audit.json';
   const failures = [];
+  if (!/^[A-Za-z][A-Za-z0-9._:-]{2,63}$/u.test(value.secretManager ?? ''))
+    failures.push(`${artifact} secretManager must be an opaque provider reference`);
+  const actionsBySecret = new Map();
+  const auditRefs = new Set();
+  const allowedSubjectsBySecret = new Map();
+  const deniedSubjectsBySecret = new Map();
   for (const [index, event] of (Array.isArray(value.accessEvents)
     ? value.accessEvents
     : []
@@ -1192,13 +1198,41 @@ function validateSecretAccessAudit(value) {
     }
     if (!validSha256(event.secretRefHash))
       failures.push(`${prefix}.secretRefHash has invalid format`);
-    if (typeof event.subjectRef !== 'string' || !event.subjectRef.trim())
-      failures.push(`${prefix}.subjectRef must not be empty`);
-    if (!['READ', 'ROTATE'].includes(event.action))
+    if (!opaqueSubject.test(event.subjectRef ?? ''))
+      failures.push(`${prefix}.subjectRef must be an approved opaque subject`);
+    if (!['READ', 'ROTATE', 'DENIED_READ'].includes(event.action))
       failures.push(`${prefix}.action is not approved`);
-    if (event.allowed !== true) failures.push(`${prefix}.allowed must equal true`);
+    else if (validSha256(event.secretRefHash)) {
+      const actions = actionsBySecret.get(event.secretRefHash) ?? new Set();
+      if (actions.has(event.action))
+        failures.push(`${artifact} secret actions must be unique per secret`);
+      else actions.add(event.action);
+      actionsBySecret.set(event.secretRefHash, actions);
+      const subjects =
+        event.action === 'DENIED_READ' ? deniedSubjectsBySecret : allowedSubjectsBySecret;
+      const subjectSet = subjects.get(event.secretRefHash) ?? new Set();
+      subjectSet.add(event.subjectRef);
+      subjects.set(event.secretRefHash, subjectSet);
+    }
+    const expectedAllowed = event.action !== 'DENIED_READ';
+    if (event.allowed !== expectedAllowed)
+      failures.push(`${prefix}.allowed does not match the audited action`);
+    if (!validSha256(event.auditEventRefHash))
+      failures.push(`${prefix}.auditEventRefHash has invalid format`);
+    else if (auditRefs.has(event.auditEventRefHash))
+      failures.push(`${artifact} audit event references must be unique`);
+    else auditRefs.add(event.auditEventRefHash);
     if (!validDateTime(event.occurredAt))
       failures.push(`${prefix}.occurredAt must be a non-future ISO date-time`);
+  }
+  for (const [secretRefHash, actions] of actionsBySecret) {
+    for (const action of ['READ', 'ROTATE', 'DENIED_READ'])
+      if (!actions.has(action))
+        failures.push(`${artifact} secret ${secretRefHash} must include ${action}`);
+    const authorizedSubjects = allowedSubjectsBySecret.get(secretRefHash) ?? new Set();
+    const deniedSubjects = deniedSubjectsBySecret.get(secretRefHash) ?? new Set();
+    if ([...authorizedSubjects].some((subject) => deniedSubjects.has(subject)))
+      failures.push(`${artifact} denied and authorized secret subjects must differ`);
   }
   return failures;
 }

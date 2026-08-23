@@ -436,22 +436,18 @@ function semanticFixture(artifact, binding) {
       ],
     },
     'secret-access-audit.json': {
-      accessEvents: [
-        {
-          secretRefHash: '7'.repeat(64),
-          subjectRef: 'workforce:controlled-secret-operator',
-          action: 'READ',
-          allowed: true,
-          occurredAt: '2026-08-19T01:00:00.000Z',
-        },
-        {
-          secretRefHash: '8'.repeat(64),
-          subjectRef: 'workforce:controlled-secret-operator',
-          action: 'ROTATE',
-          allowed: true,
-          occurredAt: '2026-08-19T01:00:00.000Z',
-        },
-      ],
+      secretManager: 'vault:controlled',
+      accessEvents: ['READ', 'ROTATE', 'DENIED_READ'].map((action, index) => ({
+        secretRefHash: '7'.repeat(64),
+        subjectRef:
+          action === 'DENIED_READ'
+            ? 'workforce:unauthorized-secret-reader'
+            : 'workforce:controlled-secret-operator',
+        action,
+        allowed: action !== 'DENIED_READ',
+        auditEventRefHash: `${index + 1}`.repeat(64),
+        occurredAt: '2026-08-19T01:00:00.000Z',
+      })),
     },
     'object-retention.json': {
       policy: { encryptionRequired: true, deletionEnforced: true },

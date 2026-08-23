@@ -709,6 +709,35 @@ describe('controlled JSON evidence contracts', () => {
     );
   });
 
+  it('requires read, rotation and denied-read audits for each sampled secret', () => {
+    const secretRefHash = 'a'.repeat(64);
+    const failures = validateControlledJsonEvidence('secret-access-audit.json', {
+      result: 'PASS',
+      secretManager: 'https://manager.example.test',
+      accessEvents: [
+        {
+          secretRefHash,
+          subjectRef: 'person@example.test',
+          action: 'READ',
+          allowed: true,
+          auditEventRefHash: 'b'.repeat(64),
+          occurredAt: '2026-08-19T01:00:00.000Z',
+        },
+      ],
+      leastPrivilegeVerified: true,
+      rotationVerified: true,
+      plaintextFindings: [],
+    });
+    expect(failures).toEqual(
+      expect.arrayContaining([
+        'secret-access-audit.json secretManager must be an opaque provider reference',
+        'secret-access-audit.json accessEvents[0].subjectRef must be an approved opaque subject',
+        `secret-access-audit.json secret ${secretRefHash} must include ROTATE`,
+        `secret-access-audit.json secret ${secretRefHash} must include DENIED_READ`,
+      ]),
+    );
+  });
+
   it('requires structured database, worker, intake, inventory and plugin evidence', () => {
     expect(
       validateControlledJsonEvidence('rls-denials.json', {
