@@ -650,6 +650,7 @@ describe('controlled launch results', () => {
     context.suiteCount = 2;
     context.requiredArtifactCount = 99;
     context.createdAt = '2026-08-19T08:59:00.000+08:00';
+    context.deploymentId = 'operator@example.test';
     await writeFile(contextFile, JSON.stringify(context));
     const failures = await verifyControlledResults({
       plan,
@@ -660,6 +661,7 @@ describe('controlled launch results', () => {
     expect(failures).toEqual(
       expect.arrayContaining([
         'controlled execution context contains undeclared fields: undeclared',
+        'controlled execution context is not bound to the candidate and current plan',
         'controlled execution context suite or artifact counts do not match the plan',
         'controlled execution context createdAt is invalid or after result generation',
       ]),

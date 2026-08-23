@@ -9,6 +9,7 @@ import { parseCanonicalUtcTimestamp } from './canonical-time.mjs';
 
 const unexpectedKeys = (value, allowed) =>
   Object.keys(value ?? {}).filter((key) => !allowed.includes(key));
+const opaqueContextLabel = /^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$/u;
 
 export async function verifyControlledResults({ plan, planSource, resultsFile, releaseCommit }) {
   const failures = [];
@@ -75,10 +76,8 @@ export async function verifyControlledResults({ plan, planSource, resultsFile, r
     (context.version !== 1 ||
       context.releaseCommit !== releaseCommit ||
       context.planSha256 !== expectedPlanHash ||
-      typeof context.deploymentId !== 'string' ||
-      !context.deploymentId ||
-      typeof context.environment !== 'string' ||
-      !context.environment)
+      !opaqueContextLabel.test(context.deploymentId ?? '') ||
+      !opaqueContextLabel.test(context.environment ?? ''))
   )
     failures.push('controlled execution context is not bound to the candidate and current plan');
   const requiredArtifactCount = plan.suites.reduce(
