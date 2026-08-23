@@ -176,6 +176,38 @@ describe('controlled JSON evidence contracts', () => {
         expect.stringContaining('approvals must include legal compliance reviewer'),
       ]),
     );
+    const personalIdentityApprovals = validateControlledJsonEvidence(
+      'financial-policy-approvals.json',
+      {
+        releaseCommit: 'a'.repeat(40),
+        deploymentId: 'deployment-1',
+        decisionVersion: 'v1',
+        effectiveAt: '2026-08-19T01:00:00.000Z',
+        decisions: {},
+        approvals: [
+          {
+            subjectId: 'owner@example.test',
+            role: 'business owner',
+            decision: 'APPROVED',
+            receiptId: 'receipt with spaces',
+            approvedAt: '2026-08-19T00:58:00.000Z',
+          },
+        ],
+        independentReview: {
+          subjectId: 'reviewer@example.test',
+          decision: 'APPROVED',
+          reviewedAt: '2026-08-19T00:59:00.000Z',
+        },
+        unresolvedItems: [],
+      },
+    );
+    expect(personalIdentityApprovals).toEqual(
+      expect.arrayContaining([
+        expect.stringContaining('approvals[0].subjectId must be an approved opaque subject'),
+        expect.stringContaining('approvals[0].receiptId must be an opaque reference'),
+        expect.stringContaining('independentReview.subjectId must be an approved opaque subject'),
+      ]),
+    );
   });
 
   it('rejects hollow performance and disaster-recovery PASS evidence', () => {

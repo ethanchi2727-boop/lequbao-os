@@ -442,6 +442,8 @@ export const controlledJsonEvidenceReviewRules = Object.freeze({
 });
 
 const validSha256 = (value) => typeof value === 'string' && /^[a-f0-9]{64}$/u.test(value);
+const opaqueSubject = /^(?:github|org|workforce):[A-Za-z0-9._-]{1,128}$/u;
+const opaqueReference = /^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$/u;
 const validDateTime = (value) =>
   parseCanonicalUtcTimestamp(value) !== undefined &&
   parseCanonicalUtcTimestamp(value) <= Date.now() + 5 * 60_000;
@@ -457,16 +459,16 @@ function validateApprovalSet(artifact, approvals, requiredRoles) {
       failures.push(`${prefix} must be an object`);
       continue;
     }
-    if (typeof approval.subjectId !== 'string' || !approval.subjectId.trim())
-      failures.push(`${prefix}.subjectId must not be empty`);
+    if (!opaqueSubject.test(approval.subjectId ?? ''))
+      failures.push(`${prefix}.subjectId must be an approved opaque subject`);
     else if (subjects.has(approval.subjectId))
       failures.push(`${artifact} approval subjects must differ`);
     else subjects.add(approval.subjectId);
     if (!requiredRoles.includes(approval.role)) failures.push(`${prefix}.role is not approved`);
     else approvedRoles.add(approval.role);
     if (approval.decision !== 'APPROVED') failures.push(`${prefix}.decision must equal "APPROVED"`);
-    if (typeof approval.receiptId !== 'string' || !approval.receiptId.trim())
-      failures.push(`${prefix}.receiptId must not be empty`);
+    if (!opaqueReference.test(approval.receiptId ?? ''))
+      failures.push(`${prefix}.receiptId must be an opaque reference`);
     if (!validDateTime(approval.approvedAt))
       failures.push(`${prefix}.approvedAt must be a non-future ISO date-time`);
   }
@@ -597,8 +599,8 @@ function validateFinancialApprovals(value) {
   const review = value.independentReview;
   if (review?.decision !== 'APPROVED')
     failures.push(`${artifact} independentReview.decision must equal "APPROVED"`);
-  if (typeof review?.subjectId !== 'string' || !review.subjectId.trim())
-    failures.push(`${artifact} independentReview.subjectId must not be empty`);
+  if (!opaqueSubject.test(review?.subjectId ?? ''))
+    failures.push(`${artifact} independentReview.subjectId must be an approved opaque subject`);
   if (!validDateTime(review?.reviewedAt))
     failures.push(`${artifact} independentReview.reviewedAt must be a non-future ISO date-time`);
   if (approvals.some((approval) => approval?.subjectId === review?.subjectId))

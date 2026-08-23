@@ -21,7 +21,7 @@ Place `results.json` at the evidence root and each declared artifact under the e
 - a canonical millisecond UTC `generatedAt` (`YYYY-MM-DDTHH:mm:ss.sssZ`);
 - one result for every suite, including external-only suites;
 - suite code, exact environment gate, `PASS`, ordered execution/review timestamps, the planned executor role and a different independent reviewer role;
-- different opaque executor and reviewer subject IDs using an approved `github:`, `org:` or `workforce:` reference; do not use a name, email address or personal contact value;
+- different opaque executor, reviewer and embedded governance-approval subject IDs using an approved `github:`, `org:` or `workforce:` reference; approval receipt IDs must also be opaque references, and names, email addresses or personal contact values are forbidden;
 - every declared evidence path, the SHA-256 of its actual file and the SHA-256 of its candidate/plan/deployment-bound capture receipt.
 
 Extra suites, missing suites, missing/extra artifacts, path traversal, hash mismatch, same-person review, invalid opaque identities, review before execution completes, future timestamps, a changed plan or a different candidate commit all fail closed. Evidence paths are relative to `results.json`; do not use absolute paths or links.
