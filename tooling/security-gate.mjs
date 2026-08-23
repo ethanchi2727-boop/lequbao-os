@@ -4,6 +4,7 @@ import { spawnSync } from 'node:child_process';
 import { inspectDependencyInstallPolicy } from './dependency-install-policy.mjs';
 import { inspectDevelopmentMockProfile } from './development-mock-profile.mjs';
 import { buildSbomDocument } from './generate-sbom.mjs';
+import { inspectSourceSecrets } from './source-secret-policy.mjs';
 import {
   inspectProductionLicenseReport,
   readInstalledProductionLicenseReport,
@@ -18,13 +19,6 @@ const files = repositoryFiles.filter(
     !/(?:^|\/)(?:node_modules|dist|coverage)(?:\/|$)/u.test(file) &&
     /\.(?:[cm]?[jt]sx?|json|ya?ml|md|sql|env|toml|ini|properties|sh|ps1)$/iu.test(file),
 );
-const patterns = [
-  ['PRIVATE_KEY', /-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----/u],
-  ['GITHUB_TOKEN', /gh[pousr]_[A-Za-z0-9]{30,}/u],
-  ['AWS_ACCESS_KEY', /AKIA[0-9A-Z]{16}/u],
-  ['URL_CREDENTIAL', /https?:\/\/[^\s/:]+:[^\s/@]+@/u],
-  ['JWT', /eyJ[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{10,}/u],
-];
 const failures = [];
 for (const file of files) {
   let text;
@@ -33,9 +27,7 @@ for (const file of files) {
   } catch {
     continue;
   }
-  for (const [code, pattern] of patterns) {
-    if (pattern.test(text)) failures.push(`${code}:${file}`);
-  }
+  failures.push(...inspectSourceSecrets(file, text));
 }
 const lockText = await readFile('pnpm-lock.yaml', 'utf8'),
   lockHash = createHash('sha256').update(lockText).digest('hex'),
