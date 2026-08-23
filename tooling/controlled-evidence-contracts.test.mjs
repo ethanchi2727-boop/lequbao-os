@@ -776,6 +776,46 @@ describe('controlled JSON evidence contracts', () => {
     );
   });
 
+  it('recomputes session lifetime and revocation rejection latency', () => {
+    const failures = validateControlledJsonEvidence('identity-session-redacted.json', {
+      result: 'PASS',
+      revocation: {
+        revokedSessionRejected: true,
+        sessionRefHash: 'a'.repeat(64),
+        revocationReceiptHash: 'b'.repeat(64),
+        revokedAt: '2026-08-19T01:00:00.000Z',
+        rejectedAt: '2026-08-19T01:01:00.000Z',
+        latencySeconds: 1,
+      },
+      mfa: {
+        highRiskRequired: true,
+        downgradeRejected: true,
+        challengeRefHash: 'c'.repeat(64),
+        challengedAt: '2026-08-19T01:01:00.000Z',
+        downgradeRejectedAt: '2026-08-19T01:00:00.000Z',
+      },
+      sessions: [
+        {
+          sessionRefHash: 'd'.repeat(64),
+          tenantRefHash: 'e'.repeat(64),
+          tenantScopeVerified: true,
+          shortLived: true,
+          issuedAt: '2026-08-19T00:00:00.000Z',
+          expiresAt: '2026-08-19T02:00:00.000Z',
+        },
+      ],
+      failures: [],
+    });
+    expect(failures).toEqual(
+      expect.arrayContaining([
+        'identity-session-redacted.json revocation.latencySeconds does not reconcile with timestamps',
+        'identity-session-redacted.json mfa.downgradeRejectedAt must not precede challengedAt',
+        'identity-session-redacted.json sessions[0] lifetime must be within 1..3600 seconds',
+        'identity-session-redacted.json revoked session must be present in sampled sessions',
+      ]),
+    );
+  });
+
   it('requires structured database, worker, intake, inventory and plugin evidence', () => {
     expect(
       validateControlledJsonEvidence('rls-denials.json', {

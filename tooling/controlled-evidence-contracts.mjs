@@ -1159,10 +1159,38 @@ function validateIdentitySessionEvidence(value) {
     value.revocation.latencySeconds > 60
   )
     failures.push(`${artifact} revocation.latencySeconds must be within 0..60`);
+  if (!validSha256(value.revocation?.sessionRefHash))
+    failures.push(`${artifact} revocation.sessionRefHash has invalid format`);
+  if (!validSha256(value.revocation?.revocationReceiptHash))
+    failures.push(`${artifact} revocation.revocationReceiptHash has invalid format`);
+  const revocationTimeline = ['revokedAt', 'rejectedAt'].map((fieldName) => {
+    if (!validDateTime(value.revocation?.[fieldName]))
+      failures.push(`${artifact} revocation.${fieldName} must be a non-future ISO date-time`);
+    return Date.parse(value.revocation?.[fieldName]);
+  });
+  if (revocationTimeline.every(Number.isFinite) && revocationTimeline[1] < revocationTimeline[0])
+    failures.push(`${artifact} revocation.rejectedAt must not precede revokedAt`);
+  const calculatedRevocationSeconds = (revocationTimeline[1] - revocationTimeline[0]) / 1000;
+  if (
+    Number.isFinite(calculatedRevocationSeconds) &&
+    Number.isFinite(value.revocation?.latencySeconds) &&
+    Math.abs(calculatedRevocationSeconds - value.revocation.latencySeconds) > 0.01
+  )
+    failures.push(`${artifact} revocation.latencySeconds does not reconcile with timestamps`);
   if (value.mfa?.highRiskRequired !== true)
     failures.push(`${artifact} mfa.highRiskRequired must equal true`);
   if (value.mfa?.downgradeRejected !== true)
     failures.push(`${artifact} mfa.downgradeRejected must equal true`);
+  if (!validSha256(value.mfa?.challengeRefHash))
+    failures.push(`${artifact} mfa.challengeRefHash has invalid format`);
+  const mfaTimeline = ['challengedAt', 'downgradeRejectedAt'].map((fieldName) => {
+    if (!validDateTime(value.mfa?.[fieldName]))
+      failures.push(`${artifact} mfa.${fieldName} must be a non-future ISO date-time`);
+    return Date.parse(value.mfa?.[fieldName]);
+  });
+  if (mfaTimeline.every(Number.isFinite) && mfaTimeline[1] < mfaTimeline[0])
+    failures.push(`${artifact} mfa.downgradeRejectedAt must not precede challengedAt`);
+  const sessionRefs = new Set();
   for (const [index, session] of (Array.isArray(value.sessions) ? value.sessions : []).entries()) {
     const prefix = `${artifact} sessions[${index}]`;
     if (!session || Array.isArray(session) || typeof session !== 'object') {
@@ -1171,10 +1199,31 @@ function validateIdentitySessionEvidence(value) {
     }
     if (!validSha256(session.sessionRefHash))
       failures.push(`${prefix}.sessionRefHash has invalid format`);
+    else if (sessionRefs.has(session.sessionRefHash))
+      failures.push(`${artifact} session references must be unique`);
+    else sessionRefs.add(session.sessionRefHash);
+    if (!validSha256(session.tenantRefHash))
+      failures.push(`${prefix}.tenantRefHash has invalid format`);
     if (session.tenantScopeVerified !== true)
       failures.push(`${prefix}.tenantScopeVerified must equal true`);
     if (session.shortLived !== true) failures.push(`${prefix}.shortLived must equal true`);
+    const sessionTimeline = ['issuedAt', 'expiresAt'].map((fieldName) => {
+      const timestamp = parseCanonicalUtcTimestamp(session[fieldName]);
+      if (timestamp === undefined)
+        failures.push(`${prefix}.${fieldName} must be a canonical millisecond UTC timestamp`);
+      else if (fieldName === 'issuedAt' && timestamp > Date.now() + 5 * 60_000)
+        failures.push(`${prefix}.${fieldName} must be a non-future ISO date-time`);
+      return timestamp;
+    });
+    const lifetimeSeconds = (sessionTimeline[1] - sessionTimeline[0]) / 1000;
+    if (!Number.isFinite(lifetimeSeconds) || lifetimeSeconds <= 0 || lifetimeSeconds > 3600)
+      failures.push(`${prefix} lifetime must be within 1..3600 seconds`);
   }
+  if (
+    validSha256(value.revocation?.sessionRefHash) &&
+    !sessionRefs.has(value.revocation.sessionRefHash)
+  )
+    failures.push(`${artifact} revoked session must be present in sampled sessions`);
   return failures;
 }
 

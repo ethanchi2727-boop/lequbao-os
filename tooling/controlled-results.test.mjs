@@ -425,13 +425,29 @@ function semanticFixture(artifact, binding) {
     },
     'rollback.json': { fromVersion: 'pilot-1', toVersion: 'pilot-safe-2' },
     'identity-session-redacted.json': {
-      revocation: { revokedSessionRejected: true, latencySeconds: 5 },
-      mfa: { highRiskRequired: true, downgradeRejected: true },
+      revocation: {
+        revokedSessionRejected: true,
+        sessionRefHash: '6'.repeat(64),
+        revocationReceiptHash: '7'.repeat(64),
+        revokedAt: '2026-08-19T01:00:00.000Z',
+        rejectedAt: '2026-08-19T01:00:05.000Z',
+        latencySeconds: 5,
+      },
+      mfa: {
+        highRiskRequired: true,
+        downgradeRejected: true,
+        challengeRefHash: '8'.repeat(64),
+        challengedAt: '2026-08-19T01:00:00.000Z',
+        downgradeRejectedAt: '2026-08-19T01:00:01.000Z',
+      },
       sessions: [
         {
           sessionRefHash: '6'.repeat(64),
+          tenantRefHash: '9'.repeat(64),
           tenantScopeVerified: true,
           shortLived: true,
+          issuedAt: '2026-08-19T00:00:00.000Z',
+          expiresAt: '2026-08-19T01:00:00.000Z',
         },
       ],
     },
