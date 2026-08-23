@@ -1168,6 +1168,7 @@ describe('controlled JSON evidence contracts', () => {
           deletionRequestedAt: '2026-08-19T01:02:00.000Z',
           deletedAt: '2026-08-19T01:01:00.000Z',
           verifiedAt: '2026-08-19T01:03:00.000Z',
+          rawObjectKey: 'forbidden/object/key',
         },
       ],
       violations: [],
@@ -1175,6 +1176,7 @@ describe('controlled JSON evidence contracts', () => {
     expect(failures).toEqual(
       expect.arrayContaining([
         'object-retention.json objectsSampled[0] policy, creation and deletion timestamps are out of order',
+        'object-retention.json objectsSampled[0] fields are invalid',
         'object-retention.json objectsSampled[0].retentionUntil does not match policy.retentionDays',
       ]),
     );

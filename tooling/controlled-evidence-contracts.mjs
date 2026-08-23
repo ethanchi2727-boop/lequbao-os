@@ -1750,6 +1750,19 @@ function validateSecretAccessAudit(value) {
 function validateObjectRetention(value) {
   const artifact = 'object-retention.json';
   const failures = [];
+  if (!hasExactKeys(value, ['objectsSampled', 'policy', 'result', 'violations']))
+    failures.push(`${artifact} fields are invalid`);
+  if (
+    !hasExactKeys(value.policy, [
+      'deletionEnforced',
+      'effectiveAt',
+      'encryptionMode',
+      'encryptionRequired',
+      'policyRefHash',
+      'retentionDays',
+    ])
+  )
+    failures.push(`${artifact} policy fields are invalid`);
   if (value.policy?.encryptionRequired !== true)
     failures.push(`${artifact} policy.encryptionRequired must equal true`);
   if (value.policy?.deletionEnforced !== true)
@@ -1776,6 +1789,23 @@ function validateObjectRetention(value) {
       failures.push(`${prefix} must be an object`);
       continue;
     }
+    if (
+      !hasExactKeys(object, [
+        'createdAt',
+        'deletedAt',
+        'deletionAuthorizationRefHash',
+        'deletionRequestedAt',
+        'deletionVerified',
+        'encrypted',
+        'encryptionKeyRefHash',
+        'objectRefHash',
+        'policyRefHash',
+        'retentionApplied',
+        'retentionUntil',
+        'verifiedAt',
+      ])
+    )
+      failures.push(`${prefix} fields are invalid`);
     if (!validSha256(object.objectRefHash))
       failures.push(`${prefix}.objectRefHash has invalid format`);
     else if (objectRefs.has(object.objectRefHash))
