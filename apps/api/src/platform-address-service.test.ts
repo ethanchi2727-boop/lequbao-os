@@ -70,5 +70,7 @@ describe('platform consumer addresses', () => {
 
   it('rejects malformed encryption keys at startup', () => {
     expect(() => createPlatformAddressCipher('short')).toThrow('32-byte key');
+    const key = randomBytes(32).toString('base64');
+    expect(() => createPlatformAddressCipher(`${key}!`)).toThrow('canonical base64');
   });
 });

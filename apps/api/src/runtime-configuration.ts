@@ -1,4 +1,5 @@
 import { isIP } from 'node:net';
+import { isCanonicalBase64ByteLength } from './base64-encoding.js';
 
 type RuntimeEnvironment = Record<string, string | undefined>;
 
@@ -109,12 +110,8 @@ function validateProductionValues(environment: RuntimeEnvironment) {
     )
       failures.push('TRUSTED_PROXY_CIDRS (invalid IP or CIDR)');
   }
-  try {
-    if (Buffer.from(environment.PLATFORM_ADDRESS_ENCRYPTION_KEY!, 'base64').length !== 32)
-      failures.push('PLATFORM_ADDRESS_ENCRYPTION_KEY (32-byte base64 required)');
-  } catch {
-    failures.push('PLATFORM_ADDRESS_ENCRYPTION_KEY (invalid base64)');
-  }
+  if (!isCanonicalBase64ByteLength(environment.PLATFORM_ADDRESS_ENCRYPTION_KEY!, 32))
+    failures.push('PLATFORM_ADDRESS_ENCRYPTION_KEY (canonical 32-byte base64 required)');
   if (failures.length)
     throw new Error(`API production configuration unsafe: ${[...new Set(failures)].join(', ')}`);
 }

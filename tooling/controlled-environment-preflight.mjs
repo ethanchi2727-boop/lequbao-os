@@ -2,6 +2,7 @@ import path from 'node:path';
 import { isIP } from 'node:net';
 import { fileURLToPath } from 'node:url';
 import { validatePerformanceConfig } from './performance-gate-lib.mjs';
+import { isCanonicalBase64ByteLength } from './base64-encoding.mjs';
 
 export const controlledStageRequirements = {
   47: [
@@ -128,7 +129,7 @@ function invalidValue(environment, name) {
     !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu.test(value)
   )
     return 'invalid-uuid';
-  if (name === 'PLATFORM_ADDRESS_ENCRYPTION_KEY' && Buffer.from(value, 'base64').length !== 32)
+  if (name === 'PLATFORM_ADDRESS_ENCRYPTION_KEY' && !isCanonicalBase64ByteLength(value, 32))
     return 'invalid-32-byte-base64';
   if (name.endsWith('_BODY_JSON')) {
     try {

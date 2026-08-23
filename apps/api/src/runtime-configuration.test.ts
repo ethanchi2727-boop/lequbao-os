@@ -77,6 +77,7 @@ describe('API runtime configuration', () => {
       { OBJECT_STORE_GATEWAY_URL: 'http://objects.example' },
       { DATABASE_URL: 'postgres://runtime:secret@database.example/lequ' },
       { PLATFORM_ADDRESS_ENCRYPTION_KEY: 'not-32-byte-base64' },
+      { PLATFORM_ADDRESS_ENCRYPTION_KEY: `${launch.PLATFORM_ADDRESS_ENCRYPTION_KEY}!` },
       { TRUSTED_PROXY_CIDRS: 'not-a-cidr' },
     ])
       expect(() =>

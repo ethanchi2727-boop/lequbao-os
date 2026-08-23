@@ -1,5 +1,6 @@
 import { readFile } from 'node:fs/promises';
 import { pathToFileURL } from 'node:url';
+import { isCanonicalBase64ByteLength } from './base64-encoding.mjs';
 
 const mockOnlyNames = [
   'LEQU_DEVELOPMENT_MOCKS',
@@ -87,12 +88,8 @@ export function inspectDevelopmentMockProfile({ productionSource, mockSource }) 
   if (!validUuid(mock.values.WORKER_TENANT_ID)) failures.push('WORKER_TENANT_ID must be a UUID');
   if (mock.values.INTERNAL_API_URL !== `http://${mock.values.HOST}:${mock.values.PORT}`)
     failures.push('INTERNAL_API_URL must match the local API host and port');
-  try {
-    if (Buffer.from(mock.values.PLATFORM_ADDRESS_ENCRYPTION_KEY, 'base64').length !== 32)
-      failures.push('PLATFORM_ADDRESS_ENCRYPTION_KEY must decode to 32 bytes');
-  } catch {
-    failures.push('PLATFORM_ADDRESS_ENCRYPTION_KEY must be valid base64');
-  }
+  if (!isCanonicalBase64ByteLength(mock.values.PLATFORM_ADDRESS_ENCRYPTION_KEY, 32))
+    failures.push('PLATFORM_ADDRESS_ENCRYPTION_KEY must be canonical base64 for 32 bytes');
   for (const [name, value] of Object.entries(mock.values))
     if (/replace-with|placeholder|changeme|example-secret/iu.test(value))
       failures.push(`${name} still contains a placeholder`);

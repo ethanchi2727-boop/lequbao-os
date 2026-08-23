@@ -3,6 +3,7 @@ import type pg from 'pg';
 import { UuidSchema } from '@lequ/contracts';
 import { z } from 'zod';
 import type { LifeConsumerSessionIdentity } from './life-consumer-session-identity.js';
+import { isCanonicalBase64ByteLength } from './base64-encoding.js';
 
 const AddressInputSchema = z.object({
   id: UuidSchema.optional(),
@@ -33,9 +34,11 @@ export class PlatformAddressAuthenticationError extends Error {}
 export class PlatformAddressNotFoundError extends Error {}
 
 export function createPlatformAddressCipher(base64Key: string): PlatformAddressCipher {
+  if (!isCanonicalBase64ByteLength(base64Key, 32))
+    throw new Error(
+      'PLATFORM_ADDRESS_ENCRYPTION_KEY must be a canonical base64-encoded 32-byte key',
+    );
   const key = Buffer.from(base64Key, 'base64');
-  if (key.length !== 32)
-    throw new Error('PLATFORM_ADDRESS_ENCRYPTION_KEY must be a base64-encoded 32-byte key');
   return {
     encrypt(value) {
       const iv = randomBytes(12);

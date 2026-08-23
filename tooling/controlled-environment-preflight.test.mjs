@@ -88,6 +88,13 @@ describe('controlled environment preflight', () => {
         { name: 'WORKER_TENANT_ID', reason: 'invalid-uuid' },
       ]),
     );
+
+    const nonCanonicalKey = completeEnvironment();
+    nonCanonicalKey.PLATFORM_ADDRESS_ENCRYPTION_KEY += '!';
+    expect(inspectControlledEnvironment(nonCanonicalKey).invalid).toContainEqual({
+      name: 'PLATFORM_ADDRESS_ENCRYPTION_KEY',
+      reason: 'invalid-32-byte-base64',
+    });
   });
 
   it('accepts a complete non-loopback controlled profile', () => {

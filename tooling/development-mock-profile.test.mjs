@@ -55,4 +55,11 @@ describe('development mock profile', () => {
       'GOOD is duplicated',
     ]);
   });
+
+  test('rejects a non-canonical address encryption key', () => {
+    const changed = mockSource.replace(/^(PLATFORM_ADDRESS_ENCRYPTION_KEY=.*)$/mu, '$1!');
+    expect(inspectDevelopmentMockProfile({ productionSource, mockSource: changed })).toContain(
+      'PLATFORM_ADDRESS_ENCRYPTION_KEY must be canonical base64 for 32 bytes',
+    );
+  });
 });
