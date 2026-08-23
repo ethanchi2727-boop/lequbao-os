@@ -82,11 +82,21 @@
     { "page": "page-102", "layout": "service-refund-approval", "panels": 4 },
     { "page": "page-103", "layout": "service-duty-assignment", "panels": 4 },
     { "page": "page-105", "layout": "customer-directory", "panels": 4 },
-    { "page": "page-106", "layout": "continuous-customer-profile", "panels": 4 }
+    { "page": "page-106", "layout": "continuous-customer-profile", "panels": 4 },
+    { "page": "page-107", "layout": "customer-segments-tasks", "panels": 4 },
+    { "page": "page-109", "layout": "service-knowledge-library", "panels": 4 },
+    { "page": "page-110", "layout": "service-quality-review", "panels": 4 },
+    { "page": "page-112", "layout": "wecom-organization-authorization", "panels": 4 },
+    { "page": "page-113", "layout": "wecom-connection-health", "panels": 4 },
+    { "page": "page-116", "layout": "membership-directory", "panels": 4 },
+    { "page": "page-118", "layout": "reward-rule-versions", "panels": 4 },
+    { "page": "page-119", "layout": "reward-ledger", "panels": 4 },
+    { "page": "page-122", "layout": "monthly-value-report", "panels": 4 },
+    { "page": "page-124", "layout": "sales-redemption-analytics", "panels": 4 }
   ],
   "sharedObservations": {
     "desktopHorizontalOverflowCount": 0,
-    "distinctLayoutCount": 79,
+    "distinctLayoutCount": 89,
     "demoModeLabel": "演示结构",
     "productionModeLabel": "权威数据模式",
     "productionDemoPanelCount": 0,
@@ -169,6 +179,17 @@
     "page100ContainsCustomerPlaintext": false,
     "page105MobileDocumentScrollWidth": 320,
     "page105MobileActionMinimumHeight": 44
+  },
+  "engagementAndRewardsObservation": {
+    "desktopPageCount": 10,
+    "desktopOverflowCount": 0,
+    "guardrailMissingCount": 0,
+    "page112AuthorityMode": true,
+    "page112ProtectedEmpty": true,
+    "page112DemoPanelCount": 0,
+    "page112ContainsProviderSecret": false,
+    "page116MobileDocumentScrollWidth": 320,
+    "page116MobileActionMinimumHeight": 44
   },
   "boundaries": [
     "This is local browser evidence, not controlled or production acceptance.",
