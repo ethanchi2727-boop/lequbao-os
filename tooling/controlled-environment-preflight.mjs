@@ -138,6 +138,7 @@ function invalidValue(environment, name) {
     try {
       const url = new URL(value);
       if (url.protocol !== 'https:') return 'not-https';
+      if (url.username || url.password) return 'embedded-credentials';
       if (isForbiddenLocalHostname(url.hostname)) return 'local-host';
     } catch {
       return 'invalid-url';

@@ -113,6 +113,13 @@ describe('controlled environment preflight', () => {
         reason: 'local-host',
       });
     }
+
+    const embeddedCredential = completeEnvironment();
+    embeddedCredential.IDENTITY_PROVIDER_GATEWAY_URL = 'https://user:password@identity.example';
+    expect(inspectControlledEnvironment(embeddedCredential).invalid).toContainEqual({
+      name: 'IDENTITY_PROVIDER_GATEWAY_URL',
+      reason: 'embedded-credentials',
+    });
   });
 
   it('accepts a complete non-loopback controlled profile', () => {

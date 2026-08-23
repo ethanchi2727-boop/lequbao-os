@@ -78,6 +78,7 @@ describe('API runtime configuration', () => {
       { OBJECT_STORE_GATEWAY_URL: 'http://objects.example' },
       { OBJECT_STORE_GATEWAY_URL: 'https://127.0.0.2' },
       { OBJECT_STORE_GATEWAY_URL: 'https://[::1]' },
+      { OBJECT_STORE_GATEWAY_URL: 'https://user:password@objects.example' },
       { DATABASE_URL: 'postgres://runtime:secret@database.example/lequ' },
       { DATABASE_URL: 'postgres://runtime:secret@[::1]/lequ?sslmode=require' },
       { PLATFORM_ADDRESS_ENCRYPTION_KEY: 'not-32-byte-base64' },

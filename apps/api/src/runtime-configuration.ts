@@ -95,6 +95,7 @@ function validateProductionValues(environment: RuntimeEnvironment) {
     try {
       const url = new URL(environment[name]!);
       if (url.protocol !== 'https:') failures.push(`${name} (HTTPS required)`);
+      if (url.username || url.password) failures.push(`${name} (embedded credentials forbidden)`);
       if (isForbiddenLocalHostname(url.hostname)) failures.push(`${name} (local host forbidden)`);
     } catch {
       failures.push(`${name} (invalid URL)`);

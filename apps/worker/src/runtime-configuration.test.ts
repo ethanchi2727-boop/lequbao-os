@@ -47,6 +47,7 @@ describe('Worker runtime configuration', () => {
       { INTERNAL_API_URL: 'http://api.example' },
       { INTERNAL_API_URL: 'https://127.0.0.2' },
       { INTERNAL_API_URL: 'https://[::1]' },
+      { INTERNAL_API_URL: 'https://token@api.example' },
       { WORKER_TENANT_ID: 'tenant-id' },
       { DATABASE_URL: 'postgres://runtime:secret@database.example/lequ' },
     ])
