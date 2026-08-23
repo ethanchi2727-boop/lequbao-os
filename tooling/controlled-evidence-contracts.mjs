@@ -1058,9 +1058,9 @@ function validateBackupManifest(value) {
     'verified_payment_cents',
     'verified_payment_count',
   ]);
-  for (const [tenantId, metrics] of tenantEntries) {
-    if (!/^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/u.test(tenantId))
-      failures.push(`${artifact} financialSnapshot tenant ID has invalid format`);
+  for (const [tenantRefHash, metrics] of tenantEntries) {
+    if (!validSha256(tenantRefHash))
+      failures.push(`${artifact} financialSnapshot tenant reference hash has invalid format`);
     if (!metrics || Array.isArray(metrics) || typeof metrics !== 'object') {
       failures.push(`${artifact} financialSnapshot tenant metrics must be an object`);
       continue;

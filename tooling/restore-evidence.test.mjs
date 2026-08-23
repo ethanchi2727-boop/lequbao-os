@@ -9,6 +9,8 @@ describe('backup and restore evidence boundary', () => {
     expect(backup).toContain('financialSnapshotSha256');
     expect(backup).toContain('source financial snapshot has invalid tenant coverage');
     expect(snapshot).toContain('FROM tenants t LEFT JOIN per_tenant p ON p.tenant_id=t.id');
+    expect(snapshot).toContain("encode(digest(t.id::text,'sha256'),'hex')");
+    expect(snapshot).not.toContain('jsonb_object_agg(t.id::text');
     expect(backup).not.toContain('DATABASE_URL =');
     expect(backup).toContain("yyyy-MM-dd'T'HH:mm:ss.fff'Z'");
     expect(backup).not.toContain("ToString('o')");

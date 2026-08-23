@@ -752,7 +752,7 @@ describe('controlled JSON evidence contracts', () => {
         financialSnapshot: {
           schemaVersion: 1,
           tenantCount: 1,
-          tenants: { '123e4567-e89b-42d3-a456-426614174000': { orders_count: 1 } },
+          tenants: { ['c'.repeat(64)]: { orders_count: 1 } },
         },
         writeFrozen: true,
       }),
@@ -780,7 +780,7 @@ describe('controlled JSON evidence contracts', () => {
     expect(failures).toEqual(
       expect.arrayContaining([
         'backup.manifest.json financialSnapshot tenants must equal tenantCount',
-        'backup.manifest.json financialSnapshot tenant ID has invalid format',
+        'backup.manifest.json financialSnapshot tenant reference hash has invalid format',
         'backup.manifest.json financialSnapshot contains undeclared metric invented_total',
         'backup.manifest.json financialSnapshot metric invented_total must be an integer',
       ]),

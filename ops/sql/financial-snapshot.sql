@@ -25,7 +25,11 @@ SELECT jsonb_build_object(
   'tenantCount',(SELECT count(*) FROM tenants),
   'tenants',COALESCE(
     (
-      SELECT jsonb_object_agg(t.id::text,COALESCE(p.metrics,'{}'::jsonb) ORDER BY t.id::text)
+      SELECT jsonb_object_agg(
+        encode(digest(t.id::text,'sha256'),'hex'),
+        COALESCE(p.metrics,'{}'::jsonb)
+        ORDER BY encode(digest(t.id::text,'sha256'),'hex')
+      )
         FROM tenants t LEFT JOIN per_tenant p ON p.tenant_id=t.id
     ),
     '{}'::jsonb

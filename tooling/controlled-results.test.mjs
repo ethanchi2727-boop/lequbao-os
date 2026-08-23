@@ -354,7 +354,7 @@ function semanticFixture(artifact, binding) {
       financialSnapshot: {
         schemaVersion: 1,
         tenantCount: 1,
-        tenants: { '123e4567-e89b-42d3-a456-426614174000': { orders_count: 1 } },
+        tenants: { ['f'.repeat(64)]: { orders_count: 1 } },
       },
     },
     'restore-report.json': {
