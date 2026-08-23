@@ -488,6 +488,7 @@ function semanticFixture(artifact, binding) {
       secretManager: 'vault:controlled',
       accessEvents: ['READ', 'ROTATE', 'DENIED_READ'].map((action, index) => ({
         secretRefHash: '7'.repeat(64),
+        secretVersionRefHash: (action === 'ROTATE' ? '9' : '8').repeat(64),
         subjectRef:
           action === 'DENIED_READ'
             ? 'workforce:unauthorized-secret-reader'

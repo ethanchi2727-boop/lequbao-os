@@ -1462,6 +1462,7 @@ function validateSecretAccessAudit(value) {
   const auditRefs = new Set();
   const allowedSubjectsBySecret = new Map();
   const deniedSubjectsBySecret = new Map();
+  const eventsBySecret = new Map();
   for (const [index, event] of (Array.isArray(value.accessEvents)
     ? value.accessEvents
     : []
@@ -1473,6 +1474,8 @@ function validateSecretAccessAudit(value) {
     }
     if (!validSha256(event.secretRefHash))
       failures.push(`${prefix}.secretRefHash has invalid format`);
+    if (!validSha256(event.secretVersionRefHash))
+      failures.push(`${prefix}.secretVersionRefHash has invalid format`);
     if (!opaqueSubject.test(event.subjectRef ?? ''))
       failures.push(`${prefix}.subjectRef must be an approved opaque subject`);
     if (!['READ', 'ROTATE', 'DENIED_READ'].includes(event.action))
@@ -1483,6 +1486,9 @@ function validateSecretAccessAudit(value) {
         failures.push(`${artifact} secret actions must be unique per secret`);
       else actions.add(event.action);
       actionsBySecret.set(event.secretRefHash, actions);
+      const actionEvents = eventsBySecret.get(event.secretRefHash) ?? new Map();
+      actionEvents.set(event.action, event);
+      eventsBySecret.set(event.secretRefHash, actionEvents);
       const subjects =
         event.action === 'DENIED_READ' ? deniedSubjectsBySecret : allowedSubjectsBySecret;
       const subjectSet = subjects.get(event.secretRefHash) ?? new Set();
@@ -1508,6 +1514,22 @@ function validateSecretAccessAudit(value) {
     const deniedSubjects = deniedSubjectsBySecret.get(secretRefHash) ?? new Set();
     if ([...authorizedSubjects].some((subject) => deniedSubjects.has(subject)))
       failures.push(`${artifact} denied and authorized secret subjects must differ`);
+    const actionEvents = eventsBySecret.get(secretRefHash) ?? new Map();
+    const read = actionEvents.get('READ');
+    const rotate = actionEvents.get('ROTATE');
+    const denied = actionEvents.get('DENIED_READ');
+    if (read && rotate && denied) {
+      if (read.secretVersionRefHash !== denied.secretVersionRefHash)
+        failures.push(`${artifact} denied read must target the pre-rotation secret version`);
+      if (rotate.secretVersionRefHash === read.secretVersionRefHash)
+        failures.push(`${artifact} rotation must create a different secret version`);
+      const timeline = [read.occurredAt, rotate.occurredAt, denied.occurredAt].map(Date.parse);
+      if (
+        timeline.every(Number.isFinite) &&
+        !(timeline[0] <= timeline[1] && timeline[1] <= timeline[2])
+      )
+        failures.push(`${artifact} read, rotation and denied-read timestamps are out of order`);
+    }
   }
   return failures;
 }

@@ -1006,6 +1006,7 @@ describe('controlled JSON evidence contracts', () => {
       accessEvents: [
         {
           secretRefHash,
+          secretVersionRefHash: 'b'.repeat(64),
           subjectRef: 'person@example.test',
           action: 'READ',
           allowed: true,
@@ -1023,6 +1024,33 @@ describe('controlled JSON evidence contracts', () => {
         'secret-access-audit.json accessEvents[0].subjectRef must be an approved opaque subject',
         `secret-access-audit.json secret ${secretRefHash} must include ROTATE`,
         `secret-access-audit.json secret ${secretRefHash} must include DENIED_READ`,
+      ]),
+    );
+    const rotationFailures = validateControlledJsonEvidence('secret-access-audit.json', {
+      result: 'PASS',
+      secretManager: 'vault:controlled',
+      accessEvents: [
+        ['READ', true, 'a', '2026-08-19T01:02:00.000Z', 'workforce:operator'],
+        ['ROTATE', true, 'a', '2026-08-19T01:01:00.000Z', 'workforce:operator'],
+        ['DENIED_READ', false, 'b', '2026-08-19T01:00:00.000Z', 'workforce:denied'],
+      ].map(([action, allowed, version, occurredAt, subjectRef], index) => ({
+        secretRefHash,
+        secretVersionRefHash: String(version).repeat(64),
+        subjectRef,
+        action,
+        allowed,
+        auditEventRefHash: `${index + 1}`.repeat(64),
+        occurredAt,
+      })),
+      leastPrivilegeVerified: true,
+      rotationVerified: true,
+      plaintextFindings: [],
+    });
+    expect(rotationFailures).toEqual(
+      expect.arrayContaining([
+        'secret-access-audit.json denied read must target the pre-rotation secret version',
+        'secret-access-audit.json rotation must create a different secret version',
+        'secret-access-audit.json read, rotation and denied-read timestamps are out of order',
       ]),
     );
   });
