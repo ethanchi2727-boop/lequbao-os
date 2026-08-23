@@ -82,34 +82,44 @@ export const controlledJsonEvidenceContracts = {
     field('entries', 'array'),
   ],
   'provider-request-redacted.json': [
+    sha256('orderRefHash'),
     sha256('merchantAccountRef'),
     field('serverOrderAmountFen', 'number', { minimum: 1 }),
     sha256('idempotencyKeyHash'),
+    timestamp('requestedAt'),
   ],
   'provider-callback-redacted.json': [
     yes('signatureVerified'),
     yes('replayRejected'),
+    sha256('orderRefHash'),
     sha256('merchantAccountRef'),
     field('amountFen', 'number', { minimum: 1 }),
     field('paymentState', 'string', { equals: 'SUCCEEDED' }),
     field('appliedBusinessTransitions', 'number', { equals: 1 }),
     sha256('providerEventIdHash'),
+    timestamp('receivedAt'),
+    timestamp('appliedAt'),
   ],
   'merchant-account-reconciliation.json': [
+    sha256('orderRefHash'),
     sha256('providerMerchantAccountRef'),
     sha256('platformMerchantAccountRef'),
     field('amountFen', 'number', { minimum: 1 }),
     yes('amountMatch'),
     yes('accountMatch'),
     empty('unexplainedItems'),
+    timestamp('reconciledAt'),
   ],
   'refund-unknown-recovery.json': [
     field('initialState', 'string', { equals: 'UNKNOWN' }),
     sha256('merchantAccountRef'),
     field('providerQuery', 'object'),
+    timestamp('observedUnknownAt'),
+    timestamp('providerQuery.queriedAt'),
     field('finalState', 'string'),
     yes('queryBeforeRetry'),
     field('convergenceCount', 'number', { equals: 1 }),
+    timestamp('completedAt'),
   ],
   'financial-policy-approvals.json': [
     commit,
@@ -1175,6 +1185,24 @@ function validateRefundUnknownRecovery(value) {
     failures.push(`${artifact} providerQuery.sameIdempotencyKey must equal true`);
   if (!['REFUND_SUCCEEDED', 'REFUND_FAILED'].includes(value.finalState))
     failures.push(`${artifact} finalState must be a terminal provider-confirmed refund state`);
+  const timeline = [value.observedUnknownAt, value.providerQuery?.queriedAt, value.completedAt].map(
+    Date.parse,
+  );
+  if (
+    timeline.every(Number.isFinite) &&
+    !(timeline[0] <= timeline[1] && timeline[1] <= timeline[2])
+  )
+    failures.push(`${artifact} UNKNOWN, provider query and completion timestamps are out of order`);
+  return failures;
+}
+
+function validateProviderCallback(value) {
+  const artifact = 'provider-callback-redacted.json';
+  const failures = [];
+  const receivedAt = Date.parse(value.receivedAt);
+  const appliedAt = Date.parse(value.appliedAt);
+  if (Number.isFinite(receivedAt) && Number.isFinite(appliedAt) && appliedAt < receivedAt)
+    failures.push(`${artifact} appliedAt must not precede receivedAt`);
   return failures;
 }
 
@@ -2083,6 +2111,7 @@ const controlledArtifactValidators = {
   'candidate-image-digests.json': (value) =>
     validateCandidateImageOwner('candidate-image-digests.json', value.images),
   'refund-unknown-recovery.json': validateRefundUnknownRecovery,
+  'provider-callback-redacted.json': validateProviderCallback,
   'review-publish.json': validateReviewPublish,
   'device-matrix.json': validateDeviceMatrix,
   'identity-session-redacted.json': validateIdentitySessionEvidence,

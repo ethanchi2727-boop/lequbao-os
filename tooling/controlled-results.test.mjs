@@ -184,21 +184,28 @@ function semanticFixture(artifact, binding) {
       })),
     },
     'provider-request-redacted.json': {
+      orderRefHash: 'e'.repeat(64),
       merchantAccountRef: 'f'.repeat(64),
       serverOrderAmountFen: 100,
     },
     'provider-callback-redacted.json': {
+      orderRefHash: 'e'.repeat(64),
       merchantAccountRef: 'f'.repeat(64),
       amountFen: 100,
     },
     'merchant-account-reconciliation.json': {
+      orderRefHash: 'e'.repeat(64),
       providerMerchantAccountRef: 'f'.repeat(64),
       platformMerchantAccountRef: 'f'.repeat(64),
       amountFen: 100,
     },
     'refund-unknown-recovery.json': {
       merchantAccountRef: 'f'.repeat(64),
-      providerQuery: { performed: true, sameIdempotencyKey: true },
+      providerQuery: {
+        performed: true,
+        sameIdempotencyKey: true,
+        queriedAt: '2026-08-19T01:00:00.000Z',
+      },
       finalState: 'REFUND_SUCCEEDED',
     },
     'runtime-policy.json': { allowedHosts: ['https://plugin-gateway.example.test/'] },

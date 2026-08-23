@@ -17,6 +17,8 @@ export const controlledSuiteCrossEvidenceRules = {
   PAYMENT_PROVIDER_SANDBOX: [
     'request, callback, reconciliation and refund use the same merchant account reference',
     'request, callback and reconciliation use the same amount',
+    'request, callback and reconciliation use the same order reference in chronological order',
+    'refund UNKNOWN recovery begins after the payment callback is applied',
   ],
   BACKUP_RESTORE_PRIVACY: [
     'restore report references the exact encrypted backup manifest file',
@@ -115,6 +117,30 @@ export function validateControlledSuiteDocuments(suiteCode, documents) {
         failures.push(
           'payment amounts do not reconcile across request callback and account evidence',
         );
+      if (
+        request.orderRefHash !== callback.orderRefHash ||
+        request.orderRefHash !== reconciliation.orderRefHash
+      )
+        failures.push('order references do not reconcile across payment evidence');
+      const timeline = [
+        request.requestedAt,
+        callback.receivedAt,
+        callback.appliedAt,
+        reconciliation.reconciledAt,
+      ].map(Date.parse);
+      if (
+        timeline.every(Number.isFinite) &&
+        !(timeline[0] <= timeline[1] && timeline[1] <= timeline[2] && timeline[2] <= timeline[3])
+      )
+        failures.push('payment request, callback and reconciliation timestamps are out of order');
+      const callbackAppliedAt = Date.parse(callback.appliedAt);
+      const refundUnknownAt = Date.parse(refund.observedUnknownAt);
+      if (
+        Number.isFinite(callbackAppliedAt) &&
+        Number.isFinite(refundUnknownAt) &&
+        refundUnknownAt < callbackAppliedAt
+      )
+        failures.push('refund UNKNOWN recovery precedes the applied payment callback');
     }
   } else if (suiteCode === 'BACKUP_RESTORE_PRIVACY') {
     const backup = get('backup.manifest.json');

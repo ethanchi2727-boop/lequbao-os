@@ -720,16 +720,23 @@ describe('controlled JSON evidence contracts', () => {
       validateControlledJsonEvidence('refund-unknown-recovery.json', {
         initialState: 'UNKNOWN',
         merchantAccountRef: 'a'.repeat(64),
-        providerQuery: { performed: false, sameIdempotencyKey: false },
+        providerQuery: {
+          performed: false,
+          sameIdempotencyKey: false,
+          queriedAt: '2026-08-19T01:01:00.000Z',
+        },
         finalState: 'UNKNOWN',
         queryBeforeRetry: false,
         convergenceCount: 2,
+        observedUnknownAt: '2026-08-19T01:02:00.000Z',
+        completedAt: '2026-08-19T01:00:00.000Z',
       }),
     ).toEqual(
       expect.arrayContaining([
         'refund-unknown-recovery.json queryBeforeRetry must equal true',
         'refund-unknown-recovery.json convergenceCount must equal 1',
         'refund-unknown-recovery.json providerQuery.performed must equal true',
+        'refund-unknown-recovery.json UNKNOWN, provider query and completion timestamps are out of order',
         expect.stringContaining('terminal provider-confirmed refund state'),
       ]),
     );

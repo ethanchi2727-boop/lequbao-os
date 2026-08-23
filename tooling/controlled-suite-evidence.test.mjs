@@ -48,11 +48,17 @@ describe('controlled suite cross-evidence contracts', () => {
     expect(
       validateControlledSuiteDocuments('PAYMENT_PROVIDER_SANDBOX', {
         'provider-request-redacted.json': {
+          orderRefHash: 'order-hash',
           merchantAccountRef: 'merchant-hash',
           serverOrderAmountFen: 100,
         },
-        'provider-callback-redacted.json': { merchantAccountRef: 'merchant-hash', amountFen: 100 },
+        'provider-callback-redacted.json': {
+          orderRefHash: 'order-hash',
+          merchantAccountRef: 'merchant-hash',
+          amountFen: 100,
+        },
         'merchant-account-reconciliation.json': {
+          orderRefHash: 'order-hash',
           providerMerchantAccountRef: 'merchant-hash',
           platformMerchantAccountRef: 'merchant-hash',
           amountFen: 100,
@@ -115,19 +121,38 @@ describe('controlled suite cross-evidence contracts', () => {
     );
     expect(
       validateControlledSuiteDocuments('PAYMENT_PROVIDER_SANDBOX', {
-        'provider-request-redacted.json': { merchantAccountRef: 'one', serverOrderAmountFen: 100 },
-        'provider-callback-redacted.json': { merchantAccountRef: 'two', amountFen: 99 },
+        'provider-request-redacted.json': {
+          orderRefHash: 'order-one',
+          merchantAccountRef: 'one',
+          serverOrderAmountFen: 100,
+          requestedAt: '2026-08-19T01:02:00.000Z',
+        },
+        'provider-callback-redacted.json': {
+          orderRefHash: 'order-two',
+          merchantAccountRef: 'two',
+          amountFen: 99,
+          receivedAt: '2026-08-19T01:01:00.000Z',
+          appliedAt: '2026-08-19T01:00:00.000Z',
+        },
         'merchant-account-reconciliation.json': {
+          orderRefHash: 'order-three',
           providerMerchantAccountRef: 'one',
           platformMerchantAccountRef: 'three',
           amountFen: 100,
+          reconciledAt: '2026-08-19T00:59:00.000Z',
         },
-        'refund-unknown-recovery.json': { merchantAccountRef: 'one' },
+        'refund-unknown-recovery.json': {
+          merchantAccountRef: 'one',
+          observedUnknownAt: '2026-08-19T00:58:00.000Z',
+        },
       }),
     ).toEqual(
       expect.arrayContaining([
         'merchant account references do not reconcile across payment evidence',
         'payment amounts do not reconcile across request callback and account evidence',
+        'order references do not reconcile across payment evidence',
+        'payment request, callback and reconciliation timestamps are out of order',
+        'refund UNKNOWN recovery precedes the applied payment callback',
       ]),
     );
     expect(
