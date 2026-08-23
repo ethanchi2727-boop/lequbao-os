@@ -1179,6 +1179,8 @@ describe('controlled JSON evidence contracts', () => {
         attempts: [
           {
             operation: 'cross-tenant-read',
+            actorTenantRefHash: 'c'.repeat(64),
+            targetTenantRefHash: 'c'.repeat(64),
             denied: true,
             exposedFieldCount: 0,
             mutationCount: 0,
@@ -1186,6 +1188,8 @@ describe('controlled JSON evidence contracts', () => {
           },
           {
             operation: 'cross-tenant-read',
+            actorTenantRefHash: 'c'.repeat(64),
+            targetTenantRefHash: 'c'.repeat(64),
             denied: true,
             exposedFieldCount: 0,
             mutationCount: 0,
@@ -1197,6 +1201,7 @@ describe('controlled JSON evidence contracts', () => {
       expect.arrayContaining([
         'rls-denials.json attempt operations must be unique',
         'rls-denials.json audit references must be unique',
+        'rls-denials.json attempts[0] must use different actor and target tenants',
         'rls-denials.json attempts must include cross-tenant-write',
       ]),
     );
@@ -1204,6 +1209,13 @@ describe('controlled JSON evidence contracts', () => {
       validateControlledJsonEvidence('tenant-context.json', {
         result: 'PASS',
         mismatchRejected: true,
+        mismatchAttempt: {
+          rejected: true,
+          connectionTenantRefHash: 'd'.repeat(64),
+          eventTenantRefHash: 'd'.repeat(64),
+          auditRefHash: 'e'.repeat(64),
+          rejectedAt: '2026-08-19T01:00:00.000Z',
+        },
         transactions: [
           {
             connectionRefHash: 'a'.repeat(64),
@@ -1227,6 +1239,7 @@ describe('controlled JSON evidence contracts', () => {
         'tenant-context.json transactions[1].expectedTenantRefHash must alternate between transactions',
         'tenant-context.json transactions must alternate at least two tenants',
         'tenant-context.json transactions must reuse one pooled connection',
+        'tenant-context.json mismatch attempt must use different connection and event tenants',
       ]),
     );
     expect(

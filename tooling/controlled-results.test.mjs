@@ -114,6 +114,8 @@ function semanticFixture(artifact, binding) {
     'rls-denials.json': {
       attempts: ['cross-tenant-read', 'cross-tenant-write'].map((operation, index) => ({
         operation,
+        actorTenantRefHash: 'a'.repeat(64),
+        targetTenantRefHash: 'b'.repeat(64),
         denied: true,
         exposedFieldCount: 0,
         mutationCount: 0,
@@ -121,6 +123,13 @@ function semanticFixture(artifact, binding) {
       })),
     },
     'tenant-context.json': {
+      mismatchAttempt: {
+        rejected: true,
+        connectionTenantRefHash: '1'.repeat(64),
+        eventTenantRefHash: '2'.repeat(64),
+        auditRefHash: '3'.repeat(64),
+        rejectedAt: '2026-08-19T01:00:00.000Z',
+      },
       transactions: ['1', '2'].map((tenant, index) => ({
         connectionRefHash: 'c'.repeat(64),
         expectedTenantRefHash: tenant.repeat(64),

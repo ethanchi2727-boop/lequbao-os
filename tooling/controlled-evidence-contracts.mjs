@@ -47,7 +47,17 @@ export const requiredDatabaseMigrationVersions = Object.freeze([...migrationVers
 
 export const controlledJsonEvidenceContracts = {
   'rls-denials.json': [pass, field('attempts', 'array')],
-  'tenant-context.json': [pass, yes('mismatchRejected'), field('transactions', 'array')],
+  'tenant-context.json': [
+    pass,
+    yes('mismatchRejected'),
+    field('mismatchAttempt', 'object'),
+    yes('mismatchAttempt.rejected'),
+    sha256('mismatchAttempt.connectionTenantRefHash'),
+    sha256('mismatchAttempt.eventTenantRefHash'),
+    sha256('mismatchAttempt.auditRefHash'),
+    timestamp('mismatchAttempt.rejectedAt'),
+    field('transactions', 'array'),
+  ],
   'inbox-deduplication.json': [
     pass,
     sha256('eventRefHash'),
@@ -1908,6 +1918,15 @@ function validateRlsDenials(value) {
       failures.push(`${artifact} attempt operations must be unique`);
     else operations.add(attempt.operation);
     if (attempt.denied !== true) failures.push(`${prefix}.denied must equal true`);
+    if (!validSha256(attempt.actorTenantRefHash))
+      failures.push(`${prefix}.actorTenantRefHash has invalid format`);
+    if (!validSha256(attempt.targetTenantRefHash))
+      failures.push(`${prefix}.targetTenantRefHash has invalid format`);
+    if (
+      validSha256(attempt.actorTenantRefHash) &&
+      attempt.actorTenantRefHash === attempt.targetTenantRefHash
+    )
+      failures.push(`${prefix} must use different actor and target tenants`);
     if (attempt.exposedFieldCount !== 0) failures.push(`${prefix}.exposedFieldCount must equal 0`);
     if (attempt.mutationCount !== 0) failures.push(`${prefix}.mutationCount must equal 0`);
     if (!validSha256(attempt.auditRefHash))
@@ -1958,6 +1977,11 @@ function validateTenantContext(value) {
     failures.push(`${artifact} transactions must alternate at least two tenants`);
   if (connections.size > 1)
     failures.push(`${artifact} transactions must reuse one pooled connection`);
+  if (
+    validSha256(value.mismatchAttempt?.connectionTenantRefHash) &&
+    value.mismatchAttempt.connectionTenantRefHash === value.mismatchAttempt?.eventTenantRefHash
+  )
+    failures.push(`${artifact} mismatch attempt must use different connection and event tenants`);
   return failures;
 }
 

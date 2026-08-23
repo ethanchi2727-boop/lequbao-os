@@ -26,6 +26,8 @@ const rlsDenialsEvidence = {
   result: 'PASS',
   attempts: ['cross-tenant-read', 'cross-tenant-write'].map((operation, index) => ({
     operation,
+    actorTenantRefHash: 'a'.repeat(64),
+    targetTenantRefHash: 'b'.repeat(64),
     denied: true,
     exposedFieldCount: 0,
     mutationCount: 0,
