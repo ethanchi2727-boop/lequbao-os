@@ -18,9 +18,9 @@ import {
 function completeEnvironment() {
   const environment = {};
   const images = {
-    api: `ghcr.io/lequ/api@sha256:${'a'.repeat(64)}`,
-    worker: `ghcr.io/lequ/worker@sha256:${'b'.repeat(64)}`,
-    web: `ghcr.io/lequ/web@sha256:${'c'.repeat(64)}`,
+    api: `ghcr.io/lequ/lequbao-v6-api@sha256:${'a'.repeat(64)}`,
+    worker: `ghcr.io/lequ/lequbao-v6-worker@sha256:${'b'.repeat(64)}`,
+    web: `ghcr.io/lequ/lequbao-v6-web@sha256:${'c'.repeat(64)}`,
   };
   for (const name of Object.values(controlledStageRequirements).flat()) {
     if (name === 'RELEASE_COMMIT') environment[name] = 'a'.repeat(40);
@@ -198,7 +198,7 @@ describe('controlled environment preflight', () => {
   it('reuses the full performance topology contract before any load is sent', () => {
     const environment = completeEnvironment();
     const deployed = JSON.parse(environment.PERFORMANCE_DEPLOYED_IMAGES_JSON);
-    deployed.worker = `ghcr.io/lequ/worker@sha256:${'d'.repeat(64)}`;
+    deployed.worker = `ghcr.io/lequ/lequbao-v6-worker@sha256:${'d'.repeat(64)}`;
     environment.PERFORMANCE_DEPLOYED_IMAGES_JSON = JSON.stringify(deployed);
     expect(inspectControlledEnvironment(environment, [49]).invalid).toContainEqual({
       name: 'PERFORMANCE_CONFIGURATION',
