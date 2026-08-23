@@ -48,6 +48,28 @@ export async function verifyControlledResults({ plan, planSource, resultsFile, r
   } catch {
     failures.push('controlled execution context is missing or invalid');
   }
+  const contextFields = [
+    'version',
+    'releaseCommit',
+    'planSha256',
+    'deploymentId',
+    'environment',
+    'createdAt',
+    'suiteCount',
+    'requiredArtifactCount',
+  ];
+  const extraContextKeys = unexpectedKeys(context, contextFields);
+  if (extraContextKeys.length)
+    failures.push(
+      `controlled execution context contains undeclared fields: ${extraContextKeys.join(', ')}`,
+    );
+  const missingContextKeys = contextFields.filter(
+    (field) => !Object.prototype.hasOwnProperty.call(context ?? {}, field),
+  );
+  if (missingContextKeys.length)
+    failures.push(
+      `controlled execution context is missing fields: ${missingContextKeys.join(', ')}`,
+    );
   if (
     context &&
     (context.version !== 1 ||
@@ -59,9 +81,26 @@ export async function verifyControlledResults({ plan, planSource, resultsFile, r
       !context.environment)
   )
     failures.push('controlled execution context is not bound to the candidate and current plan');
+  const requiredArtifactCount = plan.suites.reduce(
+    (total, suite) => total + suite.requiredEvidence.length,
+    0,
+  );
+  if (
+    context &&
+    (context.suiteCount !== plan.suites.length ||
+      context.requiredArtifactCount !== requiredArtifactCount)
+  )
+    failures.push('controlled execution context suite or artifact counts do not match the plan');
   const generatedAt = parseCanonicalUtcTimestamp(results.generatedAt);
   if (generatedAt === undefined || generatedAt > Date.now() + 5 * 60_000)
     failures.push('controlled results generatedAt is invalid or in the future');
+  const contextCreatedAt = parseCanonicalUtcTimestamp(context?.createdAt);
+  if (
+    contextCreatedAt === undefined ||
+    contextCreatedAt > Date.now() + 5 * 60_000 ||
+    (generatedAt !== undefined && contextCreatedAt > generatedAt)
+  )
+    failures.push('controlled execution context createdAt is invalid or after result generation');
   if (!Array.isArray(results.suites)) return [...failures, 'controlled results suites are missing'];
 
   const expectedSuites = new Map(plan.suites.map((suite) => [suite.code, suite]));

@@ -642,6 +642,30 @@ describe('controlled launch results', () => {
     );
   });
 
+  it('locks the controlled execution context schema, counts and creation time', async () => {
+    const { root, resultsFile } = await fixture();
+    const contextFile = path.join(root, 'controlled-execution-context.json');
+    const context = JSON.parse(await readFile(contextFile, 'utf8'));
+    context.undeclared = true;
+    context.suiteCount = 2;
+    context.requiredArtifactCount = 99;
+    context.createdAt = '2026-08-19T08:59:00.000+08:00';
+    await writeFile(contextFile, JSON.stringify(context));
+    const failures = await verifyControlledResults({
+      plan,
+      planSource,
+      resultsFile,
+      releaseCommit,
+    });
+    expect(failures).toEqual(
+      expect.arrayContaining([
+        'controlled execution context contains undeclared fields: undeclared',
+        'controlled execution context suite or artifact counts do not match the plan',
+        'controlled execution context createdAt is invalid or after result generation',
+      ]),
+    );
+  });
+
   it('rejects a missing or semantically forged capture receipt even with a matching receipt hash', async () => {
     const missing = await fixture();
     const receiptFile = path.join(
