@@ -32,6 +32,7 @@ export const controlledSuiteCrossEvidenceRules = {
     'restore report repeats the exact encrypted artifact and financial snapshot hashes',
     'restore report uses the exact backup completion timestamp from the manifest',
     'physical WAL recovery references the exact encrypted backup and starts after completion',
+    'external deletion replay evidence follows the restored database completion',
   ],
   GREENFIELD_CUTOVER_GUARD: [
     'the waiver database-path coverage includes every inventoried V5 source location',
@@ -211,6 +212,21 @@ export function validateControlledSuiteDocuments(suiteCode, documents) {
         backupSelectedAt < backupCompletedAt
       )
         failures.push('physical WAL recovery selected the backup before it completed');
+    }
+    const externalDeletion = get('external-deletion-samples.json');
+    if (restore && externalDeletion) {
+      const restoreCompletedAt = Date.parse(restore.restoreCompletedAt);
+      const deletionTimes = [
+        ...(externalDeletion.targets ?? []).map((target) => Date.parse(target?.verifiedAt)),
+        ...(externalDeletion.samples ?? []).map((sample) => Date.parse(sample?.verifiedAt)),
+      ];
+      if (
+        Number.isFinite(restoreCompletedAt) &&
+        deletionTimes.some(
+          (verifiedAt) => Number.isFinite(verifiedAt) && verifiedAt < restoreCompletedAt,
+        )
+      )
+        failures.push('external deletion replay evidence precedes restore completion');
     }
   } else if (suiteCode === 'GREENFIELD_CUTOVER_GUARD') {
     const inventory = get('legacy-production-inventory.json');
