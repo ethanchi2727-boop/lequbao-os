@@ -12,6 +12,10 @@ describe('backup and restore evidence boundary', () => {
     expect(backup).not.toContain('DATABASE_URL =');
     expect(backup).toContain("yyyy-MM-dd'T'HH:mm:ss.fff'Z'");
     expect(backup).not.toContain("ToString('o')");
+    expect(backup).toContain('[System.IO.Path]::GetTempPath()');
+    expect(backup).toContain('if (-not $published)');
+    expect(backup).not.toContain('$plain = Join-Path $resolved');
+    expect(backup).toContain('[Text.UTF8Encoding]::new($false)');
     for (const metric of [
       'orders_payable_cents',
       'verified_payment_cents',
@@ -46,5 +50,6 @@ describe('backup and restore evidence boundary', () => {
     expect(restore).toContain('$manifest.writeFrozen -isnot [bool]');
     expect(restore).toContain("yyyy-MM-dd'T'HH:mm:ss.fff'Z'");
     expect(restore).not.toContain("ToString('o')");
+    expect(restore).toContain('[Text.UTF8Encoding]::new($false)');
   });
 });

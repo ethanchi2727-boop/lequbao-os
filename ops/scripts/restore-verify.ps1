@@ -197,7 +197,11 @@ finally {
   }
   $reportDirectory = Split-Path -Parent $reportFile
   if ($reportDirectory) { New-Item -ItemType Directory -Force -Path $reportDirectory | Out-Null }
-  $report | ConvertTo-Json -Depth 20 | Set-Content -Encoding UTF8 -LiteralPath $reportFile -NoNewline
+  [IO.File]::WriteAllText(
+    $reportFile,
+    ($report | ConvertTo-Json -Depth 20),
+    [Text.UTF8Encoding]::new($false)
+  )
 }
 
 if ($failure) { throw "restore verification failed; see report: $reportFile" }

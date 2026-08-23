@@ -21,14 +21,16 @@ $snapshotSql = Join-Path $repositoryRoot 'ops\sql\financial-snapshot.sql'
 $resolved = [System.IO.Path]::GetFullPath($OutputDirectory)
 New-Item -ItemType Directory -Force -Path $resolved | Out-Null
 $stamp = (Get-Date).ToUniversalTime().ToString('yyyyMMddTHHmmssZ')
-$plain = Join-Path $resolved "lequ-$stamp.dump"
-$encrypted = "$plain.age"
+$plain = Join-Path ([System.IO.Path]::GetTempPath()) "lequ-$stamp-$([guid]::NewGuid().ToString('N')).dump"
+$encrypted = Join-Path $resolved "lequ-$stamp.dump.age"
 $manifestPath = "$encrypted.manifest.json"
+$manifestTemp = "$manifestPath.$([guid]::NewGuid().ToString('N')).tmp"
 if ((Test-Path -LiteralPath $encrypted) -or (Test-Path -LiteralPath $manifestPath)) {
   throw 'backup artifact already exists'
 }
 
 $startedAt = (Get-Date).ToUniversalTime()
+$published = $false
 try {
   $financialSnapshot = (& psql --dbname=$env:DATABASE_URL --tuples-only --no-align --set=ON_ERROR_STOP=1 --file=$snapshotSql | Out-String).Trim()
   if ($LASTEXITCODE -ne 0 -or -not $financialSnapshot) { throw 'source financial snapshot failed' }
@@ -67,9 +69,20 @@ try {
     financialSnapshot = $snapshotObject
     writeFrozen = $true
   }
-  $manifest | ConvertTo-Json -Depth 20 | Set-Content -Encoding UTF8 -LiteralPath $manifestPath -NoNewline
+  [IO.File]::WriteAllText(
+    $manifestTemp,
+    ($manifest | ConvertTo-Json -Depth 20),
+    [Text.UTF8Encoding]::new($false)
+  )
+  Move-Item -LiteralPath $manifestTemp -Destination $manifestPath
+  $published = $true
   Write-Output $encrypted
 }
 finally {
   if (Test-Path -LiteralPath $plain) { Remove-Item -LiteralPath $plain -Force }
+  if (Test-Path -LiteralPath $manifestTemp) { Remove-Item -LiteralPath $manifestTemp -Force }
+  if (-not $published) {
+    if (Test-Path -LiteralPath $manifestPath) { Remove-Item -LiteralPath $manifestPath -Force }
+    if (Test-Path -LiteralPath $encrypted) { Remove-Item -LiteralPath $encrypted -Force }
+  }
 }
