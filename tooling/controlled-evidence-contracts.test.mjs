@@ -1130,6 +1130,31 @@ describe('controlled JSON evidence contracts', () => {
       ]),
     );
     expect(
+      validateControlledJsonEvidence('order-results.json', {
+        successfulOrders: [
+          {
+            contenderRef: 'same',
+            orderRefHash: 'a'.repeat(64),
+            quantity: 0,
+          },
+          {
+            contenderRef: 'same',
+            orderRefHash: 'a'.repeat(64),
+            quantity: 1,
+          },
+        ],
+        successfulQuantity: 1,
+        failedContenders: [{ contenderRef: 'same', partialFactCount: 0 }],
+      }),
+    ).toEqual(
+      expect.arrayContaining([
+        'order-results.json successfulOrders[0].quantity must be a positive integer',
+        'order-results.json successful contender references must be unique',
+        'order-results.json successful order references must be unique',
+        'order-results.json contender cannot both succeed and fail',
+      ]),
+    );
+    expect(
       validateControlledJsonEvidence('runtime-policy.json', {
         result: 'PASS',
         allowedHosts: ['http://unsafe.example/path'],

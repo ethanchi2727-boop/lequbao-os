@@ -11,6 +11,7 @@ export const controlledSuiteCrossEvidenceRules = {
     'opening stock equals the declared input stock',
     'successful quantity does not exceed stock or requested quantity',
     'ledger sold quantity equals successful quantity',
+    'each successful contender quantity and order reference reconciles exactly with the ledger',
     'closing stock equals opening stock minus successful quantity',
     'every contender has exactly one successful or failed outcome and failed outcomes have no partial fact',
   ],
@@ -94,6 +95,20 @@ export function validateControlledSuiteDocuments(suiteCode, documents) {
         outcomeRefs.some((reference) => !inputRefs.has(reference))
       )
         failures.push('commerce contender outcomes do not reconcile exactly with input contenders');
+      const requestedByContender = new Map(
+        (input.contenders ?? []).map((item) => [item?.contenderRef, item?.quantity]),
+      );
+      for (const order of orders.successfulOrders ?? [])
+        if (requestedByContender.get(order?.contenderRef) !== order?.quantity)
+          failures.push(`successful quantity does not match contender ${order?.contenderRef}`);
+      const ledgerByOrder = new Map(
+        (ledger.entries ?? []).map((entry) => [entry?.orderRefHash, entry?.quantity]),
+      );
+      const successfulByOrder = new Map(
+        (orders.successfulOrders ?? []).map((order) => [order?.orderRefHash, order?.quantity]),
+      );
+      if (!same(ledgerByOrder, successfulByOrder))
+        failures.push('inventory ledger orders do not reconcile with successful orders');
     }
   } else if (suiteCode === 'PAYMENT_PROVIDER_SANDBOX') {
     const request = get('provider-request-redacted.json');

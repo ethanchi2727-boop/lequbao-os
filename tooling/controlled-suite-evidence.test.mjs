@@ -35,14 +35,23 @@ describe('controlled suite cross-evidence contracts', () => {
         'concurrency-input.json': {
           stock: 3,
           requestedQuantity: 3,
-          contenders: ['a', 'b', 'c'].map((contenderRef) => ({ contenderRef })),
+          contenders: ['a', 'b', 'c'].map((contenderRef) => ({ contenderRef, quantity: 1 })),
         },
         'order-results.json': {
           successfulQuantity: 3,
-          successfulOrders: ['a', 'b', 'c'].map((contenderRef) => ({ contenderRef })),
+          successfulOrders: ['a', 'b', 'c'].map((contenderRef, index) => ({
+            contenderRef,
+            orderRefHash: `${index + 1}`,
+            quantity: 1,
+          })),
           failedContenders: [],
         },
-        'inventory-ledger.json': { openingStock: 3, soldQuantity: 3, closingStock: 0 },
+        'inventory-ledger.json': {
+          openingStock: 3,
+          soldQuantity: 3,
+          closingStock: 0,
+          entries: ['1', '2', '3'].map((orderRefHash) => ({ orderRefHash, quantity: 1 })),
+        },
       }),
     ).toEqual([]);
     expect(

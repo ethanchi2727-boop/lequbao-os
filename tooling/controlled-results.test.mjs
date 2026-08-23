@@ -166,6 +166,7 @@ function semanticFixture(artifact, binding) {
       successfulQuantity: 3,
       successfulOrders: Array.from({ length: 3 }, (_, index) => ({
         contenderRef: `contender-${index}`,
+        orderRefHash: `${index + 1}`.repeat(64),
         quantity: 1,
       })),
       failedContenders: Array.from({ length: 7 }, (_, index) => ({
@@ -180,7 +181,7 @@ function semanticFixture(artifact, binding) {
       entries: Array.from({ length: 3 }, (_, index) => ({
         type: 'SOLD',
         quantity: 1,
-        orderRef: `order-${index}`,
+        orderRefHash: `${index + 1}`.repeat(64),
       })),
     },
     'provider-request-redacted.json': {

@@ -1942,14 +1942,34 @@ function validateOrderResults(value) {
   );
   if (quantity !== value.successfulQuantity)
     failures.push(`${artifact} successful order quantities must equal successfulQuantity`);
-  for (const [index, order] of successful.entries())
-    if (!order || typeof order !== 'object' || typeof order.contenderRef !== 'string')
+  const contenderRefs = new Set();
+  const orderRefs = new Set();
+  for (const [index, order] of successful.entries()) {
+    if (!order || typeof order !== 'object' || typeof order.contenderRef !== 'string') {
       failures.push(`${artifact} successfulOrders[${index}] must identify its contender`);
+      continue;
+    }
+    if (contenderRefs.has(order.contenderRef))
+      failures.push(`${artifact} successful contender references must be unique`);
+    else contenderRefs.add(order.contenderRef);
+    if (!validSha256(order.orderRefHash))
+      failures.push(`${artifact} successfulOrders[${index}].orderRefHash has invalid format`);
+    else if (orderRefs.has(order.orderRefHash))
+      failures.push(`${artifact} successful order references must be unique`);
+    else orderRefs.add(order.orderRefHash);
+    if (!Number.isSafeInteger(order.quantity) || order.quantity < 1)
+      failures.push(`${artifact} successfulOrders[${index}].quantity must be a positive integer`);
+  }
   for (const [index, contender] of failed.entries()) {
     if (!contender || typeof contender !== 'object')
       failures.push(`${artifact} failedContenders[${index}] must be an object`);
     else if (contender.partialFactCount !== 0)
       failures.push(`${artifact} failedContenders[${index}].partialFactCount must equal 0`);
+    if (typeof contender?.contenderRef !== 'string' || !contender.contenderRef.trim())
+      failures.push(`${artifact} failedContenders[${index}].contenderRef must not be empty`);
+    else if (contenderRefs.has(contender.contenderRef))
+      failures.push(`${artifact} contender cannot both succeed and fail`);
+    else contenderRefs.add(contender.contenderRef);
   }
   return failures;
 }
@@ -1958,6 +1978,7 @@ function validateInventoryLedger(value) {
   const artifact = 'inventory-ledger.json';
   const failures = [];
   let sold = 0;
+  const orderRefs = new Set();
   for (const [index, entry] of (Array.isArray(value.entries) ? value.entries : []).entries()) {
     const prefix = `${artifact} entries[${index}]`;
     if (!entry || Array.isArray(entry) || typeof entry !== 'object') {
@@ -1968,8 +1989,11 @@ function validateInventoryLedger(value) {
     if (!Number.isInteger(entry.quantity) || entry.quantity < 1)
       failures.push(`${prefix}.quantity must be a positive integer`);
     else sold += entry.quantity;
-    if (typeof entry.orderRef !== 'string' || !entry.orderRef.trim())
-      failures.push(`${prefix}.orderRef must not be empty`);
+    if (!validSha256(entry.orderRefHash))
+      failures.push(`${prefix}.orderRefHash has invalid format`);
+    else if (orderRefs.has(entry.orderRefHash))
+      failures.push(`${artifact} order references must be unique`);
+    else orderRefs.add(entry.orderRefHash);
   }
   if (sold !== value.soldQuantity)
     failures.push(`${artifact} entry quantities must equal soldQuantity`);
