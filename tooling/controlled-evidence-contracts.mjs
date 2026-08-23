@@ -13,7 +13,8 @@ const commit = field('releaseCommit', 'string', {
 });
 const deployment = field('deploymentId', 'string', { binding: 'deploymentId' });
 const sha256 = (pathName) => field(pathName, 'string', { pattern: '^[a-f0-9]{64}$' });
-const timestamp = (pathName) => field(pathName, 'string', { format: 'date-time' });
+const timestamp = (pathName, options = {}) =>
+  field(pathName, 'string', { format: 'date-time', fresh: true, ...options });
 const futureTimestamp = (pathName) =>
   field(pathName, 'string', { format: 'date-time', allowFuture: true });
 const candidateImageDigest = (pathName, target) =>
@@ -175,7 +176,7 @@ export const controlledJsonEvidenceContracts = {
     commit,
     deployment,
     field('decisionVersion', 'string'),
-    timestamp('effectiveAt'),
+    timestamp('effectiveAt', { fresh: false }),
     field('decisions', 'object'),
     field('approvals', 'array'),
     field('independentReview', 'object'),
@@ -3211,6 +3212,14 @@ export function validateControlledJsonEvidence(artifact, value, binding = {}) {
         failures.push(`${artifact} ${rule.path} must be a canonical millisecond UTC timestamp`);
       else if (!rule.allowFuture && timestamp > Date.now() + 5 * 60_000)
         failures.push(`${artifact} ${rule.path} must not be in the future`);
+      const workspaceCreatedAt = parseCanonicalUtcTimestamp(binding.createdAt);
+      if (
+        rule.fresh &&
+        timestamp !== undefined &&
+        workspaceCreatedAt !== undefined &&
+        timestamp < workspaceCreatedAt
+      )
+        failures.push(`${artifact} ${rule.path} predates the controlled evidence workspace`);
     }
     if (rule.type === 'object' && candidate.value && Object.keys(candidate.value).length === 0)
       failures.push(`${artifact} ${rule.path} must not be empty`);

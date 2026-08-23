@@ -930,7 +930,7 @@ describe('controlled launch results', () => {
       releaseCommit: candidate,
       deploymentId: 'candidate-full-plan-1',
       environment: 'controlled-preproduction',
-      createdAt: new Date(Date.now() - 180_000).toISOString(),
+      createdAt: '2026-08-19T00:59:00.000Z',
     });
     const suites = [];
     for (const suite of actualPlan.suites) {

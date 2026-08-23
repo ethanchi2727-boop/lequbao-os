@@ -141,6 +141,24 @@ describe('controlled JSON evidence contracts', () => {
     ).toContain('rollback.json verifiedAt must be a canonical millisecond UTC timestamp');
   });
 
+  it('rejects execution evidence timestamps from before the controlled workspace', () => {
+    const failures = validateControlledJsonEvidence(
+      'upload-response.json',
+      {
+        status: 201,
+        requestId: 'request-1',
+        objectRefHash: 'a'.repeat(64),
+        malwareScan: 'CLEAN',
+        rawObjectKeyExposed: false,
+        uploadedAt: '2026-08-19T01:00:00.000Z',
+      },
+      { createdAt: '2026-08-19T01:01:00.000Z' },
+    );
+    expect(failures).toContain(
+      'upload-response.json uploadedAt predates the controlled evidence workspace',
+    );
+  });
+
   it('rejects hollow greenfield, financial and legal approvals', () => {
     expect(
       validateControlledJsonEvidence('greenfield-waiver.json', {
