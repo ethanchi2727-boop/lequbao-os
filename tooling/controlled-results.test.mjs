@@ -1064,4 +1064,15 @@ describe('controlled launch results', () => {
       'POSTGRES evidence is invalid for postgres/fixture.log: contains only a placeholder verdict',
     );
   });
+
+  it('rejects verification with a substituted runtime plan object', async () => {
+    await expect(
+      verifyControlledResults({
+        plan: { ...plan, suites: [{ ...plan.suites[0], requiredEvidence: ['substituted.log'] }] },
+        planSource,
+        resultsFile: 'unused-because-plan-binding-fails.json',
+        releaseCommit,
+      }),
+    ).resolves.toEqual(['controlled acceptance plan source does not match the plan object']);
+  });
 });

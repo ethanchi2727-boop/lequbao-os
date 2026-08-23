@@ -6,6 +6,7 @@ import { inspectControlledJsonEvidence } from './controlled-evidence-contracts.m
 import { inspectControlledSuiteEvidence } from './controlled-suite-evidence.mjs';
 import { inspectCaptureReceipt } from './controlled-capture-receipt.mjs';
 import { parseCanonicalUtcTimestamp } from './canonical-time.mjs';
+import { assertControlledPlanSource } from './controlled-plan-source.mjs';
 
 const unexpectedKeys = (value, allowed) =>
   Object.keys(value ?? {}).filter((key) => !allowed.includes(key));
@@ -13,6 +14,13 @@ const opaqueContextLabel = /^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$/u;
 
 export async function verifyControlledResults({ plan, planSource, resultsFile, releaseCommit }) {
   const failures = [];
+  try {
+    assertControlledPlanSource(plan, planSource);
+  } catch (error) {
+    return [
+      error instanceof Error ? error.message : 'controlled acceptance plan source is invalid',
+    ];
+  }
   if (!/^[a-f0-9]{40}$/u.test(releaseCommit ?? ''))
     return ['RELEASE_COMMIT must be the exact 40-character candidate commit'];
   let results;

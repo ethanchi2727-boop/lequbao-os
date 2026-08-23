@@ -149,6 +149,24 @@ describe('controlled result assembly', () => {
     ).rejects.toThrow(/duplicated/u);
   });
 
+  it('rejects a runtime plan object that differs from the hashed plan source', async () => {
+    const root = await fixture('1'.repeat(40));
+    await expect(
+      assembleControlledResults({
+        plan: {
+          ...plan,
+          suites: [
+            { ...plan.suites[0], requiredEvidence: ['substituted.log', 'rls-denials.json'] },
+          ],
+        },
+        planSource,
+        decisions: { version: 1, releaseCommit: '1'.repeat(40), suites: [decision] },
+        evidenceRoot: root,
+        generatedAt: '2026-08-19T01:07:00.000Z',
+      }),
+    ).rejects.toThrow('plan source does not match the plan object');
+  });
+
   it('rejects same-person or pre-completion review metadata', async () => {
     const root = await fixture('c'.repeat(40));
     await expect(

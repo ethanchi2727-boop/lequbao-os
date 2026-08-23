@@ -115,6 +115,15 @@ describe('controlled evidence capture', () => {
     await expect(
       captureControlledEvidenceArtifact({ ...input, planSource: `${planSource}\n` }),
     ).rejects.toThrow('plan hash does not match');
+    await expect(
+      captureControlledEvidenceArtifact({
+        ...input,
+        plan: {
+          ...plan,
+          suites: [{ ...plan.suites[0], requiredEvidence: ['capture.log'] }],
+        },
+      }),
+    ).rejects.toThrow('plan source does not match the plan object');
   });
 
   it('rejects a declared artifact name that can escape its suite directory', async () => {

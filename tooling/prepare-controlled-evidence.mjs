@@ -2,7 +2,7 @@ import { createHash } from 'node:crypto';
 import { execFile as execFileCallback } from 'node:child_process';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
-import { isDeepStrictEqual, promisify } from 'node:util';
+import { promisify } from 'node:util';
 import { fileURLToPath } from 'node:url';
 import {
   controlledJsonEvidenceContracts,
@@ -10,6 +10,7 @@ import {
 } from './controlled-evidence-contracts.mjs';
 import { controlledSuiteCrossEvidenceRules } from './controlled-suite-evidence.mjs';
 import { parseCanonicalUtcTimestamp } from './canonical-time.mjs';
+import { assertControlledPlanSource } from './controlled-plan-source.mjs';
 
 const execFile = promisify(execFileCallback);
 const opaqueLabel = /^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$/u;
@@ -37,14 +38,7 @@ function validateInputs({
   if (!opaqueLabel.test(environment ?? '')) throw new Error('environment must be an opaque label');
   if (plan?.version !== 1 || !Array.isArray(plan.suites) || plan.suites.length === 0)
     throw new Error('controlled acceptance plan is invalid');
-  let parsedPlan;
-  try {
-    parsedPlan = JSON.parse(planSource);
-  } catch {
-    throw new Error('controlled acceptance plan source is invalid JSON');
-  }
-  if (!isDeepStrictEqual(parsedPlan, plan))
-    throw new Error('controlled acceptance plan source does not match the plan object');
+  assertControlledPlanSource(plan, planSource);
   const codes = new Set();
   const directories = new Set();
   for (const suite of plan.suites) {

@@ -8,6 +8,7 @@ import { inspectControlledJsonEvidence } from './controlled-evidence-contracts.m
 import { inspectControlledSuiteEvidence } from './controlled-suite-evidence.mjs';
 import { inspectCaptureReceipt } from './controlled-capture-receipt.mjs';
 import { parseCanonicalUtcTimestamp } from './canonical-time.mjs';
+import { assertControlledPlanSource } from './controlled-plan-source.mjs';
 
 const suiteFields = [
   'code',
@@ -112,6 +113,7 @@ export async function assembleControlledResults({
   generatedAt = new Date().toISOString(),
 }) {
   if (!path.isAbsolute(evidenceRoot)) throw new Error('evidenceRoot must be absolute');
+  assertControlledPlanSource(plan, planSource);
   if (!decisions || Array.isArray(decisions) || typeof decisions !== 'object')
     throw new Error('decisions must be an object');
   const extraDecisionFields = Object.keys(decisions).filter(

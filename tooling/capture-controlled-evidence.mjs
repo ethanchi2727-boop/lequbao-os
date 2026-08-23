@@ -10,6 +10,7 @@ import { inspectControlledJsonEvidence } from './controlled-evidence-contracts.m
 import { captureReceiptPath, inspectCaptureReceipt } from './controlled-capture-receipt.mjs';
 import { assertCandidateCheckout } from './prepare-controlled-evidence.mjs';
 import { parseCanonicalUtcTimestamp } from './canonical-time.mjs';
+import { assertControlledPlanSource } from './controlled-plan-source.mjs';
 
 const execFile = promisify(execFileCallback);
 
@@ -34,6 +35,7 @@ export async function captureControlledEvidenceArtifact({
 }) {
   if (!path.isAbsolute(evidenceRoot)) throw new Error('evidenceRoot must be absolute');
   if (!path.isAbsolute(source)) throw new Error('source must be absolute');
+  assertControlledPlanSource(plan, planSource);
   if (typeof artifact !== 'string' || path.basename(artifact) !== artifact || !artifact.trim())
     throw new Error('artifact must be a single non-empty file name');
   const suite = plan.suites?.find((item) => item.code === suiteCode);
