@@ -41,7 +41,7 @@ describe('performance database snapshot', () => {
   it('normalizes complete PostgreSQL statistics without precision loss', async () => {
     await expect(capturePerformanceDatabaseSnapshot(database(rows()))).resolves.toMatchObject({
       capturedAt: expect.stringMatching(/Z$/u),
-      databaseName: 'lequ-controlled',
+      databaseRefHash: 'bfa064f377d805b4dbd0e84d8d0edc01fcb7efa45612eab8915eb771fb9c68e6',
       sizeBytes: 1024,
       tableCount: 164,
       migrationVersions: requiredDatabaseMigrationVersions,

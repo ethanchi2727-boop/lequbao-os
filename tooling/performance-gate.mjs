@@ -45,12 +45,9 @@ const startedAt = new Date();
 const started = performance.now();
 const report = {
   schemaVersion: 1,
-  runId,
-  environment: config.environment,
   releaseCommit: config.releaseCommit,
   workflowRunId: config.workflowRunId,
   images: config.images,
-  baseOrigin: config.base.origin,
   startedAt: startedAt.toISOString(),
   concurrency: config.concurrency,
   requestsPerScenario: config.requests,

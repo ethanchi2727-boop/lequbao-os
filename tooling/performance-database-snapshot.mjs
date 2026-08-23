@@ -1,3 +1,5 @@
+import { createHash } from 'node:crypto';
+
 export async function capturePerformanceDatabaseSnapshot(database) {
   const [databaseStats, tableStats, outbox, migrations] = await Promise.all([
     database.query(
@@ -51,7 +53,7 @@ export async function capturePerformanceDatabaseSnapshot(database) {
     throw new Error('performance database snapshot migration versions must be unique');
   return {
     capturedAt: new Date().toISOString(),
-    databaseName: row.database_name,
+    databaseRefHash: createHash('sha256').update(row.database_name).digest('hex'),
     sizeBytes: integer('sizeBytes', row.size_bytes),
     connections: integer('connections', row.numbackends),
     committedTransactions: integer('committedTransactions', row.xact_commit),

@@ -1338,7 +1338,7 @@ function validatePerformanceSnapshot(artifact, pathName, snapshot, failures) {
       'capturedAt',
       'committedTransactions',
       'connections',
-      'databaseName',
+      'databaseRefHash',
       'deadlocks',
       'estimatedLiveRows',
       'messageBacklog',
@@ -1353,8 +1353,8 @@ function validatePerformanceSnapshot(artifact, pathName, snapshot, failures) {
     failures.push(`${artifact} ${pathName} fields are invalid`);
   if (!hasExactKeys(snapshot.messageBacklog, ['activeCount', 'deadCount', 'oldestActiveSeconds']))
     failures.push(`${artifact} ${pathName}.messageBacklog fields are invalid`);
-  if (typeof snapshot.databaseName !== 'string' || !snapshot.databaseName.trim())
-    failures.push(`${artifact} ${pathName}.databaseName must not be empty`);
+  if (!validSha256(snapshot.databaseRefHash))
+    failures.push(`${artifact} ${pathName}.databaseRefHash has invalid format`);
   if (!validDateTime(snapshot.capturedAt))
     failures.push(`${artifact} ${pathName}.capturedAt must be a non-future ISO date-time`);
   for (const fieldName of [
@@ -1532,8 +1532,8 @@ function validatePerformanceReport(value) {
   validatePerformanceSnapshot(artifact, 'database.before', value.database?.before, failures);
   validatePerformanceSnapshot(artifact, 'database.after', value.database?.after, failures);
   if (
-    value.database?.before?.databaseName !== undefined &&
-    value.database.before.databaseName !== value.database?.after?.databaseName
+    value.database?.before?.databaseRefHash !== undefined &&
+    value.database.before.databaseRefHash !== value.database?.after?.databaseRefHash
   )
     failures.push(`${artifact} before and after snapshots must use the same database`);
   const beforeDead = value.database?.before?.messageBacklog?.deadCount;

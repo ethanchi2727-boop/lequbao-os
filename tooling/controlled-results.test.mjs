@@ -75,7 +75,7 @@ function semanticFixture(artifact, binding) {
   };
   const performanceSnapshot = {
     capturedAt: '2026-08-19T01:00:30.000Z',
-    databaseName: 'lequ-controlled',
+    databaseRefHash: '9'.repeat(64),
     sizeBytes: 1,
     connections: 1,
     committedTransactions: 1,

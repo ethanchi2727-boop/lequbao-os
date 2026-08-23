@@ -632,13 +632,13 @@ describe('controlled JSON evidence contracts', () => {
       database: {
         before: {
           capturedAt: '2026-08-19T01:02:00.000Z',
-          databaseName: 'before-database',
+          databaseRefHash: 'd'.repeat(64),
           tableCount: 164,
           migrationVersions: [...requiredDatabaseMigrationVersions].reverse(),
         },
         after: {
           capturedAt: '2026-08-19T00:59:00.000Z',
-          databaseName: 'after-database',
+          databaseRefHash: 'e'.repeat(64),
         },
       },
     });
