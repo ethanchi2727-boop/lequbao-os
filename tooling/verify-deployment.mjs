@@ -176,6 +176,7 @@ for (const marker of [
   '.github/workflows/publish-candidate-images.yml',
   '.head_sha == $trusted',
   '/actions/runs/${CANDIDATE_IMAGE_RUN_ID}/artifacts?per_page=100',
+  '.total_count == (.artifacts | length)',
   '(.workflow_run.id | tostring) == $run',
   '(.digest | test("^sha256:[0-9a-f]{64}$"))',
   '/actions/artifacts/${artifact_id}/zip',

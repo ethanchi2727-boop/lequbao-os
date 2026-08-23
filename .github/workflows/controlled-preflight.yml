@@ -149,14 +149,15 @@ jobs:
             --arg name "$artifact_name" \
             --arg run "$CANDIDATE_IMAGE_RUN_ID" \
             --arg trusted "$GITHUB_SHA" \
-            '[.artifacts[] | select(
+            '.total_count == (.artifacts | length) and
+            ([.artifacts[] | select(
               .name == $name and .expired == false and .id > 0 and
               .size_in_bytes > 0 and .size_in_bytes <= 1048576 and
               (.digest | test("^sha256:[0-9a-f]{64}$")) and
               (.workflow_run.id | tostring) == $run and
               .workflow_run.head_branch == "main" and
               .workflow_run.head_sha == $trusted
-            )] | length == 1' <<<"$artifacts" >/dev/null
+            )] | length == 1)' <<<"$artifacts" >/dev/null
           artifact="$(jq --compact-output \
             --arg name "$artifact_name" \
             --arg run "$CANDIDATE_IMAGE_RUN_ID" \

@@ -209,6 +209,7 @@ describe('controlled environment preflight', () => {
     expect(source).toContain('.path == ".github/workflows/publish-candidate-images.yml"');
     expect(source).toContain('.head_sha == $trusted');
     expect(source).toContain('/actions/runs/${CANDIDATE_IMAGE_RUN_ID}/artifacts?per_page=100');
+    expect(source).toContain('.total_count == (.artifacts | length)');
     expect(source).toContain('(.workflow_run.id | tostring) == $run');
     expect(source).toContain('(.digest | test("^sha256:[0-9a-f]{64}$"))');
     expect(source).toContain('/actions/artifacts/${artifact_id}/zip');
