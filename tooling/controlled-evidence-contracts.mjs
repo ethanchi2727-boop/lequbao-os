@@ -130,7 +130,7 @@ export const controlledJsonEvidenceContracts = {
   ],
   'backup.manifest.json': [
     field('schemaVersion', 'number', { equals: 1 }),
-    field('backupFile', 'string'),
+    field('backupFile', 'string', { pattern: '^lequ-[0-9]{8}T[0-9]{6}Z\\.dump\\.age$' }),
     timestamp('backupStartedAt'),
     timestamp('backupCompletedAt'),
     field('encryptedSizeBytes', 'number', { minimum: 1 }),
@@ -142,7 +142,7 @@ export const controlledJsonEvidenceContracts = {
   'restore-report.json': [
     pass,
     field('schemaVersion', 'number', { equals: 1 }),
-    field('backupFile', 'string'),
+    field('backupFile', 'string', { pattern: '^lequ-[0-9]{8}T[0-9]{6}Z\\.dump\\.age$' }),
     timestamp('failureTime'),
     timestamp('backupCompletedAt'),
     timestamp('restoreStartedAt'),
@@ -697,6 +697,8 @@ function validateLegalRelease(value) {
 function validateBackupManifest(value) {
   const artifact = 'backup.manifest.json';
   const failures = [];
+  if (!Number.isSafeInteger(value.encryptedSizeBytes))
+    failures.push(`${artifact} encryptedSizeBytes must be an integer`);
   if (
     validDateTime(value.backupStartedAt) &&
     validDateTime(value.backupCompletedAt) &&

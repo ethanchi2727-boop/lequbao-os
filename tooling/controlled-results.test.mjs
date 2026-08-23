@@ -301,12 +301,12 @@ function semanticFixture(artifact, binding) {
       reviewedAt: '2026-08-19T01:00:00.000Z',
     },
     'backup.manifest.json': {
-      backupFile: 'candidate.dump.age',
+      backupFile: 'lequ-20260819T010000Z.dump.age',
       encryptedSha256: 'd'.repeat(64),
       financialSnapshotSha256: 'e'.repeat(64),
     },
     'restore-report.json': {
-      backupFile: 'candidate.dump.age',
+      backupFile: 'lequ-20260819T010000Z.dump.age',
       encryptedSha256: 'd'.repeat(64),
       financialSnapshotSha256: 'e'.repeat(64),
       databaseFixturesPassed: Array.from({ length: 22 }, (_, index) => `fixture-${index}.sql`),

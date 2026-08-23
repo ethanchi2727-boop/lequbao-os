@@ -5,6 +5,12 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+function Format-CanonicalUtc([DateTimeOffset]$Value) {
+  $Value.ToUniversalTime().ToString(
+    "yyyy-MM-dd'T'HH:mm:ss.fff'Z'",
+    [Globalization.CultureInfo]::InvariantCulture
+  )
+}
 if (-not $env:RESTORE_ADMIN_URL) { throw 'RESTORE_ADMIN_URL is required' }
 if (-not $env:AGE_IDENTITY_FILE) { throw 'AGE_IDENTITY_FILE is required' }
 if (-not $env:DRILL_FAILURE_TIME_UTC) { throw 'DRILL_FAILURE_TIME_UTC is required' }
@@ -56,12 +62,12 @@ if (($manifest.encryptedSizeBytes -isnot [int] -and $manifest.encryptedSizeBytes
 if ($null -eq $manifest.financialSnapshot -or $manifest.financialSnapshot -isnot [pscustomobject]) {
   throw 'backup manifest financial snapshot is invalid'
 }
-$canonicalUtcPattern = '^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{7}Z$'
+$canonicalUtcPattern = '^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$'
 $backupStartedAtText = if ($manifest.backupStartedAt -is [DateTime]) {
-  ([DateTime]$manifest.backupStartedAt).ToUniversalTime().ToString('o')
+  Format-CanonicalUtc ([DateTime]$manifest.backupStartedAt)
 } else { [string]$manifest.backupStartedAt }
 $backupCompletedAtText = if ($manifest.backupCompletedAt -is [DateTime]) {
-  ([DateTime]$manifest.backupCompletedAt).ToUniversalTime().ToString('o')
+  Format-CanonicalUtc ([DateTime]$manifest.backupCompletedAt)
 } else { [string]$manifest.backupCompletedAt }
 if ($backupStartedAtText -cnotmatch $canonicalUtcPattern -or
     $backupCompletedAtText -cnotmatch $canonicalUtcPattern -or
@@ -173,10 +179,10 @@ finally {
     backupFile = [System.IO.Path]::GetFileName($backup)
     targetDatabase = $TargetDatabase
     fixtureDatabase = $fixtureDatabase
-    failureTime = $failureTime.ToString('o')
-    backupCompletedAt = $backupCompletedAt.ToString('o')
-    restoreStartedAt = $startedAt.ToString('o')
-    restoreCompletedAt = ([DateTimeOffset]$completedAt).ToString('o')
+    failureTime = Format-CanonicalUtc $failureTime
+    backupCompletedAt = Format-CanonicalUtc $backupCompletedAt
+    restoreStartedAt = Format-CanonicalUtc $startedAt
+    restoreCompletedAt = Format-CanonicalUtc ([DateTimeOffset]$completedAt)
     rpoSeconds = $rpoSeconds
     rtoSeconds = $rtoSeconds
     rpoThresholdSeconds = 300

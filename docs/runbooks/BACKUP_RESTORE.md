@@ -11,7 +11,7 @@ Production uses encrypted PostgreSQL physical/WAL backups with a core-transactio
 
 ## Restore and verify
 
-1. Record the already-reached simulated failure time in canonical .NET round-trip UTC form (`yyyy-MM-ddTHH:mm:ss.fffffffZ`) and set it as `DRILL_FAILURE_TIME_UTC`. A future failure time is rejected so RTO cannot become negative. Set `RESTORE_ADMIN_URL` and `AGE_IDENTITY_FILE` only in the controlled runner.
+1. Record the already-reached simulated failure time in canonical millisecond UTC form (`yyyy-MM-ddTHH:mm:ss.fffZ`) and set it as `DRILL_FAILURE_TIME_UTC`. A future failure time is rejected so RTO cannot become negative. Set `RESTORE_ADMIN_URL` and `AGE_IDENTITY_FILE` only in the controlled runner.
 2. Choose a database name matching `lequ_restore_[a-z0-9_]+` that does not exist. Choose a new `.json` report path; the script refuses to replace existing evidence.
 3. Run `ops/scripts/restore-verify.ps1 -EncryptedBackup <file.dump.age> -TargetDatabase <lequ_restore_name> -ReportPath <new-report.json>`.
 4. The script requires the exact manifest schema and native JSON types, then verifies the backup filename, positive byte size and lowercase SHA-256 values before decrypting only to an OS temporary file. It creates a fresh database, restores with fail-fast options, enqueues deletion replay, compares the restored per-tenant financial digest with the backup manifest and runs every SQL fixture including RLS and immutable-ledger checks.

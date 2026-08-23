@@ -1,6 +1,12 @@
 param([Parameter(Mandatory = $true)][string]$OutputDirectory)
 
 $ErrorActionPreference = 'Stop'
+function Format-CanonicalUtc([DateTimeOffset]$Value) {
+  $Value.ToUniversalTime().ToString(
+    "yyyy-MM-dd'T'HH:mm:ss.fff'Z'",
+    [Globalization.CultureInfo]::InvariantCulture
+  )
+}
 if (-not $env:DATABASE_URL) { throw 'DATABASE_URL is required' }
 if (-not $env:BACKUP_ENCRYPTION_RECIPIENT) { throw 'BACKUP_ENCRYPTION_RECIPIENT is required' }
 if ($env:BACKUP_DRILL_WRITE_FROZEN -ne 'true') {
@@ -44,8 +50,8 @@ try {
   $manifest = [ordered]@{
     schemaVersion = 1
     backupFile = [System.IO.Path]::GetFileName($encrypted)
-    backupStartedAt = $startedAt.ToString('o')
-    backupCompletedAt = $completedAt.ToString('o')
+    backupStartedAt = Format-CanonicalUtc $startedAt
+    backupCompletedAt = Format-CanonicalUtc $completedAt
     encryptedSizeBytes = [long](Get-Item -LiteralPath $encrypted).Length
     encryptedSha256 = $hash
     financialSnapshotSha256 = $snapshotDigest

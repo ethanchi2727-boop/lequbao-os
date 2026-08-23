@@ -8,6 +8,8 @@ describe('backup and restore evidence boundary', () => {
     expect(backup).toContain('BACKUP_DRILL_WRITE_FROZEN');
     expect(backup).toContain('financialSnapshotSha256');
     expect(backup).not.toContain('DATABASE_URL =');
+    expect(backup).toContain("yyyy-MM-dd'T'HH:mm:ss.fff'Z'");
+    expect(backup).not.toContain("ToString('o')");
     for (const metric of [
       'orders_payable_cents',
       'verified_payment_cents',
@@ -40,5 +42,7 @@ describe('backup and restore evidence boundary', () => {
     ])
       expect(restore).toContain(marker);
     expect(restore).toContain('$manifest.writeFrozen -isnot [bool]');
+    expect(restore).toContain("yyyy-MM-dd'T'HH:mm:ss.fff'Z'");
+    expect(restore).not.toContain("ToString('o')");
   });
 });

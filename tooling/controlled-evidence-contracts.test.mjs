@@ -260,7 +260,7 @@ describe('controlled JSON evidence contracts', () => {
       validateControlledJsonEvidence('restore-report.json', {
         result: 'PASS',
         schemaVersion: 1,
-        backupFile: 'candidate.dump.age',
+        backupFile: 'lequ-20260819T010000Z.dump.age',
         failureTime: '2026-08-19T01:00:00.000Z',
         backupCompletedAt: '2026-08-19T00:59:00.000Z',
         restoreStartedAt: '2026-08-19T01:01:00.000Z',
@@ -337,6 +337,22 @@ describe('controlled JSON evidence contracts', () => {
         'performance-report.json persistence persistedMessageIds must be a non-negative integer',
       ]),
     );
+  });
+
+  it('rejects non-canonical backup artifact names', () => {
+    expect(
+      validateControlledJsonEvidence('backup.manifest.json', {
+        schemaVersion: 1,
+        backupFile: '../candidate.dump.age',
+        backupStartedAt: '2026-08-19T01:00:00.000Z',
+        backupCompletedAt: '2026-08-19T01:01:00.000Z',
+        encryptedSizeBytes: 1,
+        encryptedSha256: 'a'.repeat(64),
+        financialSnapshotSha256: 'b'.repeat(64),
+        financialSnapshot: { tenants: [] },
+        writeFrozen: true,
+      }),
+    ).toContain('backup.manifest.json backupFile has invalid format');
   });
 
   it('requires one-time signed payment convergence and query-before-retry evidence', () => {
