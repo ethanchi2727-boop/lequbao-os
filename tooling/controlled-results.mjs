@@ -7,8 +7,12 @@ import { inspectControlledSuiteEvidence } from './controlled-suite-evidence.mjs'
 import { inspectCaptureReceipt } from './controlled-capture-receipt.mjs';
 
 const safeTime = (value) => {
+  if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/u.test(value))
+    return undefined;
   const milliseconds = Date.parse(value);
-  return Number.isFinite(milliseconds) ? milliseconds : undefined;
+  return Number.isFinite(milliseconds) && new Date(milliseconds).toISOString() === value
+    ? milliseconds
+    : undefined;
 };
 
 const unexpectedKeys = (value, allowed) =>

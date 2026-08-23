@@ -621,6 +621,27 @@ describe('controlled launch results', () => {
     );
   });
 
+  it('requires canonical millisecond UTC timestamps for results and review chronology', async () => {
+    const { results, resultsFile } = await fixture();
+    results.generatedAt = '2026-08-19T09:06:00.000+08:00';
+    results.suites[0].startedAt = '2026-08-19T01:00:00Z';
+    results.suites[0].reviewedAt = '2026-08-19T09:06:00.000+08:00';
+    await writeFile(resultsFile, JSON.stringify(results));
+    const failures = await verifyControlledResults({
+      plan,
+      planSource,
+      resultsFile,
+      releaseCommit,
+    });
+    expect(failures).toEqual(
+      expect.arrayContaining([
+        'controlled results generatedAt is invalid or in the future',
+        'POSTGRES has invalid execution timestamps',
+        'POSTGRES has invalid independent-review timestamp',
+      ]),
+    );
+  });
+
   it('rejects a missing or semantically forged capture receipt even with a matching receipt hash', async () => {
     const missing = await fixture();
     const receiptFile = path.join(

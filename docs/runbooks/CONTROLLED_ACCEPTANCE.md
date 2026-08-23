@@ -18,7 +18,7 @@ Place `results.json` at the evidence root and each declared artifact under the e
 
 - the exact 40-character release-candidate `releaseCommit`;
 - `planSha256`, calculated from the unmodified bytes of `controlled-acceptance-plan.json`;
-- a UTC `generatedAt`;
+- a canonical millisecond UTC `generatedAt` (`YYYY-MM-DDTHH:mm:ss.sssZ`);
 - one result for every suite, including external-only suites;
 - suite code, exact environment gate, `PASS`, ordered execution/review timestamps, the planned executor role and a different independent reviewer role;
 - different opaque executor and reviewer subject IDs using an approved `github:`, `org:` or `workforce:` reference; do not use a name, email address or personal contact value;
