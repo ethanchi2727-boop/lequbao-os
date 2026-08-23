@@ -1243,22 +1243,78 @@ function validatePrivacyExportDelete(value) {
     value.export.durationSeconds > 900
   )
     failures.push(`${artifact} export.durationSeconds must be within 0..900`);
+  for (const fieldName of ['deliveryRefHash', 'sessionRefHash'])
+    if (!validSha256(value.export?.[fieldName]))
+      failures.push(`${artifact} export.${fieldName} has invalid format`);
+  const exportRequestedAt = Date.parse(value.export?.requestedAt);
+  const exportCompletedAt = Date.parse(value.export?.completedAt);
+  if (!validDateTime(value.export?.requestedAt))
+    failures.push(`${artifact} export.requestedAt must be a non-future ISO date-time`);
+  if (!validDateTime(value.export?.completedAt))
+    failures.push(`${artifact} export.completedAt must be a non-future ISO date-time`);
+  if (
+    Number.isFinite(exportRequestedAt) &&
+    Number.isFinite(exportCompletedAt) &&
+    exportCompletedAt < exportRequestedAt
+  )
+    failures.push(`${artifact} export.completedAt must not precede requestedAt`);
+  const calculatedExportSeconds = (exportCompletedAt - exportRequestedAt) / 1000;
+  if (
+    Number.isFinite(calculatedExportSeconds) &&
+    Number.isFinite(value.export?.durationSeconds) &&
+    Math.abs(calculatedExportSeconds - value.export.durationSeconds) > 0.01
+  )
+    failures.push(`${artifact} export.durationSeconds does not reconcile with timestamps`);
   if (value.deletion?.authorized !== true)
     failures.push(`${artifact} deletion.authorized must equal true`);
   if (value.deletion?.auditRecorded !== true)
     failures.push(`${artifact} deletion.auditRecorded must equal true`);
-  const requiredTargets = new Set(['database', 'object-store', 'search', 'vector', 'cache']);
+  for (const fieldName of ['authorizationRefHash', 'auditRefHash'])
+    if (!validSha256(value.deletion?.[fieldName]))
+      failures.push(`${artifact} deletion.${fieldName} has invalid format`);
+  const deletionTimeline = ['requestedAt', 'authorizedAt', 'completedAt'].map((fieldName) => {
+    if (!validDateTime(value.deletion?.[fieldName]))
+      failures.push(`${artifact} deletion.${fieldName} must be a non-future ISO date-time`);
+    return Date.parse(value.deletion?.[fieldName]);
+  });
+  if (
+    deletionTimeline.every(Number.isFinite) &&
+    !(deletionTimeline[0] <= deletionTimeline[1] && deletionTimeline[1] <= deletionTimeline[2])
+  )
+    failures.push(`${artifact} deletion timestamps are out of order`);
+  const targetNames = ['database', 'object-store', 'search', 'vector', 'cache'];
+  const requiredTargets = new Set(targetNames);
+  const receiptHashes = new Set();
   for (const [index, target] of (Array.isArray(value.targets) ? value.targets : []).entries()) {
     const prefix = `${artifact} targets[${index}]`;
     if (!target || Array.isArray(target) || typeof target !== 'object') {
       failures.push(`${prefix} must be an object`);
       continue;
     }
-    requiredTargets.delete(target.target);
+    if (!targetNames.includes(target.target)) failures.push(`${prefix}.target is not supported`);
+    else if (!requiredTargets.has(target.target))
+      failures.push(`${artifact} target names must be unique`);
+    else requiredTargets.delete(target.target);
     if (!validSha256(target.receiptHash)) failures.push(`${prefix}.receiptHash has invalid format`);
+    else if (receiptHashes.has(target.receiptHash))
+      failures.push(`${artifact} target receipt hashes must be unique`);
+    else receiptHashes.add(target.receiptHash);
     if (target.deleted !== true) failures.push(`${prefix}.deleted must equal true`);
+    if (!validDateTime(target.deletedAt))
+      failures.push(`${prefix}.deletedAt must be a non-future ISO date-time`);
     if (!validDateTime(target.verifiedAt))
       failures.push(`${prefix}.verifiedAt must be a non-future ISO date-time`);
+    const deletedAt = Date.parse(target.deletedAt);
+    const verifiedAt = Date.parse(target.verifiedAt);
+    if (
+      [deletionTimeline[1], deletedAt, verifiedAt, deletionTimeline[2]].every(Number.isFinite) &&
+      !(
+        deletionTimeline[1] <= deletedAt &&
+        deletedAt <= verifiedAt &&
+        verifiedAt <= deletionTimeline[2]
+      )
+    )
+      failures.push(`${prefix} deletion and verification timestamps are out of order`);
   }
   for (const target of requiredTargets) failures.push(`${artifact} targets must include ${target}`);
   return failures;

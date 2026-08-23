@@ -671,6 +671,44 @@ describe('controlled JSON evidence contracts', () => {
     );
   });
 
+  it('reconciles privacy export and target deletion timelines', () => {
+    const failures = validateControlledJsonEvidence('privacy-export-delete.json', {
+      result: 'PASS',
+      export: {
+        encrypted: true,
+        verifiedSessionDelivery: true,
+        requestedAt: '2026-08-19T01:00:00.000Z',
+        completedAt: '2026-08-19T01:01:00.000Z',
+        durationSeconds: 1,
+        deliveryRefHash: 'a'.repeat(64),
+        sessionRefHash: 'b'.repeat(64),
+      },
+      deletion: {
+        authorized: true,
+        auditRecorded: true,
+        requestedAt: '2026-08-19T01:00:00.000Z',
+        authorizedAt: '2026-08-19T01:01:00.000Z',
+        completedAt: '2026-08-19T01:02:00.000Z',
+        authorizationRefHash: 'c'.repeat(64),
+        auditRefHash: 'd'.repeat(64),
+      },
+      targets: ['database', 'object-store', 'search', 'vector', 'cache'].map((target, index) => ({
+        target,
+        receiptHash: `${index + 1}`.repeat(64),
+        deleted: true,
+        deletedAt: '2026-08-19T01:01:30.000Z',
+        verifiedAt: '2026-08-19T01:03:00.000Z',
+      })),
+      unresolvedTargets: [],
+    });
+    expect(failures).toEqual(
+      expect.arrayContaining([
+        'privacy-export-delete.json export.durationSeconds does not reconcile with timestamps',
+        'privacy-export-delete.json targets[0] deletion and verification timestamps are out of order',
+      ]),
+    );
+  });
+
   it('requires structured database, worker, intake, inventory and plugin evidence', () => {
     expect(
       validateControlledJsonEvidence('rls-denials.json', {

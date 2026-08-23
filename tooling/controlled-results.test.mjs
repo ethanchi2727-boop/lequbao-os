@@ -465,13 +465,30 @@ function semanticFixture(artifact, binding) {
       ],
     },
     'privacy-export-delete.json': {
-      export: { encrypted: true, verifiedSessionDelivery: true, durationSeconds: 60 },
-      deletion: { authorized: true, auditRecorded: true },
+      export: {
+        encrypted: true,
+        verifiedSessionDelivery: true,
+        requestedAt: '2026-08-19T01:00:00.000Z',
+        completedAt: '2026-08-19T01:01:00.000Z',
+        durationSeconds: 60,
+        deliveryRefHash: 'c'.repeat(64),
+        sessionRefHash: 'd'.repeat(64),
+      },
+      deletion: {
+        authorized: true,
+        auditRecorded: true,
+        requestedAt: '2026-08-19T01:00:00.000Z',
+        authorizedAt: '2026-08-19T01:01:00.000Z',
+        completedAt: '2026-08-19T01:04:00.000Z',
+        authorizationRefHash: 'e'.repeat(64),
+        auditRefHash: 'f'.repeat(64),
+      },
       targets: ['database', 'object-store', 'search', 'vector', 'cache'].map((target, index) => ({
         target,
         receiptHash: `${index + 1}`.repeat(64),
         deleted: true,
-        verifiedAt: '2026-08-19T01:00:00.000Z',
+        deletedAt: '2026-08-19T01:02:00.000Z',
+        verifiedAt: '2026-08-19T01:03:00.000Z',
       })),
     },
     'alert-delivery.json': {

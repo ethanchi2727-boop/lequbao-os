@@ -228,7 +228,7 @@
         "identity revocation and MFA boundaries pass",
         "secrets and objects use production access policies without plaintext evidence",
         "privacy export and deletion reach every target",
-        "a real on-call recipient receives and acknowledges P0 and P1 alerts",
+        "a real on-call recipient receives and acknowledges every one of the 14 frozen P0 and P1 alert codes",
         "approved user agreement privacy policy and required compliance texts are version-bound and live on every applicable surface"
       ]
     }
