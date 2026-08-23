@@ -822,25 +822,31 @@ describe('controlled JSON evidence contracts', () => {
       deleted: true,
       verifiedAt: '2026-08-19T01:00:00.000Z',
     }));
-    const failures = validateControlledJsonEvidence('external-deletion-samples.json', {
-      result: 'PASS',
-      targets,
-      samples: [
-        {
-          target: 'object-store',
-          sampleRefHash: 'a'.repeat(64),
-          receiptRef: 'wrong-receipt',
-          remainingMatches: 1,
-          verifiedAt: '2026-08-19T00:59:00.000Z',
-        },
-      ],
-      unresolvedTargets: [],
-    });
+    const failures = validateControlledJsonEvidence(
+      'external-deletion-samples.json',
+      {
+        result: 'PASS',
+        targets,
+        samples: [
+          {
+            target: 'object-store',
+            sampleRefHash: 'a'.repeat(64),
+            receiptRef: 'wrong-receipt',
+            remainingMatches: 1,
+            verifiedAt: '2026-08-19T00:59:00.000Z',
+          },
+        ],
+        unresolvedTargets: [],
+      },
+      { createdAt: '2026-08-19T01:01:00.000Z' },
+    );
     expect(failures).toEqual(
       expect.arrayContaining([
         'external-deletion-samples.json samples[0].receiptRef does not match its target deletion receipt',
         'external-deletion-samples.json samples[0].remainingMatches must equal 0',
         'external-deletion-samples.json samples[0].verifiedAt must not precede target deletion verification',
+        'external-deletion-samples.json targets[0].verifiedAt predates the controlled evidence workspace',
+        'external-deletion-samples.json samples[0].verifiedAt predates the controlled evidence workspace',
         'external-deletion-samples.json samples must include search',
         'external-deletion-samples.json samples must include vector',
         'external-deletion-samples.json samples must include cache',

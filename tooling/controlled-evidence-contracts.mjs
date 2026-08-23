@@ -1254,7 +1254,7 @@ function validatePhysicalWalEvidence(value) {
   return failures;
 }
 
-function validateExternalDeletionSamples(value) {
+function validateExternalDeletionSamples(value, binding) {
   const artifact = 'external-deletion-samples.json';
   const failures = [];
   if (!hasExactKeys(value, ['result', 'samples', 'targets', 'unresolvedTargets']))
@@ -1286,6 +1286,13 @@ function validateExternalDeletionSamples(value) {
     if (target.deleted !== true) failures.push(`${prefix}.deleted must equal true`);
     if (!validDateTime(target.verifiedAt))
       failures.push(`${prefix}.verifiedAt must be a non-future ISO date-time`);
+    validateFreshTimestamp(
+      artifact,
+      `${prefix.slice(artifact.length + 1)}.verifiedAt`,
+      target.verifiedAt,
+      binding,
+      failures,
+    );
   }
   for (const target of requiredTargets) failures.push(`${artifact} targets must include ${target}`);
   const sampledTargets = new Set();
@@ -1320,6 +1327,13 @@ function validateExternalDeletionSamples(value) {
     if (sample.remainingMatches !== 0) failures.push(`${prefix}.remainingMatches must equal 0`);
     if (!validDateTime(sample.verifiedAt))
       failures.push(`${prefix}.verifiedAt must be a non-future ISO date-time`);
+    validateFreshTimestamp(
+      artifact,
+      `${prefix.slice(artifact.length + 1)}.verifiedAt`,
+      sample.verifiedAt,
+      binding,
+      failures,
+    );
     const deletionTime = Date.parse(targetRecords.get(sample.target)?.verifiedAt);
     const sampleTime = Date.parse(sample.verifiedAt);
     if (Number.isFinite(deletionTime) && Number.isFinite(sampleTime) && sampleTime < deletionTime)
