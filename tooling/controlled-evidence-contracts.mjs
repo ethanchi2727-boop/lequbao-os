@@ -2811,7 +2811,7 @@ function validateObjectMetadata(value) {
   return failures;
 }
 
-function validateOcrProvenance(value) {
+function validateOcrProvenance(value, binding) {
   const artifact = 'ocr-provenance.json';
   const failures = [];
   const candidateRefs = new Set();
@@ -2854,6 +2854,13 @@ function validateOcrProvenance(value) {
       failures.push(`${artifact} provenance.${fieldName} must be opaque`);
   if (!validDateTime(value.provenance?.processedAt))
     failures.push(`${artifact} provenance.processedAt must be a non-future ISO date-time`);
+  validateFreshTimestamp(
+    artifact,
+    'provenance.processedAt',
+    value.provenance?.processedAt,
+    binding,
+    failures,
+  );
   return failures;
 }
 
@@ -3028,7 +3035,7 @@ function validateRuntimePolicy(value) {
   return failures;
 }
 
-function validateGeoTarget(value) {
+function validateGeoTarget(value, binding) {
   const artifact = 'geo-target-redacted.json';
   const failures = [];
   if (!hasExactKeys(value, ['forbiddenClaims', 'result', 'storedClaims', 'targetRefHash']))
@@ -3058,6 +3065,13 @@ function validateGeoTarget(value) {
     if (!validSha256(claim.valueHash)) failures.push(`${prefix}.valueHash has invalid format`);
     if (!validDateTime(claim.verifiedAt))
       failures.push(`${prefix}.verifiedAt must be a non-future ISO date-time`);
+    validateFreshTimestamp(
+      artifact,
+      `${prefix.slice(artifact.length + 1)}.verifiedAt`,
+      claim.verifiedAt,
+      binding,
+      failures,
+    );
   }
   return failures;
 }

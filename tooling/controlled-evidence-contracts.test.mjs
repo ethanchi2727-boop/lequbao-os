@@ -495,16 +495,20 @@ describe('controlled JSON evidence contracts', () => {
       rawText: 'must-not-be-retained',
     };
     expect(
-      validateControlledJsonEvidence('ocr-provenance.json', {
-        objectRefHash: 'b'.repeat(64),
-        candidates: [candidate, { ...candidate }],
-        provenance: {
-          gatewayRef: 'gateway with spaces',
-          modelVersion: 'model with spaces',
-          processedAt: '2026-08-19T01:00:00.000Z',
-          rawResponse: true,
+      validateControlledJsonEvidence(
+        'ocr-provenance.json',
+        {
+          objectRefHash: 'b'.repeat(64),
+          candidates: [candidate, { ...candidate }],
+          provenance: {
+            gatewayRef: 'gateway with spaces',
+            modelVersion: 'model with spaces',
+            processedAt: '2026-08-19T01:00:00.000Z',
+            rawResponse: true,
+          },
         },
-      }),
+        { createdAt: '2026-08-19T01:01:00.000Z' },
+      ),
     ).toEqual(
       expect.arrayContaining([
         'ocr-provenance.json candidates[0] fields are invalid',
@@ -512,6 +516,7 @@ describe('controlled JSON evidence contracts', () => {
         'ocr-provenance.json provenance fields are invalid',
         'ocr-provenance.json provenance.gatewayRef must be opaque',
         'ocr-provenance.json provenance.modelVersion must be opaque',
+        'ocr-provenance.json provenance.processedAt predates the controlled evidence workspace',
       ]),
     );
   });
@@ -1588,23 +1593,28 @@ describe('controlled JSON evidence contracts', () => {
       ]),
     );
     expect(
-      validateControlledJsonEvidence('geo-target-redacted.json', {
-        result: 'PASS',
-        targetRefHash: 'a'.repeat(64),
-        storedClaims: [
-          {
-            field: 'ranking',
-            valueHash: 'b'.repeat(64),
-            verifiedAt: '2026-08-19T01:00:00.000Z',
-            rawValue: 'forbidden',
-          },
-        ],
-        forbiddenClaims: [],
-      }),
+      validateControlledJsonEvidence(
+        'geo-target-redacted.json',
+        {
+          result: 'PASS',
+          targetRefHash: 'a'.repeat(64),
+          storedClaims: [
+            {
+              field: 'ranking',
+              valueHash: 'b'.repeat(64),
+              verifiedAt: '2026-08-19T01:00:00.000Z',
+              rawValue: 'forbidden',
+            },
+          ],
+          forbiddenClaims: [],
+        },
+        { createdAt: '2026-08-19T01:01:00.000Z' },
+      ),
     ).toEqual(
       expect.arrayContaining([
         'geo-target-redacted.json storedClaims[0].field contains a forbidden performance claim',
         'geo-target-redacted.json storedClaims[0] fields are invalid',
+        'geo-target-redacted.json storedClaims[0].verifiedAt predates the controlled evidence workspace',
       ]),
     );
     expect(
