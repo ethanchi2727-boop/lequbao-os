@@ -112,11 +112,21 @@
     { "page": "page-154", "layout": "permanent-revenue-rights-ledger", "panels": 4 },
     { "page": "page-155", "layout": "distribution-rule-versions", "panels": 4 },
     { "page": "page-156", "layout": "direct-cost-catalog", "panels": 4 },
-    { "page": "page-157", "layout": "monthly-close-batches", "panels": 4 }
+    { "page": "page-157", "layout": "monthly-close-batches", "panels": 4 },
+    { "page": "page-158", "layout": "settlement-difference-resolution", "panels": 4 },
+    { "page": "page-159", "layout": "compute-package-net-profit", "panels": 4 },
+    { "page": "page-160", "layout": "revenue-transfer-approval", "panels": 4 },
+    { "page": "page-162", "layout": "partners-regions", "panels": 4 },
+    { "page": "page-164", "layout": "plugin-review-circuit-breaker", "panels": 4 },
+    { "page": "page-166", "layout": "model-routing-budget", "panels": 4 },
+    { "page": "page-167", "layout": "job-failure-queue", "panels": 4 },
+    { "page": "page-169", "layout": "temporary-support-access", "panels": 4 },
+    { "page": "page-170", "layout": "global-security-audit", "panels": 4 },
+    { "page": "page-173", "layout": "mobile-today-tasks", "panels": 4 }
   ],
   "sharedObservations": {
     "desktopHorizontalOverflowCount": 0,
-    "distinctLayoutCount": 109,
+    "distinctLayoutCount": 119,
     "demoModeLabel": "演示结构",
     "productionModeLabel": "权威数据模式",
     "productionDemoPanelCount": 0,
@@ -232,6 +242,16 @@
     "page143ContainsObjectStorageUrl": false,
     "page152MobileDocumentScrollWidth": 320,
     "page152MobileActionMinimumHeight": 44
+  },
+  "platformRiskObservation": {
+    "desktopPageCount": 10,
+    "desktopOverflowCount": 0,
+    "guardrailMissingCount": 0,
+    "page166AuthorityMode": true,
+    "page166ProtectedEmpty": true,
+    "page166ContainsProviderSecret": false,
+    "page173MobileDocumentScrollWidth": 320,
+    "page173MobileActionMinimumHeight": 44
   },
   "boundaries": [
     "This is local browser evidence, not controlled or production acceptance.",

@@ -163,6 +163,21 @@ const experienceGroups = [
     ]),
     load: () => import('./page-experiences-governance.mjs'),
   },
+  {
+    pages: new Set([
+      'page-158',
+      'page-159',
+      'page-160',
+      'page-162',
+      'page-164',
+      'page-166',
+      'page-167',
+      'page-169',
+      'page-170',
+      'page-173',
+    ]),
+    load: () => import('./page-experiences-risk.mjs'),
+  },
 ];
 
 export async function loadWorkbenchPageExperience(page) {
@@ -182,6 +197,7 @@ export async function loadWorkbenchPageExperience(page) {
     module.workbenchEngagementExperienceById?.get(page) ??
     module.workbenchControlExperienceById?.get(page) ??
     module.workbenchGovernanceExperienceById?.get(page) ??
+    module.workbenchRiskExperienceById?.get(page) ??
     null
   );
 }
