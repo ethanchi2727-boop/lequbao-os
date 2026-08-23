@@ -1,12 +1,11 @@
 import { createHash } from 'node:crypto';
 import { readFile, stat } from 'node:fs/promises';
 import path from 'node:path';
+import { sourceSecretPatterns } from './source-secret-policy.mjs';
 
 export const maximumControlledEvidenceBytes = 100 * 1024 * 1024;
 
 const sensitivePatterns = [
-  { label: 'private key', pattern: /-----BEGIN [A-Z ]*PRIVATE KEY-----/u },
-  { label: 'GitHub token', pattern: /\bgh[pousr]_[A-Za-z0-9]{20,}\b/u },
   { label: 'Bearer credential', pattern: /\bBearer\s+[A-Za-z0-9._~+/=-]{20,}/iu },
   {
     label: 'credentialed PostgreSQL URL',
@@ -14,6 +13,16 @@ const sensitivePatterns = [
   },
   { label: 'provider secret', pattern: /\b(?:sk|rk)_(?:live|test)_[A-Za-z0-9]{16,}\b/u },
 ];
+const sourceSecretLabels = Object.freeze({
+  PRIVATE_KEY: 'private key',
+  GITHUB_TOKEN: 'GitHub token',
+  GITHUB_FINE_GRAINED_TOKEN: 'fine-grained GitHub token',
+  NPM_TOKEN: 'npm token',
+  OPENAI_API_KEY: 'OpenAI API key',
+  AWS_ACCESS_KEY: 'AWS access key',
+  URL_CREDENTIAL: 'credentialed HTTP URL',
+  JWT: 'JWT credential',
+});
 
 export async function inspectControlledEvidenceFile(file) {
   const failures = [];
@@ -48,5 +57,7 @@ export async function inspectControlledEvidenceFile(file) {
 
   for (const { label, pattern } of sensitivePatterns)
     if (pattern.test(text)) failures.push(`contains an unredacted ${label}`);
+  for (const [code, pattern] of sourceSecretPatterns)
+    if (pattern.test(text)) failures.push(`contains an unredacted ${sourceSecretLabels[code]}`);
   return { failures, sha256, sizeBytes: metadata.size };
 }

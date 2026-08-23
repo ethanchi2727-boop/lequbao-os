@@ -51,6 +51,9 @@ describe('controlled evidence content boundary', () => {
     const cases = [
       ['private.log', `-----BEGIN ${'PRIVATE'} KEY-----\nnot-a-real-key\n`],
       ['github.log', `token=${`ghp_${'a'.repeat(36)}`}\n`],
+      ['github-fine.log', `token=${['github', '_pat_', 'a'.repeat(40)].join('')}\n`],
+      ['npm.log', `token=${['npm', '_', 'a'.repeat(36)].join('')}\n`],
+      ['openai.log', `token=${['sk', '-proj-', 'a'.repeat(40)].join('')}\n`],
       ['bearer.log', `authorization: Bearer ${'a'.repeat(32)}\n`],
       ['database.log', 'postgres://release:unredacted-password@database.internal/lequ\n'],
       ['provider.log', `credential=${`sk_live_${'a'.repeat(24)}`}\n`],
