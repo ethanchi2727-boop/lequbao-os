@@ -1297,7 +1297,7 @@ describe('controlled JSON evidence contracts', () => {
     });
     expect(failures).toEqual(
       expect.arrayContaining([
-        'object-retention.json objectsSampled[0] policy, creation and deletion timestamps are out of order',
+        'object-retention.json objectsSampled[0] policy, retention and deletion timestamps are out of order',
         'object-retention.json objectsSampled[0] fields are invalid',
         'object-retention.json objectsSampled[0].retentionUntil does not match policy.retentionDays',
       ]),

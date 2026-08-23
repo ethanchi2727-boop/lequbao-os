@@ -2234,17 +2234,16 @@ function validateObjectRetention(value, binding) {
     });
     const policyEffectiveAt = Date.parse(value.policy?.effectiveAt);
     if (
-      [policyEffectiveAt, timeline[0], timeline[2], timeline[3], timeline[4]].every(
-        Number.isFinite,
-      ) &&
+      [policyEffectiveAt, ...timeline].every(Number.isFinite) &&
       !(
         policyEffectiveAt <= timeline[0] &&
-        timeline[0] <= timeline[2] &&
+        timeline[0] <= timeline[1] &&
+        timeline[1] <= timeline[2] &&
         timeline[2] <= timeline[3] &&
         timeline[3] <= timeline[4]
       )
     )
-      failures.push(`${prefix} policy, creation and deletion timestamps are out of order`);
+      failures.push(`${prefix} policy, retention and deletion timestamps are out of order`);
     const expectedRetentionUntil =
       timeline[0] + Number(value.policy?.retentionDays) * 24 * 60 * 60 * 1000;
     if (
