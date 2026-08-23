@@ -410,17 +410,20 @@ describe('controlled suite cross-evidence contracts', () => {
           backupFile: 'candidate.dump.age',
           encryptedSha256: 'a'.repeat(64),
           financialSnapshotSha256: 'b'.repeat(64),
+          backupCompletedAt: '2026-08-19T01:00:00.000Z',
         },
         'restore-report.json': {
           backupFile: 'candidate.dump.age',
           encryptedSha256: 'c'.repeat(64),
           financialSnapshotSha256: 'd'.repeat(64),
+          backupCompletedAt: '2026-08-19T01:00:01.000Z',
         },
       }),
     ).toEqual(
       expect.arrayContaining([
         'restore report references a different encrypted backup hash',
         'restore report references a different financial snapshot hash',
+        'restore report uses a different backup completion timestamp',
       ]),
     );
   });

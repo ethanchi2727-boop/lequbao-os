@@ -28,6 +28,7 @@ export const controlledSuiteCrossEvidenceRules = {
   BACKUP_RESTORE_PRIVACY: [
     'restore report references the exact encrypted backup manifest file',
     'restore report repeats the exact encrypted artifact and financial snapshot hashes',
+    'restore report uses the exact backup completion timestamp from the manifest',
   ],
   GREENFIELD_CUTOVER_GUARD: [
     'the waiver database-path coverage includes every inventoried V5 source location',
@@ -180,6 +181,8 @@ export function validateControlledSuiteDocuments(suiteCode, documents) {
       failures.push('restore report references a different encrypted backup hash');
     if (backup && restore && backup.financialSnapshotSha256 !== restore.financialSnapshotSha256)
       failures.push('restore report references a different financial snapshot hash');
+    if (backup && restore && backup.backupCompletedAt !== restore.backupCompletedAt)
+      failures.push('restore report uses a different backup completion timestamp');
   } else if (suiteCode === 'GREENFIELD_CUTOVER_GUARD') {
     const inventory = get('legacy-production-inventory.json');
     const waiver = get('greenfield-waiver.json');
