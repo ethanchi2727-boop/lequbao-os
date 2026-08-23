@@ -1546,6 +1546,16 @@ function validatePerformanceReport(value) {
     Date.parse(value.completedAt) < Date.parse(value.startedAt)
   )
     failures.push(`${artifact} completedAt must not precede startedAt`);
+  if (
+    validDateTime(value.startedAt) &&
+    validDateTime(value.completedAt) &&
+    Number.isFinite(value.durationSeconds)
+  ) {
+    const wallClockSeconds = (Date.parse(value.completedAt) - Date.parse(value.startedAt)) / 1000;
+    const toleranceSeconds = Math.max(5, Math.abs(wallClockSeconds) * 0.05);
+    if (Math.abs(value.durationSeconds - wallClockSeconds) > toleranceSeconds)
+      failures.push(`${artifact} durationSeconds does not reconcile with the report timeline`);
+  }
   const snapshotTimeline = [
     value.startedAt,
     value.database?.before?.capturedAt,

@@ -404,6 +404,7 @@ function semanticFixture(artifact, binding) {
     'performance-report.json': {
       startedAt: '2026-08-19T01:00:00.000Z',
       completedAt: '2026-08-19T01:01:00.000Z',
+      durationSeconds: 60,
       images,
       failure: null,
       requestsPerScenario: 20,

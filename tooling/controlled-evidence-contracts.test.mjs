@@ -616,7 +616,7 @@ describe('controlled JSON evidence contracts', () => {
       completedAt: '2026-08-19T01:01:00.000Z',
       concurrency: 1.5,
       requestsPerScenario: 10,
-      durationSeconds: 60,
+      durationSeconds: 1,
       failure: null,
       scenarios: [
         scenario('core-read', 500),
@@ -654,6 +654,7 @@ describe('controlled JSON evidence contracts', () => {
         'performance-report.json database.before.migrationVersions must match the candidate schema',
         'performance-report.json before and after snapshots must use the same database',
         'performance-report.json run and database snapshot timestamps are out of order',
+        'performance-report.json durationSeconds does not reconcile with the report timeline',
       ]),
     );
   });
