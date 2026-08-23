@@ -118,6 +118,7 @@ export const controlledJsonEvidenceContracts = {
   'provider-callback-redacted.json': [
     yes('signatureVerified'),
     yes('replayRejected'),
+    field('deliveryAttempts', 'number', { minimum: 2 }),
     sha256('orderRefHash'),
     sha256('merchantAccountRef'),
     field('amountFen', 'number', { minimum: 1 }),
@@ -329,6 +330,7 @@ export const controlledJsonEvidenceContracts = {
   'callback-redacted.json': [
     yes('signatureVerified'),
     yes('replayRejected'),
+    field('deliveryAttempts', 'number', { minimum: 2 }),
     sha256('serverEventRef'),
     field('publishedVersion', 'string'),
     field('appliedBusinessTransitions', 'number', { equals: 1 }),
@@ -1314,6 +1316,8 @@ function validateRefundUnknownRecovery(value) {
 function validateProviderCallback(value) {
   const artifact = 'provider-callback-redacted.json';
   const failures = [];
+  if (!Number.isSafeInteger(value.deliveryAttempts))
+    failures.push(`${artifact} deliveryAttempts must be an integer`);
   const receivedAt = Date.parse(value.receivedAt);
   const appliedAt = Date.parse(value.appliedAt);
   if (Number.isFinite(receivedAt) && Number.isFinite(appliedAt) && appliedAt < receivedAt)
@@ -1362,6 +1366,8 @@ function validateWechatCallback(value) {
   const failures = [];
   if (!opaqueReference.test(value.publishedVersion ?? ''))
     failures.push(`${artifact} publishedVersion must be opaque`);
+  if (!Number.isSafeInteger(value.deliveryAttempts))
+    failures.push(`${artifact} deliveryAttempts must be an integer`);
   return failures;
 }
 

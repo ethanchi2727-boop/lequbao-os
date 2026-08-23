@@ -796,6 +796,7 @@ describe('controlled JSON evidence contracts', () => {
       validateControlledJsonEvidence('provider-callback-redacted.json', {
         signatureVerified: true,
         replayRejected: false,
+        deliveryAttempts: 1.5,
         merchantAccountRef: 'not-a-hash',
         amountFen: 100,
         paymentState: 'PENDING',
@@ -805,6 +806,7 @@ describe('controlled JSON evidence contracts', () => {
     ).toEqual(
       expect.arrayContaining([
         'provider-callback-redacted.json replayRejected must equal true',
+        'provider-callback-redacted.json deliveryAttempts must be an integer',
         'provider-callback-redacted.json merchantAccountRef has invalid format',
         'provider-callback-redacted.json paymentState must equal "SUCCEEDED"',
         'provider-callback-redacted.json appliedBusinessTransitions must equal 1',
