@@ -4,7 +4,7 @@ import {
   validateControlledSuiteDocuments,
 } from './controlled-suite-evidence.mjs';
 
-const digest = (target) => `ghcr.io/example/lequ-${target}@sha256:${'a'.repeat(64)}`;
+const digest = (target) => `ghcr.io/example/lequbao-v6-${target}@sha256:${'a'.repeat(64)}`;
 
 describe('controlled suite cross-evidence contracts', () => {
   it('defines explicit cross-file rules for every validator-backed suite', () => {

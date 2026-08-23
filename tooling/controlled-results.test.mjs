@@ -37,31 +37,35 @@ function semanticFixture(artifact, binding) {
         ? rule.equals
         : rule.binding
           ? binding[rule.binding]
-          : rule.pattern?.includes('ghcr')
-            ? `ghcr.io/example/lequ@sha256:${'a'.repeat(64)}`
-            : rule.pattern?.includes('{64}')
-              ? 'a'.repeat(64)
-              : rule.pattern?.includes('[1-9][0-9]')
-                ? '12345'
-                : rule.format === 'date-time'
-                  ? '2026-08-19T01:00:00.000Z'
-                  : rule.type === 'array'
-                    ? rule.maxItems === 0
-                      ? []
-                      : [`${rule.path}-evidence`]
-                    : rule.type === 'object'
-                      ? { captured: true }
-                      : rule.type === 'number'
-                        ? (rule.minimum ?? 1)
-                        : rule.type === 'boolean'
-                          ? true
-                          : `${rule.path}-evidence`;
+          : rule.pattern?.includes('lequbao-v6-api')
+            ? `ghcr.io/example/lequbao-v6-api@sha256:${'a'.repeat(64)}`
+            : rule.pattern?.includes('lequbao-v6-worker')
+              ? `ghcr.io/example/lequbao-v6-worker@sha256:${'a'.repeat(64)}`
+              : rule.pattern?.includes('lequbao-v6-web')
+                ? `ghcr.io/example/lequbao-v6-web@sha256:${'a'.repeat(64)}`
+                : rule.pattern?.includes('{64}')
+                  ? 'a'.repeat(64)
+                  : rule.pattern?.includes('[1-9][0-9]')
+                    ? '12345'
+                    : rule.format === 'date-time'
+                      ? '2026-08-19T01:00:00.000Z'
+                      : rule.type === 'array'
+                        ? rule.maxItems === 0
+                          ? []
+                          : [`${rule.path}-evidence`]
+                        : rule.type === 'object'
+                          ? { captured: true }
+                          : rule.type === 'number'
+                            ? (rule.minimum ?? 1)
+                            : rule.type === 'boolean'
+                              ? true
+                              : `${rule.path}-evidence`;
     target[segments.at(-1)] = sample;
   }
   const images = {
-    api: `ghcr.io/example/lequ-api@sha256:${'a'.repeat(64)}`,
-    worker: `ghcr.io/example/lequ-worker@sha256:${'a'.repeat(64)}`,
-    web: `ghcr.io/example/lequ-web@sha256:${'a'.repeat(64)}`,
+    api: `ghcr.io/example/lequbao-v6-api@sha256:${'a'.repeat(64)}`,
+    worker: `ghcr.io/example/lequbao-v6-worker@sha256:${'a'.repeat(64)}`,
+    web: `ghcr.io/example/lequbao-v6-web@sha256:${'a'.repeat(64)}`,
   };
   const performanceSnapshot = {
     databaseName: 'lequ-controlled',
@@ -831,7 +835,7 @@ describe('controlled launch results', () => {
       'performance-report.json',
     );
     const performance = JSON.parse(await readFile(performanceFile, 'utf8'));
-    performance.images.api = `ghcr.io/example/lequ-api@sha256:${'b'.repeat(64)}`;
+    performance.images.api = `ghcr.io/example/lequbao-v6-api@sha256:${'b'.repeat(64)}`;
     const performanceContents = `${JSON.stringify(performance)}\n`;
     await writeFile(performanceFile, performanceContents);
     const performanceHash = createHash('sha256').update(performanceContents).digest('hex');

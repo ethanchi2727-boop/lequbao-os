@@ -13,8 +13,10 @@ const commit = field('releaseCommit', 'string', {
 const deployment = field('deploymentId', 'string', { binding: 'deploymentId' });
 const sha256 = (pathName) => field(pathName, 'string', { pattern: '^[a-f0-9]{64}$' });
 const timestamp = (pathName) => field(pathName, 'string', { format: 'date-time' });
-const imageDigest = (pathName) =>
-  field(pathName, 'string', { pattern: '^ghcr\\.io/.+@sha256:[a-f0-9]{64}$' });
+const candidateImageDigest = (pathName, target) =>
+  field(pathName, 'string', {
+    pattern: `^ghcr\\.io/[a-z0-9][a-z0-9-]{0,38}/lequbao-v6-${target}@sha256:[a-f0-9]{64}$`,
+  });
 
 export const controlledJsonEvidenceContracts = {
   'rls-denials.json': [pass, field('attempts', 'array')],
@@ -190,9 +192,9 @@ export const controlledJsonEvidenceContracts = {
     deployment,
     timestamp('capturedAt'),
     field('environment', 'string'),
-    imageDigest('services.api.image'),
-    imageDigest('services.worker.image'),
-    imageDigest('services.web.image'),
+    candidateImageDigest('services.api.image', 'api'),
+    candidateImageDigest('services.worker.image', 'worker'),
+    candidateImageDigest('services.web.image', 'web'),
     field('dataStores', 'array'),
   ],
   'monitoring-snapshot.json': [
@@ -206,9 +208,9 @@ export const controlledJsonEvidenceContracts = {
     field('version', 'number', { equals: 1 }),
     commit,
     field('workflowRunId', 'string', { pattern: '^[1-9][0-9]{0,19}$' }),
-    imageDigest('images.api'),
-    imageDigest('images.worker'),
-    imageDigest('images.web'),
+    candidateImageDigest('images.api', 'api'),
+    candidateImageDigest('images.worker', 'worker'),
+    candidateImageDigest('images.web', 'web'),
   ],
   'consumer-build.json': [
     pass,
@@ -801,9 +803,18 @@ function validatePerformanceSnapshot(artifact, pathName, snapshot, failures) {
       failures.push(`${artifact} ${pathName}.messageBacklog.${fieldName} must be non-negative`);
 }
 
+function validateCandidateImageOwner(artifact, images) {
+  const owners = ['api', 'worker', 'web']
+    .map((target) => /^ghcr\.io\/([^/]+)\//u.exec(images?.[target] ?? '')?.[1])
+    .filter(Boolean);
+  return owners.length === 3 && new Set(owners).size !== 1
+    ? [`${artifact} candidate images must share one GHCR owner`]
+    : [];
+}
+
 function validatePerformanceReport(value) {
   const artifact = 'performance-report.json';
-  const failures = [];
+  const failures = validateCandidateImageOwner(artifact, value.images);
   if (value.failure !== null) failures.push(`${artifact} failure must equal null for PASS`);
   const scenarios = Array.isArray(value.scenarios) ? value.scenarios : [];
   const names = new Set();
@@ -1353,7 +1364,11 @@ function validateGeoTarget(value) {
 
 function validateDeploymentTopology(value) {
   const artifact = 'deployment-topology.json';
-  const failures = [];
+  const failures = validateCandidateImageOwner(artifact, {
+    api: value.services?.api?.image,
+    worker: value.services?.worker?.image,
+    web: value.services?.web?.image,
+  });
   if (value.environment !== 'controlled-preproduction')
     failures.push(`${artifact} environment must equal "controlled-preproduction"`);
   const requiredStores = new Set(['postgresql', 'object-store']);
@@ -1411,6 +1426,8 @@ const controlledArtifactValidators = {
   'physical-wal-evidence.json': validatePhysicalWalEvidence,
   'external-deletion-samples.json': validateExternalDeletionSamples,
   'performance-report.json': validatePerformanceReport,
+  'candidate-image-digests.json': (value) =>
+    validateCandidateImageOwner('candidate-image-digests.json', value.images),
   'refund-unknown-recovery.json': validateRefundUnknownRecovery,
   'review-publish.json': validateReviewPublish,
   'device-matrix.json': validateDeviceMatrix,

@@ -29,7 +29,8 @@ const parseObject = (name, value) => {
   return parsed;
 };
 
-const imageReferencePattern = /^ghcr\.io\/[a-z0-9._/-]+@sha256:[a-f0-9]{64}$/u;
+const imageReferencePattern = (target) =>
+  new RegExp(`^ghcr\\.io/([a-z0-9][a-z0-9-]{0,38})/lequbao-v6-${target}@sha256:[a-f0-9]{64}$`, 'u');
 
 const exactKeys = (value, expected) => {
   const keys = Object.keys(value).sort();
@@ -57,12 +58,16 @@ function parseImageBinding(env) {
     throw new Error('candidate image manifest must contain API Worker and Web');
   if (!exactKeys(deployed, ['api', 'web', 'worker']))
     throw new Error('deployed images must contain API Worker and Web');
+  const owners = new Set();
   for (const target of ['api', 'worker', 'web']) {
-    if (!imageReferencePattern.test(manifest.images[target] ?? ''))
-      throw new Error(`candidate ${target} image must use an immutable GHCR digest`);
+    const match = imageReferencePattern(target).exec(manifest.images[target] ?? '');
+    if (!match) throw new Error(`candidate ${target} image must use an immutable GHCR digest`);
+    owners.add(match[1]);
     if (deployed[target] !== manifest.images[target])
       throw new Error(`deployed ${target} image does not match the candidate digest`);
   }
+  if (owners.size !== 1)
+    throw new Error('candidate API Worker and Web images must share one GHCR owner');
   return {
     releaseCommit: env.RELEASE_COMMIT,
     workflowRunId: manifest.workflowRunId,

@@ -128,6 +128,28 @@ describe('controlled performance gate', () => {
         }),
       }),
     ).toThrow(/workflowRunId/u);
+    const foreignWeb = `ghcr.io/foreign/lequbao-v6-web@${digest('c')}`;
+    expect(() =>
+      validatePerformanceConfig({
+        ...validEnvironment,
+        PERFORMANCE_CANDIDATE_IMAGE_MANIFEST_JSON: JSON.stringify({
+          ...manifest,
+          images: { ...images, web: foreignWeb },
+        }),
+        PERFORMANCE_DEPLOYED_IMAGES_JSON: JSON.stringify({ ...images, web: foreignWeb }),
+      }),
+    ).toThrow(/share one GHCR owner/u);
+    const wrongPackage = `ghcr.io/lequ/unrelated-worker@${digest('b')}`;
+    expect(() =>
+      validatePerformanceConfig({
+        ...validEnvironment,
+        PERFORMANCE_CANDIDATE_IMAGE_MANIFEST_JSON: JSON.stringify({
+          ...manifest,
+          images: { ...images, worker: wrongPackage },
+        }),
+        PERFORMANCE_DEPLOYED_IMAGES_JSON: JSON.stringify({ ...images, worker: wrongPackage }),
+      }),
+    ).toThrow(/candidate worker image/u);
   });
 
   it('calculates percentile and error evidence against the frozen threshold', () => {

@@ -107,6 +107,20 @@ describe('controlled JSON evidence contracts', () => {
         'candidate-image-digests.json workflowRunId has invalid format',
       ]),
     );
+    const image = (owner, target) =>
+      `ghcr.io/${owner}/lequbao-v6-${target}@sha256:${'a'.repeat(64)}`;
+    expect(
+      validateControlledJsonEvidence('candidate-image-digests.json', {
+        version: 1,
+        releaseCommit: 'a'.repeat(40),
+        workflowRunId: '12345',
+        images: {
+          api: image('owner-one', 'api'),
+          worker: image('owner-two', 'worker'),
+          web: image('owner-one', 'web'),
+        },
+      }),
+    ).toContain('candidate-image-digests.json candidate images must share one GHCR owner');
     expect(
       validateControlledJsonEvidence('rollback.json', {
         result: 'PASS',
