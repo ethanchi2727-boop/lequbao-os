@@ -331,7 +331,13 @@ function semanticFixture(artifact, binding) {
         deleted: true,
         verifiedAt: '2026-08-19T01:00:00.000Z',
       })),
-      samples: [{ sampleRef: 'privacy-sample', remainingMatches: 0 }],
+      samples: ['object-store', 'search', 'vector', 'cache'].map((target, index) => ({
+        target,
+        sampleRefHash: `${index + 6}`.repeat(64),
+        receiptRef: `${target}-receipt`,
+        remainingMatches: 0,
+        verifiedAt: '2026-08-19T01:01:00.000Z',
+      })),
     },
     'performance-report.json': {
       images,

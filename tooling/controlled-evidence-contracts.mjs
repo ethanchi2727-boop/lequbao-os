@@ -838,27 +838,62 @@ function validatePhysicalWalEvidence(value) {
 function validateExternalDeletionSamples(value) {
   const artifact = 'external-deletion-samples.json';
   const failures = [];
-  const requiredTargets = new Set(['object-store', 'search', 'vector', 'cache']);
+  const targetNames = ['object-store', 'search', 'vector', 'cache'];
+  const requiredTargets = new Set(targetNames);
+  const targetRecords = new Map();
+  const receiptRefs = new Set();
   for (const [index, target] of (Array.isArray(value.targets) ? value.targets : []).entries()) {
     const prefix = `${artifact} targets[${index}]`;
     if (!target || Array.isArray(target) || typeof target !== 'object') {
       failures.push(`${prefix} must be an object`);
       continue;
     }
-    requiredTargets.delete(target.target);
-    if (typeof target.receiptRef !== 'string' || !target.receiptRef.trim())
-      failures.push(`${prefix}.receiptRef must not be empty`);
+    if (!targetNames.includes(target.target)) failures.push(`${prefix}.target is not supported`);
+    else if (targetRecords.has(target.target))
+      failures.push(`${artifact} target names must be unique`);
+    else {
+      requiredTargets.delete(target.target);
+      targetRecords.set(target.target, target);
+    }
+    if (!opaqueReference.test(target.receiptRef ?? ''))
+      failures.push(`${prefix}.receiptRef must be an opaque reference`);
+    else if (receiptRefs.has(target.receiptRef))
+      failures.push(`${artifact} target receipt references must be unique`);
+    else receiptRefs.add(target.receiptRef);
     if (target.deleted !== true) failures.push(`${prefix}.deleted must equal true`);
     if (!validDateTime(target.verifiedAt))
       failures.push(`${prefix}.verifiedAt must be a non-future ISO date-time`);
   }
   for (const target of requiredTargets) failures.push(`${artifact} targets must include ${target}`);
+  const sampledTargets = new Set();
+  const sampleRefs = new Set();
   for (const [index, sample] of (Array.isArray(value.samples) ? value.samples : []).entries()) {
-    if (!sample || Array.isArray(sample) || typeof sample !== 'object')
+    const prefix = `${artifact} samples[${index}]`;
+    if (!sample || Array.isArray(sample) || typeof sample !== 'object') {
       failures.push(`${artifact} samples[${index}] must be an object`);
-    else if (sample.remainingMatches !== 0)
-      failures.push(`${artifact} samples[${index}].remainingMatches must equal 0`);
+      continue;
+    }
+    if (!targetNames.includes(sample.target)) failures.push(`${prefix}.target is not supported`);
+    else sampledTargets.add(sample.target);
+    if (!validSha256(sample.sampleRefHash))
+      failures.push(`${prefix}.sampleRefHash has invalid format`);
+    else if (sampleRefs.has(sample.sampleRefHash))
+      failures.push(`${artifact} sample references must be unique`);
+    else sampleRefs.add(sample.sampleRefHash);
+    if (!opaqueReference.test(sample.receiptRef ?? ''))
+      failures.push(`${prefix}.receiptRef must be an opaque reference`);
+    else if (targetRecords.get(sample.target)?.receiptRef !== sample.receiptRef)
+      failures.push(`${prefix}.receiptRef does not match its target deletion receipt`);
+    if (sample.remainingMatches !== 0) failures.push(`${prefix}.remainingMatches must equal 0`);
+    if (!validDateTime(sample.verifiedAt))
+      failures.push(`${prefix}.verifiedAt must be a non-future ISO date-time`);
+    const deletionTime = Date.parse(targetRecords.get(sample.target)?.verifiedAt);
+    const sampleTime = Date.parse(sample.verifiedAt);
+    if (Number.isFinite(deletionTime) && Number.isFinite(sampleTime) && sampleTime < deletionTime)
+      failures.push(`${prefix}.verifiedAt must not precede target deletion verification`);
   }
+  for (const target of targetNames)
+    if (!sampledTargets.has(target)) failures.push(`${artifact} samples must include ${target}`);
   return failures;
 }
 

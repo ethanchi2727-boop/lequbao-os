@@ -486,6 +486,39 @@ describe('controlled JSON evidence contracts', () => {
     );
   });
 
+  it('binds a zero-match deletion sample to every external target receipt', () => {
+    const targets = ['object-store', 'search', 'vector', 'cache'].map((target) => ({
+      target,
+      receiptRef: `${target}-receipt`,
+      deleted: true,
+      verifiedAt: '2026-08-19T01:00:00.000Z',
+    }));
+    const failures = validateControlledJsonEvidence('external-deletion-samples.json', {
+      result: 'PASS',
+      targets,
+      samples: [
+        {
+          target: 'object-store',
+          sampleRefHash: 'a'.repeat(64),
+          receiptRef: 'wrong-receipt',
+          remainingMatches: 1,
+          verifiedAt: '2026-08-19T00:59:00.000Z',
+        },
+      ],
+      unresolvedTargets: [],
+    });
+    expect(failures).toEqual(
+      expect.arrayContaining([
+        'external-deletion-samples.json samples[0].receiptRef does not match its target deletion receipt',
+        'external-deletion-samples.json samples[0].remainingMatches must equal 0',
+        'external-deletion-samples.json samples[0].verifiedAt must not precede target deletion verification',
+        'external-deletion-samples.json samples must include search',
+        'external-deletion-samples.json samples must include vector',
+        'external-deletion-samples.json samples must include cache',
+      ]),
+    );
+  });
+
   it('requires one-time signed payment convergence and query-before-retry evidence', () => {
     expect(
       validateControlledJsonEvidence('provider-callback-redacted.json', {
