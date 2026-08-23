@@ -2071,6 +2071,7 @@ function validateObjectMetadata(value) {
 function validateOcrProvenance(value) {
   const artifact = 'ocr-provenance.json';
   const failures = [];
+  const candidateRefs = new Set();
   for (const [index, candidate] of (Array.isArray(value.candidates)
     ? value.candidates
     : []
@@ -2080,8 +2081,13 @@ function validateOcrProvenance(value) {
       failures.push(`${prefix} must be an object`);
       continue;
     }
-    if (typeof candidate.field !== 'string' || !candidate.field.trim())
-      failures.push(`${prefix}.field must not be empty`);
+    if (
+      JSON.stringify(Object.keys(candidate).sort()) !==
+      JSON.stringify(['confidence', 'field', 'sourceRegionHash'])
+    )
+      failures.push(`${prefix} fields are invalid`);
+    if (!opaqueReference.test(candidate.field ?? ''))
+      failures.push(`${prefix}.field must be opaque`);
     if (!validSha256(candidate.sourceRegionHash))
       failures.push(`${prefix}.sourceRegionHash has invalid format`);
     if (
@@ -2090,10 +2096,19 @@ function validateOcrProvenance(value) {
       candidate.confidence > 1
     )
       failures.push(`${prefix}.confidence must be within 0..1`);
+    const candidateRef = `${candidate.field}:${candidate.sourceRegionHash}`;
+    if (candidateRefs.has(candidateRef))
+      failures.push(`${artifact} candidate field/source pairs must be unique`);
+    else candidateRefs.add(candidateRef);
   }
+  if (
+    JSON.stringify(Object.keys(value.provenance ?? {}).sort()) !==
+    JSON.stringify(['gatewayRef', 'modelVersion', 'processedAt'])
+  )
+    failures.push(`${artifact} provenance fields are invalid`);
   for (const fieldName of ['gatewayRef', 'modelVersion'])
-    if (typeof value.provenance?.[fieldName] !== 'string' || !value.provenance[fieldName].trim())
-      failures.push(`${artifact} provenance.${fieldName} must not be empty`);
+    if (!opaqueReference.test(value.provenance?.[fieldName] ?? ''))
+      failures.push(`${artifact} provenance.${fieldName} must be opaque`);
   if (!validDateTime(value.provenance?.processedAt))
     failures.push(`${artifact} provenance.processedAt must be a non-future ISO date-time`);
   return failures;

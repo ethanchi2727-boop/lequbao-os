@@ -459,6 +459,35 @@ describe('controlled JSON evidence contracts', () => {
     );
   });
 
+  it('keeps OCR evidence redacted, exact and reproducible', () => {
+    const candidate = {
+      field: 'merchant-name',
+      sourceRegionHash: 'a'.repeat(64),
+      confidence: 0.9,
+      rawText: 'must-not-be-retained',
+    };
+    expect(
+      validateControlledJsonEvidence('ocr-provenance.json', {
+        objectRefHash: 'b'.repeat(64),
+        candidates: [candidate, { ...candidate }],
+        provenance: {
+          gatewayRef: 'gateway with spaces',
+          modelVersion: 'model with spaces',
+          processedAt: '2026-08-19T01:00:00.000Z',
+          rawResponse: true,
+        },
+      }),
+    ).toEqual(
+      expect.arrayContaining([
+        'ocr-provenance.json candidates[0] fields are invalid',
+        'ocr-provenance.json candidate field/source pairs must be unique',
+        'ocr-provenance.json provenance fields are invalid',
+        'ocr-provenance.json provenance.gatewayRef must be opaque',
+        'ocr-provenance.json provenance.modelVersion must be opaque',
+      ]),
+    );
+  });
+
   it('rejects hollow performance and disaster-recovery PASS evidence', () => {
     expect(
       validateControlledJsonEvidence('performance-report.json', {
