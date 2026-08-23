@@ -1,15 +1,15 @@
 {
-  "recordedAt": "2026-08-24T02:20:27+08:00",
-  "verifiedCommit": "dd079d4835dde9ddbabd2c42403540afb15ebaba",
+  "recordedAt": "2026-08-24T03:20:08+08:00",
+  "verifiedCommit": "f265d2e656fe98be3206fe5f56f8e97f505a428c",
   "status": "CONTROLLED",
   "stageRange": [281, 300],
   "localGate": {
     "command": "pnpm check",
     "outcome": "PASS",
-    "testFilesPassed": 150,
-    "testsPassed": 864,
+    "testFilesPassed": 152,
+    "testsPassed": 873,
     "implementedOpenApiPaths": 201,
-    "securityTextFiles": 682,
+    "securityTextFiles": 686,
     "sbomComponents": 760,
     "productionPackageVersions": 364,
     "artifactManifest": "b0d5e254f8070aba"
