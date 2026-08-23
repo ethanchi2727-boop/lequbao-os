@@ -14,7 +14,15 @@ import { capturePerformanceDatabaseSnapshot } from './performance-database-snaps
 
 const config = validatePerformanceConfig(process.env);
 const runId = `perf-${new Date().toISOString().replace(/[^0-9]/gu, '')}`;
-const database = new pg.Pool({ connectionString: config.databaseUrl, max: 2 });
+const database = new pg.Pool({
+  connectionString: config.databaseUrl,
+  max: 2,
+  connectionTimeoutMillis: 10_000,
+  idleTimeoutMillis: 10_000,
+  statement_timeout: 15_000,
+  query_timeout: 20_000,
+  application_name: 'lequ-controlled-performance-gate',
+});
 
 const scenarios = [
   {
