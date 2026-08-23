@@ -58,11 +58,12 @@ describe('controlled 300-stage execution map', () => {
       mapping.stages[0].suiteCode,
     ];
     mapping.stages[11].command = 'pnpm controlled:assemble';
+    mapping.stages[12].completionEvidence = ['plausible evidence', 'still not the frozen contract'];
 
     expect(validateControlled300StageMap(plan, mapping).failures).toEqual(
       expect.arrayContaining([
         'suite stages must preserve the controlled acceptance plan order',
-        'release control stages, codes and commands must match the frozen sequence',
+        'release control stages, codes, commands and evidence must match the frozen sequence',
       ]),
     );
   });

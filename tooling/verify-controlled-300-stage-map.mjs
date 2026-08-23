@@ -15,15 +15,72 @@ const forbiddenExecutionClaims = new Set([
 ]);
 
 const expectedReleaseControls = [
-  { stage: 292, code: 'CANDIDATE_BINDING', command: 'pnpm controlled:prepare' },
-  { stage: 293, code: 'NON_OVERWRITING_CAPTURE', command: 'pnpm controlled:capture' },
-  { stage: 294, code: 'INDEPENDENT_DECISIONS' },
-  { stage: 295, code: 'RESULT_ASSEMBLY', command: 'pnpm controlled:assemble' },
-  { stage: 296, code: 'EXACT_RELEASE_PACKAGE', command: 'pnpm controlled:stage-release' },
-  { stage: 297, code: 'IMMUTABLE_DRAFT_RELEASE' },
-  { stage: 298, code: 'PROTECTED_WORKFLOW_VERIFY' },
-  { stage: 299, code: 'INDEPENDENT_ATTESTATION' },
-  { stage: 300, code: 'LAUNCH_DECISION', command: 'pnpm launch:gate' },
+  {
+    stage: 292,
+    code: 'CANDIDATE_BINDING',
+    command: 'pnpm controlled:prepare',
+    completionEvidence: ['releaseCommit', 'deploymentId', 'environment', 'planSha256'],
+  },
+  {
+    stage: 293,
+    code: 'NON_OVERWRITING_CAPTURE',
+    command: 'pnpm controlled:capture',
+    completionEvidence: ['47 source artifacts', '47 candidate-bound capture receipts'],
+  },
+  {
+    stage: 294,
+    code: 'INDEPENDENT_DECISIONS',
+    completionEvidence: [
+      'opaque executor identities',
+      'different reviewer identities',
+      'ordered review timestamps',
+    ],
+  },
+  {
+    stage: 295,
+    code: 'RESULT_ASSEMBLY',
+    command: 'pnpm controlled:assemble',
+    completionEvidence: ['schema v3 results.json', 'eleven reviewed suite decisions'],
+  },
+  {
+    stage: 296,
+    code: 'EXACT_RELEASE_PACKAGE',
+    command: 'pnpm controlled:stage-release',
+    completionEvidence: ['exact 96-file staging directory', 'no extra or missing files'],
+  },
+  {
+    stage: 297,
+    code: 'IMMUTABLE_DRAFT_RELEASE',
+    completionEvidence: ['candidate-bound draft release ID', 'unique asset ID', 'asset SHA-256'],
+  },
+  {
+    stage: 298,
+    code: 'PROTECTED_WORKFLOW_VERIFY',
+    completionEvidence: [
+      'trusted main workflow SHA',
+      'same-repository workflow run',
+      'GitHub Actions app identity',
+    ],
+  },
+  {
+    stage: 299,
+    code: 'INDEPENDENT_ATTESTATION',
+    completionEvidence: [
+      'environment reviewer approval',
+      'archive hash attestation',
+      'workflow run ID',
+    ],
+  },
+  {
+    stage: 300,
+    code: 'LAUNCH_DECISION',
+    command: 'pnpm launch:gate',
+    completionEvidence: [
+      'eleven PASS suites',
+      'exact release commit',
+      'auditable go or no-go decision',
+    ],
+  },
 ];
 
 const mappingFields = new Set(['version', 'status', 'stages']);
@@ -122,11 +179,18 @@ export function validateControlled300StageMap(plan, mapping) {
         !actual ||
         actual.stage !== expected.stage ||
         actual.code !== expected.code ||
-        actual.command !== expected.command
+        actual.command !== expected.command ||
+        !Array.isArray(actual.completionEvidence) ||
+        actual.completionEvidence.length !== expected.completionEvidence.length ||
+        actual.completionEvidence.some(
+          (evidence, evidenceIndex) => evidence !== expected.completionEvidence[evidenceIndex],
+        )
       );
     })
   )
-    failures.push('release control stages, codes and commands must match the frozen sequence');
+    failures.push(
+      'release control stages, codes, commands and evidence must match the frozen sequence',
+    );
   if (stages.some((item) => Object.keys(item).some((key) => forbiddenExecutionClaims.has(key))))
     failures.push('controlled mapping cannot claim execution or completion');
 
