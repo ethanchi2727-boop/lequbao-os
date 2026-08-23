@@ -2008,6 +2008,26 @@ function validateIdentitySessionEvidence(value, binding) {
     !sessionRefs.has(value.revocation.sessionRefHash)
   )
     failures.push(`${artifact} revoked session must be present in sampled sessions`);
+  const revokedSession = (Array.isArray(value.sessions) ? value.sessions : []).find(
+    (session) => session?.sessionRefHash === value.revocation?.sessionRefHash,
+  );
+  const revokedSessionTimeline = [
+    revokedSession?.issuedAt,
+    value.revocation?.revokedAt,
+    value.revocation?.rejectedAt,
+    revokedSession?.expiresAt,
+  ].map((timestamp) => parseCanonicalUtcTimestamp(timestamp));
+  if (
+    revokedSessionTimeline.every((timestamp) => timestamp !== undefined) &&
+    !(
+      revokedSessionTimeline[0] <= revokedSessionTimeline[1] &&
+      revokedSessionTimeline[1] <= revokedSessionTimeline[2] &&
+      revokedSessionTimeline[2] < revokedSessionTimeline[3]
+    )
+  )
+    failures.push(
+      `${artifact} revocation must be demonstrated while the sampled session is active`,
+    );
   return failures;
 }
 

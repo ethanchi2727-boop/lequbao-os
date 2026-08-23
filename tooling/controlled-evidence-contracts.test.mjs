@@ -1352,6 +1352,39 @@ describe('controlled JSON evidence contracts', () => {
         'identity-session-redacted.json revoked session must be present in sampled sessions',
       ]),
     );
+    expect(
+      validateControlledJsonEvidence('identity-session-redacted.json', {
+        result: 'PASS',
+        revocation: {
+          revokedSessionRejected: true,
+          sessionRefHash: 'a'.repeat(64),
+          revocationReceiptHash: 'b'.repeat(64),
+          revokedAt: '2026-08-19T01:00:00.000Z',
+          rejectedAt: '2026-08-19T01:00:01.000Z',
+          latencySeconds: 1,
+        },
+        mfa: {
+          highRiskRequired: true,
+          downgradeRejected: true,
+          challengeRefHash: 'c'.repeat(64),
+          challengedAt: '2026-08-19T01:00:00.000Z',
+          downgradeRejectedAt: '2026-08-19T01:00:01.000Z',
+        },
+        sessions: [
+          {
+            sessionRefHash: 'a'.repeat(64),
+            tenantRefHash: 'd'.repeat(64),
+            tenantScopeVerified: true,
+            shortLived: true,
+            issuedAt: '2026-08-19T01:01:00.000Z',
+            expiresAt: '2026-08-19T01:30:00.000Z',
+          },
+        ],
+        failures: [],
+      }),
+    ).toContain(
+      'identity-session-redacted.json revocation must be demonstrated while the sampled session is active',
+    );
   });
 
   it('requires structured database, worker, intake, inventory and plugin evidence', () => {
