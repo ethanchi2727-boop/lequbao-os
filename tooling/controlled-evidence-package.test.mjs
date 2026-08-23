@@ -1,4 +1,4 @@
-import { mkdtemp, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
+import { mkdtemp, mkdir, readFile, rm, symlink, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
@@ -88,6 +88,20 @@ describe('controlled evidence release package inventory', () => {
         outputRoot: path.join(evidenceRoot, 'package'),
       }),
     ).rejects.toThrow('outside the controlled evidence workspace');
+  });
+
+  it('rejects an output whose parent junction resolves inside the evidence workspace', async () => {
+    const { evidenceRoot } = await fixture();
+    const alias = path.join(path.dirname(evidenceRoot), 'evidence-alias');
+    await symlink(evidenceRoot, alias, 'junction');
+    await expect(
+      stageControlledEvidencePackage({
+        plan,
+        evidenceRoot,
+        outputRoot: path.join(alias, 'package'),
+      }),
+    ).rejects.toThrow('outside the controlled evidence workspace');
+    await expect(readFile(path.join(evidenceRoot, 'package', 'results.json'))).rejects.toThrow();
   });
 
   it('rejects unsafe and duplicate plan paths before staging', () => {

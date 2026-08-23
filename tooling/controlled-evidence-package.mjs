@@ -86,9 +86,11 @@ export async function stageControlledEvidencePackage({ plan, evidenceRoot, outpu
     throw new Error('evidenceRoot and outputRoot must be absolute');
   const physicalEvidenceRoot = await realpath(evidenceRoot);
   const resolvedOutput = path.resolve(outputRoot);
-  if (inside(physicalEvidenceRoot, resolvedOutput))
+  const physicalOutputParent = await realpath(path.dirname(resolvedOutput));
+  const physicalOutput = path.join(physicalOutputParent, path.basename(resolvedOutput));
+  if (inside(physicalEvidenceRoot, physicalOutput))
     throw new Error('package output must be outside the controlled evidence workspace');
-  await mkdir(resolvedOutput);
+  await mkdir(physicalOutput);
   for (const relative of controlledEvidencePackageFiles(plan)) {
     const source = path.resolve(physicalEvidenceRoot, ...relative.split('/'));
     const physicalSource = await realpath(source);
@@ -96,16 +98,16 @@ export async function stageControlledEvidencePackage({ plan, evidenceRoot, outpu
       throw new Error(`package source resolves outside the evidence workspace: ${relative}`);
     if (!(await lstat(physicalSource)).isFile())
       throw new Error(`package source is not a regular file: ${relative}`);
-    const destination = path.resolve(resolvedOutput, ...relative.split('/'));
+    const destination = path.resolve(physicalOutput, ...relative.split('/'));
     await mkdir(path.dirname(destination), { recursive: true });
     await copyFile(physicalSource, destination, constants.COPYFILE_EXCL);
   }
   const failures = await inspectControlledEvidencePackageInventory({
     plan,
-    packageRoot: resolvedOutput,
+    packageRoot: physicalOutput,
   });
   if (failures.length) throw new Error(failures.join('; '));
-  return { outputRoot: resolvedOutput, fileCount: controlledEvidencePackageFiles(plan).length };
+  return { outputRoot: physicalOutput, fileCount: controlledEvidencePackageFiles(plan).length };
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
