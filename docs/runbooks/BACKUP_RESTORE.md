@@ -7,7 +7,7 @@ Production uses encrypted PostgreSQL physical/WAL backups with a core-transactio
 1. Use a controlled, production-shaped drill database with business writes frozen. Include at least one completed customer-deletion case so restore replay is observable. Do not use this logical snapshot procedure as the production backup scheduler.
 2. Set `DATABASE_URL`, `BACKUP_ENCRYPTION_RECIPIENT` and `BACKUP_DRILL_WRITE_FROZEN=true` in the controlled runner.
 3. Run `ops/scripts/backup-postgres.ps1 -OutputDirectory <evidence-directory>`.
-4. Preserve both the encrypted `.dump.age` file and its `.manifest.json`. The manifest records start/completion time, encrypted hash and a per-tenant financial snapshot covering orders, verified payments, successful refunds, verification use and reward entries/grants. It contains no connection string or encryption identity.
+4. Preserve both the encrypted `.dump.age` file and its `.manifest.json`. The manifest records start/completion time, encrypted hash and a typed per-tenant financial snapshot covering every tenant; tenants without current facts remain present with an empty metric object. Metrics cover orders, verified payments, successful refunds, verification use and reward entries/grants. It contains no connection string or encryption identity.
 
 ## Restore and verify
 

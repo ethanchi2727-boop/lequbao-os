@@ -380,10 +380,42 @@ describe('controlled JSON evidence contracts', () => {
         encryptedSizeBytes: 1,
         encryptedSha256: 'a'.repeat(64),
         financialSnapshotSha256: 'b'.repeat(64),
-        financialSnapshot: { tenants: [] },
+        financialSnapshot: {
+          schemaVersion: 1,
+          tenantCount: 1,
+          tenants: { '123e4567-e89b-42d3-a456-426614174000': { orders_count: 1 } },
+        },
         writeFrozen: true,
       }),
     ).toContain('backup.manifest.json backupFile has invalid format');
+  });
+
+  it('requires complete typed tenant coverage in financial snapshots', () => {
+    const failures = validateControlledJsonEvidence('backup.manifest.json', {
+      schemaVersion: 1,
+      backupFile: 'lequ-20260819T010000Z.dump.age',
+      backupStartedAt: '2026-08-19T01:00:00.000Z',
+      backupCompletedAt: '2026-08-19T01:01:00.000Z',
+      encryptedSizeBytes: 1,
+      encryptedSha256: 'a'.repeat(64),
+      financialSnapshotSha256: 'b'.repeat(64),
+      financialSnapshot: {
+        schemaVersion: 1,
+        tenantCount: 2,
+        tenants: {
+          'not-a-tenant': { invented_total: 1.5 },
+        },
+      },
+      writeFrozen: true,
+    });
+    expect(failures).toEqual(
+      expect.arrayContaining([
+        'backup.manifest.json financialSnapshot tenants must equal tenantCount',
+        'backup.manifest.json financialSnapshot tenant ID has invalid format',
+        'backup.manifest.json financialSnapshot contains undeclared metric invented_total',
+        'backup.manifest.json financialSnapshot metric invented_total must be an integer',
+      ]),
+    );
   });
 
   it('requires one-time signed payment convergence and query-before-retry evidence', () => {

@@ -33,6 +33,15 @@ try {
   $financialSnapshot = (& psql --dbname=$env:DATABASE_URL --tuples-only --no-align --set=ON_ERROR_STOP=1 --file=$snapshotSql | Out-String).Trim()
   if ($LASTEXITCODE -ne 0 -or -not $financialSnapshot) { throw 'source financial snapshot failed' }
   $snapshotObject = $financialSnapshot | ConvertFrom-Json
+  $snapshotFields = @($snapshotObject.PSObject.Properties.Name | Sort-Object)
+  if (($snapshotFields -join "`n") -ne (@('schemaVersion', 'tenantCount', 'tenants') -join "`n") -or
+      $snapshotObject.schemaVersion -ne 1 -or
+      ($snapshotObject.tenantCount -isnot [int] -and $snapshotObject.tenantCount -isnot [long]) -or
+      $snapshotObject.tenantCount -lt 1 -or
+      $snapshotObject.tenants -isnot [pscustomobject] -or
+      @($snapshotObject.tenants.PSObject.Properties).Count -ne $snapshotObject.tenantCount) {
+    throw 'source financial snapshot has invalid tenant coverage'
+  }
   $snapshotDigest = [Convert]::ToHexString(
     [Security.Cryptography.SHA256]::HashData([Text.Encoding]::UTF8.GetBytes($financialSnapshot))
   ).ToLowerInvariant()

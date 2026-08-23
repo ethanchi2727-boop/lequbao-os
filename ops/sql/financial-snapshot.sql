@@ -24,7 +24,10 @@ SELECT jsonb_build_object(
   'schemaVersion',1,
   'tenantCount',(SELECT count(*) FROM tenants),
   'tenants',COALESCE(
-    (SELECT jsonb_object_agg(tenant_id::text,metrics ORDER BY tenant_id::text) FROM per_tenant),
+    (
+      SELECT jsonb_object_agg(t.id::text,COALESCE(p.metrics,'{}'::jsonb) ORDER BY t.id::text)
+        FROM tenants t LEFT JOIN per_tenant p ON p.tenant_id=t.id
+    ),
     '{}'::jsonb
   )
 )::text;

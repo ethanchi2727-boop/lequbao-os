@@ -307,6 +307,11 @@ function semanticFixture(artifact, binding) {
       backupFile: 'lequ-20260819T010000Z.dump.age',
       encryptedSha256: 'd'.repeat(64),
       financialSnapshotSha256: 'e'.repeat(64),
+      financialSnapshot: {
+        schemaVersion: 1,
+        tenantCount: 1,
+        tenants: { '123e4567-e89b-42d3-a456-426614174000': { orders_count: 1 } },
+      },
     },
     'restore-report.json': {
       backupFile: 'lequ-20260819T010000Z.dump.age',

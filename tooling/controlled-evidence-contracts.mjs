@@ -706,6 +706,56 @@ function validateBackupManifest(value) {
   const failures = [];
   if (!Number.isSafeInteger(value.encryptedSizeBytes))
     failures.push(`${artifact} encryptedSizeBytes must be an integer`);
+  const snapshot = value.financialSnapshot;
+  const snapshotKeys =
+    snapshot && !Array.isArray(snapshot) && typeof snapshot === 'object'
+      ? Object.keys(snapshot).sort()
+      : [];
+  if (JSON.stringify(snapshotKeys) !== JSON.stringify(['schemaVersion', 'tenantCount', 'tenants']))
+    failures.push(`${artifact} financialSnapshot fields are invalid`);
+  if (snapshot?.schemaVersion !== 1)
+    failures.push(`${artifact} financialSnapshot.schemaVersion must equal 1`);
+  if (!Number.isSafeInteger(snapshot?.tenantCount) || snapshot.tenantCount < 1)
+    failures.push(`${artifact} financialSnapshot.tenantCount must be a positive integer`);
+  const tenants = snapshot?.tenants;
+  const tenantEntries =
+    tenants && !Array.isArray(tenants) && typeof tenants === 'object'
+      ? Object.entries(tenants)
+      : [];
+  if (tenantEntries.length !== snapshot?.tenantCount)
+    failures.push(`${artifact} financialSnapshot tenants must equal tenantCount`);
+  const allowedMetrics = new Set([
+    'orders_count',
+    'orders_paid_cents',
+    'orders_payable_cents',
+    'orders_refunded_cents',
+    'reward_entry_count',
+    'reward_entry_net_cents',
+    'reward_grant_count',
+    'reward_granted_cents',
+    'reward_redeemed_cents',
+    'reward_reversed_cents',
+    'succeeded_refund_cents',
+    'succeeded_refund_count',
+    'verification_quantity',
+    'verification_use_count',
+    'verified_payment_cents',
+    'verified_payment_count',
+  ]);
+  for (const [tenantId, metrics] of tenantEntries) {
+    if (!/^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/u.test(tenantId))
+      failures.push(`${artifact} financialSnapshot tenant ID has invalid format`);
+    if (!metrics || Array.isArray(metrics) || typeof metrics !== 'object') {
+      failures.push(`${artifact} financialSnapshot tenant metrics must be an object`);
+      continue;
+    }
+    for (const [metric, amount] of Object.entries(metrics)) {
+      if (!allowedMetrics.has(metric))
+        failures.push(`${artifact} financialSnapshot contains undeclared metric ${metric}`);
+      if (!Number.isSafeInteger(amount))
+        failures.push(`${artifact} financialSnapshot metric ${metric} must be an integer`);
+    }
+  }
   if (
     validDateTime(value.backupStartedAt) &&
     validDateTime(value.backupCompletedAt) &&

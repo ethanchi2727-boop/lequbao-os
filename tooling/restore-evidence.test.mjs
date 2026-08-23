@@ -7,6 +7,8 @@ describe('backup and restore evidence boundary', () => {
     const snapshot = await readFile('ops/sql/financial-snapshot.sql', 'utf8');
     expect(backup).toContain('BACKUP_DRILL_WRITE_FROZEN');
     expect(backup).toContain('financialSnapshotSha256');
+    expect(backup).toContain('source financial snapshot has invalid tenant coverage');
+    expect(snapshot).toContain('FROM tenants t LEFT JOIN per_tenant p ON p.tenant_id=t.id');
     expect(backup).not.toContain('DATABASE_URL =');
     expect(backup).toContain("yyyy-MM-dd'T'HH:mm:ss.fff'Z'");
     expect(backup).not.toContain("ToString('o')");
