@@ -91,11 +91,20 @@ export function validatePerformanceConfig(env) {
     'PERFORMANCE_MESSAGE_BEARER_TOKEN',
     'PERFORMANCE_WRITE_BEARER_TOKEN',
   ];
+  const configured = (name) => typeof env[name] === 'string' && env[name].trim().length > 0;
   const missing = [
-    ...required.filter((name) => !env[name]),
-    ...(!sharedToken ? tokenNames.filter((name) => !env[name]) : []),
+    ...required.filter((name) => !configured(name)),
+    ...(!configured('PERFORMANCE_BEARER_TOKEN')
+      ? tokenNames.filter((name) => !configured(name))
+      : []),
   ];
   if (missing.length) throw new Error(`missing performance configuration: ${missing.join(', ')}`);
+  for (const name of [...required, 'PERFORMANCE_BEARER_TOKEN', ...tokenNames])
+    if (typeof env[name] === 'string' && env[name] !== env[name].trim())
+      throw new Error(`${name} must not contain surrounding whitespace`);
+  const effectiveTokens = tokenNames.map((name) => env[name] ?? sharedToken);
+  if (effectiveTokens.some((token) => Buffer.byteLength(token, 'utf8') < 16))
+    throw new Error('performance bearer tokens must contain at least 16 bytes');
   const environment = env.PERFORMANCE_ENVIRONMENT.trim().toLowerCase();
   if (!['controlled-preproduction', 'staging'].includes(environment))
     throw new Error('performance runs are allowed only in controlled-preproduction or staging');
@@ -152,9 +161,9 @@ export function validatePerformanceConfig(env) {
   return {
     base,
     tokens: {
-      read: env.PERFORMANCE_READ_BEARER_TOKEN ?? sharedToken,
-      message: env.PERFORMANCE_MESSAGE_BEARER_TOKEN ?? sharedToken,
-      write: env.PERFORMANCE_WRITE_BEARER_TOKEN ?? sharedToken,
+      read: effectiveTokens[0],
+      message: effectiveTokens[1],
+      write: effectiveTokens[2],
     },
     databaseUrl: databaseUrl.href,
     environment,

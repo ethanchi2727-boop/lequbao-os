@@ -67,6 +67,15 @@ describe('controlled performance gate', () => {
       message: 'shared-credential',
       write: 'shared-credential',
     });
+    expect(() =>
+      validatePerformanceConfig({ ...shared, PERFORMANCE_BEARER_TOKEN: 'short' }),
+    ).toThrow('at least 16 bytes');
+    expect(() =>
+      validatePerformanceConfig({
+        ...validEnvironment,
+        PERFORMANCE_READ_BEARER_TOKEN: ` ${validEnvironment.PERFORMANCE_READ_BEARER_TOKEN}`,
+      }),
+    ).toThrow('surrounding whitespace');
   });
 
   it('refuses production-shaped targets, cross-origin paths and secret-shaped bodies', () => {
