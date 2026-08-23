@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { inspectSourceSecrets } from './source-secret-policy.mjs';
+import { inspectSourceSecrets, isSourceSecretTextFile } from './source-secret-policy.mjs';
 
 describe('source secret policy', () => {
   it('detects current hosted-service token families without storing fixtures verbatim', () => {
@@ -36,5 +36,19 @@ describe('source secret policy', () => {
     expect(
       inspectSourceSecrets('fixture', 'ghp_REDACTED\nhttps://example.test\nsk-example'),
     ).toEqual([]);
+  });
+
+  it('includes container, environment and package-manager text files but excludes binaries', () => {
+    for (const file of [
+      'deploy/Dockerfile',
+      'deploy/Dockerfile.worker',
+      '.env.example',
+      '.npmrc',
+      '.github/workflows/ci.yml',
+      'tooling/check.mjs',
+    ])
+      expect(isSourceSecretTextFile(file), file).toBe(true);
+    for (const file of ['assets/logo.png', 'release/archive.tar.gz', 'dist/app.js.map'])
+      expect(isSourceSecretTextFile(file), file).toBe(false);
   });
 });

@@ -4,7 +4,7 @@ import { spawnSync } from 'node:child_process';
 import { inspectDependencyInstallPolicy } from './dependency-install-policy.mjs';
 import { inspectDevelopmentMockProfile } from './development-mock-profile.mjs';
 import { buildSbomDocument } from './generate-sbom.mjs';
-import { inspectSourceSecrets } from './source-secret-policy.mjs';
+import { inspectSourceSecrets, isSourceSecretTextFile } from './source-secret-policy.mjs';
 import {
   inspectProductionLicenseReport,
   readInstalledProductionLicenseReport,
@@ -16,8 +16,7 @@ if (listed.status !== 0) throw new Error('git file inventory unavailable');
 const repositoryFiles = listed.stdout.split('\0').filter(Boolean);
 const files = repositoryFiles.filter(
   (file) =>
-    !/(?:^|\/)(?:node_modules|dist|coverage)(?:\/|$)/u.test(file) &&
-    /\.(?:[cm]?[jt]sx?|json|ya?ml|md|sql|env|toml|ini|properties|sh|ps1)$/iu.test(file),
+    !/(?:^|\/)(?:node_modules|dist|coverage)(?:\/|$)/u.test(file) && isSourceSecretTextFile(file),
 );
 const failures = [];
 for (const file of files) {

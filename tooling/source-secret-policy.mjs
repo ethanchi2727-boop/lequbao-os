@@ -9,6 +9,16 @@ export const sourceSecretPatterns = Object.freeze([
   ['JWT', /eyJ[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{10,}/u],
 ]);
 
+export function isSourceSecretTextFile(file) {
+  const name = file.split('/').at(-1) ?? '';
+  return (
+    /\.(?:[cm]?[jt]sx?|json|ya?ml|md|sql|env|toml|ini|properties|sh|ps1)$/iu.test(file) ||
+    /^(?:Dockerfile(?:\..+)?|Makefile|\.env(?:\..+)?|\.npmrc|\.yarnrc(?:\.yml)?|\.pnpmfile\.cjs)$/iu.test(
+      name,
+    )
+  );
+}
+
 export function inspectSourceSecrets(file, source) {
   return sourceSecretPatterns
     .filter(([, pattern]) => pattern.test(source))
