@@ -1052,6 +1052,7 @@ describe('controlled JSON evidence contracts', () => {
         durationSeconds: 1,
         deliveryRefHash: 'a'.repeat(64),
         sessionRefHash: 'b'.repeat(64),
+        rawArchive: 'forbidden',
       },
       deletion: {
         authorized: true,
@@ -1061,6 +1062,7 @@ describe('controlled JSON evidence contracts', () => {
         completedAt: '2026-08-19T01:02:00.000Z',
         authorizationRefHash: 'c'.repeat(64),
         auditRefHash: 'd'.repeat(64),
+        userEmail: 'forbidden@example.test',
       },
       targets: ['database', 'object-store', 'search', 'vector', 'cache'].map((target, index) => ({
         target,
@@ -1073,6 +1075,8 @@ describe('controlled JSON evidence contracts', () => {
     });
     expect(failures).toEqual(
       expect.arrayContaining([
+        'privacy-export-delete.json export fields are invalid',
+        'privacy-export-delete.json deletion fields are invalid',
         'privacy-export-delete.json export.durationSeconds does not reconcile with timestamps',
         'privacy-export-delete.json targets[0] deletion and verification timestamps are out of order',
       ]),

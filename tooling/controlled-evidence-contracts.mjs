@@ -1779,6 +1779,32 @@ function validateObjectRetention(value) {
 function validatePrivacyExportDelete(value) {
   const artifact = 'privacy-export-delete.json';
   const failures = [];
+  if (!hasExactKeys(value, ['deletion', 'export', 'result', 'targets', 'unresolvedTargets']))
+    failures.push(`${artifact} fields are invalid`);
+  if (
+    !hasExactKeys(value.export, [
+      'completedAt',
+      'deliveryRefHash',
+      'durationSeconds',
+      'encrypted',
+      'requestedAt',
+      'sessionRefHash',
+      'verifiedSessionDelivery',
+    ])
+  )
+    failures.push(`${artifact} export fields are invalid`);
+  if (
+    !hasExactKeys(value.deletion, [
+      'auditRecorded',
+      'auditRefHash',
+      'authorizationRefHash',
+      'authorized',
+      'authorizedAt',
+      'completedAt',
+      'requestedAt',
+    ])
+  )
+    failures.push(`${artifact} deletion fields are invalid`);
   if (value.export?.encrypted !== true)
     failures.push(`${artifact} export.encrypted must equal true`);
   if (value.export?.verifiedSessionDelivery !== true)
@@ -1837,6 +1863,8 @@ function validatePrivacyExportDelete(value) {
       failures.push(`${prefix} must be an object`);
       continue;
     }
+    if (!hasExactKeys(target, ['deleted', 'deletedAt', 'receiptHash', 'target', 'verifiedAt']))
+      failures.push(`${prefix} fields are invalid`);
     if (!targetNames.includes(target.target)) failures.push(`${prefix}.target is not supported`);
     else if (!requiredTargets.has(target.target))
       failures.push(`${artifact} target names must be unique`);
