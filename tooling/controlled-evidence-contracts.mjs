@@ -802,6 +802,7 @@ function validateLegalRelease(value) {
   const allowedSurfaces = ['lequbao-web', 'lequ-life-miniapp', 'merchant-miniapp'];
   const requiredSurfaces = new Set(allowedSurfaces);
   const observedSurfaces = new Set();
+  const publicationReceipts = new Set();
   for (const [index, surface] of (Array.isArray(value.surfaceMatrix)
     ? value.surfaceMatrix
     : []
@@ -827,6 +828,27 @@ function validateLegalRelease(value) {
       for (const documentId of surface.documentIds)
         if (!documentIds.has(documentId))
           failures.push(`${prefix}.documentIds contains an undeclared document`);
+    }
+    if (!validSha256(surface.publicationReceiptHash))
+      failures.push(`${prefix}.publicationReceiptHash has invalid format`);
+    else if (publicationReceipts.has(surface.publicationReceiptHash))
+      failures.push(`${artifact} surface publication receipts must be unique`);
+    else publicationReceipts.add(surface.publicationReceiptHash);
+    if (!validDateTime(surface.verifiedAt))
+      failures.push(`${prefix}.verifiedAt must be a non-future ISO date-time`);
+    else {
+      const referencedEffectiveTimes = (surface.documentIds ?? [])
+        .map((documentId) =>
+          Date.parse(
+            value.documents?.find((document) => document?.documentId === documentId)?.effectiveAt,
+          ),
+        )
+        .filter(Number.isFinite);
+      if (
+        referencedEffectiveTimes.length &&
+        Date.parse(surface.verifiedAt) < Math.max(...referencedEffectiveTimes)
+      )
+        failures.push(`${prefix}.verifiedAt must not precede document effectiveness`);
     }
     if (surface.publicationVerified !== true)
       failures.push(`${prefix}.publicationVerified must equal true`);

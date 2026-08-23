@@ -586,13 +586,17 @@ function semanticFixture(artifact, binding) {
           effectiveAt: '2026-08-19T01:00:00.000Z',
         },
       ],
-      surfaceMatrix: ['lequbao-web', 'lequ-life-miniapp', 'merchant-miniapp'].map((surface) => ({
-        surface,
-        documentIds: ['privacy-policy'],
-        publicationVerified: true,
-        accountPrivacyInstructionsVerified: true,
-        failures: [],
-      })),
+      surfaceMatrix: ['lequbao-web', 'lequ-life-miniapp', 'merchant-miniapp'].map(
+        (surface, index) => ({
+          surface,
+          documentIds: ['privacy-policy'],
+          publicationReceiptHash: `${index + 1}`.repeat(64),
+          verifiedAt: '2026-08-19T01:00:00.000Z',
+          publicationVerified: true,
+          accountPrivacyInstructionsVerified: true,
+          failures: [],
+        }),
+      ),
       approvals: [
         ...['product owner', 'legal compliance reviewer'].map((role, index) => ({
           subjectId: `org:legal-${index}`,

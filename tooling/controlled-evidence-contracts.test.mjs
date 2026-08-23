@@ -349,6 +349,8 @@ describe('controlled JSON evidence contracts', () => {
           {
             surface: 'lequbao-web',
             documentIds: ['privacy-policy', 'privacy-policy'],
+            publicationReceiptHash: 'd'.repeat(64),
+            verifiedAt: '2026-08-19T00:58:00.000Z',
             publicationVerified: true,
             accountPrivacyInstructionsVerified: true,
             failures: [],
@@ -356,6 +358,8 @@ describe('controlled JSON evidence contracts', () => {
           {
             surface: 'lequbao-web',
             documentIds: ['privacy-policy'],
+            publicationReceiptHash: 'd'.repeat(64),
+            verifiedAt: '2026-08-19T01:00:00.000Z',
             publicationVerified: true,
             accountPrivacyInstructionsVerified: true,
             failures: [],
@@ -363,6 +367,8 @@ describe('controlled JSON evidence contracts', () => {
           {
             surface: 'unknown-client',
             documentIds: ['privacy-policy'],
+            publicationReceiptHash: 'e'.repeat(64),
+            verifiedAt: '2026-08-19T01:00:00.000Z',
             publicationVerified: true,
             accountPrivacyInstructionsVerified: true,
             failures: [],
@@ -393,7 +399,9 @@ describe('controlled JSON evidence contracts', () => {
         'legal-document-release.json documents[0].publishedUrl must be a public credential-free HTTPS URL',
         'legal-document-release.json documents[0].effectiveAt must not precede approval',
         'legal-document-release.json surfaceMatrix[0].documentIds must be unique',
+        'legal-document-release.json surfaceMatrix[0].verifiedAt must not precede document effectiveness',
         'legal-document-release.json surfaces must be unique',
+        'legal-document-release.json surface publication receipts must be unique',
         'legal-document-release.json surfaceMatrix[2].surface is not approved',
         'legal-document-release.json surfaceMatrix must include lequ-life-miniapp',
       ]),
