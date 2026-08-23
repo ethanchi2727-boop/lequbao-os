@@ -180,8 +180,8 @@ export const controlledJsonEvidenceContracts = {
     field('images', 'object'),
     timestamp('startedAt'),
     timestamp('completedAt'),
-    field('concurrency', 'number', { minimum: 1 }),
-    field('requestsPerScenario', 'number', { minimum: 1 }),
+    field('concurrency', 'number', { minimum: 1, maximum: 200 }),
+    field('requestsPerScenario', 'number', { minimum: 20, maximum: 100000 }),
     field('durationSeconds', 'number', { minimum: 0 }),
     field('scenarios', 'array'),
     field('database', 'object'),
@@ -815,6 +815,10 @@ function validateCandidateImageOwner(artifact, images) {
 function validatePerformanceReport(value) {
   const artifact = 'performance-report.json';
   const failures = validateCandidateImageOwner(artifact, value.images);
+  if (!Number.isSafeInteger(value.concurrency))
+    failures.push(`${artifact} concurrency must be an integer`);
+  if (!Number.isSafeInteger(value.requestsPerScenario))
+    failures.push(`${artifact} requestsPerScenario must be an integer`);
   if (value.failure !== null) failures.push(`${artifact} failure must equal null for PASS`);
   const scenarios = Array.isArray(value.scenarios) ? value.scenarios : [];
   const names = new Set();
@@ -829,22 +833,44 @@ function validatePerformanceReport(value) {
     if (limit === undefined) failures.push(`${prefix}.name is not an approved scenario`);
     if (scenario.thresholdP95Ms !== limit)
       failures.push(`${prefix}.thresholdP95Ms does not match the frozen threshold`);
+    if (!Number.isSafeInteger(scenario.requests) || scenario.requests < 1)
+      failures.push(`${prefix}.requests must be a positive integer`);
     if (scenario.requests !== value.requestsPerScenario)
       failures.push(`${prefix}.requests does not match requestsPerScenario`);
+    for (const fieldName of ['successes', 'errors'])
+      if (!Number.isSafeInteger(scenario[fieldName]) || scenario[fieldName] < 0)
+        failures.push(`${prefix}.${fieldName} must be a non-negative integer`);
     if (scenario.successes + scenario.errors !== scenario.requests)
       failures.push(`${prefix} successes and errors do not reconcile with requests`);
-    if (!Number.isFinite(scenario.p95Ms) || scenario.p95Ms > limit)
+    if (!Number.isFinite(scenario.p95Ms) || scenario.p95Ms < 0 || scenario.p95Ms > limit)
       failures.push(`${prefix}.p95Ms exceeds the frozen threshold`);
     if (!Number.isFinite(scenario.errorRate) || scenario.errorRate < 0 || scenario.errorRate > 0.01)
       failures.push(`${prefix}.errorRate exceeds one percent`);
+    const calculatedErrorRate = scenario.requests > 0 ? scenario.errors / scenario.requests : 1;
+    if (
+      Number.isFinite(scenario.errorRate) &&
+      Number.isFinite(calculatedErrorRate) &&
+      Math.abs(scenario.errorRate - calculatedErrorRate) > 1e-12
+    )
+      failures.push(`${prefix}.errorRate does not reconcile with errors and requests`);
     for (const fieldName of ['p50Ms', 'p99Ms'])
       if (!Number.isFinite(scenario[fieldName]) || scenario[fieldName] < 0)
         failures.push(`${prefix}.${fieldName} must be non-negative`);
+    if (
+      Number.isFinite(scenario.p50Ms) &&
+      Number.isFinite(scenario.p95Ms) &&
+      Number.isFinite(scenario.p99Ms) &&
+      (scenario.p50Ms > scenario.p95Ms || scenario.p95Ms > scenario.p99Ms)
+    )
+      failures.push(`${prefix} percentiles must be ordered p50 <= p95 <= p99`);
   }
   for (const name of Object.keys(performanceScenarioLimits))
     if (!names.has(name)) failures.push(`${artifact} scenarios must include ${name}`);
   if (names.size !== scenarios.length) failures.push(`${artifact} scenario names must be unique`);
   const message = scenarios.find((scenario) => scenario?.name === 'customer-message-write');
+  for (const fieldName of ['expectedMessageIds', 'persistedMessageIds'])
+    if (!Number.isSafeInteger(value.persistence?.[fieldName]) || value.persistence[fieldName] < 0)
+      failures.push(`${artifact} persistence ${fieldName} must be a non-negative integer`);
   if (value.persistence?.expectedMessageIds !== message?.successes)
     failures.push(`${artifact} persistence expected count must equal acknowledged messages`);
   if (value.persistence?.persistedMessageIds !== value.persistence?.expectedMessageIds)

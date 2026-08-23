@@ -285,6 +285,60 @@ describe('controlled JSON evidence contracts', () => {
     );
   });
 
+  it('recalculates performance counts, rates and percentile ordering', () => {
+    const scenario = (name, thresholdP95Ms) => ({
+      name,
+      requests: 10,
+      successes: 11,
+      errors: -1,
+      p50Ms: 20,
+      p95Ms: 10,
+      p99Ms: 15,
+      errorRate: 0,
+      thresholdP95Ms,
+    });
+    const failures = validateControlledJsonEvidence('performance-report.json', {
+      result: 'PASS',
+      schemaVersion: 1,
+      releaseCommit: 'a'.repeat(40),
+      workflowRunId: '12345',
+      images: {
+        api: `ghcr.io/example/lequbao-v6-api@sha256:${'a'.repeat(64)}`,
+        worker: `ghcr.io/example/lequbao-v6-worker@sha256:${'b'.repeat(64)}`,
+        web: `ghcr.io/example/lequbao-v6-web@sha256:${'c'.repeat(64)}`,
+      },
+      startedAt: '2026-08-19T01:00:00.000Z',
+      completedAt: '2026-08-19T01:01:00.000Z',
+      concurrency: 1.5,
+      requestsPerScenario: 10,
+      durationSeconds: 60,
+      failure: null,
+      scenarios: [
+        scenario('core-read', 500),
+        scenario('customer-message-write', 500),
+        scenario('core-write', 800),
+      ],
+      persistence: {
+        expectedMessageIds: -1,
+        persistedMessageIds: 10.5,
+        missingMessageIds: [],
+        duplicateAcknowledgedMessageIds: [],
+      },
+      database: { before: {}, after: {} },
+    });
+    expect(failures).toEqual(
+      expect.arrayContaining([
+        'performance-report.json requestsPerScenario must be at least 20',
+        'performance-report.json concurrency must be an integer',
+        'performance-report.json scenarios[0].errors must be a non-negative integer',
+        'performance-report.json scenarios[0].errorRate does not reconcile with errors and requests',
+        'performance-report.json scenarios[0] percentiles must be ordered p50 <= p95 <= p99',
+        'performance-report.json persistence expectedMessageIds must be a non-negative integer',
+        'performance-report.json persistence persistedMessageIds must be a non-negative integer',
+      ]),
+    );
+  });
+
   it('requires one-time signed payment convergence and query-before-retry evidence', () => {
     expect(
       validateControlledJsonEvidence('provider-callback-redacted.json', {

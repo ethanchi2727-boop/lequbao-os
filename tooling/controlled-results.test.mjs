@@ -88,8 +88,8 @@ function semanticFixture(artifact, binding) {
     ['core-write', 800],
   ].map(([name, thresholdP95Ms]) => ({
     name,
-    requests: 10,
-    successes: 10,
+    requests: 20,
+    successes: 20,
     errors: 0,
     p50Ms: 10,
     p95Ms: 20,
@@ -328,12 +328,12 @@ function semanticFixture(artifact, binding) {
     'performance-report.json': {
       images,
       failure: null,
-      requestsPerScenario: 10,
+      requestsPerScenario: 20,
       scenarios: performanceScenarios,
       database: { before: performanceSnapshot, after: performanceSnapshot },
       persistence: {
-        expectedMessageIds: 10,
-        persistedMessageIds: 10,
+        expectedMessageIds: 20,
+        persistedMessageIds: 20,
         missingMessageIds: [],
         duplicateAcknowledgedMessageIds: [],
       },

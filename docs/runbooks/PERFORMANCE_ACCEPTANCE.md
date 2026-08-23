@@ -42,6 +42,8 @@ Run `pnpm performance:gate` from the repository root. Preserve the command exit 
 - Core write P95 is at most 800 ms.
 - Customer-message persistence P95 is at most 500 ms.
 - Each scenario has at most 1% non-2xx/3xx responses.
+- Each scenario contains 20 to 100,000 requests; request, success and error counts are non-negative integers, reconcile exactly, and reproduce the recorded error rate.
+- P50, P95 and P99 are non-negative and ordered; concurrency is an integer from 1 to 200.
 - Every acknowledged customer-message ID is unique and exists in PostgreSQL after the run.
 - No new dead Outbox event appears during the run.
 - The report contains P50/P95/P99, errors, duration, concurrency, request count, database size/live-row estimate, transaction/block/temp/deadlock counters and Outbox backlog before and after.
