@@ -18,6 +18,12 @@ describe('controlled environment names-only inventory', () => {
     expect(result).toMatchObject({
       environment: 'controlled-preproduction',
       valuePolicy: 'names-only',
+      counts: {
+        stageReferences: 58,
+        githubEnvironmentNames: 56,
+        externalFileNames: 1,
+        uniqueRequirements: 57,
+      },
       stages: {
         47: { required: 15 },
         48: { required: 9 },
@@ -26,6 +32,18 @@ describe('controlled environment names-only inventory', () => {
       },
     });
     expect(JSON.stringify(result)).not.toMatch(/https?:\/\/|postgres:|Bearer |ghp_/u);
+  });
+
+  it('distinguishes reused stage references from unique provisioned names', async () => {
+    const result = await inventory();
+    const releaseCommitReferences = Object.values(result.stages).filter((stage) =>
+      stage.variables.includes('RELEASE_COMMIT'),
+    );
+    expect(releaseCommitReferences).toHaveLength(2);
+    expect(result.counts.stageReferences - result.counts.uniqueRequirements).toBe(1);
+    expect(result.counts.githubEnvironmentNames + result.counts.externalFileNames).toBe(
+      result.counts.uniqueRequirements,
+    );
   });
 
   it('keeps sensitive material in secrets and topology names in variables', async () => {

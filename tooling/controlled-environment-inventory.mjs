@@ -57,10 +57,22 @@ export function buildControlledEnvironmentInventory(workflowSource) {
     };
   }
 
+  const uniqueSecrets = new Set(Object.values(stages).flatMap((stage) => stage.secrets));
+  const uniqueVariables = new Set(Object.values(stages).flatMap((stage) => stage.variables));
+  const uniqueExternalFiles = new Set(
+    Object.values(stages).flatMap((stage) => stage.externalFiles),
+  );
+
   return {
     version: 1,
     environment: 'controlled-preproduction',
     valuePolicy: 'names-only',
+    counts: {
+      stageReferences: Object.values(stages).reduce((sum, stage) => sum + stage.required, 0),
+      githubEnvironmentNames: uniqueSecrets.size + uniqueVariables.size,
+      externalFileNames: uniqueExternalFiles.size,
+      uniqueRequirements: uniqueSecrets.size + uniqueVariables.size + uniqueExternalFiles.size,
+    },
     stages,
   };
 }
