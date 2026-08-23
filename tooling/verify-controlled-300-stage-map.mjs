@@ -26,12 +26,18 @@ const expectedReleaseControls = [
   { stage: 300, code: 'LAUNCH_DECISION', command: 'pnpm launch:gate' },
 ];
 
+const mappingFields = new Set(['version', 'status', 'stages']);
+const suiteFields = new Set(['stage', 'kind', 'suiteCode', 'expectedArtifactCount']);
+const releaseControlFields = new Set(['stage', 'kind', 'code', 'command', 'completionEvidence']);
+
 export function validateControlled300StageMap(plan, mapping) {
   const failures = [];
   const expectedStages = Array.from({ length: 20 }, (_, index) => 281 + index);
   const stages = Array.isArray(mapping.stages) ? mapping.stages : [];
   const planSuites = Array.isArray(plan.suites) ? plan.suites : [];
   const actualStages = stages.map((item) => item.stage);
+  if (Object.keys(mapping).some((key) => !mappingFields.has(key)))
+    failures.push('mapping contains undeclared top-level fields');
   if (mapping.version !== 1) failures.push('mapping version must be 1');
   if (mapping.status !== 'CONTROLLED') failures.push('mapping status must remain CONTROLLED');
   if (
@@ -42,6 +48,13 @@ export function validateControlled300StageMap(plan, mapping) {
 
   const suites = stages.filter((item) => item.kind === 'suite');
   const controls = stages.filter((item) => item.kind === 'release-control');
+  if (
+    stages.some((item) => {
+      const fields = item.kind === 'suite' ? suiteFields : releaseControlFields;
+      return Object.keys(item).some((key) => !fields.has(key));
+    })
+  )
+    failures.push('stage entries contain undeclared fields');
   const planByCode = new Map(planSuites.map((suite) => [suite.code, suite]));
   if (suites.length !== 11 || controls.length !== 9)
     failures.push('mapping must contain eleven suites and nine release controls');

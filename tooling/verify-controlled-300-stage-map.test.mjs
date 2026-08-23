@@ -36,11 +36,15 @@ describe('controlled 300-stage execution map', () => {
 
   it('rejects hidden execution claims and malformed evidence requirements', async () => {
     const { plan, mapping } = await loadFixtures(root);
+    mapping.approved = true;
     mapping.stages[0].approved = true;
+    mapping.stages[1].execution = { passed: true };
     mapping.stages[11].completionEvidence = ['releaseCommit', 'releaseCommit'];
 
     expect(validateControlled300StageMap(plan, mapping).failures).toEqual(
       expect.arrayContaining([
+        'mapping contains undeclared top-level fields',
+        'stage entries contain undeclared fields',
         'release controls need at least two unique non-empty evidence requirements',
         'controlled mapping cannot claim execution or completion',
       ]),
