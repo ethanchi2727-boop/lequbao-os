@@ -15,16 +15,16 @@ This runbook produces the required evidence for `PERF-001` and `PERF-002`. It mu
 
 Set these only in the controlled runner's secret/environment store:
 
-- `PERFORMANCE_BASE_URL`: HTTPS origin of the candidate deployment.
+- `PERFORMANCE_BASE_URL`: credential-free HTTPS origin of the candidate deployment, with no path, query or fragment.
 - `PERFORMANCE_READ_BEARER_TOKEN`: runtime-only employee identity for `/api/v1/context`.
 - `PERFORMANCE_MESSAGE_BEARER_TOKEN`: runtime-only consumer identity bound to the prepared conversation.
 - `PERFORMANCE_WRITE_BEARER_TOKEN`: runtime-only identity with only the selected bounded-write permission.
 - Alternatively, `PERFORMANCE_BEARER_TOKEN` may supply all three only when one identity is valid for every selected endpoint; do not broaden permissions merely to use this shortcut.
 - `PERFORMANCE_DATABASE_URL`: read-only evidence connection; never committed or copied into the report.
 - `PERFORMANCE_ENVIRONMENT`: exactly `controlled-preproduction` or `staging`.
-- `PERFORMANCE_CONVERSATION_PATH`: `/api/.../messages` path for the prepared conversation.
+- `PERFORMANCE_CONVERSATION_PATH`: canonical `/api/.../messages` path for the prepared conversation, with no dot-segment, query or fragment.
 - `PERFORMANCE_CONVERSATION_BODY_JSON`: nonsensitive body fields such as `{"messageType":"TEXT"}`. The harness supplies a unique content marker.
-- `PERFORMANCE_WRITE_PATH` and `PERFORMANCE_WRITE_BODY_JSON`: bounded core-write fixture and its nonsensitive, valid request body.
+- `PERFORMANCE_WRITE_PATH` and `PERFORMANCE_WRITE_BODY_JSON`: canonical `/api/...` path for the bounded core-write fixture, with no dot-segment, query or fragment, and its nonsensitive valid request body.
 - `PERFORMANCE_REPORT_PATH`: a new `.json` artifact path outside the source tree when practical.
 - `RELEASE_COMMIT`: the exact 40-character candidate SHA.
 - `PERFORMANCE_CANDIDATE_IMAGE_MANIFEST_JSON`: unmodified JSON from the protected publisher's digest manifest.

@@ -80,6 +80,8 @@ export function validatePerformanceConfig(env) {
   if (!['controlled-preproduction', 'staging'].includes(environment))
     throw new Error('performance runs are allowed only in controlled-preproduction or staging');
   const base = new URL(env.PERFORMANCE_BASE_URL);
+  if (base.username || base.password || base.pathname !== '/' || base.search || base.hash)
+    throw new Error('performance base URL must be a credential-free origin');
   const local = ['127.0.0.1', 'localhost', '::1'].includes(base.hostname);
   if (base.protocol !== 'https:' && !(local && base.protocol === 'http:'))
     throw new Error('performance base URL must use HTTPS outside localhost');
@@ -90,6 +92,8 @@ export function validatePerformanceConfig(env) {
     if (!value.startsWith('/api/')) throw new Error(`${name} must be an /api/ path`);
     const target = new URL(value, base);
     if (target.origin !== base.origin) throw new Error(`${name} must stay on the base origin`);
+    if (target.pathname !== value || target.search || target.hash)
+      throw new Error(`${name} must be a canonical path without query or fragment`);
     return value;
   };
   const concurrency = Number(env.PERFORMANCE_CONCURRENCY ?? 20);

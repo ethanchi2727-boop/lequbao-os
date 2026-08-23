@@ -84,6 +84,24 @@ describe('controlled performance gate', () => {
         PERFORMANCE_WRITE_BODY_JSON: '{"providerToken":"do-not-store"}',
       }),
     ).toThrow('secret-shaped');
+    expect(() =>
+      validatePerformanceConfig({
+        ...validEnvironment,
+        PERFORMANCE_BASE_URL: 'https://operator:secret@staging.example.test',
+      }),
+    ).toThrow('credential-free origin');
+    expect(() =>
+      validatePerformanceConfig({
+        ...validEnvironment,
+        PERFORMANCE_WRITE_PATH: '/api/v1/fixture/../../admin',
+      }),
+    ).toThrow('canonical path');
+    expect(() =>
+      validatePerformanceConfig({
+        ...validEnvironment,
+        PERFORMANCE_WRITE_PATH: '/api/v1/performance/write-fixture?unsafe=true',
+      }),
+    ).toThrow('canonical path');
   });
 
   it('rejects a mutable candidate or any deployed image digest mismatch', () => {
