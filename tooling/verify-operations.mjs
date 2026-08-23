@@ -1,8 +1,12 @@
 import { readFile } from 'node:fs/promises';
 import { parse } from 'yaml';
 import { inspectOperationsAlerts, requiredAlertCodes } from './operations-alert-policy.mjs';
+import { inspectOperationsFeatureFlags } from './operations-feature-flag-policy.mjs';
 const alerts = parse(await readFile('ops/alerts.yaml', 'utf8')),
   failures = inspectOperationsAlerts(alerts);
+failures.push(
+  ...inspectOperationsFeatureFlags(parse(await readFile('ops/feature-flags.yaml', 'utf8'))),
+);
 for (const file of [
   'docs/runbooks/P0_ALERT_AND_FREEZE.md',
   'docs/runbooks/BACKUP_RESTORE.md',
@@ -64,5 +68,5 @@ if (failures.length) {
   process.exitCode = 1;
 } else
   console.log(
-    `Operations gate verified ${requiredAlertCodes.length} mandatory alerts, migration/restore/privacy controls and runbooks.`,
+    `Operations gate verified ${requiredAlertCodes.length} mandatory alerts, six default-off release flags, migration/restore/privacy controls and runbooks.`,
   );

@@ -27,5 +27,5 @@ Code rollback is separate from data rollback. Migrations 0002–0015 are expand-
 - Pause a failing backfill by expiring its cursor lease. Resume from the last committed source primary key and exact batch hash.
 - An exact source replay must resolve to the same mapping and target hash. A changed source record becomes a new reviewed batch; it never silently replaces financial history.
 - Do not enter Switch while any tenant/day, tenant-total or global-total reconciliation is unexplained.
-- Roll back application traffic with feature flags, leave expanded columns/tables in place, and keep the old system read-only. Never restore a full pre-migration database over orders written after migration began.
+- Roll back application traffic with feature flags, leave expanded columns/tables in place, and keep the old system read-only. All six launch-sensitive flags are schema-gated to default `false` and retain their exact approval/test prerequisites; never weaken a prerequisite or enable a default to bypass controlled rollout. Never restore a full pre-migration database over orders written after migration began.
 - Contract cleanup is a later separately approved release after two rehearsals, backup restore verification and business/finance/security sign-off.
