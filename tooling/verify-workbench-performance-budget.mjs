@@ -18,6 +18,10 @@ const assets = Object.freeze({
 const routeExperienceGroups = Object.freeze([
   'page-experiences.mjs',
   'page-experiences-intake.mjs',
+  'page-experiences-sales.mjs',
+  'page-experiences-revenue.mjs',
+  'page-experiences-delivery.mjs',
+  'page-experiences-miniapp.mjs',
 ]);
 
 export const workbenchPerformanceBudgets = Object.freeze({

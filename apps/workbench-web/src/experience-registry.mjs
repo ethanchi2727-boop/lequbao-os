@@ -26,6 +26,53 @@ const experienceGroups = [
     ]),
     load: () => import('./page-experiences-intake.mjs'),
   },
+  {
+    pages: new Set([
+      'page-026',
+      'page-027',
+      'page-028',
+      'page-030',
+      'page-031',
+      'page-033',
+      'page-034',
+      'page-035',
+    ]),
+    load: () => import('./page-experiences-sales.mjs'),
+  },
+  {
+    pages: new Set(['page-037', 'page-038', 'page-039', 'page-040']),
+    load: () => import('./page-experiences-revenue.mjs'),
+  },
+  {
+    pages: new Set([
+      'page-041',
+      'page-042',
+      'page-043',
+      'page-045',
+      'page-046',
+      'page-049',
+      'page-050',
+      'page-052',
+      'page-053',
+      'page-054',
+    ]),
+    load: () => import('./page-experiences-delivery.mjs'),
+  },
+  {
+    pages: new Set([
+      'page-055',
+      'page-057',
+      'page-058',
+      'page-059',
+      'page-060',
+      'page-061',
+      'page-062',
+      'page-063',
+      'page-064',
+      'page-065',
+    ]),
+    load: () => import('./page-experiences-miniapp.mjs'),
+  },
 ];
 
 export async function loadWorkbenchPageExperience(page) {
@@ -35,6 +82,10 @@ export async function loadWorkbenchPageExperience(page) {
   return (
     module.workbenchPageExperienceById?.get(page) ??
     module.workbenchIntakeExperienceById?.get(page) ??
+    module.workbenchSalesExperienceById?.get(page) ??
+    module.workbenchRevenueExperienceById?.get(page) ??
+    module.workbenchDeliveryExperienceById?.get(page) ??
+    module.workbenchMiniappExperienceById?.get(page) ??
     null
   );
 }
