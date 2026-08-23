@@ -2546,6 +2546,20 @@ function validateInventoryLedger(value) {
 function validateRuntimePolicy(value) {
   const artifact = 'runtime-policy.json';
   const failures = [];
+  if (
+    !hasExactKeys(value, [
+      'allowedHosts',
+      'allowedRequestLogSha256',
+      'appliedAt',
+      'defaultDeny',
+      'denialAuditRefHash',
+      'deniedRequestLogSha256',
+      'networkPolicyApplied',
+      'policyRefHash',
+      'result',
+    ])
+  )
+    failures.push(`${artifact} fields are invalid`);
   const origins = new Set();
   for (const [index, allowedHost] of (Array.isArray(value.allowedHosts)
     ? value.allowedHosts
@@ -2577,6 +2591,8 @@ function validateRuntimePolicy(value) {
 function validateGeoTarget(value) {
   const artifact = 'geo-target-redacted.json';
   const failures = [];
+  if (!hasExactKeys(value, ['forbiddenClaims', 'result', 'storedClaims', 'targetRefHash']))
+    failures.push(`${artifact} fields are invalid`);
   const fields = new Set();
   for (const [index, claim] of (Array.isArray(value.storedClaims)
     ? value.storedClaims
@@ -2587,6 +2603,8 @@ function validateGeoTarget(value) {
       failures.push(`${prefix} must be an object`);
       continue;
     }
+    if (!hasExactKeys(claim, ['field', 'valueHash', 'verifiedAt']))
+      failures.push(`${prefix} fields are invalid`);
     if (typeof claim.field !== 'string' || !claim.field.trim())
       failures.push(`${prefix}.field must not be empty`);
     else if (fields.has(claim.field)) failures.push(`${artifact} claim fields must be unique`);

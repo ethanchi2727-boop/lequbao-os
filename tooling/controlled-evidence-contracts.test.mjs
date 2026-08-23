@@ -1440,8 +1440,14 @@ describe('controlled JSON evidence contracts', () => {
         allowedRequestLogSha256: 'b'.repeat(64),
         deniedRequestLogSha256: 'c'.repeat(64),
         denialAuditRefHash: 'd'.repeat(64),
+        gatewayToken: 'forbidden',
       }),
-    ).toContain('runtime-policy.json allowedHosts[0] must be an origin-only HTTPS URL');
+    ).toEqual(
+      expect.arrayContaining([
+        'runtime-policy.json allowedHosts[0] must be an origin-only HTTPS URL',
+        'runtime-policy.json fields are invalid',
+      ]),
+    );
     expect(
       validateControlledJsonEvidence('geo-target-redacted.json', {
         result: 'PASS',
@@ -1451,12 +1457,16 @@ describe('controlled JSON evidence contracts', () => {
             field: 'ranking',
             valueHash: 'b'.repeat(64),
             verifiedAt: '2026-08-19T01:00:00.000Z',
+            rawValue: 'forbidden',
           },
         ],
         forbiddenClaims: [],
       }),
-    ).toContain(
-      'geo-target-redacted.json storedClaims[0].field contains a forbidden performance claim',
+    ).toEqual(
+      expect.arrayContaining([
+        'geo-target-redacted.json storedClaims[0].field contains a forbidden performance claim',
+        'geo-target-redacted.json storedClaims[0] fields are invalid',
+      ]),
     );
     expect(
       validateControlledJsonEvidence('deployment-topology.json', {
