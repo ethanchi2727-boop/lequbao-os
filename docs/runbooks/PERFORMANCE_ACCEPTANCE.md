@@ -43,11 +43,11 @@ The separate `monitoring-snapshot.json` must bind the same release commit and de
 - Core read P95 is at most 500 ms.
 - Core write P95 is at most 800 ms.
 - Customer-message persistence P95 is at most 500 ms.
-- Each scenario has at most 1% non-2xx/3xx responses.
+- Each scenario has at most 1% non-2xx responses; redirects fail closed and are never followed.
 - Each scenario contains 20 to 100,000 requests; request, success and error counts are non-negative integers, reconcile exactly, and reproduce the recorded error rate.
 - P50, P95 and P99 are non-negative and ordered; concurrency is an integer from 1 to 200.
-- Every acknowledged customer-message ID is unique and exists in PostgreSQL after the run.
+- Every acknowledged customer-message ID is a UUID, is unique and matches the exact per-run probe content in PostgreSQL after the run; failure reports retain only hashed message references.
 - No new dead Outbox event appears during the run.
-- The report contains P50/P95/P99, errors, duration, concurrency, request count, database name, size/live-row estimate, transaction/block/temp/deadlock counters and Outbox backlog before and after. Each aggregate query must return exactly one row; missing or imprecise counters fail instead of becoming zero.
+- The report contains P50/P95/P99, errors, reconciled duration, concurrency, request count, a hashed database reference, size/live-row estimate, the exact migration inventory, transaction/block/temp/deadlock counters and Outbox backlog before and after. Each aggregate query must return exactly one row; missing or imprecise counters fail instead of becoming zero. Capture deployment topology no more than one hour before the run.
 
 Any missing or repeated response ID, persistence mismatch, threshold breach, new dead event, unreachable database or missing report is a failed gate. The launch verifier parses the generated report rather than trusting its `PASS` label: it requires exactly `core-read`, `customer-message-write` and `core-write`, reconciles requests/successes/errors, enforces the frozen per-scenario threshold and one-percent error ceiling, requires every acknowledged message ID to be unique and persist, and compares the before/after Outbox and complete 164-table database snapshots. Do not rerun with lower load to replace a failure; retain the failed artifact, investigate, deploy a new candidate and create a separate report.

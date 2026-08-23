@@ -234,6 +234,16 @@ export function validateControlledSuiteDocuments(suiteCode, documents) {
       )
         failures.push('monitoring window does not cover the complete performance run');
     }
+    if (report && topology) {
+      const reportStart = Date.parse(report.startedAt);
+      const topologyCapturedAt = Date.parse(topology.capturedAt);
+      if (
+        Number.isFinite(reportStart) &&
+        Number.isFinite(topologyCapturedAt) &&
+        (topologyCapturedAt > reportStart || reportStart - topologyCapturedAt > 60 * 60_000)
+      )
+        failures.push('deployment topology must be captured within one hour before the run');
+    }
   } else if (suiteCode === 'WECHAT_RELEASE_AND_ROLLBACK') {
     const consumer = get('consumer-build.json');
     const merchant = get('merchant-template-build.json');

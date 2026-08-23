@@ -227,6 +227,7 @@ describe('controlled suite cross-evidence contracts', () => {
         'candidate-image-digests.json': { images, workflowRunId },
         'monitoring-snapshot.json': monitoring,
         'deployment-topology.json': {
+          capturedAt: '2026-08-19T00:30:00.000Z',
           services: {
             api: { image: images.api },
             worker: { image: images.worker },
@@ -246,6 +247,7 @@ describe('controlled suite cross-evidence contracts', () => {
         'candidate-image-digests.json': { images, workflowRunId },
         'monitoring-snapshot.json': monitoring,
         'deployment-topology.json': {
+          capturedAt: '2026-08-19T00:30:00.000Z',
           services: {
             api: { image: images.api },
             worker: { image: images.worker },
@@ -268,6 +270,7 @@ describe('controlled suite cross-evidence contracts', () => {
           windowCompletedAt: '2026-08-19T01:00:45.000Z',
         },
         'deployment-topology.json': {
+          capturedAt: '2026-08-19T00:30:00.000Z',
           services: {
             api: { image: images.api },
             worker: { image: images.worker },
@@ -276,6 +279,26 @@ describe('controlled suite cross-evidence contracts', () => {
         },
       }),
     ).toContain('monitoring window does not cover the complete performance run');
+    expect(
+      validateControlledSuiteDocuments('PERFORMANCE_CORE_AND_MESSAGES', {
+        'performance-report.json': {
+          images,
+          workflowRunId,
+          startedAt: '2026-08-19T01:00:00.000Z',
+          completedAt: '2026-08-19T01:01:00.000Z',
+        },
+        'candidate-image-digests.json': { images, workflowRunId },
+        'monitoring-snapshot.json': monitoring,
+        'deployment-topology.json': {
+          capturedAt: '2026-08-18T23:59:59.000Z',
+          services: {
+            api: { image: images.api },
+            worker: { image: images.worker },
+            web: { image: images.web },
+          },
+        },
+      }),
+    ).toContain('deployment topology must be captured within one hour before the run');
     expect(
       validateControlledSuiteDocuments('WECHAT_RELEASE_AND_ROLLBACK', {
         'consumer-build.json': {
