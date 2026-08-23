@@ -55,6 +55,9 @@ function assertDecision(decision, suite, generatedAt) {
     reviewedAt === undefined ||
     completedAt < startedAt ||
     reviewedAt < completedAt ||
+    startedAt > Date.now() + 5 * 60_000 ||
+    completedAt > Date.now() + 5 * 60_000 ||
+    reviewedAt > Date.now() + 5 * 60_000 ||
     reviewedAt > generatedAt
   )
     throw new Error(`${suite.code} execution and review chronology is invalid`);
@@ -162,10 +165,14 @@ export async function assembleControlledResults({
   )
     throw new Error('controlled execution context does not match the decision candidate and plan');
   const generatedMilliseconds = parseCanonicalUtcTimestamp(generatedAt);
-  if (generatedMilliseconds === undefined)
-    throw new Error('generatedAt must be a canonical millisecond UTC timestamp');
+  if (generatedMilliseconds === undefined || generatedMilliseconds > Date.now() + 5 * 60_000)
+    throw new Error('generatedAt must be a canonical non-future millisecond UTC timestamp');
   const contextCreatedAt = parseCanonicalUtcTimestamp(context.createdAt);
-  if (contextCreatedAt === undefined || contextCreatedAt > generatedMilliseconds)
+  if (
+    contextCreatedAt === undefined ||
+    contextCreatedAt > Date.now() + 5 * 60_000 ||
+    contextCreatedAt > generatedMilliseconds
+  )
     throw new Error('controlled execution context creation time is invalid');
   const byCode = new Map();
   for (const decision of decisions.suites) {

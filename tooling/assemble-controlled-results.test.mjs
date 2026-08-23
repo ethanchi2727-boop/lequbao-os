@@ -193,7 +193,16 @@ describe('controlled result assembly', () => {
         evidenceRoot: root,
         generatedAt: '2026-08-19T09:07:00.000+08:00',
       }),
-    ).rejects.toThrow(/canonical millisecond UTC timestamp/u);
+    ).rejects.toThrow(/canonical non-future millisecond UTC timestamp/u);
+    await expect(
+      assembleControlledResults({
+        plan,
+        planSource,
+        decisions: { version: 1, releaseCommit: 'f'.repeat(40), suites: [decision] },
+        evidenceRoot: root,
+        generatedAt: new Date(Date.now() + 10 * 60_000).toISOString(),
+      }),
+    ).rejects.toThrow(/canonical non-future millisecond UTC timestamp/u);
   });
 
   it('rejects evidence that bypasses or loses its capture receipt', async () => {
