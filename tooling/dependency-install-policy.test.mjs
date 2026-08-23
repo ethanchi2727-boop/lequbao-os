@@ -5,7 +5,9 @@ import { inspectDependencyInstallPolicy } from './dependency-install-policy.mjs'
 const packageFiles = [
   'package.json',
   'apps/api/package.json',
+  'apps/bao-uniapp/package.json',
   'apps/consumer-miniapp/package.json',
+  'apps/life-uniapp/package.json',
   'apps/merchant-miniapp/package.json',
   'apps/workbench-web/package.json',
   'apps/worker/package.json',

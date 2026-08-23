@@ -33,6 +33,27 @@ BEGIN
       WHERE tenant_id = development_tenant AND user_id = development_user) <> 12 THEN
     RAISE EXCEPTION 'development user must have exactly 12 frozen baseline roles';
   END IF;
+  IF NOT EXISTS (
+    SELECT 1
+      FROM platform_consumer_tenant_links link
+      JOIN platform_consumer_accounts account ON account.id=link.account_id
+     WHERE link.merchant_tenant_id=development_tenant
+       AND link.status='ACTIVE'
+       AND account.union_identifier_hash=
+         encode(digest('development-consumer-union:development-preview-life-user-v1','sha256'),'hex')
+  ) THEN
+    RAISE EXCEPTION 'development platform consumer link is missing';
+  END IF;
+  IF (SELECT count(*) FROM products
+       WHERE tenant_id=development_tenant AND status='ON_SALE') < 2 THEN
+    RAISE EXCEPTION 'development discovery products are missing';
+  END IF;
+  IF NOT EXISTS (
+    SELECT 1 FROM store_checkout_policies
+     WHERE tenant_id=development_tenant AND store_id=development_store AND status='ACTIVE'
+  ) THEN
+    RAISE EXCEPTION 'development checkout policy is missing';
+  END IF;
   IF EXISTS (SELECT 1 FROM orders WHERE tenant_id = development_tenant)
     OR EXISTS (SELECT 1 FROM payment_intents WHERE tenant_id = development_tenant)
     OR EXISTS (SELECT 1 FROM ledger_transactions WHERE tenant_id = development_tenant)

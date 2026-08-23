@@ -5,8 +5,13 @@ await rm(output, { recursive: true, force: true });
 await mkdir(output, { recursive: true });
 for (const file of [
   'index.html',
+  'life.html',
   'styles.css',
+  'life.css',
+  'product-tokens.css',
   'app.js',
+  'life-app.js',
+  'life-api.js',
   'state.mjs',
   'api-client.js',
   'live-page-registry.mjs',
@@ -14,5 +19,17 @@ for (const file of [
   'production-ui-policy.mjs',
 ]) {
   await copyFile(new URL(`./src/${file}`, import.meta.url), new URL(file, output));
+}
+await mkdir(new URL('./life-assets/', output), { recursive: true });
+for (const file of [
+  'life-banner.webp',
+  'life-category-sprite.webp',
+  'life-product.webp',
+  'local-dining.webp',
+]) {
+  await copyFile(
+    new URL(`../../assets/miniapp/${file}`, import.meta.url),
+    new URL(`./life-assets/${file}`, output),
+  );
 }
 console.log('乐趣宝 Web production assets built.');

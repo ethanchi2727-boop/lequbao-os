@@ -10,7 +10,14 @@ const types = {
   '.js': 'text/javascript; charset=utf-8',
   '.mjs': 'text/javascript; charset=utf-8',
   '.svg': 'image/svg+xml',
+  '.webp': 'image/webp',
 };
+
+const defaultWorkbenchRoot = fileURLToPath(new URL('./dist/', import.meta.url));
+const defaultLifeRoot = fileURLToPath(new URL('../life-uniapp/dist/build/h5/', import.meta.url));
+const defaultBaoMobileRoot = fileURLToPath(
+  new URL('../bao-uniapp/dist/build/h5/', import.meta.url),
+);
 
 export function resolveStaticRequest(rootInput, pathname) {
   const root = resolve(rootInput);
@@ -50,11 +57,19 @@ async function resolveRealStaticFile(root, candidate) {
 }
 
 export function createWorkbenchProductionServer(options = {}) {
-  const rootInput =
-    options.root ??
-    process.env.WORKBENCH_STATIC_ROOT ??
-    fileURLToPath(new URL('./dist/', import.meta.url));
-  const root = resolve(rootInput instanceof URL ? fileURLToPath(rootInput) : rootInput);
+  const toRoot = (input) => resolve(input instanceof URL ? fileURLToPath(input) : input);
+  const roots = {
+    workbench: toRoot(
+      options.root ??
+        options.workbenchRoot ??
+        process.env.WORKBENCH_STATIC_ROOT ??
+        defaultWorkbenchRoot,
+    ),
+    life: toRoot(options.lifeRoot ?? process.env.LIFE_STATIC_ROOT ?? defaultLifeRoot),
+    baoMobile: toRoot(
+      options.baoMobileRoot ?? process.env.BAO_MOBILE_STATIC_ROOT ?? defaultBaoMobileRoot,
+    ),
+  };
   return createServer(async (request, response) => {
     for (const [name, value] of Object.entries(securityHeaders)) response.setHeader(name, value);
     response.setHeader('cache-control', 'no-store');
@@ -65,8 +80,12 @@ export function createWorkbenchProductionServer(options = {}) {
     }
     if (request.url === '/health') {
       response.setHeader('content-type', 'application/json; charset=utf-8');
-      const ready = await resolveRealStaticFile(root, resolve(root, 'index.html'));
-      if (!ready) {
+      const ready = await Promise.all(
+        Object.values(roots).map((root) =>
+          resolveRealStaticFile(root, resolve(root, 'index.html')),
+        ),
+      );
+      if (ready.some((entry) => !entry)) {
         response.statusCode = 503;
         return request.method === 'HEAD'
           ? response.end()
@@ -77,7 +96,14 @@ export function createWorkbenchProductionServer(options = {}) {
         : response.end('{"status":"ok","version":"6.1.0"}\n');
     }
     const url = new URL(request.url ?? '/', 'http://local');
-    const resolved = resolveStaticRequest(root, url.pathname);
+    const surface =
+      url.pathname === '/life' || url.pathname.startsWith('/life/')
+        ? { root: roots.life, prefix: '/life' }
+        : url.pathname === '/bao-mobile' || url.pathname.startsWith('/bao-mobile/')
+          ? { root: roots.baoMobile, prefix: '/bao-mobile' }
+          : { root: roots.workbench, prefix: '' };
+    const surfacePathname = url.pathname.slice(surface.prefix.length) || '/';
+    const resolved = resolveStaticRequest(surface.root, surfacePathname);
     if (resolved.status !== 200) {
       response.statusCode = resolved.status;
       return response.end();
@@ -97,9 +123,9 @@ export function createWorkbenchProductionServer(options = {}) {
         response.statusCode = 404;
         return response.end();
       }
-      file = resolve(root, 'index.html');
+      file = resolve(surface.root, 'index.html');
     }
-    const realFile = await resolveRealStaticFile(root, file);
+    const realFile = await resolveRealStaticFile(surface.root, file);
     if (!realFile) {
       response.statusCode = fallback ? 503 : 404;
       return response.end();

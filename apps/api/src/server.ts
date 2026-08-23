@@ -8,7 +8,12 @@ import {
 } from './consumer-session-identity.js';
 import { createConsumerStoreSwitchService } from './consumer-store-switch-service.js';
 import { createConsumerCatalogService } from './consumer-catalog-service.js';
-import { createLifeConsumerSessionIdentityVerifier } from './life-consumer-session-identity.js';
+import {
+  createLifeConsumerSessionIdentityVerifier,
+  createLifeConsumerSessionTokenSigner,
+} from './life-consumer-session-identity.js';
+import { createLifeConsumerAuthService } from './life-consumer-auth-service.js';
+import { createHttpLifeConsumerIdentityExchangeGateway } from './life-consumer-identity-exchange-http-adapter.js';
 import { createCustomerServiceAiOrchestrator } from './customer-service-ai.js';
 import {
   createHttpCustomerServiceBusinessToolGateway,
@@ -105,6 +110,13 @@ const objectStore = createIntakeObjectStoreGateway({
 const identityExchange =
   process.env.IDENTITY_PROVIDER_GATEWAY_URL && process.env.IDENTITY_PROVIDER_GATEWAY_TOKEN
     ? createHttpIdentityExchangeGateway({
+        baseUrl: process.env.IDENTITY_PROVIDER_GATEWAY_URL,
+        serviceToken: process.env.IDENTITY_PROVIDER_GATEWAY_TOKEN,
+      })
+    : undefined;
+const lifeConsumerIdentityExchange =
+  process.env.IDENTITY_PROVIDER_GATEWAY_URL && process.env.IDENTITY_PROVIDER_GATEWAY_TOKEN
+    ? createHttpLifeConsumerIdentityExchangeGateway({
         baseUrl: process.env.IDENTITY_PROVIDER_GATEWAY_URL,
         serviceToken: process.env.IDENTITY_PROVIDER_GATEWAY_TOKEN,
       })
@@ -330,6 +342,15 @@ const app = await buildApp({
         lifeConsumerSession: createLifeConsumerSessionIdentityVerifier(
           process.env.LIFE_CONSUMER_AUTH_JWT_SECRET,
         ),
+        ...(lifeConsumerIdentityExchange
+          ? {
+              lifeConsumerAuth: createLifeConsumerAuthService(
+                pool,
+                createLifeConsumerSessionTokenSigner(process.env.LIFE_CONSUMER_AUTH_JWT_SECRET),
+                lifeConsumerIdentityExchange,
+              ),
+            }
+          : {}),
       }
     : {}),
   ...(customerServiceAi ? { customerServiceAi } : {}),

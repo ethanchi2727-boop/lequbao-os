@@ -1,0 +1,10 @@
+{
+  "name": "乐趣生活",
+  "appid": "",
+  "description": "乐趣生活 H5 与微信小程序",
+  "versionName": "6.1.0",
+  "versionCode": 60100,
+  "transformPx": false,
+  "h5": { "router": { "base": "/life/" } },
+  "mp-weixin": { "appid": "touristappid", "setting": { "urlCheck": true } }
+}

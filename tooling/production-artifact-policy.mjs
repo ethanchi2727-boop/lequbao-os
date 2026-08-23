@@ -33,6 +33,18 @@ const policies = {
     maximumFiles: 250,
     maximumBytes: 8 * 1024 * 1024,
   },
+  lifeWeb: {
+    entry: 'index.html',
+    allowedExtensions: new Set(['.css', '.html', '.js', '.png', '.svg', '.webp']),
+    maximumFiles: 250,
+    maximumBytes: 8 * 1024 * 1024,
+  },
+  baoMobile: {
+    entry: 'index.html',
+    allowedExtensions: new Set(['.css', '.html', '.js', '.png', '.svg', '.webp']),
+    maximumFiles: 250,
+    maximumBytes: 8 * 1024 * 1024,
+  },
 };
 
 async function walk(root, relative = '') {
@@ -122,6 +134,8 @@ async function main() {
       api: 'apps/api/dist',
       worker: 'apps/worker/dist',
       web: 'apps/workbench-web/dist',
+      lifeWeb: 'apps/life-uniapp/dist/build/h5',
+      baoMobile: 'apps/bao-uniapp/dist/build/h5',
     },
     manifests: {
       api: JSON.parse(await readFile('apps/api/package.json', 'utf8')),

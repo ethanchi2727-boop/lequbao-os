@@ -100,6 +100,8 @@ jobs:
         run: psql -v ON_ERROR_STOP=1 -f database/tests/customer-service-operations.sql
       - name: Prove platform control versions, RLS, skills and idempotency receipts
         run: psql -v ON_ERROR_STOP=1 -f database/tests/platform-control-plane.sql
+      - name: Prove platform consumer identity exchange and immutable session binding
+        run: psql -v ON_ERROR_STOP=1 -f database/tests/platform-consumer-identity-exchange.sql
       - name: Prove incremental migrations from the 73-table package baseline
         run: |
           createdb lequ_v6_migration
@@ -128,6 +130,7 @@ jobs:
           psql -d lequ_v6_migration -v ON_ERROR_STOP=1 -f database/migrations/0024_product_publication_receipts.sql
           psql -d lequ_v6_migration -v ON_ERROR_STOP=1 -f database/migrations/0025_customer_service_operations.sql
           psql -d lequ_v6_migration -v ON_ERROR_STOP=1 -f database/migrations/0026_platform_control_plane.sql
+          psql -d lequ_v6_migration -v ON_ERROR_STOP=1 -f database/migrations/0027_platform_consumer_identity_exchange.sql
       - name: Prove development seed opt-in, idempotency and financial emptiness
         run: |
           createdb lequ_v6_development
@@ -224,6 +227,7 @@ jobs:
             .devcontainer/stop-development.sh \
             .devcontainer/status.sh \
             deploy/init-bao-preview-postgres.sh \
+            deploy/migrate-bao-preview-postgres.sh \
             deploy/start-bao-preview.sh
       - name: Prove PostgreSQL-backed development login and same-origin API path
         run: |

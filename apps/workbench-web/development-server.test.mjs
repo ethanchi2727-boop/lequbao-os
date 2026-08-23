@@ -1,14 +1,30 @@
 import { createServer, request } from 'node:http';
 import { once } from 'node:events';
+import { mkdtemp, mkdir, rm, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import { createWorkbenchDevelopmentServer } from './server.mjs';
 
 const servers = [];
+const temporaryDirectories = [];
 afterEach(async () => {
   await Promise.all(
     servers.splice(0).map((server) => new Promise((resolve) => server.close(resolve))),
   );
+  await Promise.all(
+    temporaryDirectories.splice(0).map((directory) => rm(directory, { recursive: true })),
+  );
 });
+
+async function surfaceFixture(name, title) {
+  const root = await mkdtemp(path.join(tmpdir(), `lequ-preview-${name}-`));
+  temporaryDirectories.push(root);
+  await mkdir(path.join(root, 'assets'), { recursive: true });
+  await writeFile(path.join(root, 'index.html'), `<title>${title}</title>\n`);
+  await writeFile(path.join(root, 'assets', 'app.js'), `document.title = '${title}';\n`);
+  return root;
+}
 
 async function listen(server) {
   servers.push(server);
@@ -104,20 +120,36 @@ describe('Workbench development server', () => {
     expect((await fetch(`${development}/__development/login`)).status).toBe(404);
   });
 
-  it('binds the public preview to the configured host and enters through mock login', async () => {
+  it('binds the public preview to the configured host and separates life from employee entry', async () => {
+    const lifeRoot = await surfaceFixture('life', '乐趣生活 UniApp');
+    const baoMobileRoot = await surfaceFixture('bao-mobile', '乐趣宝移动端');
     const development = await listen(
       createWorkbenchDevelopmentServer({
         apiBaseUrl: 'http://127.0.0.1:3000',
         developmentMock: true,
         publicPreview: true,
         publicHostname: 'bao.lequ.com',
+        lifeRoot,
+        baoMobileRoot,
       }),
     );
     const entry = await requestWithHost(development, '/', 'bao.lequ.com');
     expect(entry.status).toBe(302);
-    expect(entry.headers.location).toBe('/__development/login');
+    expect(entry.headers.location).toBe('/life?demo=1');
     expect(entry.headers['x-robots-tag']).toContain('noindex');
     expect(entry.headers['x-lequ-environment']).toBe('development-mock-preview');
+
+    const employeeEntry = await requestWithHost(development, '/bao', 'bao.lequ.com');
+    expect(employeeEntry.status).toBe(302);
+    expect(employeeEntry.headers.location).toBe('/__development/login');
+
+    const life = await requestWithHost(development, '/life?demo=1', 'bao.lequ.com');
+    expect(life.status).toBe(200);
+    expect(life.body).toContain('<title>乐趣生活 UniApp</title>');
+
+    const baoMobile = await requestWithHost(development, '/bao-mobile/', 'bao.lequ.com');
+    expect(baoMobile.status).toBe(200);
+    expect(baoMobile.body).toContain('<title>乐趣宝移动端</title>');
 
     const mismatch = await requestWithHost(development, '/bao/page-014', 'other.example');
     expect(mismatch.status).toBe(421);

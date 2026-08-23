@@ -985,10 +985,14 @@ describe('platform API shell', () => {
     const setItem = vi.fn().mockResolvedValue({ id: 'cart-1', itemCount: 2 });
     const removeItem = vi.fn().mockResolvedValue({ id: 'cart-1', itemCount: 0 });
     const listDiscoveryStores = vi.fn().mockResolvedValue([]);
+    const listDiscoveryProducts = vi.fn().mockResolvedValue([]);
     app = await buildApp({
       lifeConsumerSession: { verify: () => lifeConsumer },
       platformCart: { get, setItem, removeItem },
-      platformDiscovery: { listStores: listDiscoveryStores },
+      platformDiscovery: {
+        listStores: listDiscoveryStores,
+        listProducts: listDiscoveryProducts,
+      },
     });
     const headers = { authorization: 'Bearer life-consumer' };
     expect(
@@ -999,6 +1003,15 @@ describe('platform API shell', () => {
         await app.inject({
           method: 'GET',
           url: '/api/v1/life/discovery/stores?cityCode=3101&limit=20',
+          headers,
+        })
+      ).statusCode,
+    ).toBe(200);
+    expect(
+      (
+        await app.inject({
+          method: 'GET',
+          url: '/api/v1/life/discovery/products?productType=PHYSICAL',
           headers,
         })
       ).statusCode,

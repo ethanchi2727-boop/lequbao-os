@@ -10,9 +10,13 @@ RUN pnpm install --frozen-lockfile
 FROM source AS preview
 ENV NODE_ENV=development
 ENV LEQU_DEVELOPMENT_MOCKS=1
+ENV VITE_LEQU_DEVELOPMENT_MOCKS=1
+ENV VITE_LEQU_PREVIEW_DATA=1
 ENV HOST=0.0.0.0
 ENV PORT=8080
-RUN pnpm --filter @lequ/contracts build
+RUN pnpm --filter @lequ/contracts build \
+ && pnpm --filter @lequ/life-uniapp build:h5 \
+ && pnpm --filter @lequ/bao-uniapp build:h5
 USER node
 EXPOSE 8080
 HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
@@ -30,7 +34,9 @@ RUN pnpm --filter @lequ/contracts build \
  && pnpm --filter @lequ/worker deploy --prod --legacy /opt/lequ
 
 FROM source AS web-build
-RUN pnpm --filter @lequ/workbench-web build
+RUN pnpm --filter @lequ/workbench-web build \
+ && pnpm --filter @lequ/life-uniapp build:h5 \
+ && pnpm --filter @lequ/bao-uniapp build:h5
 
 FROM node:22.23.1-bookworm-slim@sha256:6c74791e557ce11fc957704f6d4fe134a7bc8d6f5ca4403205b2966bd488f6b3 AS runtime
 ENV NODE_ENV=production
@@ -53,8 +59,12 @@ CMD ["node", "dist/main.js"]
 FROM runtime AS web
 ENV HOST=0.0.0.0
 ENV PORT=8080
-ENV WORKBENCH_STATIC_ROOT=/app/dist
-COPY --from=web-build --chown=node:node /workspace/apps/workbench-web/dist/ /app/dist/
+ENV WORKBENCH_STATIC_ROOT=/app/workbench
+ENV LIFE_STATIC_ROOT=/app/life
+ENV BAO_MOBILE_STATIC_ROOT=/app/bao-mobile
+COPY --from=web-build --chown=node:node /workspace/apps/workbench-web/dist/ /app/workbench/
+COPY --from=web-build --chown=node:node /workspace/apps/life-uniapp/dist/build/h5/ /app/life/
+COPY --from=web-build --chown=node:node /workspace/apps/bao-uniapp/dist/build/h5/ /app/bao-mobile/
 COPY --from=web-build --chown=node:node /workspace/apps/workbench-web/production-server.mjs /app/production-server.mjs
 EXPOSE 8080
 HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \

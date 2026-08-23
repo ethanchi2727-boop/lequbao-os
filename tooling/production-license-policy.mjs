@@ -3,10 +3,14 @@ import { pathToFileURL } from 'node:url';
 
 export const approvedProductionLicenses = new Set([
   '0BSD',
+  '(MIT AND Zlib)',
+  'Apache 2.0',
   'Apache-2.0',
   'BSD-2-Clause',
   'BSD-3-Clause',
   'BlueOak-1.0.0',
+  'CC-BY-4.0',
+  'CC0-1.0',
   'ISC',
   'MIT',
 ]);

@@ -11,7 +11,7 @@ async function fixture() {
   temporaryDirectories.push(root);
   const roots = Object.fromEntries(
     await Promise.all(
-      ['api', 'worker', 'web'].map(async (name) => {
+      ['api', 'worker', 'web', 'lifeWeb', 'baoMobile'].map(async (name) => {
         const directory = path.join(root, name);
         await mkdir(directory);
         return [name, directory];
@@ -23,6 +23,8 @@ async function fixture() {
     writeFile(path.join(roots.worker, 'main.js'), 'console.log("worker");\n'),
     writeFile(path.join(roots.web, 'index.html'), '<main>乐趣宝</main>\n'),
     writeFile(path.join(roots.web, 'app.js'), 'document.body.dataset.ready = "true";\n'),
+    writeFile(path.join(roots.lifeWeb, 'index.html'), '<main>乐趣生活</main>\n'),
+    writeFile(path.join(roots.baoMobile, 'index.html'), '<main>乐趣宝移动端</main>\n'),
   ]);
   return {
     roots,
@@ -44,6 +46,8 @@ describe('production artifact policy', () => {
       api: { files: 1 },
       worker: { files: 1 },
       web: { files: 2 },
+      lifeWeb: { files: 1 },
+      baoMobile: { files: 1 },
     });
     expect(result.sha256).toMatch(/^[a-f0-9]{64}$/u);
   });

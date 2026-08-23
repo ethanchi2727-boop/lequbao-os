@@ -41,6 +41,24 @@ function fixture(active = true) {
         ],
         rowCount: 1,
       };
+    if (sql.startsWith('SELECT product.id'))
+      return {
+        rows: [
+          {
+            id: 'af000000-0000-4000-8000-000000000004',
+            store_id: 'af000000-0000-4000-8000-000000000003',
+            store_name: '真实附近门店',
+            product_type: 'PHYSICAL',
+            title: '当日鲜切水果',
+            variant_id: 'af000000-0000-4000-8000-000000000005',
+            variant_title: '标准份',
+            sale_price_cents: '3990',
+            market_price_cents: '4590',
+            available_quantity: '12',
+          },
+        ],
+        rowCount: 1,
+      };
     return { rows: [], rowCount: 0 };
   });
   return {
@@ -78,5 +96,23 @@ describe('platform linked-merchant discovery', () => {
     expect(
       query.mock.calls.some(([sql]) => String(sql).includes('platform_consumer_tenant_links')),
     ).toBe(false);
+  });
+
+  it('returns only live products from merchants linked to the current platform account', async () => {
+    const { service, query } = fixture();
+    await expect(service.listProducts(identity, { productType: 'PHYSICAL' })).resolves.toEqual([
+      expect.objectContaining({
+        merchantTenantId: tenantId,
+        title: '当日鲜切水果',
+        salePriceCents: 3990,
+        availableQuantity: 12,
+      }),
+    ]);
+    expect(query).toHaveBeenCalledWith(expect.stringContaining("product.status='ON_SALE'"), [
+      tenantId,
+      null,
+      'PHYSICAL',
+      30,
+    ]);
   });
 });

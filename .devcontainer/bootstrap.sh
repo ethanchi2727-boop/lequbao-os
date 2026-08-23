@@ -37,8 +37,15 @@ fi
 
 migration_count="$(psql --tuples-only --no-align --set=ON_ERROR_STOP=1 \
   --command='SELECT count(*) FROM schema_migrations')"
-if [[ "$migration_count" != "26" ]]; then
-  echo "Expected 26 V6.1 migrations, found $migration_count; refusing an ambiguous database" >&2
+if [[ "$migration_count" == "26" ]]; then
+  echo "Applying expand-only platform consumer identity migration"
+  psql --set=ON_ERROR_STOP=1 \
+    --file=database/migrations/0027_platform_consumer_identity_exchange.sql
+  migration_count="$(psql --tuples-only --no-align --set=ON_ERROR_STOP=1 \
+    --command='SELECT count(*) FROM schema_migrations')"
+fi
+if [[ "$migration_count" != "27" ]]; then
+  echo "Expected 27 V6.1 migrations, found $migration_count; refusing an ambiguous database" >&2
   exit 1
 fi
 

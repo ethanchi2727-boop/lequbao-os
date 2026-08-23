@@ -6,6 +6,12 @@ Date: 2026-08-19
 
 **Not ready to launch.** The repository builds and its local quality gate passes, but the original V6.1 source package defines a launch as ten real end-to-end operating flows across three products. Route generation, eight-state renderers and static prototypes are evidence of contract coverage only; they are not evidence that a user can complete a production transaction.
 
+## Frontend productization correction (2026-08-22)
+
+The earlier `authoritative` count means that a frozen leaf is contracted and connected to a server-authorized read or write boundary. It does **not** mean that the leaf has a dedicated visual design, complete interaction states, responsive behavior or browser/device acceptance. The new `frontend-page-completion.json` matrix separates `contracted`, `connected`, `designed`, `interactive` and `accepted`; release communication must never collapse those five levels into one number.
+
+The development preview at `bao.lequ.com` is therefore an engineering preview, not an end-user launch. The frontend productization rebuild is tracked separately in `50_STAGE_FRONTEND_PRODUCTIZATION_PLAN.md`. Real browser and WeChat evidence remains mandatory even when all API and repository gates pass.
+
 ## Frozen inventory and current truthful coverage
 
 | Product                | Frozen P0 leaves | Authoritative API-connected leaves | Safe contract-only leaves | Prototype-only leaves |

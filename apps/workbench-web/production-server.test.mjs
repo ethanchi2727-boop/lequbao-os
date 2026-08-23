@@ -19,8 +19,20 @@ afterEach(async () => {
   );
 });
 
-async function start(root = new URL('./src/', import.meta.url)) {
-  const server = createWorkbenchProductionServer({ root });
+async function createSurfaceFixture(name, title) {
+  const root = await mkdtemp(path.join(tmpdir(), `lequ-${name}-`));
+  temporaryDirectories.push(root);
+  await mkdir(path.join(root, 'assets'), { recursive: true });
+  await writeFile(path.join(root, 'index.html'), `<title>${title}</title>\n`);
+  await writeFile(path.join(root, 'assets', 'app.js'), `document.title = '${title}';\n`);
+  return root;
+}
+
+async function start(root = new URL('./src/', import.meta.url), surfaces = {}) {
+  const lifeRoot = surfaces.lifeRoot ?? (await createSurfaceFixture('life', '乐趣生活 UniApp'));
+  const baoMobileRoot =
+    surfaces.baoMobileRoot ?? (await createSurfaceFixture('bao-mobile', '乐趣宝移动端'));
+  const server = createWorkbenchProductionServer({ root, lifeRoot, baoMobileRoot });
   servers.push(server);
   server.listen(0, '127.0.0.1');
   await once(server, 'listening');
@@ -41,6 +53,13 @@ describe('Workbench production static server', () => {
     expect(page.headers.get('cross-origin-resource-policy')).toBe('same-origin');
     expect(page.headers.get('x-permitted-cross-domain-policies')).toBe('none');
     expect(page.headers.get('cache-control')).toBe('no-store');
+    const life = await fetch(`${base}/life/mall`);
+    expect(life.status).toBe(200);
+    expect(await life.text()).toContain('<title>乐趣生活 UniApp</title>');
+    expect((await fetch(`${base}/life/assets/app.js`)).status).toBe(200);
+    const baoMobile = await fetch(`${base}/bao-mobile/`);
+    expect(baoMobile.status).toBe(200);
+    expect(await baoMobile.text()).toContain('<title>乐趣宝移动端</title>');
   });
 
   it('returns 404 for missing assets and rejects resolved traversal', async () => {

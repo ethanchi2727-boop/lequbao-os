@@ -54,6 +54,9 @@ const customerServiceOperationsMigration = await read(
   'database/migrations/0025_customer_service_operations.sql',
 );
 const platformControlMigration = await read('database/migrations/0026_platform_control_plane.sql');
+const platformConsumerIdentityMigration = await read(
+  'database/migrations/0027_platform_consumer_identity_exchange.sql',
+);
 const pageStats = JSON.parse(
   await read('docs/v6.1/source-package/02_完整PRD页面树与状态机/页面树与页面契约/页面树统计.json'),
 );
@@ -145,6 +148,8 @@ if (!schema.includes('\\ir migrations/0020_consumer_trace_and_invoice_profiles.s
   failures.push('clean schema does not include migration 0020');
 if (!schema.includes('\\ir migrations/0021_sales_and_subscription_lifecycle.sql'))
   failures.push('clean schema does not include migration 0021');
+if (!schema.includes('\\ir migrations/0027_platform_consumer_identity_exchange.sql'))
+  failures.push('clean schema does not include migration 0027');
 if (!eventRuntimeMigration.includes('CREATE TABLE event_dead_letters'))
   failures.push('event dead-letter evidence table missing');
 if (!eventRuntimeMigration.includes('CREATE TABLE event_consumer_offsets'))
@@ -175,6 +180,12 @@ if (!commerceMigration.includes('CREATE TABLE payment_callback_receipts'))
   failures.push('payment callback replay receipt missing');
 if (!commerceMigration.includes("status <> 'BALANCED' OR difference_cents=0"))
   failures.push('commerce reconciliation difference guard missing');
+if (!platformConsumerIdentityMigration.includes('platform_consumer_sessions_assertion_uidx'))
+  failures.push('platform consumer assertion replay guard missing');
+if (!platformConsumerIdentityMigration.includes('platform_consumer_sessions_identity_immutable'))
+  failures.push('platform consumer session identity immutability guard missing');
+if (!platformConsumerIdentityMigration.includes('SECURITY DEFINER'))
+  failures.push('platform consumer session issuance database boundary missing');
 
 if (failures.length > 0) {
   for (const failure of failures) console.error(`V6 contract failure: ${failure}`);

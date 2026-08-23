@@ -7,6 +7,7 @@ const [
   previewCompose,
   previewStart,
   previewDatabaseInit,
+  previewDatabaseMigration,
   dockerignore,
   workflow,
   controlledPreflight,
@@ -24,6 +25,7 @@ const [
   readFile('compose.yaml', 'utf8'),
   readFile('deploy/start-bao-preview.sh', 'utf8'),
   readFile('deploy/init-bao-preview-postgres.sh', 'utf8'),
+  readFile('deploy/migrate-bao-preview-postgres.sh', 'utf8'),
   readFile('.dockerignore', 'utf8'),
   readFile('.github/workflows/ci.yml', 'utf8'),
   readFile('.github/workflows/controlled-preflight.yml', 'utf8'),
@@ -103,12 +105,26 @@ for (const marker of [
   if (!previewDatabaseInit.includes(marker))
     failures.push(`Public preview database marker missing: ${marker}`);
 for (const marker of [
+  '0027_platform_consumer_identity_exchange',
+  '--file=/opt/lequ-database/development-seed.sql',
+  '--file=/opt/lequ-database/development-seed-verify.sql',
+])
+  if (!previewDatabaseMigration.includes(marker))
+    failures.push(`Public preview incremental database marker missing: ${marker}`);
+for (const marker of ['migrate:', 'condition: service_completed_successfully'])
+  if (!previewCompose.includes(marker))
+    failures.push(`Public preview migration dependency missing: ${marker}`);
+for (const marker of [
   'node:22.23.1-bookworm-slim',
   'pnpm@11.19.0',
   'pnpm install --frozen-lockfile',
   'deploy --prod --legacy',
   'USER node',
   'HEALTHCHECK',
+  'LIFE_STATIC_ROOT=/app/life',
+  'BAO_MOBILE_STATIC_ROOT=/app/bao-mobile',
+  '/workspace/apps/life-uniapp/dist/build/h5/',
+  '/workspace/apps/bao-uniapp/dist/build/h5/',
 ])
   if (!dockerfile.includes(marker)) failures.push(`Docker hardening marker missing: ${marker}`);
 if (/\b(latest|ADD\s+https?:|COPY\s+.*\.env)/iu.test(dockerfile))

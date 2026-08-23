@@ -9,8 +9,15 @@ const QuerySchema = z.object({
   limit: z.coerce.number().int().min(1).max(100).default(30),
 });
 
+const ProductQuerySchema = z.object({
+  storeId: z.string().uuid().optional(),
+  productType: z.enum(['PHYSICAL', 'SERVICE', 'GROUP_BUY', 'DIGITAL_SUPPLY']).optional(),
+  limit: z.coerce.number().int().min(1).max(100).default(30),
+});
+
 export interface PlatformDiscoveryService {
   listStores(identity: LifeConsumerSessionIdentity, query: unknown): Promise<unknown[]>;
+  listProducts(identity: LifeConsumerSessionIdentity, query: unknown): Promise<unknown[]>;
 }
 
 export class PlatformDiscoveryAuthenticationError extends Error {}
@@ -28,32 +35,45 @@ function distanceKm(leftLat: number, leftLng: number, rightLat: number, rightLng
 export function createPlatformDiscoveryService(
   pool: Pick<pg.Pool, 'connect'>,
 ): PlatformDiscoveryService {
+  async function open(identity: LifeConsumerSessionIdentity) {
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+      await client.query("SELECT set_config('app.consumer_account_id',$1,true)", [
+        identity.accountId,
+      ]);
+      const session = await client.query(
+        `SELECT 1 FROM platform_consumer_sessions session
+          JOIN platform_consumer_accounts account ON account.id=session.account_id
+         WHERE session.session_id=$1 AND session.account_id=$2
+           AND session.revoked_at IS NULL AND session.expires_at>now()
+           AND account.status='ACTIVE'`,
+        [identity.sessionId, identity.accountId],
+      );
+      if (session.rowCount !== 1) throw new PlatformDiscoveryAuthenticationError();
+      const links = await client.query<{ merchant_tenant_id: string }>(
+        `SELECT merchant_tenant_id FROM platform_consumer_tenant_links
+          WHERE account_id=$1 AND status='ACTIVE'
+          ORDER BY merchant_tenant_id LIMIT 100`,
+        [identity.accountId],
+      );
+      return { client, tenantIds: links.rows.map((link) => link.merchant_tenant_id) };
+    } catch (error) {
+      await client.query('ROLLBACK');
+      client.release();
+      throw error;
+    }
+  }
+
   return {
     async listStores(identity, rawQuery) {
       const query = QuerySchema.parse(rawQuery);
       if ((query.latitude === undefined) !== (query.longitude === undefined))
         throw new z.ZodError([]);
-      const client = await pool.connect();
+      let client: pg.PoolClient | undefined;
       try {
-        await client.query('BEGIN');
-        await client.query("SELECT set_config('app.consumer_account_id',$1,true)", [
-          identity.accountId,
-        ]);
-        const session = await client.query(
-          `SELECT 1 FROM platform_consumer_sessions session
-            JOIN platform_consumer_accounts account ON account.id=session.account_id
-           WHERE session.session_id=$1 AND session.account_id=$2
-             AND session.revoked_at IS NULL AND session.expires_at>now()
-             AND account.status='ACTIVE'`,
-          [identity.sessionId, identity.accountId],
-        );
-        if (session.rowCount !== 1) throw new PlatformDiscoveryAuthenticationError();
-        const links = await client.query<{ merchant_tenant_id: string }>(
-          `SELECT merchant_tenant_id FROM platform_consumer_tenant_links
-            WHERE account_id=$1 AND status='ACTIVE'
-            ORDER BY merchant_tenant_id LIMIT 100`,
-          [identity.accountId],
-        );
+        const opened = await open(identity);
+        client = opened.client;
         const stores: Array<{
           id: string;
           merchantTenantId: string;
@@ -66,10 +86,8 @@ export function createPlatformDiscoveryService(
           productCount: number;
           distanceKm: number | null;
         }> = [];
-        for (const link of links.rows) {
-          await client.query("SELECT set_config('app.tenant_id',$1,true)", [
-            link.merchant_tenant_id,
-          ]);
+        for (const merchantTenantId of opened.tenantIds) {
+          await client.query("SELECT set_config('app.tenant_id',$1,true)", [merchantTenantId]);
           const result = await client.query<{
             id: string;
             store_name: string;
@@ -89,14 +107,14 @@ export function createPlatformDiscoveryService(
               WHERE store.tenant_id=$1 AND store.status='ACTIVE'
                 AND ($2::text IS NULL OR store.city_code=$2)
               GROUP BY store.id ORDER BY store.store_name,store.id`,
-            [link.merchant_tenant_id, query.cityCode ?? null],
+            [merchantTenantId, query.cityCode ?? null],
           );
           for (const store of result.rows) {
             const latitude = store.latitude === null ? null : Number(store.latitude);
             const longitude = store.longitude === null ? null : Number(store.longitude);
             stores.push({
               id: store.id,
-              merchantTenantId: link.merchant_tenant_id,
+              merchantTenantId,
               name: store.store_name,
               cityCode: store.city_code,
               districtCode: store.district_code,
@@ -124,10 +142,84 @@ export function createPlatformDiscoveryService(
         await client.query('COMMIT');
         return stores.slice(0, query.limit);
       } catch (error) {
-        await client.query('ROLLBACK');
+        await client?.query('ROLLBACK');
         throw error;
       } finally {
-        client.release();
+        client?.release();
+      }
+    },
+
+    async listProducts(identity, rawQuery) {
+      const query = ProductQuerySchema.parse(rawQuery);
+      let client: pg.PoolClient | undefined;
+      try {
+        const opened = await open(identity);
+        client = opened.client;
+        const products: unknown[] = [];
+        for (const merchantTenantId of opened.tenantIds) {
+          await client.query("SELECT set_config('app.tenant_id',$1,true)", [merchantTenantId]);
+          const result = await client.query<{
+            id: string;
+            store_id: string;
+            store_name: string;
+            product_type: string;
+            title: string;
+            variant_id: string;
+            variant_title: string;
+            sale_price_cents: string | number;
+            market_price_cents: string | number | null;
+            available_quantity: string | number;
+          }>(
+            `SELECT product.id,product.store_id,store.store_name,product.product_type,
+                    product.title,variant.id AS variant_id,variant.title AS variant_title,
+                    variant.sale_price_cents,product.market_price_cents,
+                    GREATEST(COALESCE(balance.on_hand,0)-COALESCE(balance.reserved,0),0)
+                      AS available_quantity
+               FROM products product
+               JOIN stores store
+                 ON store.tenant_id=product.tenant_id AND store.id=product.store_id
+               JOIN LATERAL (
+                 SELECT candidate.tenant_id,candidate.id,candidate.title,candidate.sale_price_cents
+                   FROM product_variants candidate
+                  WHERE candidate.tenant_id=product.tenant_id
+                    AND candidate.product_id=product.id AND candidate.status='ACTIVE'
+                  ORDER BY candidate.sale_price_cents,candidate.id LIMIT 1
+               ) variant ON true
+               LEFT JOIN inventory_balances balance
+                 ON balance.tenant_id=variant.tenant_id AND balance.variant_id=variant.id
+              WHERE product.tenant_id=$1 AND product.status='ON_SALE'
+                AND store.status='ACTIVE'
+                AND ($2::uuid IS NULL OR product.store_id=$2)
+                AND ($3::text IS NULL OR product.product_type=$3)
+              ORDER BY product.updated_at DESC,product.id
+              LIMIT $4`,
+            [merchantTenantId, query.storeId ?? null, query.productType ?? null, query.limit],
+          );
+          for (const product of result.rows) {
+            products.push({
+              id: product.id,
+              merchantTenantId,
+              storeId: product.store_id,
+              storeName: product.store_name,
+              productType: product.product_type,
+              title: product.title,
+              variantId: product.variant_id,
+              variantTitle: product.variant_title,
+              salePriceCents: Number(product.sale_price_cents),
+              marketPriceCents:
+                product.market_price_cents === null ? null : Number(product.market_price_cents),
+              availableQuantity: Number(product.available_quantity),
+            });
+          }
+          if (products.length >= query.limit) break;
+        }
+        await client.query('COMMIT');
+        return products.slice(0, query.limit);
+      } catch (error) {
+        await client?.query('ROLLBACK');
+        throw error;
+      } finally {
+        client?.release();
       }
     },
   };

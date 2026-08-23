@@ -1,0 +1,26 @@
+{
+  "pages": [
+    { "path": "pages/workbench/index", "style": { "navigationStyle": "custom" } },
+    { "path": "pages/merchants/index", "style": { "navigationBarTitleText": "商户" } },
+    { "path": "pages/orders/index", "style": { "navigationBarTitleText": "订单" } },
+    { "path": "pages/service/index", "style": { "navigationBarTitleText": "客服" } },
+    { "path": "pages/me/index", "style": { "navigationBarTitleText": "我的" } }
+  ],
+  "tabBar": {
+    "color": "#737789",
+    "selectedColor": "#5b50ed",
+    "backgroundColor": "#ffffff",
+    "list": [
+      { "pagePath": "pages/workbench/index", "text": "工作台" },
+      { "pagePath": "pages/merchants/index", "text": "商户" },
+      { "pagePath": "pages/orders/index", "text": "订单" },
+      { "pagePath": "pages/service/index", "text": "客服" },
+      { "pagePath": "pages/me/index", "text": "我的" }
+    ]
+  },
+  "globalStyle": {
+    "navigationBarTextStyle": "black",
+    "navigationBarBackgroundColor": "#f7f8fc",
+    "backgroundColor": "#f7f8fc"
+  }
+}

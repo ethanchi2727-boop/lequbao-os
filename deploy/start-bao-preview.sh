@@ -66,6 +66,8 @@ worker_loop() {
 start worker_loop
 
 start env HOST=0.0.0.0 PORT=8080 \
+  LIFE_STATIC_ROOT="$root/apps/life-uniapp/dist/build/h5" \
+  BAO_MOBILE_STATIC_ROOT="$root/apps/bao-uniapp/dist/build/h5" \
   WORKBENCH_API_PROXY_URL=http://127.0.0.1:3000 \
   LEQU_DEVELOPMENT_MOCKS=1 LEQU_PUBLIC_PREVIEW=1 LEQU_PREVIEW_HOSTNAME=bao.lequ.com \
   node apps/workbench-web/server.mjs

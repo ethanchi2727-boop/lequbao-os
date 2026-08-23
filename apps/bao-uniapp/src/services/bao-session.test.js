@@ -1,0 +1,67 @@
+import { describe, expect, it, vi } from 'vitest';
+import { createBaoSessionClient } from './bao-session.js';
+
+function storageFixture(initial = {}) {
+  const values = new Map(Object.entries(initial));
+  return {
+    getStorageSync: vi.fn((key) => values.get(key)),
+    setStorageSync: vi.fn((key, value) => values.set(key, value)),
+    removeStorageSync: vi.fn((key) => values.delete(key)),
+  };
+}
+const session = (accessToken = 'employee-access-one') => ({
+  accessToken,
+  refreshToken: 'employee-refresh-token-with-thirty-two-bytes',
+  identity: {
+    tenantId: 'tenant-1',
+    userId: 'user-1',
+    sessionId: 'session-1',
+    roleCodes: ['MERCHANT_OWNER'],
+    storeIds: [],
+    authLevel: 'MFA',
+  },
+});
+
+describe('bao employee session client', () => {
+  it('exchanges an enterprise assertion without persisting it', async () => {
+    const storage = storageFixture();
+    const transport = { request: vi.fn().mockResolvedValue({ statusCode: 200, data: session() }) };
+    const client = createBaoSessionClient({ transport, storage, apiBase: '' });
+    await client.exchange('one-time-enterprise-assertion');
+    expect(transport.request).toHaveBeenCalledWith(
+      expect.objectContaining({
+        url: '/api/v1/auth/sessions/exchange',
+        data: expect.objectContaining({ provider: 'ENTERPRISE_WECOM' }),
+      }),
+    );
+  });
+
+  it('refreshes once after 401 with the current employee scope', async () => {
+    const storage = storageFixture({ 'lequ.bao.employee.session.v1': session() });
+    const transport = {
+      request: vi
+        .fn()
+        .mockResolvedValueOnce({ statusCode: 401, data: {} })
+        .mockResolvedValueOnce({ statusCode: 200, data: session('employee-access-two') })
+        .mockResolvedValueOnce({ statusCode: 200, data: { timezone: 'Asia/Shanghai' } }),
+    };
+    const client = createBaoSessionClient({ transport, storage, apiBase: '' });
+    await expect(client.request('/api/v1/operational-home/today')).resolves.toMatchObject({
+      timezone: 'Asia/Shanghai',
+    });
+    expect(transport.request.mock.calls[2][0].header.Authorization).toBe(
+      'Bearer employee-access-two',
+    );
+  });
+
+  it('revokes the server session before local logout', async () => {
+    const storage = storageFixture({ 'lequ.bao.employee.session.v1': session() });
+    const transport = { request: vi.fn().mockResolvedValue({ statusCode: 204 }) };
+    const client = createBaoSessionClient({ transport, storage, apiBase: '' });
+    await client.logout();
+    expect(client.load()).toBeNull();
+    expect(transport.request).toHaveBeenCalledWith(
+      expect.objectContaining({ url: '/api/v1/auth/sessions/revoke' }),
+    );
+  });
+});

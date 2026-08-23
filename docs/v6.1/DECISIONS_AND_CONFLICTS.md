@@ -22,6 +22,7 @@
 | AI execution | Harness and models use Adapter, AI Gateway, and Tool Gateway; no direct business-table writes. |
 | Delivery style | Modular monolith plus asynchronous worker first; split services only after measured need. |
 | Legacy code | Reuse only when contract-compatible and covered by V6.1 tests. |
+| Frontend topology | 乐趣生活由同一 Vue 3 UniApp 工程输出 H5 与微信小程序；乐趣宝以 PC Web 为核心，并由独立 UniApp 工程输出移动 H5 与微信小程序；商家独立小程序模板不等于乐趣宝小程序。 |
 
 ## Conflicts requiring resolution
 
@@ -34,6 +35,7 @@
 | C-005 | npm/Vue/UniApp/SQLite versus pnpm/React/native/PostgreSQL recommendation | PostgreSQL and tenant architecture are mandatory; frontend and package-manager migration require an ADR and one active implementation | Blocks app scaffolding until ADR |
 | C-006 | Delivered migration contains literal `+` patch markers | Repair generator and regenerate migration; never hand-edit only the generated output | Blocks database gate |
 | C-007 | The 73-table package stores distribution totals but has no subscription receipt/refund source ledger | Add an immutable, provider-event-idempotent subscription cash ledger in migration 0004; locking must derive amounts from it | Blocks trustworthy statement locking without the repair |
+| C-008 | 原页面树只列乐趣宝 PC/移动 H5，且乐趣生活 H5 与原生小程序实现分裂 | 以 ADR-0012 为增补基线：补乐趣宝微信小程序终端；乐趣生活收敛为 UniApp H5/微信双构建 | Blocks frontend launch until both products have exact terminal build evidence |
 
 ## Two signed financial gates
 

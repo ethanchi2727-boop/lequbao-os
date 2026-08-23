@@ -1,15 +1,17 @@
 import { createReadStream } from 'node:fs';
 import { stat } from 'node:fs/promises';
 import { createServer } from 'node:http';
-import { extname, join, normalize } from 'node:path';
+import { extname, join, normalize, resolve, sep } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const defaultRoot = fileURLToPath(new URL('./src/', import.meta.url));
+const defaultLifeAssetRoot = fileURLToPath(new URL('../../assets/miniapp/', import.meta.url));
 const types = {
   '.css': 'text/css',
   '.js': 'text/javascript',
   '.mjs': 'text/javascript',
   '.svg': 'image/svg+xml',
+  '.webp': 'image/webp',
 };
 
 const writeJson = (response, statusCode, body) => {
@@ -105,6 +107,9 @@ async function developmentLogin(response, apiBaseUrl, fetchImpl) {
 
 export function createWorkbenchDevelopmentServer({
   root = defaultRoot,
+  lifeAssetRoot = defaultLifeAssetRoot,
+  lifeRoot,
+  baoMobileRoot,
   apiBaseUrl,
   developmentMock = false,
   publicPreview = false,
@@ -130,6 +135,16 @@ export function createWorkbenchDevelopmentServer({
       }
       if (publicPreview && developmentMock && request.method === 'GET' && url.pathname === '/') {
         response.statusCode = 302;
+        response.setHeader('location', '/life?demo=1');
+        return response.end();
+      }
+      if (
+        publicPreview &&
+        developmentMock &&
+        request.method === 'GET' &&
+        ['/bao', '/bao/'].includes(url.pathname)
+      ) {
+        response.statusCode = 302;
         response.setHeader('location', '/__development/login');
         return response.end();
       }
@@ -143,12 +158,42 @@ export function createWorkbenchDevelopmentServer({
         return await proxyRequest(request, response, apiBaseUrl, fetchImpl);
 
       const requested = decodeURIComponent(url.pathname);
-      const candidate = normalize(join(root, requested));
-      let file = candidate.startsWith(root) ? candidate : join(root, 'index.html');
+      const assetPrefix = '/life-assets/';
+      const assetName = requested.startsWith(assetPrefix)
+        ? requested.slice(assetPrefix.length)
+        : '';
+      const allowedLifeAssets = new Set([
+        'life-banner.webp',
+        'life-category-sprite.webp',
+        'life-product.webp',
+        'local-dining.webp',
+      ]);
+      const lifeRequest = requested === '/life' || requested.startsWith('/life/');
+      const baoMobileRequest = requested === '/bao-mobile' || requested.startsWith('/bao-mobile/');
+      const surface =
+        lifeRequest && lifeRoot
+          ? { root: resolve(lifeRoot), prefix: '/life' }
+          : baoMobileRequest && baoMobileRoot
+            ? { root: resolve(baoMobileRoot), prefix: '/bao-mobile' }
+            : null;
+      const surfacePath = surface ? requested.slice(surface.prefix.length) || '/' : requested;
+      const candidate = assetName
+        ? normalize(join(lifeAssetRoot, assetName))
+        : normalize(join(surface?.root ?? root, surfacePath));
+      const candidateRoot = surface?.root ?? root;
+      let file =
+        assetName && allowedLifeAssets.has(assetName) && candidate.startsWith(lifeAssetRoot)
+          ? candidate
+          : candidate === candidateRoot || candidate.startsWith(`${candidateRoot}${sep}`)
+            ? candidate
+            : join(root, lifeRequest ? 'life.html' : 'index.html');
       try {
         if ((await stat(file)).isDirectory()) file = join(file, 'index.html');
       } catch {
-        file = join(root, 'index.html');
+        file = join(
+          surface?.root ?? root,
+          surface ? 'index.html' : lifeRequest ? 'life.html' : 'index.html',
+        );
       }
       response.setHeader('content-type', types[extname(file)] ?? 'text/html; charset=utf-8');
       response.setHeader('cache-control', 'no-store');
@@ -168,6 +213,8 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
     developmentMock: process.env.LEQU_DEVELOPMENT_MOCKS === '1',
     publicPreview: process.env.LEQU_PUBLIC_PREVIEW === '1',
     publicHostname: process.env.LEQU_PREVIEW_HOSTNAME,
+    lifeRoot: process.env.LIFE_STATIC_ROOT,
+    baoMobileRoot: process.env.BAO_MOBILE_STATIC_ROOT,
   });
   const port = Number(process.env.PORT ?? 4173);
   server.listen(port, process.env.HOST ?? '127.0.0.1', () => {

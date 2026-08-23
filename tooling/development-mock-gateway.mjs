@@ -124,7 +124,7 @@ async function route(request, response, state, options) {
   if (request.method === 'POST' && url.pathname === '/v1/identity/assertions/exchange') {
     return json(response, 200, {
       provider: body.provider,
-      assertionId: `development-mock-${sha256(String(body.assertion)).slice(0, 20)}`,
+      assertionId: `development-mock-${randomUUID()}`,
       tenantId: options.tenantId,
       userId: options.userId,
       authLevel: 'MFA',
@@ -135,6 +135,40 @@ async function route(request, response, state, options) {
       rateLimitPolicyVersion: 'development-mock-v1',
     });
   }
+
+  if (request.method === 'POST' && url.pathname === '/v1/consumer-identity/assertions/exchange') {
+    const provider = body.provider === 'MOBILE_OTP' ? 'MOBILE_OTP' : 'WECHAT';
+    return json(response, 200, {
+      provider,
+      assertionId: `development-mock-consumer-${randomUUID()}`,
+      unionIdentifierHash: sha256(`development-consumer-union:${String(body.assertion)}`),
+      authSubjectHash: sha256(`development-consumer-subject:${String(body.assertion)}`),
+      ...(provider === 'MOBILE_OTP'
+        ? { mobileHash: sha256(`development-consumer-mobile:${String(body.assertion)}`) }
+        : {}),
+      authLevel: provider === 'MOBILE_OTP' ? 'PHONE_BOUND' : 'WECHAT',
+      deviceIdSha256: sha256(String(body.deviceId)),
+      verifiedAt: new Date().toISOString(),
+      expiresAt: futureIso(),
+      riskDecision: 'ALLOW',
+      rateLimitPolicyVersion: 'development-mock-consumer-v1',
+    });
+  }
+
+  if (request.method === 'POST' && url.pathname === '/v1/consumer-identity/mobile-otp/challenges')
+    return json(response, 200, {
+      challengeId: `development-mobile-otp-${randomUUID()}`,
+      maskedDestination: '138****0000',
+      expiresAt: futureIso(5 * 60_000),
+      resendAfterSeconds: 60,
+    });
+
+  if (request.method === 'POST' && url.pathname === '/v1/consumer-identity/mobile-otp/assertions')
+    return json(response, 200, {
+      assertion: 'development-preview-life-user-v1',
+      expiresAt: futureIso(),
+      deviceIdSha256: sha256(String(body.deviceId)),
+    });
 
   if (request.method === 'GET' && url.pathname.startsWith('/v1/wecom/corps/')) {
     const parts = url.pathname.split('/').map(decodeURIComponent);
@@ -159,7 +193,13 @@ async function route(request, response, state, options) {
   if (request.method === 'POST' && url.pathname === '/v1/payments')
     return json(response, 200, {
       providerPaymentId: `mock-pay-${randomUUID()}`,
-      clientCredential: 'development-mock-payment-credential',
+      clientCredential: JSON.stringify({
+        timeStamp: '1',
+        nonceStr: 'development-mock',
+        package: 'prepay_id=development-mock',
+        signType: 'RSA',
+        paySign: 'development-mock-signature',
+      }),
       expiresAt: futureIso(15 * 60_000),
       responseSummary: { dataSource: 'development-mock', provider: body.provider ?? 'SANDBOX' },
     });

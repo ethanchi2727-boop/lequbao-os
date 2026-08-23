@@ -18,6 +18,24 @@ services:
       - ./database:/opt/lequ-database:ro
       - ./deploy/init-bao-preview-postgres.sh:/docker-entrypoint-initdb.d/001-preview-init.sh:ro
 
+  migrate:
+    image: postgres:15-bookworm@sha256:cf7f8fb958c63e62875e30645dc4819ff0243a923f3c709e752b99dedd40bfcd
+    restart: 'no'
+    environment:
+      PGHOST: postgres
+      PGDATABASE: lequ_v6
+      PGUSER: postgres
+      PGPASSWORD: lequ-preview-db-internal-only
+      LEQU_DEVELOPMENT_MOCKS: '1'
+      LEQU_PUBLIC_PREVIEW: '1'
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./database:/opt/lequ-database:ro
+      - ./deploy/migrate-bao-preview-postgres.sh:/opt/lequ-migrate.sh:ro
+    command: ['bash', '/opt/lequ-migrate.sh']
+
   app:
     build:
       context: .
@@ -31,8 +49,8 @@ services:
       LEQU_PREVIEW_HOSTNAME: bao.lequ.com
       DATABASE_URL: postgres://postgres:lequ-preview-db-internal-only@postgres:5432/lequ_v6
     depends_on:
-      postgres:
-        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
     ports:
       - '${LEQU_PREVIEW_PORT:-8080}:8080'
 

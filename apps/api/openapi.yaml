@@ -100,6 +100,101 @@ paths:
       responses:
         '204': { description: 会话已废止 }
         '401': { description: 当前会话无效 }
+  /api/v1/life/auth/sessions/exchange:
+    post:
+      operationId: exchangeLifeConsumerIdentityAssertion
+      summary: 通过受信身份网关消费一次性微信或手机验证码断言并签发乐趣生活消费者会话
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/LifeIdentityExchangeRequest' }
+      responses:
+        '200':
+          description: 外部断言经受信网关验证且仅持久化不可逆身份与设备证据哈希
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/LifeSessionTokens' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { description: 一次性断言无效、过期、重放或设备绑定不匹配 }
+        '429': { description: 身份网关限流且不透露消费者账号是否存在 }
+        '503': { description: 身份网关或消费者会话服务不可用 }
+  /api/v1/life/auth/mobile-otp/challenges:
+    post:
+      operationId: requestLifeConsumerMobileOtp
+      summary: 通过受信身份网关向手机号发送一次性验证码挑战
+      description: 手机号只在本次请求正文中转发给受信网关，不写入应用数据库、URL、会话令牌或响应。
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/LifeMobileOtpChallengeRequest' }
+      responses:
+        '200':
+          description: 仅返回挑战标识、掩码目标、有效期和重发等待时间
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/LifeMobileOtpChallenge' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { description: 手机号或设备风险校验未通过且不透露账号状态 }
+        '429': { description: 手机号、设备或来源地址触发限流 }
+        '503': { description: 身份网关不可用 }
+  /api/v1/life/auth/mobile-otp/assertions/exchange:
+    post:
+      operationId: exchangeLifeConsumerMobileOtp
+      summary: 通过受信网关验证验证码并交换为手机号绑定的乐趣生活会话
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/LifeMobileOtpExchangeRequest' }
+      responses:
+        '200':
+          description: 验证码只由受信网关校验，应用仅消费短时一次性身份断言
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/LifeSessionTokens' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { description: 挑战、验证码、设备绑定或一次性断言无效 }
+        '429': { description: 验证尝试触发限流 }
+        '503': { description: 身份网关或消费者会话服务不可用 }
+  /api/v1/life/auth/sessions/refresh:
+    post:
+      operationId: refreshLifeConsumerSession
+      summary: 校验设备绑定的消费者刷新凭证并原子轮换新凭证
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/LifeRefreshSessionRequest' }
+      responses:
+        '200':
+          description: 刷新凭证已轮换，旧凭证立即失效
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/LifeSessionTokens' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { description: 会话、设备或刷新凭证无效 }
+        '503': { description: 消费者会话服务不可用 }
+  /api/v1/life/auth/sessions/revoke:
+    post:
+      operationId: revokeLifeConsumerSession
+      summary: 注销当前乐趣生活消费者会话并废止刷新凭证
+      security: [{ LifeConsumerBearer: [] }]
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              properties:
+                reason: { type: string, minLength: 1, maxLength: 255, default: USER_LOGOUT }
+      responses:
+        '204': { description: 当前会话已废止且不返回凭证材料 }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { description: 当前消费者会话无效或已废止 }
+        '503': { description: 消费者会话服务不可用 }
   /api/v1/context:
     get:
       operationId: inspectTenantContext
@@ -2656,6 +2751,28 @@ paths:
         '200': { description: 安全门店摘要、在售商品数和可选距离；无绑定时为空数组 }
         '400': { $ref: '#/components/responses/BadRequest' }
         '401': { description: 平台消费者会话无效、撤销或过期 }
+  /api/v1/life/discovery/products:
+    get:
+      operationId: listPlatformConsumerDiscoveryProducts
+      summary: 查询当前平台账号已建立客户关系商户的真实在售商品和首选规格
+      description: 服务端从消费者账号的有效商户客户绑定确定租户范围，不接受客户端提供租户身份；价格和可用库存均实时读取。
+      security: [{ LifeConsumerBearer: [] }]
+      parameters:
+        - { name: storeId, in: query, schema: { type: string, format: uuid } }
+        - {
+            name: productType,
+            in: query,
+            schema: { type: string, enum: [PHYSICAL, SERVICE, GROUP_BUY, DIGITAL_SUPPLY] },
+          }
+        - {
+            name: limit,
+            in: query,
+            schema: { type: integer, minimum: 1, maximum: 100, default: 30 },
+          }
+      responses:
+        '200': { description: 安全商品摘要、当前价格、首选规格和可用库存；无绑定时为空数组 }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { description: 平台消费者会话无效、撤销或过期 }
   /api/v1/merchant-consumer/cart:
     get:
       operationId: getMerchantConsumerCart
@@ -4441,6 +4558,72 @@ components:
         accessTokenExpiresAt: { type: string, format: date-time }
         sessionExpiresAt: { type: string, format: date-time }
         identity: { $ref: '#/components/schemas/SessionIdentity' }
+    LifeIdentityExchangeRequest:
+      type: object
+      additionalProperties: false
+      required: [provider, assertion, deviceId]
+      properties:
+        provider: { type: string, enum: [WECHAT, MOBILE_OTP] }
+        assertion:
+          type: string
+          minLength: 16
+          maxLength: 4096
+          description: 一次性凭据，只转发给受信网关，不写入应用持久层
+        deviceId: { type: string, minLength: 16, maxLength: 512 }
+    LifeMobileOtpChallengeRequest:
+      type: object
+      additionalProperties: false
+      required: [mobile, deviceId]
+      properties:
+        mobile:
+          type: string
+          pattern: '^\\+?[1-9]\\d{6,14}$'
+          description: 仅在请求正文内转发给受信身份网关
+        deviceId: { type: string, minLength: 16, maxLength: 512 }
+    LifeMobileOtpChallenge:
+      type: object
+      additionalProperties: false
+      required: [challengeId, maskedDestination, expiresAt, resendAfterSeconds]
+      properties:
+        challengeId: { type: string, minLength: 16, maxLength: 512 }
+        maskedDestination: { type: string, minLength: 4, maxLength: 64 }
+        expiresAt: { type: string, format: date-time }
+        resendAfterSeconds: { type: integer, minimum: 0, maximum: 600 }
+    LifeMobileOtpExchangeRequest:
+      type: object
+      additionalProperties: false
+      required: [challengeId, code, deviceId]
+      properties:
+        challengeId: { type: string, minLength: 16, maxLength: 512 }
+        code: { type: string, pattern: '^\\d{4,8}$' }
+        deviceId: { type: string, minLength: 16, maxLength: 512 }
+    LifeRefreshSessionRequest:
+      type: object
+      additionalProperties: false
+      required: [accountId, sessionId, refreshToken, deviceId]
+      properties:
+        accountId: { type: string, format: uuid }
+        sessionId: { type: string, format: uuid }
+        refreshToken: { type: string, minLength: 32, maxLength: 512 }
+        deviceId: { type: string, minLength: 16, maxLength: 512 }
+    LifeSessionIdentity:
+      type: object
+      additionalProperties: false
+      required: [accountId, sessionId, authLevel]
+      properties:
+        accountId: { type: string, format: uuid }
+        sessionId: { type: string, format: uuid }
+        authLevel: { type: string, enum: [WECHAT, PHONE_BOUND] }
+    LifeSessionTokens:
+      type: object
+      additionalProperties: false
+      required: [accessToken, refreshToken, accessTokenExpiresAt, sessionExpiresAt, identity]
+      properties:
+        accessToken: { type: string }
+        refreshToken: { type: string }
+        accessTokenExpiresAt: { type: string, format: date-time }
+        sessionExpiresAt: { type: string, format: date-time }
+        identity: { $ref: '#/components/schemas/LifeSessionIdentity' }
     RevenueRightHolder:
       type: object
       additionalProperties: false

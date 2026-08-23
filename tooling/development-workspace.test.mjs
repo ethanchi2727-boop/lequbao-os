@@ -32,7 +32,8 @@ describe('cloud development workspace', () => {
     expect(bootstrap).toContain('--file=database/schema.sql');
     expect(bootstrap).toContain('--set=development_seed=enabled');
     expect(bootstrap).toContain('--file=database/development-seed-verify.sql');
-    expect(bootstrap).toContain('Expected 26 V6.1 migrations');
+    expect(bootstrap).toContain('0027_platform_consumer_identity_exchange.sql');
+    expect(bootstrap).toContain('Expected 27 V6.1 migrations');
     expect(bootstrap).toContain('Refusing a partially initialized database');
 
     const start = await read('.devcontainer/start-development.sh');

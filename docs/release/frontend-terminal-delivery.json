@@ -1,0 +1,58 @@
+{
+  "schemaVersion": 1,
+  "products": [
+    {
+      "product": "乐趣生活",
+      "primaryAudience": "消费者",
+      "source": "apps/life-uniapp",
+      "terminals": [
+        {
+          "terminal": "H5",
+          "buildScript": "build:h5",
+          "deploymentPath": "/life/",
+          "status": "build-api-client-verified-runtime-pending"
+        },
+        {
+          "terminal": "WECHAT_MINI_PROGRAM",
+          "buildScript": "build:mp-weixin",
+          "deploymentPath": "dist/build/mp-weixin",
+          "status": "build-api-client-verified-device-pending"
+        }
+      ]
+    },
+    {
+      "product": "乐趣宝",
+      "primaryAudience": "商户与商务人员",
+      "primaryTerminal": "PC_WEB",
+      "terminals": [
+        {
+          "terminal": "PC_WEB",
+          "source": "apps/workbench-web",
+          "buildScript": "build",
+          "deploymentPath": "/bao/",
+          "status": "build-verified-browser-pending"
+        },
+        {
+          "terminal": "MOBILE_H5",
+          "source": "apps/bao-uniapp",
+          "buildScript": "build:h5",
+          "deploymentPath": "/bao-mobile/",
+          "status": "build-api-client-verified-runtime-pending"
+        },
+        {
+          "terminal": "WECHAT_MINI_PROGRAM",
+          "source": "apps/bao-uniapp",
+          "buildScript": "build:mp-weixin",
+          "deploymentPath": "dist/build/mp-weixin",
+          "status": "build-api-client-verified-device-pending"
+        }
+      ]
+    }
+  ],
+  "excluded": [
+    {
+      "source": "apps/merchant-miniapp",
+      "reason": "商家交付给消费者的独立店铺小程序，不属于乐趣宝员工端"
+    }
+  ]
+}

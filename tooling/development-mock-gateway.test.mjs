@@ -6,6 +6,7 @@ import {
   createHttpCustomerServiceModelGateway,
 } from '../apps/api/src/customer-service-http-adapters.ts';
 import { createHttpIdentityExchangeGateway } from '../apps/api/src/identity-exchange-http-adapter.ts';
+import { createHttpLifeConsumerIdentityExchangeGateway } from '../apps/api/src/life-consumer-identity-exchange-http-adapter.ts';
 import { createIntakeObjectStoreGateway } from '../apps/api/src/intake-object-store.ts';
 import {
   createHttpMiniProgramBuilder,
@@ -75,6 +76,27 @@ describe('development mock gateway', () => {
     });
   });
 
+  test('serves replay-distinct Life assertions for one stable development consumer', async () => {
+    const base = await start();
+    const exchange = async () =>
+      (
+        await fetch(`${base}/v1/consumer-identity/assertions/exchange`, {
+          method: 'POST',
+          headers: authorized,
+          body: JSON.stringify({
+            provider: 'WECHAT',
+            assertion: 'development-preview-life-user-v1',
+            deviceId: 'development-life-device-v1',
+          }),
+        })
+      ).json();
+    const first = await exchange();
+    const second = await exchange();
+    expect(first.unionIdentifierHash).toBe(second.unionIdentifierHash);
+    expect(first.assertionId).not.toBe(second.assertionId);
+    expect(first).toMatchObject({ provider: 'WECHAT', authLevel: 'WECHAT', riskDecision: 'ALLOW' });
+  });
+
   test('supports signed object-store put, head and get contracts', async () => {
     const base = await start();
     const content = 'development mock object';
@@ -101,7 +123,7 @@ describe('development mock gateway', () => {
     const post = async (path, body) =>
       fetch(`${base}${path}`, { method: 'POST', headers: authorized, body: JSON.stringify(body) });
     expect(await (await post('/v1/payments', { provider: 'SANDBOX' })).json()).toMatchObject({
-      clientCredential: 'development-mock-payment-credential',
+      clientCredential: expect.stringContaining('prepay_id=development-mock'),
     });
     expect(
       await (await post('/v1/customer-service/model/answer', { citations: [] })).json(),
@@ -118,6 +140,28 @@ describe('development mock gateway', () => {
         'POST',
         '/v1/identity/assertions/exchange',
         { provider: 'PHONE_OTP', assertion: 'a', deviceId: 'd' },
+        200,
+      ],
+      [
+        'POST',
+        '/v1/consumer-identity/assertions/exchange',
+        { provider: 'WECHAT', assertion: 'a', deviceId: 'development-device-0001' },
+        200,
+      ],
+      [
+        'POST',
+        '/v1/consumer-identity/mobile-otp/challenges',
+        { mobile: '+8613800000000', deviceId: 'development-device-0001' },
+        200,
+      ],
+      [
+        'POST',
+        '/v1/consumer-identity/mobile-otp/assertions',
+        {
+          challengeId: 'development-mobile-otp-challenge',
+          code: '123456',
+          deviceId: 'development-device-0001',
+        },
         200,
       ],
       ['GET', '/v1/wecom/corps/development-corp', undefined, 200],
@@ -183,6 +227,18 @@ describe('development mock gateway', () => {
       ),
     ).resolves.toMatchObject({ authLevel: 'MFA' });
 
+    const lifeIdentity = createHttpLifeConsumerIdentityExchangeGateway(common);
+    await expect(
+      lifeIdentity.exchange(
+        {
+          provider: 'WECHAT',
+          assertion: 'development-preview-life-user-v1',
+          deviceId: 'development-life-device-v1',
+        },
+        { sourceIp: '127.0.0.1', userAgent: 'vitest' },
+      ),
+    ).resolves.toMatchObject({ authLevel: 'WECHAT', provider: 'WECHAT' });
+
     const objects = createIntakeObjectStoreGateway({
       baseUrl,
       signingSecret: 'development-mock-object-secret-0000000001',
@@ -200,7 +256,7 @@ describe('development mock gateway', () => {
     });
     await expect(
       commerce.payment.createPayment({ provider: 'SANDBOX', traceId: 'development-trace' }),
-    ).resolves.toMatchObject({ clientCredential: 'development-mock-payment-credential' });
+    ).resolves.toMatchObject({ clientCredential: expect.stringContaining('development-mock') });
 
     const knowledge = createHttpCustomerServiceKnowledgeGateway(common);
     const citations = await knowledge.search({

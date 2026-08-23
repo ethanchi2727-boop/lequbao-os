@@ -2,7 +2,11 @@ import YAML from 'yaml';
 
 export const approvedPackageManager = 'pnpm@11.19.0';
 export const approvedNodeVersion = '22.23.1';
-export const approvedDependencyBuilds = Object.freeze({ esbuild: true });
+export const approvedDependencyBuilds = Object.freeze({
+  'core-js': false,
+  'core-js-pure': false,
+  esbuild: true,
+});
 
 const exactVersion = /^(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)(?:-[0-9A-Za-z.-]+)?$/u;
 const exoticSource = /^(?:git\+|git:|github:|gitlab:|bitbucket:|https?:|file:)/iu;
@@ -43,7 +47,9 @@ export function inspectDependencyInstallPolicy({
   if (workspace.trustLockfile !== false)
     failures.push('pnpm-workspace.yaml: trustLockfile must be explicitly false');
   if (stableObject(workspace.allowBuilds) !== stableObject(approvedDependencyBuilds))
-    failures.push('pnpm-workspace.yaml: allowBuilds must approve only esbuild');
+    failures.push(
+      'pnpm-workspace.yaml: allowBuilds must approve only esbuild and deny reviewed core-js hooks',
+    );
 
   for (const [file, manifest] of Object.entries(packageManifests)) {
     inspectDependencyMap(file, 'dependencies', manifest.dependencies, failures);

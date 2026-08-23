@@ -44,7 +44,7 @@ From trusted `main`, dispatch `.github/workflows/verify-controlled-release.yml` 
 
 ## PostgreSQL RLS and financial invariants
 
-Run the clean `database/schema.sql` path and the incremental baseline-to-`0026` path on separate PostgreSQL 15 databases. Execute every file under `database/tests` with stop-on-error, then run authenticated API probes for cross-tenant order reads and customer updates. Preserve database logs, redacted HTTP responses and audit identifiers. A 404/denial is insufficient if any foreign field, timing-sensitive existence signal or mutation leaks.
+Run the clean `database/schema.sql` path and the incremental baseline-to-`0027` path on separate PostgreSQL 15 databases. Execute every file under `database/tests` with stop-on-error, then run authenticated API probes for cross-tenant order reads and customer updates. Preserve database logs, redacted HTTP responses and audit identifiers. A 404/denial is insufficient if any foreign field, timing-sensitive existence signal or mutation leaks.
 
 ## Worker connection and event fault injection
 

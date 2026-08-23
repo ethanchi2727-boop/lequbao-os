@@ -38,6 +38,17 @@ import {
   type LifeConsumerSessionIdentityVerifier,
 } from './life-consumer-session-identity.js';
 import {
+  LifeConsumerAuthRejectedError,
+  LifeConsumerRefreshRejectedError,
+  LifeConsumerRevokeRejectedError,
+  type LifeConsumerAuthService,
+} from './life-consumer-auth-service.js';
+import {
+  LifeConsumerIdentityExchangeRateLimitedError,
+  LifeConsumerIdentityExchangeRejectedError,
+  LifeConsumerIdentityExchangeUnavailableError,
+} from './life-consumer-identity-exchange-http-adapter.js';
+import {
   ConsumerCatalogAuthenticationError,
   ConsumerCatalogNotFoundError,
   type ConsumerCatalogService,
@@ -291,6 +302,7 @@ export interface AppOptions {
   miniProgramCallback?: MiniProgramCallbackService;
   consumerSession?: ConsumerSessionIdentityVerifier;
   lifeConsumerSession?: LifeConsumerSessionIdentityVerifier;
+  lifeConsumerAuth?: LifeConsumerAuthService;
   consumerCatalog?: ConsumerCatalogService;
   consumerStoreSwitch?: ConsumerStoreSwitchService;
   platformCart?: PlatformCartService;
@@ -492,6 +504,57 @@ export async function buildApp(options: AppOptions = {}): Promise<FastifyInstanc
     const body = request.body as { reason?: string } | undefined;
     return handleAuthSession(reply, async () => {
       await options.authSessions!.revoke(identity, body?.reason ?? 'USER_LOGOUT');
+      return reply.code(204).send();
+    });
+  });
+
+  app.post('/api/v1/life/auth/sessions/exchange', async (request, reply) => {
+    if (!options.lifeConsumerAuth)
+      return reply.code(503).send({ code: 'LIFE_AUTHENTICATION_UNAVAILABLE' });
+    return handleLifeConsumerAuth(reply, () =>
+      options.lifeConsumerAuth!.exchange(request.body as never, {
+        sourceIp: request.ip,
+        userAgent: request.headers['user-agent'] ?? '',
+      }),
+    );
+  });
+
+  app.post('/api/v1/life/auth/mobile-otp/challenges', async (request, reply) => {
+    if (!options.lifeConsumerAuth)
+      return reply.code(503).send({ code: 'LIFE_AUTHENTICATION_UNAVAILABLE' });
+    return handleLifeConsumerAuth(reply, () =>
+      options.lifeConsumerAuth!.requestMobileOtp(request.body as never, {
+        sourceIp: request.ip,
+        userAgent: request.headers['user-agent'] ?? '',
+      }),
+    );
+  });
+
+  app.post('/api/v1/life/auth/mobile-otp/assertions/exchange', async (request, reply) => {
+    if (!options.lifeConsumerAuth)
+      return reply.code(503).send({ code: 'LIFE_AUTHENTICATION_UNAVAILABLE' });
+    return handleLifeConsumerAuth(reply, () =>
+      options.lifeConsumerAuth!.exchangeMobileOtp(request.body as never, {
+        sourceIp: request.ip,
+        userAgent: request.headers['user-agent'] ?? '',
+      }),
+    );
+  });
+
+  app.post('/api/v1/life/auth/sessions/refresh', async (request, reply) => {
+    if (!options.lifeConsumerAuth)
+      return reply.code(503).send({ code: 'LIFE_AUTHENTICATION_UNAVAILABLE' });
+    return handleLifeConsumerAuth(reply, () => options.lifeConsumerAuth!.refresh(request.body));
+  });
+
+  app.post('/api/v1/life/auth/sessions/revoke', async (request, reply) => {
+    if (!options.lifeConsumerAuth)
+      return reply.code(503).send({ code: 'LIFE_AUTHENTICATION_UNAVAILABLE' });
+    const identity = lifeConsumerIdentity(options, request.headers.authorization, reply);
+    if (!identity) return;
+    const body = request.body as { reason?: string } | undefined;
+    return handleLifeConsumerAuth(reply, async () => {
+      await options.lifeConsumerAuth!.revoke(identity, body?.reason ?? 'USER_LOGOUT');
       return reply.code(204).send();
     });
   });
@@ -2397,6 +2460,20 @@ export async function buildApp(options: AppOptions = {}): Promise<FastifyInstanc
     if (!identity) return;
     try {
       return await options.platformDiscovery.listStores(identity, request.query);
+    } catch (error) {
+      if (error instanceof ZodError) return reply.code(400).send({ code: 'INVALID_REQUEST' });
+      if (error instanceof PlatformDiscoveryAuthenticationError)
+        return reply.code(401).send({ code: 'INVALID_LIFE_CONSUMER_SESSION' });
+      throw error;
+    }
+  });
+
+  app.get('/api/v1/life/discovery/products', async (request, reply) => {
+    if (!options.platformDiscovery) return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+    const identity = lifeConsumerIdentity(options, request.headers.authorization, reply);
+    if (!identity) return;
+    try {
+      return await options.platformDiscovery.listProducts(identity, request.query);
     } catch (error) {
       if (error instanceof ZodError) return reply.code(400).send({ code: 'INVALID_REQUEST' });
       if (error instanceof PlatformDiscoveryAuthenticationError)
@@ -4478,6 +4555,29 @@ async function handleAuthSession(
       return reply.code(429).send({ code: 'IDENTITY_RATE_LIMITED' });
     if (error instanceof IdentityExchangeUnavailableError)
       return reply.code(503).send({ code: 'IDENTITY_PROVIDER_UNAVAILABLE' });
+    throw error;
+  }
+}
+
+async function handleLifeConsumerAuth(
+  reply: { code(statusCode: number): { send(payload?: unknown): unknown } },
+  work: () => Promise<unknown>,
+) {
+  try {
+    return await work();
+  } catch (error) {
+    if (error instanceof ZodError) return reply.code(400).send({ code: 'INVALID_REQUEST' });
+    if (
+      error instanceof LifeConsumerAuthRejectedError ||
+      error instanceof LifeConsumerRefreshRejectedError ||
+      error instanceof LifeConsumerRevokeRejectedError ||
+      error instanceof LifeConsumerIdentityExchangeRejectedError
+    )
+      return reply.code(401).send({ code: 'INVALID_LIFE_IDENTITY_ASSERTION' });
+    if (error instanceof LifeConsumerIdentityExchangeRateLimitedError)
+      return reply.code(429).send({ code: 'LIFE_IDENTITY_RATE_LIMITED' });
+    if (error instanceof LifeConsumerIdentityExchangeUnavailableError)
+      return reply.code(503).send({ code: 'LIFE_IDENTITY_PROVIDER_UNAVAILABLE' });
     throw error;
   }
 }

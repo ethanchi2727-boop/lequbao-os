@@ -65,7 +65,7 @@
       "status": "local-complete",
       "acceptancePrefixes": ["MIG"],
       "evidence": ["database/migrations", "docs/runbooks/MIGRATION_ROLLBACK.md"],
-      "selfCheck": "migrations 0001 through 0026 apply incrementally"
+      "selfCheck": "migrations 0001 through 0027 apply incrementally"
     },
     {
       "id": 8,
@@ -442,7 +442,7 @@
         ".github/workflows/publish-candidate-images.yml",
         "tooling/production-artifact-policy.mjs"
       ],
-      "selfCheck": "193 paths runtime-only package inventories three non-root images fail-closed production config and protected digest publication"
+      "selfCheck": "199 paths runtime-only package inventories three non-root images fail-closed production config and protected digest publication"
     },
 
     {

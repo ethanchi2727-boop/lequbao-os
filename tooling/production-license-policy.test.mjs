@@ -9,10 +9,22 @@ describe('production license policy', () => {
       MIT: [packageEntry('mit-package', 'MIT')],
       'BSD-3-Clause': [packageEntry('bsd-package', 'BSD-3-Clause')],
       ISC: [packageEntry('isc-package', 'ISC')],
+      'CC-BY-4.0': [packageEntry('attributed-data', 'CC-BY-4.0')],
+      'CC0-1.0': [packageEntry('public-domain-data', 'CC0-1.0')],
+      '(MIT AND Zlib)': [packageEntry('dual-permissive-package', '(MIT AND Zlib)')],
+      'Apache 2.0': [packageEntry('legacy-apache-metadata', 'Apache 2.0')],
     });
     expect(result.failures).toEqual([]);
-    expect(result.packageVersions).toBe(3);
-    expect(result.licenses).toEqual(['BSD-3-Clause', 'ISC', 'MIT']);
+    expect(result.packageVersions).toBe(7);
+    expect(result.licenses).toEqual([
+      '(MIT AND Zlib)',
+      'Apache 2.0',
+      'BSD-3-Clause',
+      'CC-BY-4.0',
+      'CC0-1.0',
+      'ISC',
+      'MIT',
+    ]);
   });
 
   test('rejects copyleft, source-available, unknown and unlicensed groups', () => {
