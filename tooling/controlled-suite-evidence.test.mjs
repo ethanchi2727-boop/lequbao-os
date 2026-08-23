@@ -183,15 +183,34 @@ describe('controlled suite cross-evidence contracts', () => {
     ).toContain('monitoring window does not cover the complete performance run');
     expect(
       validateControlledSuiteDocuments('WECHAT_RELEASE_AND_ROLLBACK', {
-        'consumer-build.json': { version: 'consumer-1' },
-        'merchant-template-build.json': { version: 'merchant-1' },
+        'consumer-build.json': {
+          version: 'consumer-1',
+          builtAt: '2026-08-19T01:02:00.000Z',
+        },
+        'merchant-template-build.json': {
+          version: 'merchant-1',
+          builtAt: '2026-08-19T00:59:00.000Z',
+        },
         'review-publish.json': {
           consumerVersion: 'consumer-2',
           merchantVersion: 'merchant-1',
           reviewVersion: 'review-1',
           publishedVersion: 'pilot-1',
+          publishedAt: '2026-08-19T01:00:00.000Z',
         },
-        'rollback.json': { fromVersion: 'pilot-2', toVersion: 'pilot-2' },
+        'callback-redacted.json': { verifiedAt: '2026-08-19T00:59:00.000Z' },
+        'device-matrix.json': {
+          verifiedAt: '2026-08-19T00:59:00.000Z',
+          scenarios: [
+            { package: 'consumer', version: 'consumer-2' },
+            { package: 'merchant-template', version: 'merchant-1' },
+          ],
+        },
+        'rollback.json': {
+          fromVersion: 'pilot-2',
+          toVersion: 'pilot-2',
+          verifiedAt: '2026-08-19T00:59:00.000Z',
+        },
       }),
     ).toEqual(
       expect.arrayContaining([
@@ -199,6 +218,11 @@ describe('controlled suite cross-evidence contracts', () => {
         'published WeChat version does not match the approved review version',
         'rollback source does not match the published version',
         'rollback must create a different safe release version',
+        'consumer build must precede publication',
+        'callback verification precedes publication',
+        'device verification precedes publication',
+        'consumer device scenario version does not match its official build',
+        'rollback verification precedes publication',
       ]),
     );
     expect(

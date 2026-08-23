@@ -619,6 +619,49 @@ describe('controlled JSON evidence contracts', () => {
         'device-matrix.json scenarios must include merchant-template',
       ]),
     );
+    expect(
+      validateControlledJsonEvidence('device-matrix.json', {
+        result: 'PASS',
+        verifiedAt: '2026-08-19T01:00:00.000Z',
+        devices: [
+          {
+            platform: 'iOS',
+            deviceRefHash: 'a'.repeat(64),
+            officialClientVersion: '1',
+            result: 'PASS',
+          },
+          {
+            platform: 'Android',
+            deviceRefHash: 'b'.repeat(64),
+            officialClientVersion: '1',
+            result: 'PASS',
+          },
+        ],
+        scenarios: [
+          {
+            package: 'consumer',
+            version: 'consumer-1',
+            result: 'PASS',
+            deviceRefs: ['a'.repeat(64), 'a'.repeat(64)],
+          },
+          {
+            package: 'merchant-template',
+            version: '',
+            result: 'PASS',
+            deviceRefs: ['b'.repeat(64), 'c'.repeat(64)],
+          },
+        ],
+        failures: [],
+      }),
+    ).toEqual(
+      expect.arrayContaining([
+        'device-matrix.json scenarios[0].deviceRefs must be unique',
+        'device-matrix.json scenarios[0].deviceRefs must include Android',
+        'device-matrix.json scenarios[1].version must not be empty',
+        'device-matrix.json scenarios[1].deviceRefs contains an unknown device reference',
+        'device-matrix.json scenarios[1].deviceRefs must include iOS',
+      ]),
+    );
   });
 
   it('requires identity, privacy and on-call domain facts rather than labels', () => {

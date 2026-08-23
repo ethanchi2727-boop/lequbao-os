@@ -1110,6 +1110,7 @@ function validateDeviceMatrix(value) {
   const failures = [];
   const devices = Array.isArray(value.devices) ? value.devices : [];
   const platforms = new Set();
+  const devicePlatforms = new Map();
   for (const [index, device] of devices.entries()) {
     const prefix = `${artifact} devices[${index}]`;
     if (!device || Array.isArray(device) || typeof device !== 'object') {
@@ -1121,6 +1122,9 @@ function validateDeviceMatrix(value) {
     else platforms.add(device.platform);
     if (!validSha256(device.deviceRefHash))
       failures.push(`${prefix}.deviceRefHash has invalid format`);
+    else if (devicePlatforms.has(device.deviceRefHash))
+      failures.push(`${artifact} device references must be unique`);
+    else devicePlatforms.set(device.deviceRefHash, device.platform);
     if (typeof device.officialClientVersion !== 'string' || !device.officialClientVersion.trim())
       failures.push(`${prefix}.officialClientVersion must not be empty`);
     if (device.result !== 'PASS') failures.push(`${prefix}.result must equal "PASS"`);
@@ -1137,10 +1141,28 @@ function validateDeviceMatrix(value) {
     }
     if (!['consumer', 'merchant-template'].includes(scenario.package))
       failures.push(`${prefix}.package is not approved`);
+    else if (packages.has(scenario.package))
+      failures.push(`${artifact} scenario packages must be unique`);
     else packages.add(scenario.package);
+    if (typeof scenario.version !== 'string' || !scenario.version.trim())
+      failures.push(`${prefix}.version must not be empty`);
     if (scenario.result !== 'PASS') failures.push(`${prefix}.result must equal "PASS"`);
-    if (!Array.isArray(scenario.deviceRefs) || scenario.deviceRefs.length < 2)
+    if (!Array.isArray(scenario.deviceRefs) || scenario.deviceRefs.length < 2) {
       failures.push(`${prefix}.deviceRefs must cover both platforms`);
+      continue;
+    }
+    const uniqueRefs = new Set(scenario.deviceRefs);
+    if (uniqueRefs.size !== scenario.deviceRefs.length)
+      failures.push(`${prefix}.deviceRefs must be unique`);
+    const scenarioPlatforms = new Set();
+    for (const reference of uniqueRefs) {
+      if (!devicePlatforms.has(reference))
+        failures.push(`${prefix}.deviceRefs contains an unknown device reference`);
+      else scenarioPlatforms.add(devicePlatforms.get(reference));
+    }
+    for (const platform of ['iOS', 'Android'])
+      if (!scenarioPlatforms.has(platform))
+        failures.push(`${prefix}.deviceRefs must include ${platform}`);
   }
   for (const packageName of ['consumer', 'merchant-template'])
     if (!packages.has(packageName))

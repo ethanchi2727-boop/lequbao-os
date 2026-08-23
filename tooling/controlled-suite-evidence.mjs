@@ -29,6 +29,8 @@ export const controlledSuiteCrossEvidenceRules = {
   WECHAT_RELEASE_AND_ROLLBACK: [
     'reviewed consumer and merchant versions equal their official build artifacts',
     'published version equals the approved review version',
+    'official builds precede publication and device, callback and rollback evidence follow it',
+    'device scenarios use the exact consumer and merchant build versions',
     'rollback starts from the published version and creates a different safe version',
   ],
   IDENTITY_SECRETS_PRIVACY_ONCALL: [
@@ -138,6 +140,8 @@ export function validateControlledSuiteDocuments(suiteCode, documents) {
     const consumer = get('consumer-build.json');
     const merchant = get('merchant-template-build.json');
     const publish = get('review-publish.json');
+    const callback = get('callback-redacted.json');
+    const devices = get('device-matrix.json');
     const rollback = get('rollback.json');
     if (consumer && merchant && publish && rollback) {
       if (consumer.version !== publish.consumerVersion)
@@ -150,6 +154,42 @@ export function validateControlledSuiteDocuments(suiteCode, documents) {
         failures.push('rollback source does not match the published version');
       if (rollback.toVersion === rollback.fromVersion)
         failures.push('rollback must create a different safe release version');
+      const publishedAt = Date.parse(publish.publishedAt);
+      for (const [label, evidenceAt] of [
+        ['consumer build', consumer.builtAt],
+        ['merchant build', merchant.builtAt],
+      ]) {
+        const builtAt = Date.parse(evidenceAt);
+        if (Number.isFinite(builtAt) && Number.isFinite(publishedAt) && builtAt > publishedAt)
+          failures.push(`${label} must precede publication`);
+      }
+      const rollbackAt = Date.parse(rollback.verifiedAt);
+      if (Number.isFinite(rollbackAt) && Number.isFinite(publishedAt) && rollbackAt < publishedAt)
+        failures.push('rollback verification precedes publication');
+    }
+    if (publish && callback) {
+      const publishedAt = Date.parse(publish.publishedAt);
+      const callbackAt = Date.parse(callback.verifiedAt);
+      if (Number.isFinite(callbackAt) && Number.isFinite(publishedAt) && callbackAt < publishedAt)
+        failures.push('callback verification precedes publication');
+    }
+    if (consumer && merchant && publish && devices) {
+      const expectedVersions = new Map([
+        ['consumer', consumer.version],
+        ['merchant-template', merchant.version],
+      ]);
+      for (const scenario of devices.scenarios ?? [])
+        if (
+          expectedVersions.has(scenario?.package) &&
+          scenario.version !== expectedVersions.get(scenario.package)
+        )
+          failures.push(
+            `${scenario.package} device scenario version does not match its official build`,
+          );
+      const publishedAt = Date.parse(publish.publishedAt);
+      const verifiedAt = Date.parse(devices.verifiedAt);
+      if (Number.isFinite(verifiedAt) && Number.isFinite(publishedAt) && verifiedAt < publishedAt)
+        failures.push('device verification precedes publication');
     }
   } else if (suiteCode === 'IDENTITY_SECRETS_PRIVACY_ONCALL') {
     const delivery = get('alert-delivery.json');

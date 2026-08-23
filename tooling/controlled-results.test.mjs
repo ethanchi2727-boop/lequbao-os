@@ -419,8 +419,9 @@ function semanticFixture(artifact, binding) {
       })),
       scenarios: ['consumer', 'merchant-template'].map((packageName) => ({
         package: packageName,
+        version: packageName === 'consumer' ? 'consumer-1' : 'merchant-1',
         result: 'PASS',
-        deviceRefs: ['ios-ref', 'android-ref'],
+        deviceRefs: ['1'.repeat(64), '2'.repeat(64)],
       })),
     },
     'rollback.json': { fromVersion: 'pilot-1', toVersion: 'pilot-safe-2' },
