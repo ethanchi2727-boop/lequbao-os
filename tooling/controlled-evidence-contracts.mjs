@@ -133,9 +133,14 @@ export const controlledJsonEvidenceContracts = {
   ],
   'runtime-policy.json': [
     pass,
+    sha256('policyRefHash'),
     field('allowedHosts', 'array'),
     yes('defaultDeny'),
     yes('networkPolicyApplied'),
+    timestamp('appliedAt'),
+    sha256('allowedRequestLogSha256'),
+    sha256('deniedRequestLogSha256'),
+    sha256('denialAuditRefHash'),
   ],
   'geo-target-redacted.json': [
     pass,
@@ -2010,7 +2015,17 @@ function validateRuntimePolicy(value) {
   ).entries()) {
     try {
       const url = new URL(allowedHost);
-      if (url.protocol !== 'https:' || url.pathname !== '/' || url.search || url.hash)
+      const hostname = url.hostname.toLowerCase();
+      if (
+        url.protocol !== 'https:' ||
+        url.username ||
+        url.password ||
+        url.pathname !== '/' ||
+        url.search ||
+        url.hash ||
+        ['localhost', '0.0.0.0', '::', '::1'].includes(hostname) ||
+        /^127(?:\.[0-9]{1,3}){3}$/u.test(hostname)
+      )
         throw new Error('not an origin-only HTTPS host');
       if (origins.has(url.origin)) failures.push(`${artifact} allowedHosts must be unique`);
       origins.add(url.origin);
@@ -2024,6 +2039,7 @@ function validateRuntimePolicy(value) {
 function validateGeoTarget(value) {
   const artifact = 'geo-target-redacted.json';
   const failures = [];
+  const fields = new Set();
   for (const [index, claim] of (Array.isArray(value.storedClaims)
     ? value.storedClaims
     : []
@@ -2035,7 +2051,13 @@ function validateGeoTarget(value) {
     }
     if (typeof claim.field !== 'string' || !claim.field.trim())
       failures.push(`${prefix}.field must not be empty`);
-    if (/rank|traffic|conversion/iu.test(claim.field ?? ''))
+    else if (fields.has(claim.field)) failures.push(`${artifact} claim fields must be unique`);
+    else fields.add(claim.field);
+    if (
+      /rank|traffic|conversion|credential|secret|token|password|raw-response/iu.test(
+        claim.field ?? '',
+      )
+    )
       failures.push(`${prefix}.field contains a forbidden performance claim`);
     if (!validSha256(claim.valueHash)) failures.push(`${prefix}.valueHash has invalid format`);
     if (!validDateTime(claim.verifiedAt))

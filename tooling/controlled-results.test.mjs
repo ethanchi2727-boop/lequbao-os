@@ -209,7 +209,15 @@ function semanticFixture(artifact, binding) {
       },
       finalState: 'REFUND_SUCCEEDED',
     },
-    'runtime-policy.json': { allowedHosts: ['https://plugin-gateway.example.test/'] },
+    'runtime-policy.json': {
+      allowedHosts: ['https://plugin-gateway.example.test/'],
+      allowedRequestLogSha256: createHash('sha256')
+        .update('Controlled evidence for PLUGIN_NETWORK_SANDBOX: allowed-request.log\n')
+        .digest('hex'),
+      deniedRequestLogSha256: createHash('sha256')
+        .update('Controlled evidence for PLUGIN_NETWORK_SANDBOX: denied-request.log\n')
+        .digest('hex'),
+    },
     'geo-target-redacted.json': {
       targetRefHash: '3'.repeat(64),
       storedClaims: [

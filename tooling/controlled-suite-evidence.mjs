@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { isDeepStrictEqual } from 'node:util';
@@ -20,6 +21,9 @@ export const controlledSuiteCrossEvidenceRules = {
     'request, callback and reconciliation use the same amount',
     'request, callback and reconciliation use the same order reference in chronological order',
     'refund UNKNOWN recovery begins after the payment callback is applied',
+  ],
+  PLUGIN_NETWORK_SANDBOX: [
+    'runtime policy binds the exact allowed-request and denied-request evidence bytes',
   ],
   BACKUP_RESTORE_PRIVACY: [
     'restore report references the exact encrypted backup manifest file',
@@ -157,6 +161,14 @@ export function validateControlledSuiteDocuments(suiteCode, documents) {
       )
         failures.push('refund UNKNOWN recovery precedes the applied payment callback');
     }
+  } else if (suiteCode === 'PLUGIN_NETWORK_SANDBOX') {
+    const policy = get('runtime-policy.json');
+    const allowed = get('allowed-request.log');
+    const denied = get('denied-request.log');
+    if (policy && allowed && policy.allowedRequestLogSha256 !== allowed.sha256)
+      failures.push('runtime policy does not match allowed-request evidence bytes');
+    if (policy && denied && policy.deniedRequestLogSha256 !== denied.sha256)
+      failures.push('runtime policy does not match denied-request evidence bytes');
   } else if (suiteCode === 'BACKUP_RESTORE_PRIVACY') {
     const backup = get('backup.manifest.json');
     const restore = get('restore-report.json');
@@ -305,11 +317,12 @@ export function validateControlledSuiteDocuments(suiteCode, documents) {
 export async function inspectControlledSuiteEvidence(evidenceRoot, suite) {
   if (!controlledSuiteCrossEvidenceRules[suite.code]) return [];
   const documents = {};
-  for (const artifact of suite.requiredEvidence.filter((file) => file.endsWith('.json'))) {
+  for (const artifact of suite.requiredEvidence) {
     try {
-      documents[artifact] = JSON.parse(
-        await readFile(path.join(evidenceRoot, suite.evidenceDirectory, artifact), 'utf8'),
-      );
+      const bytes = await readFile(path.join(evidenceRoot, suite.evidenceDirectory, artifact));
+      documents[artifact] = artifact.endsWith('.json')
+        ? JSON.parse(bytes.toString('utf8'))
+        : { sha256: createHash('sha256').update(bytes).digest('hex') };
     } catch {
       // Individual artifact validation owns missing and malformed diagnostics.
     }

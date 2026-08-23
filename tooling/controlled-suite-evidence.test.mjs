@@ -16,6 +16,7 @@ describe('controlled suite cross-evidence contracts', () => {
       'INTAKE_OBJECT_PIPELINE',
       'PAYMENT_PROVIDER_SANDBOX',
       'PERFORMANCE_CORE_AND_MESSAGES',
+      'PLUGIN_NETWORK_SANDBOX',
       'WECHAT_RELEASE_AND_ROLLBACK',
     ]);
     for (const rules of Object.values(controlledSuiteCrossEvidenceRules))
@@ -189,6 +190,21 @@ describe('controlled suite cross-evidence contracts', () => {
         'inventory source production-v5 is absent from waiver coverage',
         'production inventory source production-v5 is not empty',
         'greenfield waiver review precedes legacy inventory generation',
+      ]),
+    );
+    expect(
+      validateControlledSuiteDocuments('PLUGIN_NETWORK_SANDBOX', {
+        'runtime-policy.json': {
+          allowedRequestLogSha256: 'a'.repeat(64),
+          deniedRequestLogSha256: 'b'.repeat(64),
+        },
+        'allowed-request.log': { sha256: 'c'.repeat(64) },
+        'denied-request.log': { sha256: 'd'.repeat(64) },
+      }),
+    ).toEqual(
+      expect.arrayContaining([
+        'runtime policy does not match allowed-request evidence bytes',
+        'runtime policy does not match denied-request evidence bytes',
       ]),
     );
   });

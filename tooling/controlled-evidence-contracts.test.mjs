@@ -1157,9 +1157,14 @@ describe('controlled JSON evidence contracts', () => {
     expect(
       validateControlledJsonEvidence('runtime-policy.json', {
         result: 'PASS',
-        allowedHosts: ['http://unsafe.example/path'],
+        policyRefHash: 'a'.repeat(64),
+        allowedHosts: ['https://user:secret@localhost/'],
         defaultDeny: true,
         networkPolicyApplied: true,
+        appliedAt: '2026-08-19T01:00:00.000Z',
+        allowedRequestLogSha256: 'b'.repeat(64),
+        deniedRequestLogSha256: 'c'.repeat(64),
+        denialAuditRefHash: 'd'.repeat(64),
       }),
     ).toContain('runtime-policy.json allowedHosts[0] must be an origin-only HTTPS URL');
     expect(
