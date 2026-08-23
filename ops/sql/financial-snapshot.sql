@@ -16,9 +16,32 @@ WITH facts AS (
   UNION ALL SELECT tenant_id,'reward_granted_cents',COALESCE(sum(granted_amount_cents),0) FROM reward_grants GROUP BY tenant_id
   UNION ALL SELECT tenant_id,'reward_redeemed_cents',COALESCE(sum(redeemed_amount_cents),0) FROM reward_grants GROUP BY tenant_id
   UNION ALL SELECT tenant_id,'reward_reversed_cents',COALESCE(sum(reversed_amount_cents),0) FROM reward_grants GROUP BY tenant_id
+), metric_names(metric) AS (
+  VALUES
+    ('orders_count'),
+    ('orders_paid_cents'),
+    ('orders_payable_cents'),
+    ('orders_refunded_cents'),
+    ('reward_entry_count'),
+    ('reward_entry_net_cents'),
+    ('reward_grant_count'),
+    ('reward_granted_cents'),
+    ('reward_redeemed_cents'),
+    ('reward_reversed_cents'),
+    ('succeeded_refund_cents'),
+    ('succeeded_refund_count'),
+    ('verification_quantity'),
+    ('verification_use_count'),
+    ('verified_payment_cents'),
+    ('verified_payment_count')
 ), per_tenant AS (
-  SELECT tenant_id,jsonb_object_agg(metric,to_jsonb(value) ORDER BY metric) AS metrics
-    FROM facts GROUP BY tenant_id
+  SELECT
+    t.id AS tenant_id,
+    jsonb_object_agg(m.metric,to_jsonb(COALESCE(f.value,0)) ORDER BY m.metric) AS metrics
+  FROM tenants t
+  CROSS JOIN metric_names m
+  LEFT JOIN facts f ON f.tenant_id=t.id AND f.metric=m.metric
+  GROUP BY t.id
 )
 SELECT jsonb_build_object(
   'schemaVersion',1,

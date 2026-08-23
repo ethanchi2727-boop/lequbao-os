@@ -45,6 +45,25 @@ for (const source of migrationSources) {
 }
 export const requiredDatabaseMigrationVersions = Object.freeze([...migrationVersions].sort());
 
+export const requiredFinancialSnapshotMetrics = Object.freeze([
+  'orders_count',
+  'orders_paid_cents',
+  'orders_payable_cents',
+  'orders_refunded_cents',
+  'reward_entry_count',
+  'reward_entry_net_cents',
+  'reward_grant_count',
+  'reward_granted_cents',
+  'reward_redeemed_cents',
+  'reward_reversed_cents',
+  'succeeded_refund_cents',
+  'succeeded_refund_count',
+  'verification_quantity',
+  'verification_use_count',
+  'verified_payment_cents',
+  'verified_payment_count',
+]);
+
 export const controlledJsonEvidenceContracts = {
   'rls-denials.json': [pass, field('attempts', 'array')],
   'tenant-context.json': [
@@ -1040,24 +1059,6 @@ function validateBackupManifest(value) {
       : [];
   if (tenantEntries.length !== snapshot?.tenantCount)
     failures.push(`${artifact} financialSnapshot tenants must equal tenantCount`);
-  const allowedMetrics = new Set([
-    'orders_count',
-    'orders_paid_cents',
-    'orders_payable_cents',
-    'orders_refunded_cents',
-    'reward_entry_count',
-    'reward_entry_net_cents',
-    'reward_grant_count',
-    'reward_granted_cents',
-    'reward_redeemed_cents',
-    'reward_reversed_cents',
-    'succeeded_refund_cents',
-    'succeeded_refund_count',
-    'verification_quantity',
-    'verification_use_count',
-    'verified_payment_cents',
-    'verified_payment_count',
-  ]);
   for (const [tenantRefHash, metrics] of tenantEntries) {
     if (!validSha256(tenantRefHash))
       failures.push(`${artifact} financialSnapshot tenant reference hash has invalid format`);
@@ -1065,8 +1066,13 @@ function validateBackupManifest(value) {
       failures.push(`${artifact} financialSnapshot tenant metrics must be an object`);
       continue;
     }
+    if (
+      JSON.stringify(Object.keys(metrics).sort()) !==
+      JSON.stringify(requiredFinancialSnapshotMetrics)
+    )
+      failures.push(`${artifact} financialSnapshot tenant metrics must equal the exact metric set`);
     for (const [metric, amount] of Object.entries(metrics)) {
-      if (!allowedMetrics.has(metric))
+      if (!requiredFinancialSnapshotMetrics.includes(metric))
         failures.push(`${artifact} financialSnapshot contains undeclared metric ${metric}`);
       if (!Number.isSafeInteger(amount))
         failures.push(`${artifact} financialSnapshot metric ${metric} must be an integer`);

@@ -8,6 +8,7 @@ import {
   controlledJsonEvidenceContracts,
   requiredDatabaseFixtureFiles,
   requiredDatabaseMigrationVersions,
+  requiredFinancialSnapshotMetrics,
 } from './controlled-evidence-contracts.mjs';
 import { verifyControlledResults } from './controlled-results.mjs';
 import { prepareControlledEvidenceWorkspace } from './prepare-controlled-evidence.mjs';
@@ -354,7 +355,14 @@ function semanticFixture(artifact, binding) {
       financialSnapshot: {
         schemaVersion: 1,
         tenantCount: 1,
-        tenants: { ['f'.repeat(64)]: { orders_count: 1 } },
+        tenants: {
+          ['f'.repeat(64)]: Object.fromEntries(
+            requiredFinancialSnapshotMetrics.map((metric) => [
+              metric,
+              metric === 'orders_count' ? 1 : 0,
+            ]),
+          ),
+        },
       },
     },
     'restore-report.json': {

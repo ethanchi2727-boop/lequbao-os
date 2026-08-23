@@ -781,6 +781,7 @@ describe('controlled JSON evidence contracts', () => {
       expect.arrayContaining([
         'backup.manifest.json financialSnapshot tenants must equal tenantCount',
         'backup.manifest.json financialSnapshot tenant reference hash has invalid format',
+        'backup.manifest.json financialSnapshot tenant metrics must equal the exact metric set',
         'backup.manifest.json financialSnapshot contains undeclared metric invented_total',
         'backup.manifest.json financialSnapshot metric invented_total must be an integer',
       ]),
