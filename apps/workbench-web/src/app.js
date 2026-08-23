@@ -6,9 +6,11 @@ import {
   parseCommandInput,
   primaryNavigationPage,
   resolvePage,
+  resultPanelFromStorage,
   searchWorkbenchPages,
   statusAnnouncement,
   statusCopy,
+  truncateLiveRecords,
   updateResultPanel,
   viewFor,
 } from './state.mjs';
@@ -44,7 +46,10 @@ const workbenchApi =
       });
 let liveSession = null;
 let livePageState = { request: null, data: null };
-let resultPanel = { open: true, tab: 'result' };
+const resultPanelStorageKey = 'lequbao.workbench-result-panel';
+let resultPanel = resultPanelFromStorage(sessionStorage.getItem(resultPanelStorageKey));
+let draftMessage = '';
+const scrollPositions = new Map();
 
 const demoFields = [
   ['主体名称', '南京拾味餐饮管理有限公司', '99%', '已识别'],
@@ -177,19 +182,20 @@ function genericWorkbenchPage() {
   const domains = contract.apiDomains.length ? contract.apiDomains : ['无外部数据'];
   const stateContent = livePageState.data
     ? renderLiveData(livePageState.data, livePageState.request?.kind)
-    : !demoMode &&
-        ['loading', 'denied', 'partial-error', 'recoverable-failure'].includes(view.state)
-      ? '<div class="generic-empty"><b>未展示业务数据</b><span>只有服务端完成身份、租户和资源范围校验后才会呈现记录。</span></div>'
-      : view.state === 'empty'
-        ? `<div class="generic-empty"><b>暂无数据</b><span>${livePageState.request?.status === 'missing-parameters' ? `需要链接参数：${livePageState.request.missing.map(escapeHtml).join('、')}` : '调整筛选或完成前置步骤后再试。'}</span></div>`
-        : !demoMode && livePageState.request?.status === 'unsupported'
-          ? '<div class="generic-empty"><b>此页面尚未连接权威 API</b><span>生产模式不会展示模拟业务数据；完成服务端契约和权限验收后才能启用。</span></div>'
-          : `<div class="generic-grid">${contract.components
-              .map(
-                (component, index) =>
-                  `<article><small>${index + 1}</small><strong>${escapeHtml(component)}</strong><span>仅显示当前身份与资源范围允许的数据</span></article>`,
-              )
-              .join('')}</div>`;
+    : view.state === 'loading'
+      ? '<div class="loading-skeleton" aria-hidden="true"><span></span><span></span><span></span></div>'
+      : !demoMode && ['denied', 'partial-error', 'recoverable-failure'].includes(view.state)
+        ? '<div class="generic-empty"><b>未展示业务数据</b><span>只有服务端完成身份、租户和资源范围校验后才会呈现记录。</span></div>'
+        : view.state === 'empty'
+          ? `<div class="generic-empty"><b>暂无数据</b><span>${livePageState.request?.status === 'missing-parameters' ? `需要链接参数：${livePageState.request.missing.map(escapeHtml).join('、')}` : '调整筛选或完成前置步骤后再试。'}</span></div>`
+          : !demoMode && livePageState.request?.status === 'unsupported'
+            ? '<div class="generic-empty"><b>此页面尚未连接权威 API</b><span>生产模式不会展示模拟业务数据；完成服务端契约和权限验收后才能启用。</span></div>'
+            : `<div class="generic-grid">${contract.components
+                .map(
+                  (component, index) =>
+                    `<article><small>${index + 1}</small><strong>${escapeHtml(component)}</strong><span>仅显示当前身份与资源范围允许的数据</span></article>`,
+                )
+                .join('')}</div>`;
   return `<section class="generic-page" data-page-id="${contract.id}" data-priority="${contract.priority}">
     <header><div><small>${escapeHtml(contract.primaryRole)}</small><h1>${escapeHtml(contract.title)}</h1><p>${escapeHtml(contract.purpose)}</p></div><a href="/bao/page-170${demoMode ? '?demo=1' : ''}" aria-label="帮助与审计">${icon('help')} 帮助与审计</a></header>
     <div class="generic-scope"><span>数据域</span>${domains.map((domain) => `<b>${escapeHtml(domain)}</b>`).join('')}<em>服务端权限与租户范围最终裁决</em></div>
@@ -454,12 +460,14 @@ function displayValue(value) {
 }
 
 function renderLiveData(data, kind) {
-  const records = Array.isArray(data) ? data : [data];
+  const { records, total, truncated } = truncateLiveRecords(data);
   if (records.length === 0)
     return '<div class="generic-empty"><b>当前没有记录</b><span>服务端已确认当前权限范围内为空。</span></div>';
   const allowed = visibleFields[kind] ?? [];
-  return `<div class="live-data" data-live-kind="${escapeHtml(kind ?? 'unknown')}">${records
-    .slice(0, 50)
+  const truncationNotice = truncated
+    ? `<p class="list-limit-note" role="status">当前先显示前 50 项，共 ${total} 项；请缩小筛选范围后继续查看。</p>`
+    : '';
+  return `${truncationNotice}<div class="live-data" data-live-kind="${escapeHtml(kind ?? 'unknown')}">${records
     .map((record, index) => {
       const entries = allowed
         .filter((key) => Object.hasOwn(record ?? {}, key))
@@ -477,7 +485,7 @@ function composer() {
   const demoTools = demoMode
     ? `<button type="button">${icon('network')} 联网</button><button type="button">${icon('skill')} 技能</button><button type="button">${icon('plugin')} 插件</button>`
     : '';
-  return `<form class="composer" data-form="message"><textarea aria-label="补充资料" placeholder="继续说、拍照或把资料直接丢进来…"></textarea><input id="intake-file" type="file" accept="image/jpeg,image/png,image/webp,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,audio/mpeg,audio/wav,audio/mp4,audio/amr" hidden/><div class="tools"><button type="button" data-action="choose-file" aria-label="添加">${icon('plus')}</button><button type="button" data-action="choose-file">${icon('file')} 文件</button>${demoTools}<button type="button" data-route="page-177">${icon('mic')}<span class="tool-label"> 语音</span></button><button class="send" type="submit" aria-label="发送">${icon('send')}</button></div><small>${demoMode ? '演示模式 · 支持内容、图片、PDF、语音与相关链接' : '生产模式 · 原材料将安全上传并进入识别队列'}</small></form>`;
+  return `<form class="composer" data-form="message"><textarea aria-label="补充资料" placeholder="继续说、拍照或把资料直接丢进来…">${escapeHtml(draftMessage)}</textarea><input id="intake-file" type="file" accept="image/jpeg,image/png,image/webp,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,audio/mpeg,audio/wav,audio/mp4,audio/amr" hidden/><div class="tools"><button type="button" data-action="choose-file" aria-label="添加">${icon('plus')}</button><button type="button" data-action="choose-file">${icon('file')} 文件</button>${demoTools}<button type="button" data-route="page-177">${icon('mic')}<span class="tool-label"> 语音</span></button><button class="send" type="submit" aria-label="发送">${icon('send')}</button></div><small role="status" aria-live="polite" aria-atomic="true">${demoMode ? '演示模式 · 支持内容、图片、PDF、语音与相关链接' : '生产模式 · 原材料将安全上传并进入识别队列'}</small></form>`;
 }
 
 function conversation() {
@@ -555,9 +563,9 @@ function results() {
 
 function mobileSheet() {
   if (view.page === 'page-176')
-    return `<section class="mobile-sheet"><h2>添加门店材料</h2><p>原始文件会先安全检查，再进入识别。</p><div class="capture-grid"><button data-action="choose-file">${icon('camera')}<strong>拍营业执照</strong><small>JPG、PNG、WEBP</small></button><button data-action="choose-file">${icon('file')}<strong>选择文件</strong><small>PDF、DOCX</small></button></div><div class="upload-item"><span>${demoMode ? '营业执照.jpg' : '等待选择文件'}</span><progress value="${demoMode ? 68 : 0}" max="100">${demoMode ? 68 : 0}%</progress><b>${demoMode ? '68%' : '0%'}</b></div><button class="primary" data-route="page-175">完成并返回对话</button></section>`;
+    return `<section class="mobile-sheet"><h2>添加门店材料</h2><p>原始文件会先安全检查，再进入识别。</p><div class="capture-grid"><button data-action="choose-file">${icon('camera')}<strong>拍营业执照</strong><small>JPG、PNG、WEBP</small></button><button data-action="choose-file">${icon('file')}<strong>选择文件</strong><small>PDF、DOCX</small></button></div><div class="upload-item" role="status" aria-live="polite" aria-atomic="true"><span>${demoMode ? '营业执照.jpg' : '等待选择文件'}</span><progress value="${demoMode ? 68 : 0}" max="100">${demoMode ? 68 : 0}%</progress><b>${demoMode ? '68%' : '0%'}</b></div><button class="primary" data-route="page-175">完成并返回对话</button></section>`;
   if (view.page === 'page-177')
-    return `<section class="mobile-sheet voice-sheet"><h2>用语音补充资料</h2><p>松开后自动转写，原语音与文字会一起保留。</p><button class="record" data-action="record">${icon('mic')}<strong>按住说话</strong><small>最长 60 秒</small></button><div class="transcript"><small>实时转写</small><p>${demoMode ? '每天上午十点到晚上十点，周末不休息。' : '尚未收到服务端转写结果'}</p><button ${demoMode ? '' : 'disabled'}>修正文字</button></div><button class="primary" data-route="page-175">返回建档会话</button></section>`;
+    return `<section class="mobile-sheet voice-sheet"><h2>用语音补充资料</h2><p>${demoMode ? '演示交互不会采集真实音频。' : '真实录音、权限和上传链路尚未完成受控验收。'}</p><button class="record" ${demoMode ? 'data-action="record" aria-pressed="false"' : 'disabled aria-disabled="true"'}>${icon('mic')}<strong>${demoMode ? '点击开始演示' : '录音暂不可用'}</strong><small>${demoMode ? '仅演示状态' : '等待受控验收'}</small></button><div class="transcript"><small>转写状态</small><p>${demoMode ? '演示文本：每天上午十点到晚上十点，周末不休息。' : '尚未收到服务端转写结果'}</p><button ${demoMode ? '' : 'disabled'}>修正文字</button></div><button class="primary" data-route="page-175">返回建档会话</button></section>`;
   if (view.page === 'page-178') {
     const projection = intakeProjection();
     return `<section class="mobile-sheet confirm-sheet"><h2>识别确认</h2><div class="completion"><b>${projection.completeness}%</b><span><strong>资料完整度</strong><small>${displayedFields().length} 项已有可追溯来源</small></span></div>${displayedFields()
@@ -594,12 +602,35 @@ function focusMainContent() {
 }
 
 function navigateTo(page) {
+  scrollPositions.set(location.href, captureScrollPosition());
   history.pushState({}, '', `/bao/${page}${location.search}`);
   view = viewFor(page);
   livePageState = { request: null, data: null };
   render();
   focusMainContent();
+  restoreScrollPosition();
   if (!demoMode && !intakePages.has(view.page)) void bootstrapLivePage();
+}
+
+function captureScrollPosition() {
+  return {
+    window: scrollY,
+    chat: document.querySelector('.chat')?.scrollTop ?? 0,
+    results: document.querySelector('.results')?.scrollTop ?? 0,
+  };
+}
+
+function restoreScrollPosition(position = {}) {
+  scrollTo({ top: position.window ?? 0, behavior: 'auto' });
+  const chat = document.querySelector('.chat');
+  const results = document.querySelector('.results');
+  if (chat) chat.scrollTop = position.chat ?? 0;
+  if (results) results.scrollTop = position.results ?? 0;
+}
+
+function setResultPanel(action, tab) {
+  resultPanel = updateResultPanel(resultPanel, action, tab);
+  sessionStorage.setItem(resultPanelStorageKey, JSON.stringify(resultPanel));
 }
 
 function render() {
@@ -630,18 +661,18 @@ app.addEventListener('click', (event) => {
     return;
   }
   if (target.dataset.action === 'open-results') {
-    resultPanel = updateResultPanel(resultPanel, 'open');
+    setResultPanel('open');
     render();
     return;
   }
   if (target.dataset.action === 'close-results') {
-    resultPanel = updateResultPanel(resultPanel, 'close');
+    setResultPanel('close');
     render();
     document.querySelector('[data-action="open-results"]')?.focus();
     return;
   }
   if (target.dataset.action === 'result-tab') {
-    resultPanel = updateResultPanel(resultPanel, 'tab', target.dataset.tab);
+    setResultPanel('tab', target.dataset.tab);
     render();
     return;
   }
@@ -660,9 +691,10 @@ app.addEventListener('click', (event) => {
   }
   if (target.dataset.action === 'record') {
     target.classList.toggle('recording');
+    target.setAttribute('aria-pressed', String(target.classList.contains('recording')));
     target.querySelector('strong').textContent = target.classList.contains('recording')
-      ? '正在录音…'
-      : '按住说话';
+      ? '正在演示录音状态…'
+      : '点击开始演示';
   }
   if (target.dataset.action === 'consent') return;
   if (target.dataset.action === 'confirm') {
@@ -694,6 +726,7 @@ addEventListener('popstate', () => {
   livePageState = { request: null, data: null };
   render();
   focusMainContent();
+  restoreScrollPosition(scrollPositions.get(location.href));
   if (!demoMode && !intakePages.has(view.page)) void bootstrapLivePage();
 });
 addEventListener('keydown', (event) => {
@@ -721,6 +754,10 @@ addEventListener('keydown', (event) => {
   }
 });
 app.addEventListener('input', (event) => {
+  if (event.target instanceof HTMLTextAreaElement && event.target.closest('.composer')) {
+    draftMessage = event.target.value;
+    return;
+  }
   if (event.target instanceof HTMLInputElement && event.target.dataset.action === 'page-search') {
     const matches = searchWorkbenchPages(event.target.value);
     const results = document.querySelector('#page-search-results');
@@ -787,10 +824,15 @@ app.addEventListener('keydown', (event) => {
   ) {
     event.preventDefault();
     const tab = nextResultTab(event.target.dataset.tab, event.key);
-    resultPanel = updateResultPanel(resultPanel, 'tab', tab);
+    setResultPanel('tab', tab);
     render();
     document.querySelector(`[data-action="result-tab"][data-tab="${tab}"]`)?.focus();
   }
+});
+addEventListener('beforeunload', (event) => {
+  if (!draftMessage.trim()) return;
+  event.preventDefault();
+  event.returnValue = '';
 });
 app.addEventListener('focusin', (event) => {
   if (!(event.target instanceof HTMLElement) || event.target.getAttribute('role') !== 'option')
@@ -924,6 +966,7 @@ async function submitMessage(textarea) {
     });
     if (mode === 'blocked') throw new Error('authoritative intake session is unavailable');
     if (mode === 'live') await intakeApi.addMessage(liveSession.id, content);
+    draftMessage = '';
     textarea.value = '';
     if (status)
       status.textContent =

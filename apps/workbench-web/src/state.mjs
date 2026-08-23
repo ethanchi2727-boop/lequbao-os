@@ -149,6 +149,15 @@ export function parseCommandInput(input, rawValue) {
   return { ok: true, value };
 }
 
+export function truncateLiveRecords(data, limit = 50) {
+  const records = Array.isArray(data) ? data : [data];
+  return {
+    records: records.slice(0, limit),
+    total: records.length,
+    truncated: records.length > limit,
+  };
+}
+
 export function canCommit(fields) {
   return (
     fields.every((field) => field.risk !== 'HIGH' || field.status === 'CONFIRMED') &&
@@ -183,4 +192,19 @@ export function updateResultPanel(panel, action, tab) {
   if (action === 'close') return { ...panel, open: false };
   if (action === 'tab' && ['task', 'result', 'source'].includes(tab)) return { open: true, tab };
   return panel;
+}
+
+export function resultPanelFromStorage(value) {
+  try {
+    const parsed = JSON.parse(value ?? 'null');
+    if (
+      parsed &&
+      typeof parsed.open === 'boolean' &&
+      ['task', 'result', 'source'].includes(parsed.tab)
+    )
+      return { open: parsed.open, tab: parsed.tab };
+  } catch {
+    // Invalid browser UI preferences must fail back to the product default.
+  }
+  return { open: true, tab: 'result' };
 }

@@ -23,4 +23,10 @@ describe('乐趣宝工作台窄屏布局契约', () => {
       /\.command-form input,\s*\.command-form select,\s*\.command-form button \{\s*width: 100%;/u,
     );
   });
+
+  it('移动端核心输入与按钮达到 44px 触控目标', () => {
+    expect(styleSource).toMatch(/\.mobile-title button \{[\s\S]*?min-height: 44px;/u);
+    expect(styleSource).toMatch(/\.composer textarea \{\s*height: 44px;/u);
+    expect(styleSource).toMatch(/\.tools button \{\s*min-width: 44px;\s*min-height: 44px;/u);
+  });
 });

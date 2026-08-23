@@ -6,8 +6,8 @@
   --purple: #5d4ff0;
   --purple-dark: #403591;
   --line: #e3e5ee;
-  --muted: #7c8191;
-  --green: #168b6a;
+  --muted: #5f6474;
+  --green: #0b6b50;
   --amber: #a96b16;
 }
 .ui-icon {
@@ -186,7 +186,7 @@ textarea {
 }
 .search kbd {
   border: 0;
-  color: #9da1ad;
+  color: var(--muted);
   background: #f1f2f6;
   padding: 3px 8px;
   border-radius: 6px;
@@ -213,7 +213,7 @@ textarea {
 .sidebar nav em {
   margin-left: auto;
   background: #ffebe6;
-  color: #e96c55;
+  color: #a43f2d;
   border-radius: 20px;
   padding: 2px 9px;
   font-style: normal;
@@ -224,7 +224,7 @@ textarea {
   margin: 10px;
 }
 .recent small {
-  color: #a2a5b0;
+  color: var(--muted);
 }
 .recent a {
   color: #5d6070;
@@ -232,7 +232,7 @@ textarea {
   font-size: 12px;
 }
 .recent > span {
-  color: #777b88;
+  color: var(--muted);
   font-size: 11px;
   line-height: 1.5;
 }
@@ -250,7 +250,7 @@ textarea {
 }
 .identity > b {
   background: #e5efff;
-  color: #3670dd;
+  color: #2f5fb8;
   border-radius: 8px;
   padding: 10px;
 }
@@ -271,7 +271,7 @@ main {
 }
 .crumb {
   font-size: 13px;
-  color: #8c90a0;
+  color: var(--muted);
 }
 .crumb strong {
   color: #292b37;
@@ -283,7 +283,7 @@ main {
 }
 .top-actions span {
   font-size: 12px;
-  color: #898d9c;
+  color: var(--muted);
 }
 .top-actions button,
 .chat-heading button {
@@ -370,6 +370,27 @@ main {
   padding: 18px;
   border: 1px solid #eceaf4;
   border-radius: 14px;
+}
+.loading-skeleton {
+  display: grid;
+  gap: 14px;
+  min-height: 260px;
+  padding: 18px;
+  border: 1px solid #eceaf4;
+  border-radius: 14px;
+}
+.loading-skeleton span {
+  height: 56px;
+  border-radius: 10px;
+  background: linear-gradient(90deg, #f1f0f6 25%, #faf9fc 50%, #f1f0f6 75%);
+  background-size: 200% 100%;
+  animation: skeleton-loading 1.4s ease-in-out infinite;
+}
+.list-limit-note {
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: #fff9ef;
+  color: #655d52;
 }
 .generic-grid article small {
   color: #6355d8;
@@ -481,7 +502,7 @@ main {
 .chat-heading p {
   margin: 0;
   font-size: 11px;
-  color: #999dab;
+  color: var(--muted);
 }
 .chat-heading i {
   display: inline-block;
@@ -589,7 +610,7 @@ main {
 }
 .location em {
   font-size: 9px;
-  color: #999;
+  color: var(--muted);
   font-style: normal;
 }
 .location > i {
@@ -619,7 +640,7 @@ main {
 }
 .agent-result p {
   margin: 4px 0 12px;
-  color: #777c8c;
+  color: var(--muted);
   font-size: 11px;
 }
 .field-grid {
@@ -639,7 +660,7 @@ main {
   display: block;
 }
 .field-grid small {
-  color: #969aa9;
+  color: var(--muted);
   font-size: 9px;
 }
 .field-grid strong {
@@ -678,7 +699,7 @@ main {
   font-size: 10px;
 }
 .voice small {
-  color: #6f7180;
+  color: var(--muted);
   margin-top: 5px;
 }
 .voice button,
@@ -724,7 +745,7 @@ main {
   border: 0;
 }
 .composer > small {
-  color: #a0a4b0;
+  color: var(--muted);
   font-size: 9px;
 }
 .results {
@@ -741,7 +762,7 @@ main {
 .results > nav button {
   border: 0;
   background: none;
-  color: #8d90a0;
+  color: var(--muted);
 }
 .results > nav button.active {
   color: var(--purple);
@@ -828,7 +849,7 @@ main {
   font-size: 9px;
 }
 .warning small {
-  color: #8b8173;
+  color: #655d52;
   margin-top: 5px;
 }
 .safe-note {
@@ -948,13 +969,15 @@ main {
     background: none;
     font-size: 28px;
     text-align: left;
+    min-width: 44px;
+    min-height: 44px;
   }
   .mobile-title strong {
     font-size: 15px;
   }
   .mobile-title small {
     font-size: 9px;
-    color: #a1a4af;
+    color: var(--muted);
   }
   .workspace {
     display: block;
@@ -1058,7 +1081,14 @@ main {
     box-shadow: 0 8px 30px #25213c25;
   }
   .composer textarea {
-    height: 32px;
+    height: 44px;
+  }
+  .tools button {
+    min-width: 44px;
+    min-height: 44px;
+  }
+  .tools .send {
+    width: 44px;
   }
   .tools button:not(:first-child):not(:nth-child(2)):not(:last-child):not(:nth-last-child(2)) {
     display: none;
@@ -1127,7 +1157,7 @@ main {
     color: var(--purple);
   }
   .capture-grid small {
-    color: #8a8d9a;
+    color: var(--muted);
   }
   .upload-item {
     display: grid;
@@ -1211,7 +1241,7 @@ main {
   }
   .confirm-sheet label small {
     display: block;
-    color: #9195a3;
+    color: var(--muted);
   }
   .confirm-sheet input {
     border: 0;
@@ -1237,7 +1267,7 @@ main {
     font-size: 11px;
   }
   .impact small {
-    color: #8a7560;
+    color: #6b5947;
     margin-top: 4px;
   }
   .check {
@@ -1265,6 +1295,14 @@ main {
 @keyframes pulse {
   50% {
     box-shadow: 0 0 0 14px #ec5c6722;
+  }
+}
+@keyframes skeleton-loading {
+  from {
+    background-position: 100% 0;
+  }
+  to {
+    background-position: -100% 0;
   }
 }
 @media (prefers-reduced-motion: reduce) {

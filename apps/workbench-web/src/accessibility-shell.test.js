@@ -48,4 +48,19 @@ describe('乐趣宝工作台无障碍应用壳', () => {
     expect(appSource).toContain('aria-controls="workbench-results"');
     expect(appSource).toContain('aria-busy="${view.state === \'loading\'}"');
   });
+
+  it('输入、上传和演示录音状态可播报且生产录音失效关闭', () => {
+    expect(appSource).toContain('<small role="status" aria-live="polite"');
+    expect(appSource).toContain('class="upload-item" role="status"');
+    expect(appSource).toContain('disabled aria-disabled="true"');
+    expect(appSource).toContain("target.setAttribute('aria-pressed'");
+  });
+
+  it('保护未发送草稿、结果区偏好与路由滚动状态', () => {
+    expect(appSource).toContain('escapeHtml(draftMessage)');
+    expect(appSource).toContain("addEventListener('beforeunload'");
+    expect(appSource).toContain('sessionStorage.setItem(resultPanelStorageKey');
+    expect(appSource).toContain('scrollPositions.set(location.href, captureScrollPosition())');
+    expect(appSource).toContain("document.querySelector('.chat')?.scrollTop");
+  });
 });

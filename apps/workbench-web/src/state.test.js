@@ -8,9 +8,11 @@ import {
   parseCommandInput,
   primaryNavigationPage,
   resolvePage,
+  resultPanelFromStorage,
   searchWorkbenchPages,
   statusAnnouncement,
   statusCopy,
+  truncateLiveRecords,
   updateResultPanel,
   viewFor,
 } from './state.mjs';
@@ -109,5 +111,23 @@ describe('乐趣宝建档页面状态', () => {
     expect(nextResultTab('source', 'ArrowRight')).toBe('task');
     expect(nextResultTab('source', 'Home')).toBe('task');
     expect(nextResultTab('task', 'End')).toBe('source');
+  });
+  it('权威长列表最多渲染 50 项并明确报告截断', () => {
+    const result = truncateLiveRecords(Array.from({ length: 63 }, (_, index) => ({ index })));
+    expect(result.records).toHaveLength(50);
+    expect(result.total).toBe(63);
+    expect(result.truncated).toBe(true);
+    expect(truncateLiveRecords({ id: 'one' })).toMatchObject({ total: 1, truncated: false });
+  });
+  it('结果区只恢复合法的会话级界面偏好', () => {
+    expect(resultPanelFromStorage('{"open":false,"tab":"source"}')).toEqual({
+      open: false,
+      tab: 'source',
+    });
+    expect(resultPanelFromStorage('{"open":false,"tab":"admin"}')).toEqual({
+      open: true,
+      tab: 'result',
+    });
+    expect(resultPanelFromStorage('broken')).toEqual({ open: true, tab: 'result' });
   });
 });

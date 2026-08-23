@@ -78,6 +78,74 @@
         "mainAriaBusy": true,
         "emptySearchAnnouncement": "没有匹配的工作台页面"
       }
+    },
+    {
+      "case": "computed text contrast remediation",
+      "route": "/bao/page-014?demo=1",
+      "observed": {
+        "initialNonGradientViolationCount": 1,
+        "lastViolationBeforeFix": {
+          "text": "当前没有服务端报告的缺失项；提交前仍需核对全部待确认字段。",
+          "ratio": 4.27
+        },
+        "ratioAfterFix": 5.21,
+        "policyMinimum": 4.5
+      }
+    },
+    {
+      "case": "mobile core touch targets",
+      "route": "/bao/page-014?demo=1",
+      "viewport": { "width": 320, "height": 800 },
+      "observed": {
+        "returnButton": "44x44",
+        "composerInputHeight": 44,
+        "attachmentButtonMinimum": "44x44",
+        "sendButton": "44x44",
+        "undersizedCoreTargetCount": 0,
+        "documentScrollWidth": 320
+      }
+    },
+    {
+      "case": "loading skeleton semantics",
+      "route": "/bao/page-026?demo=1&state=loading",
+      "observed": {
+        "skeletonRowCount": 3,
+        "skeletonAriaHidden": true,
+        "mainAriaBusy": true
+      }
+    },
+    {
+      "case": "recording capability boundary",
+      "routes": ["/bao/page-177?demo=1", "/bao/page-177"],
+      "observed": {
+        "demoCopy": "演示交互不会采集真实音频。",
+        "demoPressedStateChanges": true,
+        "productionDisabled": true,
+        "productionAriaDisabled": true,
+        "productionLabel": "录音暂不可用",
+        "productionCopy": "真实录音、权限和上传链路尚未完成受控验收。"
+      }
+    },
+    {
+      "case": "draft and result panel UI state",
+      "route": "/bao/page-014?demo=1",
+      "observed": {
+        "draftBeforeRender": "尚未发送的敏感草稿 <待核对>",
+        "draftAfterTabRender": "尚未发送的敏感草稿 <待核对>",
+        "draftPersistedToBrowserStorage": false,
+        "closedPanelStillClosedAfterReload": true,
+        "openActionExpandedAfterReload": false
+      }
+    },
+    {
+      "case": "mobile route scroll restoration",
+      "route": "/bao/page-014?demo=1",
+      "viewport": { "width": 320, "height": 800 },
+      "observed": {
+        "scrollBeforeRoute": 220,
+        "newRouteScroll": 0,
+        "scrollAfterBack": 220
+      }
     }
   ],
   "boundaries": [
