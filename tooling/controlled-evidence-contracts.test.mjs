@@ -578,10 +578,15 @@ describe('controlled JSON evidence contracts', () => {
       },
       database: {
         before: {
+          capturedAt: '2026-08-19T01:02:00.000Z',
+          databaseName: 'before-database',
           tableCount: 164,
           migrationVersions: [...requiredDatabaseMigrationVersions].reverse(),
         },
-        after: {},
+        after: {
+          capturedAt: '2026-08-19T00:59:00.000Z',
+          databaseName: 'after-database',
+        },
       },
     });
     expect(failures).toEqual(
@@ -594,6 +599,8 @@ describe('controlled JSON evidence contracts', () => {
         'performance-report.json persistence expectedMessageIds must be a non-negative integer',
         'performance-report.json persistence persistedMessageIds must be a non-negative integer',
         'performance-report.json database.before.migrationVersions must match the candidate schema',
+        'performance-report.json before and after snapshots must use the same database',
+        'performance-report.json run and database snapshot timestamps are out of order',
       ]),
     );
   });

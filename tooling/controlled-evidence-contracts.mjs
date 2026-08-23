@@ -1118,6 +1118,8 @@ function validatePerformanceSnapshot(artifact, pathName, snapshot, failures) {
   }
   if (typeof snapshot.databaseName !== 'string' || !snapshot.databaseName.trim())
     failures.push(`${artifact} ${pathName}.databaseName must not be empty`);
+  if (!validDateTime(snapshot.capturedAt))
+    failures.push(`${artifact} ${pathName}.capturedAt must be a non-future ISO date-time`);
   for (const fieldName of [
     'sizeBytes',
     'connections',
@@ -1236,6 +1238,11 @@ function validatePerformanceReport(value) {
     failures.push(`${artifact} persistence duplicateAcknowledgedMessageIds must be empty`);
   validatePerformanceSnapshot(artifact, 'database.before', value.database?.before, failures);
   validatePerformanceSnapshot(artifact, 'database.after', value.database?.after, failures);
+  if (
+    value.database?.before?.databaseName !== undefined &&
+    value.database.before.databaseName !== value.database?.after?.databaseName
+  )
+    failures.push(`${artifact} before and after snapshots must use the same database`);
   const beforeDead = value.database?.before?.messageBacklog?.deadCount;
   const afterDead = value.database?.after?.messageBacklog?.deadCount;
   if (Number.isFinite(beforeDead) && Number.isFinite(afterDead) && afterDead > beforeDead)
@@ -1246,6 +1253,21 @@ function validatePerformanceReport(value) {
     Date.parse(value.completedAt) < Date.parse(value.startedAt)
   )
     failures.push(`${artifact} completedAt must not precede startedAt`);
+  const snapshotTimeline = [
+    value.startedAt,
+    value.database?.before?.capturedAt,
+    value.database?.after?.capturedAt,
+    value.completedAt,
+  ].map(Date.parse);
+  if (
+    snapshotTimeline.every(Number.isFinite) &&
+    !(
+      snapshotTimeline[0] <= snapshotTimeline[1] &&
+      snapshotTimeline[1] <= snapshotTimeline[2] &&
+      snapshotTimeline[2] <= snapshotTimeline[3]
+    )
+  )
+    failures.push(`${artifact} run and database snapshot timestamps are out of order`);
   return failures;
 }
 

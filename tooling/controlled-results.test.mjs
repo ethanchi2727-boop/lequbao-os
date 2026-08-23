@@ -73,6 +73,7 @@ function semanticFixture(artifact, binding) {
     web: `ghcr.io/example/lequbao-v6-web@sha256:${'a'.repeat(64)}`,
   };
   const performanceSnapshot = {
+    capturedAt: '2026-08-19T01:00:30.000Z',
     databaseName: 'lequ-controlled',
     sizeBytes: 1,
     connections: 1,
@@ -378,6 +379,8 @@ function semanticFixture(artifact, binding) {
       })),
     },
     'performance-report.json': {
+      startedAt: '2026-08-19T01:00:00.000Z',
+      completedAt: '2026-08-19T01:01:00.000Z',
       images,
       failure: null,
       requestsPerScenario: 20,
@@ -420,6 +423,9 @@ function semanticFixture(artifact, binding) {
       })),
     },
     'monitoring-snapshot.json': {
+      windowStartedAt: '2026-08-19T00:59:00.000Z',
+      windowCompletedAt: '2026-08-19T01:02:00.000Z',
+      capturedAt: '2026-08-19T01:02:00.000Z',
       alerts: [
         {
           alertId: 'expected-load-alert',

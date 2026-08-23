@@ -50,6 +50,7 @@ export async function capturePerformanceDatabaseSnapshot(database) {
   if (new Set(migrationVersions).size !== migrationVersions.length)
     throw new Error('performance database snapshot migration versions must be unique');
   return {
+    capturedAt: new Date().toISOString(),
     databaseName: row.database_name,
     sizeBytes: integer('sizeBytes', row.size_bytes),
     connections: integer('connections', row.numbackends),
