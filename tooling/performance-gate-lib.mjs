@@ -163,7 +163,7 @@ export const percentile = (values, fraction) =>
   ] ?? 0;
 
 export function summarizeScenario({ name, limit, latencies, statuses }) {
-  const errors = statuses.filter((status) => status < 200 || status >= 400).length;
+  const errors = statuses.filter((status) => status < 200 || status >= 300).length;
   return {
     name,
     requests: statuses.length,

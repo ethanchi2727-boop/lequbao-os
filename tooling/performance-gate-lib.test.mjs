@@ -185,6 +185,14 @@ describe('controlled performance gate', () => {
         statuses: [200, 200, 200, 200, 503],
       }),
     ).toMatchObject({ p50Ms: 30, p95Ms: 500, errors: 1, errorRate: 0.2 });
+    expect(
+      summarizeScenario({
+        name: 'core-read',
+        limit: 500,
+        latencies: [10, 20, 30],
+        statuses: [200, 302, 204],
+      }),
+    ).toMatchObject({ requests: 3, successes: 2, errors: 1, errorRate: 1 / 3 });
   });
 
   it('detects every acknowledged customer message missing from PostgreSQL', () => {
