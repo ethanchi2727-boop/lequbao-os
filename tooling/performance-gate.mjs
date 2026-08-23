@@ -5,6 +5,7 @@ import { performance } from 'node:perf_hooks';
 import pg from 'pg';
 import {
   duplicateAcknowledgedMessageIds,
+  matchingPersistedMessageIds,
   missingPersistedMessageIds,
   readBoundedPerformanceResponse,
   summarizeScenario,
@@ -74,7 +75,7 @@ const report = {
 let failed = false;
 let stage = 'database-before';
 let before;
-const expectedMessageIds = [];
+const expectedMessages = [];
 try {
   before = await capturePerformanceDatabaseSnapshot(database);
   report.database.before = before;
@@ -89,12 +90,13 @@ try {
           const index = next++;
           const requestStarted = performance.now();
           try {
+            const probeContent = scenario.proveMessagePersistence
+              ? `${runId} persistence probe ${index}`
+              : undefined;
             const body = scenario.body
               ? {
                   ...scenario.body,
-                  ...(scenario.proveMessagePersistence
-                    ? { content: `${runId} persistence probe ${index}` }
-                    : {}),
+                  ...(probeContent ? { content: probeContent } : {}),
                 }
               : undefined;
             const response = await fetch(new URL(scenario.path, config.base), {
@@ -122,7 +124,7 @@ try {
               successfulResponse &&
               typeof payload?.id === 'string'
             )
-              expectedMessageIds.push(payload.id);
+              expectedMessages.push({ id: payload.id, content: probeContent });
             statuses.push(response.status);
           } catch {
             statuses.push(0);
@@ -142,12 +144,14 @@ try {
   }
 
   stage = 'message-persistence';
+  const expectedMessageIds = expectedMessages.map((message) => message.id);
   const persisted = expectedMessageIds.length
-    ? await database.query(`SELECT id::text FROM conversation_messages WHERE id=ANY($1::uuid[])`, [
-        expectedMessageIds,
-      ])
+    ? await database.query(
+        `SELECT id::text,content FROM conversation_messages WHERE id=ANY($1::uuid[])`,
+        [expectedMessageIds],
+      )
     : { rows: [] };
-  const persistedIds = persisted.rows.map((row) => row.id);
+  const persistedIds = matchingPersistedMessageIds(expectedMessages, persisted.rows);
   const missing = missingPersistedMessageIds(expectedMessageIds, persistedIds);
   const duplicates = duplicateAcknowledgedMessageIds(expectedMessageIds);
   const messageRefHash = (id) => createHash('sha256').update(id).digest('hex');

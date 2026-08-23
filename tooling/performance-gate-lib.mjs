@@ -216,6 +216,18 @@ export function duplicateAcknowledgedMessageIds(expectedIds) {
   return [...duplicates];
 }
 
+export function matchingPersistedMessageIds(expectedMessages, persistedRows) {
+  const expectedContent = new Map(expectedMessages.map((message) => [message.id, message.content]));
+  return persistedRows
+    .filter(
+      (row) =>
+        typeof row?.id === 'string' &&
+        typeof row?.content === 'string' &&
+        expectedContent.get(row.id) === row.content,
+    )
+    .map((row) => row.id);
+}
+
 export async function readBoundedPerformanceResponse(response, maximumBytes = 1024 * 1024) {
   if (!Number.isSafeInteger(maximumBytes) || maximumBytes < 1)
     throw new Error('performance response maximumBytes must be a positive integer');

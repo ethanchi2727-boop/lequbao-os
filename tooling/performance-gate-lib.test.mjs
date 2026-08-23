@@ -3,6 +3,7 @@ import { tmpdir } from 'node:os';
 import { describe, expect, it } from 'vitest';
 import {
   duplicateAcknowledgedMessageIds,
+  matchingPersistedMessageIds,
   missingPersistedMessageIds,
   readBoundedPerformanceResponse,
   summarizeScenario,
@@ -240,6 +241,19 @@ describe('controlled performance gate', () => {
   it('detects every acknowledged customer message missing from PostgreSQL', () => {
     expect(missingPersistedMessageIds(['a', 'b', 'b', 'c'], ['a', 'c'])).toEqual(['b']);
     expect(duplicateAcknowledgedMessageIds(['a', 'b', 'b', 'c', 'a', 'b'])).toEqual(['b', 'a']);
+    expect(
+      matchingPersistedMessageIds(
+        [
+          { id: 'a', content: 'probe-a' },
+          { id: 'b', content: 'probe-b' },
+        ],
+        [
+          { id: 'a', content: 'stale-content' },
+          { id: 'b', content: 'probe-b' },
+          { id: 'foreign', content: 'probe-a' },
+        ],
+      ),
+    ).toEqual(['b']);
   });
 
   it('reads response bytes within the cap and rejects declared or streamed overflow', async () => {

@@ -12,6 +12,8 @@ describe('performance evidence boundary', () => {
     expect(gate).toContain('readBoundedPerformanceResponse(response)');
     expect(gate).toContain('message persistence response must be application/json');
     expect(gate).toContain('missingMessageRefHashes: missing.map(messageRefHash)');
+    expect(gate).toContain('SELECT id::text,content FROM conversation_messages');
+    expect(gate).toContain('matchingPersistedMessageIds(expectedMessages, persisted.rows)');
     expect(gate).not.toContain('missingMessageIds: missing');
     expect(gate.indexOf('statuses.push(response.status)')).toBeGreaterThan(
       gate.indexOf('readBoundedPerformanceResponse(response)'),
