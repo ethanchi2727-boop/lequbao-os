@@ -22,7 +22,7 @@ const validEnvironment = {
   PERFORMANCE_READ_BEARER_TOKEN: 'employee-read-credential',
   PERFORMANCE_MESSAGE_BEARER_TOKEN: 'consumer-message-credential',
   PERFORMANCE_WRITE_BEARER_TOKEN: 'bounded-write-credential',
-  PERFORMANCE_DATABASE_URL: 'postgres://user@staging-db.example.test/lequ',
+  PERFORMANCE_DATABASE_URL: 'postgres://user@staging-db.example.test/lequ?sslmode=require',
   PERFORMANCE_CONVERSATION_PATH: '/api/v1/customer-service/conversations/id/messages',
   PERFORMANCE_CONVERSATION_BODY_JSON: '{"messageType":"TEXT"}',
   PERFORMANCE_WRITE_PATH: '/api/v1/performance/write-fixture',
@@ -94,6 +94,24 @@ describe('controlled performance gate', () => {
         PERFORMANCE_BASE_URL: ['https://operator', 'staging.example.test'].join('@'),
       }),
     ).toThrow('credential-free origin');
+    expect(() =>
+      validatePerformanceConfig({
+        ...validEnvironment,
+        PERFORMANCE_BASE_URL: 'https://127.0.0.2',
+      }),
+    ).toThrow('must not use a local host');
+    expect(() =>
+      validatePerformanceConfig({
+        ...validEnvironment,
+        PERFORMANCE_DATABASE_URL: 'postgres://user@database.example.test/lequ',
+      }),
+    ).toThrow('must require TLS');
+    expect(() =>
+      validatePerformanceConfig({
+        ...validEnvironment,
+        PERFORMANCE_DATABASE_URL: 'postgres://user@127.0.0.2/lequ?sslmode=require',
+      }),
+    ).toThrow('must not use a local host');
     expect(() =>
       validatePerformanceConfig({
         ...validEnvironment,

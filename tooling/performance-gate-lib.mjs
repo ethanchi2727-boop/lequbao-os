@@ -1,6 +1,7 @@
 import { existsSync, realpathSync, statSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { isForbiddenLocalHostname } from './controlled-network-policy.mjs';
 
 const repositoryRoot = path.resolve(fileURLToPath(new URL('..', import.meta.url)));
 const inside = (root, target) => {
@@ -101,10 +102,22 @@ export function validatePerformanceConfig(env) {
   const base = new URL(env.PERFORMANCE_BASE_URL);
   if (base.username || base.password || base.pathname !== '/' || base.search || base.hash)
     throw new Error('performance base URL must be a credential-free origin');
-  const local = ['127.0.0.1', 'localhost', '::1'].includes(base.hostname);
-  if (base.protocol !== 'https:' && !(local && base.protocol === 'http:'))
-    throw new Error('performance base URL must use HTTPS outside localhost');
-  if (/prod(uction)?/iu.test(`${base.hostname} ${env.PERFORMANCE_DATABASE_URL}`))
+  if (base.protocol !== 'https:') throw new Error('performance base URL must use HTTPS');
+  if (isForbiddenLocalHostname(base.hostname))
+    throw new Error('performance base URL must not use a local host');
+  let databaseUrl;
+  try {
+    databaseUrl = new URL(env.PERFORMANCE_DATABASE_URL);
+  } catch {
+    throw new Error('PERFORMANCE_DATABASE_URL must be a PostgreSQL URL');
+  }
+  if (!['postgres:', 'postgresql:'].includes(databaseUrl.protocol) || !databaseUrl.hostname)
+    throw new Error('PERFORMANCE_DATABASE_URL must be a PostgreSQL URL');
+  if (isForbiddenLocalHostname(databaseUrl.hostname))
+    throw new Error('PERFORMANCE_DATABASE_URL must not use a local host');
+  if (!['require', 'verify-full'].includes(databaseUrl.searchParams.get('sslmode') ?? ''))
+    throw new Error('PERFORMANCE_DATABASE_URL must require TLS');
+  if (/prod(uction)?/iu.test(`${base.hostname} ${databaseUrl.hostname} ${databaseUrl.pathname}`))
     throw new Error('refusing a production-shaped performance target');
   const apiPath = (name) => {
     const value = env[name];
@@ -141,7 +154,7 @@ export function validatePerformanceConfig(env) {
       message: env.PERFORMANCE_MESSAGE_BEARER_TOKEN ?? sharedToken,
       write: env.PERFORMANCE_WRITE_BEARER_TOKEN ?? sharedToken,
     },
-    databaseUrl: env.PERFORMANCE_DATABASE_URL,
+    databaseUrl: databaseUrl.href,
     environment,
     concurrency,
     requests,
