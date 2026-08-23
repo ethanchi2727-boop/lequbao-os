@@ -1991,6 +1991,8 @@ function validateRequiredAlertSet(artifact, alerts, failures) {
       failures.push(`${prefix} must be an object`);
       continue;
     }
+    if (!hasExactKeys(alert, ['alertId', 'code', 'severity', 'triggeredAt']))
+      failures.push(`${prefix} fields are invalid`);
     if (!opaqueReference.test(alert.alertId ?? ''))
       failures.push(`${prefix}.alertId must be an opaque reference`);
     else if (alertIds.has(alert.alertId)) failures.push(`${artifact} alert IDs must be unique`);
@@ -2017,6 +2019,8 @@ function validateRequiredAlertSet(artifact, alerts, failures) {
 function validateAlertDelivery(value) {
   const artifact = 'alert-delivery.json';
   const failures = [];
+  if (!hasExactKeys(value, ['alerts', 'deliveryResults', 'recipients', 'result']))
+    failures.push(`${artifact} fields are invalid`);
   const alerts = Array.isArray(value.alerts) ? value.alerts : [];
   const alertsById = validateRequiredAlertSet(artifact, alerts, failures);
   const recipients = new Set();
@@ -2029,6 +2033,8 @@ function validateAlertDelivery(value) {
       failures.push(`${artifact} recipients[${index}] must be an object`);
       continue;
     }
+    if (!hasExactKeys(recipient, ['channel', 'recipientRefHash', 'role']))
+      failures.push(`${artifact} recipients[${index}] fields are invalid`);
     if (!validSha256(recipient.recipientRefHash))
       failures.push(`${artifact} recipients[${index}].recipientRefHash has invalid format`);
     else if (recipients.has(recipient.recipientRefHash))
@@ -2051,6 +2057,17 @@ function validateAlertDelivery(value) {
       failures.push(`${prefix} must be an object`);
       continue;
     }
+    if (
+      !hasExactKeys(delivery, [
+        'alertId',
+        'attemptCount',
+        'channelRefHash',
+        'delivered',
+        'deliveredAt',
+        'recipientRefHash',
+      ])
+    )
+      failures.push(`${prefix} fields are invalid`);
     const alert = alertsById.get(delivery.alertId);
     if (!alert) failures.push(`${prefix}.alertId is undeclared`);
     else if (delivered.has(delivery.alertId))
@@ -2078,6 +2095,8 @@ function validateAlertDelivery(value) {
 function validateOncallAcknowledgement(value) {
   const artifact = 'oncall-acknowledgement.json';
   const failures = [];
+  if (!hasExactKeys(value, ['acknowledgements', 'alerts', 'result', 'slaBreaches']))
+    failures.push(`${artifact} fields are invalid`);
   const alerts = Array.isArray(value.alerts) ? value.alerts : [];
   const alertsById = validateRequiredAlertSet(artifact, alerts, failures);
   const acknowledged = new Set();
@@ -2090,6 +2109,16 @@ function validateOncallAcknowledgement(value) {
       failures.push(`${prefix} must be an object`);
       continue;
     }
+    if (
+      !hasExactKeys(acknowledgement, [
+        'acknowledged',
+        'acknowledgedAt',
+        'acknowledgedByRefHash',
+        'alertId',
+        'escalationOutcome',
+      ])
+    )
+      failures.push(`${prefix} fields are invalid`);
     const alert = alertsById.get(acknowledgement.alertId);
     if (!alert) failures.push(`${prefix}.alertId is undeclared`);
     else if (acknowledged.has(acknowledgement.alertId))

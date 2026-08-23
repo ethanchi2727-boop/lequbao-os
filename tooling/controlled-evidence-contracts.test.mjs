@@ -1083,6 +1083,46 @@ describe('controlled JSON evidence contracts', () => {
     );
   });
 
+  it('rejects unredacted on-call routing fields', () => {
+    const alert = {
+      alertId: 'alert-1',
+      code: 'AUTH_ANOMALY',
+      severity: 'P0',
+      triggeredAt: '2026-08-19T01:00:00.000Z',
+      rawMessage: 'forbidden',
+    };
+    const failures = validateControlledJsonEvidence('alert-delivery.json', {
+      result: 'PASS',
+      alerts: [alert],
+      recipients: [
+        {
+          recipientRefHash: 'a'.repeat(64),
+          role: 'primary-on-call',
+          channel: 'pager',
+          phoneNumber: 'forbidden',
+        },
+      ],
+      deliveryResults: [
+        {
+          alertId: 'alert-1',
+          delivered: true,
+          deliveredAt: '2026-08-19T01:01:00.000Z',
+          channelRefHash: 'b'.repeat(64),
+          recipientRefHash: 'a'.repeat(64),
+          attemptCount: 1,
+          rawResponse: 'forbidden',
+        },
+      ],
+    });
+    expect(failures).toEqual(
+      expect.arrayContaining([
+        'alert-delivery.json alerts[0] fields are invalid',
+        'alert-delivery.json recipients[0] fields are invalid',
+        'alert-delivery.json deliveryResults[0] fields are invalid',
+      ]),
+    );
+  });
+
   it('requires read, rotation and denied-read audits for each sampled secret', () => {
     const secretRefHash = 'a'.repeat(64);
     const failures = validateControlledJsonEvidence('secret-access-audit.json', {
