@@ -280,7 +280,12 @@ describe('controlled JSON evidence contracts', () => {
             ownerRef: 'owner@example.test',
             approvalReceipt: 'unrelated-receipt',
             sha256: 'b'.repeat(64),
-            publishedUrl: 'https://user:secret@localhost/privacy?token=secret',
+            publishedUrl: (() => {
+              const url = new URL('https://localhost/privacy?unsafe=true');
+              url.username = 'test-user';
+              url.password = 'test-value';
+              return url.href;
+            })(),
             effectiveAt: '2026-08-19T00:59:00.000Z',
           },
         ],
@@ -1158,7 +1163,14 @@ describe('controlled JSON evidence contracts', () => {
       validateControlledJsonEvidence('runtime-policy.json', {
         result: 'PASS',
         policyRefHash: 'a'.repeat(64),
-        allowedHosts: [['https://user', 'secret@localhost/'].join(':')],
+        allowedHosts: [
+          (() => {
+            const url = new URL('https://localhost/');
+            url.username = 'test-user';
+            url.password = 'test-value';
+            return url.href;
+          })(),
+        ],
         defaultDeny: true,
         networkPolicyApplied: true,
         appliedAt: '2026-08-19T01:00:00.000Z',
