@@ -22,6 +22,7 @@ describe('乐趣生活 UniApp 架构', () => {
       variantPage,
       tracePage,
       eventPage,
+      journeyPage,
     ] = await Promise.all(
       [
         'services/life-session.js',
@@ -37,6 +38,7 @@ describe('乐趣生活 UniApp 架构', () => {
         'pages/page-210/index.vue',
         'pages/page-211/index.vue',
         'pages/page-213/index.vue',
+        'components/LifeJourneyPage.vue',
       ].map((file) => readFile(new URL(file, import.meta.url), 'utf8')),
     );
     expect(session).toContain("VITE_LEQU_DEVELOPMENT_MOCKS === '1'");
@@ -61,8 +63,12 @@ describe('乐趣生活 UniApp 架构', () => {
     expect(tracePage).toContain('/trace-report');
     expect(tracePage).toContain('不会用商品宣传文案替代');
     expect(eventPage).toContain('不虚构活动倒计时或原价');
+    expect(journeyPage).toContain('/api/v1/life/checkouts/quote');
+    expect(journeyPage).toContain('/api/v1/life/payment-intents');
+    expect(journeyPage).toContain('/refunds');
+    expect(journeyPage).toContain('最终结果以服务端确认');
     expect(
-      `${lifePage}${mallPage}${cartPage}${mePage}${cityPage}${categoryPage}${searchPage}${selectedPage}${detailPage}${variantPage}${tracePage}${eventPage}`,
-    ).not.toContain('/api/v1/consumer/');
+      `${lifePage}${mallPage}${cartPage}${mePage}${cityPage}${categoryPage}${searchPage}${selectedPage}${detailPage}${variantPage}${tracePage}${eventPage}${journeyPage}`,
+    ).not.toMatch(/\/api\/v1\/consumer\/(?:cart|orders|products|storefront)/u);
   });
 });

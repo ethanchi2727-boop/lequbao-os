@@ -8,4 +8,6 @@ Production dependency changes have three independent fail-closed checks:
 
 The license allowlist is a technical release policy, not a substitute for legal advice. Adding another license requires an explicit security/legal review and a tested policy change; a dependency must not be relabelled or omitted to make the gate pass. The checker rejects empty or malformed inventories and one package version appearing under contradictory licenses.
 
-On 2026-08-20 the installed production graph contains 65 package versions across `BSD-3-Clause`, `ISC` and `MIT`, and the live registry audit reports no known vulnerability. These are point-in-time results; every candidate must rerun both commands.
+The frozen UniApp 5.07 compiler train currently pins vulnerable-compatible transitive ranges. The workspace therefore forces the smallest reviewed patched releases for `@intlify/core-base`, `@intlify/message-resolver`, `adm-zip`, `jpeg-js`, `postcss` and `ws`. These exact overrides are lockfile-bound, covered by both H5 and WeChat builds, and must be removed once the compiler train itself ships patched minimums. Broad major-version overrides are not allowed.
+
+On 2026-08-23 the live production audit reports no high or critical vulnerability after applying those reviewed overrides. Remaining lower-severity findings do not bypass the candidate audit; they stay visible for follow-up. These are point-in-time results, so every candidate must rerun the audit and license checks.

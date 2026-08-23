@@ -34,6 +34,8 @@ describe('life discovery presentation policy', () => {
     expect(frozenLifePageRoute('/life/page-204/')).toBe('/pages/page-204/index');
     expect(frozenLifePageRoute('/life/page-209')).toBe('/pages/page-209/index');
     expect(frozenLifePageRoute('/life/page-213/')).toBe('/pages/page-213/index');
+    expect(frozenLifePageRoute('/life/page-216')).toBe('/pages/page-216/index');
+    expect(frozenLifePageRoute('/life/page-240/')).toBe('/pages/page-240/index');
     expect(frozenLifePageRoute('/life/page-214')).toBeNull();
     expect(frozenLifePageRoute('/bao/page-198')).toBeNull();
   });

@@ -1,7 +1,7 @@
 {
   "bomFormat": "CycloneDX",
   "specVersion": "1.6",
-  "serialNumber": "urn:uuid:bc48676f-124b-4bcf-8806-02ea10cb9cf5",
+  "serialNumber": "urn:uuid:6f9cd1d2-0b87-4dca-8afa-e93fe5ee767a",
   "version": 1,
   "metadata": {
     "component": {
@@ -12,7 +12,7 @@
     "properties": [
       {
         "name": "lequ:pnpm-lock-sha256",
-        "value": "bc48676f124b7bcf580602ea10cb9cf5652ac77ee5503f1aed0ef71fc557bbae"
+        "value": "6f9cd1d20b87ddca4afae93fe5ee767afd59d8b6d6f954136599c20bccbf8eac"
       }
     ]
   },
@@ -1351,15 +1351,22 @@
       "type": "library",
       "group": "@intlify",
       "name": "core-base",
-      "version": "9.1.9",
-      "bom-ref": "pkg:npm/%40intlify%2Fcore-base@9.1.9"
+      "version": "9.1.11",
+      "bom-ref": "pkg:npm/%40intlify%2Fcore-base@9.1.11"
     },
     {
       "type": "library",
       "group": "@intlify",
       "name": "devtools-if",
-      "version": "9.1.9",
-      "bom-ref": "pkg:npm/%40intlify%2Fdevtools-if@9.1.9"
+      "version": "9.1.10",
+      "bom-ref": "pkg:npm/%40intlify%2Fdevtools-if@9.1.10"
+    },
+    {
+      "type": "library",
+      "group": "@intlify",
+      "name": "message-compiler",
+      "version": "9.1.10",
+      "bom-ref": "pkg:npm/%40intlify%2Fmessage-compiler@9.1.10"
     },
     {
       "type": "library",
@@ -1372,8 +1379,15 @@
       "type": "library",
       "group": "@intlify",
       "name": "message-resolver",
-      "version": "9.1.9",
-      "bom-ref": "pkg:npm/%40intlify%2Fmessage-resolver@9.1.9"
+      "version": "9.1.11",
+      "bom-ref": "pkg:npm/%40intlify%2Fmessage-resolver@9.1.11"
+    },
+    {
+      "type": "library",
+      "group": "@intlify",
+      "name": "runtime",
+      "version": "9.1.10",
+      "bom-ref": "pkg:npm/%40intlify%2Fruntime@9.1.10"
     },
     {
       "type": "library",
@@ -1386,8 +1400,22 @@
       "type": "library",
       "group": "@intlify",
       "name": "shared",
+      "version": "9.1.10",
+      "bom-ref": "pkg:npm/%40intlify%2Fshared@9.1.10"
+    },
+    {
+      "type": "library",
+      "group": "@intlify",
+      "name": "shared",
       "version": "9.1.9",
       "bom-ref": "pkg:npm/%40intlify%2Fshared@9.1.9"
+    },
+    {
+      "type": "library",
+      "group": "@intlify",
+      "name": "vue-devtools",
+      "version": "9.1.10",
+      "bom-ref": "pkg:npm/%40intlify%2Fvue-devtools@9.1.10"
     },
     {
       "type": "library",
@@ -2333,8 +2361,8 @@
     {
       "type": "library",
       "name": "adm-zip",
-      "version": "0.5.16",
-      "bom-ref": "pkg:npm/adm-zip@0.5.16"
+      "version": "0.6.0",
+      "bom-ref": "pkg:npm/adm-zip@0.6.0"
     },
     {
       "type": "library",
@@ -3347,8 +3375,8 @@
     {
       "type": "library",
       "name": "jpeg-js",
-      "version": "0.3.7",
-      "bom-ref": "pkg:npm/jpeg-js@0.3.7"
+      "version": "0.4.4",
+      "bom-ref": "pkg:npm/jpeg-js@0.4.4"
     },
     {
       "type": "library",
@@ -4063,12 +4091,6 @@
       "name": "postcss-value-parser",
       "version": "4.2.0",
       "bom-ref": "pkg:npm/postcss-value-parser@4.2.0"
-    },
-    {
-      "type": "library",
-      "name": "postcss",
-      "version": "8.4.45",
-      "bom-ref": "pkg:npm/postcss@8.4.45"
     },
     {
       "type": "library",
@@ -4811,8 +4833,8 @@
     {
       "type": "library",
       "name": "ws",
-      "version": "8.18.0",
-      "bom-ref": "pkg:npm/ws@8.18.0"
+      "version": "8.21.0",
+      "bom-ref": "pkg:npm/ws@8.21.0"
     },
     {
       "type": "library",

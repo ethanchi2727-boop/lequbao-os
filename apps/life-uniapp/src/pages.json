@@ -14,7 +14,21 @@
     { "path": "pages/page-209/index", "style": { "navigationBarTitleText": "商品详情" } },
     { "path": "pages/page-210/index", "style": { "navigationBarTitleText": "规格选择" } },
     { "path": "pages/page-211/index", "style": { "navigationBarTitleText": "溯源报告" } },
-    { "path": "pages/page-213/index", "style": { "navigationBarTitleText": "活动会场" } }
+    { "path": "pages/page-213/index", "style": { "navigationBarTitleText": "活动会场" } },
+    { "path": "pages/page-216/index", "style": { "navigationBarTitleText": "附近推荐" } },
+    { "path": "pages/page-218/index", "style": { "navigationBarTitleText": "商家详情" } },
+    { "path": "pages/page-221/index", "style": { "navigationBarTitleText": "团购详情" } },
+    { "path": "pages/page-224/index", "style": { "navigationBarTitleText": "购物车" } },
+    { "path": "pages/page-227/index", "style": { "navigationBarTitleText": "地址与配送" } },
+    { "path": "pages/page-228/index", "style": { "navigationBarTitleText": "优惠与奖励" } },
+    { "path": "pages/page-229/index", "style": { "navigationBarTitleText": "订单确认" } },
+    { "path": "pages/page-231/index", "style": { "navigationBarTitleText": "微信支付" } },
+    { "path": "pages/page-232/index", "style": { "navigationBarTitleText": "支付结果" } },
+    { "path": "pages/page-235/index", "style": { "navigationBarTitleText": "会员首页" } },
+    { "path": "pages/page-237/index", "style": { "navigationBarTitleText": "订单列表" } },
+    { "path": "pages/page-238/index", "style": { "navigationBarTitleText": "订单详情" } },
+    { "path": "pages/page-239/index", "style": { "navigationBarTitleText": "售后记录" } },
+    { "path": "pages/page-240/index", "style": { "navigationBarTitleText": "退款详情" } }
   ],
   "tabBar": {
     "color": "#84908a",

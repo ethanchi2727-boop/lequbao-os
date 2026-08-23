@@ -1604,8 +1604,8 @@
       "route": "/life/page-216",
       "contracted": true,
       "connected": true,
-      "designed": false,
-      "interactive": false,
+      "designed": true,
+      "interactive": true,
       "accepted": false
     },
     {
@@ -1615,8 +1615,8 @@
       "route": "/life/page-218",
       "contracted": true,
       "connected": true,
-      "designed": false,
-      "interactive": false,
+      "designed": true,
+      "interactive": true,
       "accepted": false
     },
     {
@@ -1637,8 +1637,8 @@
       "route": "/life/page-221",
       "contracted": true,
       "connected": true,
-      "designed": false,
-      "interactive": false,
+      "designed": true,
+      "interactive": true,
       "accepted": false
     },
     {
@@ -1648,8 +1648,8 @@
       "route": "/life/page-224",
       "contracted": true,
       "connected": true,
-      "designed": false,
-      "interactive": false,
+      "designed": true,
+      "interactive": true,
       "accepted": false
     },
     {
@@ -1659,8 +1659,8 @@
       "route": "/life/page-227",
       "contracted": true,
       "connected": true,
-      "designed": false,
-      "interactive": false,
+      "designed": true,
+      "interactive": true,
       "accepted": false
     },
     {
@@ -1670,8 +1670,8 @@
       "route": "/life/page-228",
       "contracted": true,
       "connected": true,
-      "designed": false,
-      "interactive": false,
+      "designed": true,
+      "interactive": true,
       "accepted": false
     },
     {
@@ -1681,8 +1681,8 @@
       "route": "/life/page-229",
       "contracted": true,
       "connected": true,
-      "designed": false,
-      "interactive": false,
+      "designed": true,
+      "interactive": true,
       "accepted": false
     },
     {
@@ -1692,8 +1692,8 @@
       "route": "/life/page-231",
       "contracted": true,
       "connected": true,
-      "designed": false,
-      "interactive": false,
+      "designed": true,
+      "interactive": true,
       "accepted": false
     },
     {
@@ -1703,8 +1703,8 @@
       "route": "/life/page-232",
       "contracted": true,
       "connected": true,
-      "designed": false,
-      "interactive": false,
+      "designed": true,
+      "interactive": true,
       "accepted": false
     },
     {
@@ -1714,8 +1714,8 @@
       "route": "/life/page-235",
       "contracted": true,
       "connected": true,
-      "designed": false,
-      "interactive": false,
+      "designed": true,
+      "interactive": true,
       "accepted": false
     },
     {
@@ -1725,8 +1725,8 @@
       "route": "/life/page-237",
       "contracted": true,
       "connected": true,
-      "designed": false,
-      "interactive": false,
+      "designed": true,
+      "interactive": true,
       "accepted": false
     },
     {
@@ -1736,8 +1736,8 @@
       "route": "/life/page-238",
       "contracted": true,
       "connected": true,
-      "designed": false,
-      "interactive": false,
+      "designed": true,
+      "interactive": true,
       "accepted": false
     },
     {
@@ -1747,8 +1747,8 @@
       "route": "/life/page-239",
       "contracted": true,
       "connected": true,
-      "designed": false,
-      "interactive": false,
+      "designed": true,
+      "interactive": true,
       "accepted": false
     },
     {
@@ -1758,8 +1758,8 @@
       "route": "/life/page-240",
       "contracted": true,
       "connected": true,
-      "designed": false,
-      "interactive": false,
+      "designed": true,
+      "interactive": true,
       "accepted": false
     },
     {

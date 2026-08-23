@@ -69,6 +69,42 @@ export const lifeSurfaceContract = Object.freeze({
     read: ['/api/v1/life/discovery/products'],
     write: ['/api/v1/life/cart/items'],
   }),
+  page216: Object.freeze({ read: ['/api/v1/life/discovery/stores'] }),
+  page218: Object.freeze({
+    read: ['/api/v1/life/discovery/stores', '/api/v1/life/discovery/products'],
+  }),
+  page221: Object.freeze({
+    read: ['/api/v1/life/discovery/products/{productId}'],
+    write: ['/api/v1/life/cart/items'],
+  }),
+  page224: Object.freeze({
+    read: ['/api/v1/life/cart'],
+    write: ['/api/v1/life/cart/items/{itemId}'],
+  }),
+  page227: Object.freeze({
+    read: ['/api/v1/life/cart', '/api/v1/life/addresses'],
+    write: ['/api/v1/life/checkouts/quote'],
+  }),
+  page228: Object.freeze({ read: ['/api/v1/life/rewards'] }),
+  page229: Object.freeze({
+    read: ['/api/v1/life/cart', '/api/v1/life/addresses'],
+    write: ['/api/v1/life/checkouts/{checkoutId}/actions/submit'],
+  }),
+  page231: Object.freeze({
+    read: ['/api/v1/life/orders/{orderId}'],
+    write: ['/api/v1/life/payment-intents'],
+  }),
+  page232: Object.freeze({ read: ['/api/v1/life/orders/{orderId}'] }),
+  page235: Object.freeze({
+    read: ['/api/v1/consumer/membership', '/api/v1/life/rewards'],
+  }),
+  page237: Object.freeze({ read: ['/api/v1/life/orders'] }),
+  page238: Object.freeze({
+    read: ['/api/v1/life/orders/{orderId}'],
+    write: ['/api/v1/life/orders/{orderId}/refunds'],
+  }),
+  page239: Object.freeze({ read: ['/api/v1/life/orders/{orderId}/aftercare'] }),
+  page240: Object.freeze({ read: ['/api/v1/life/orders/{orderId}/aftercare'] }),
 });
 
 export function lifeSurfaceState({ loading = false, error, records } = {}) {
