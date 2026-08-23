@@ -40,6 +40,8 @@ describe('Worker runtime configuration', () => {
   });
 
   it('rejects placeholder or weak tokens, insecure gateways, mutable tenant ids and non-TLS databases', () => {
+    const credentialGateway = new URL('https://api.example');
+    credentialGateway.username = 'token';
     for (const mutation of [
       { OUTBOX_EVENT_GATEWAY_TOKEN: 'placeholder-event-token' },
       { OUTBOX_EVENT_GATEWAY_TOKEN: `${base.OUTBOX_EVENT_GATEWAY_TOKEN} ` },
@@ -47,7 +49,7 @@ describe('Worker runtime configuration', () => {
       { INTERNAL_API_URL: 'http://api.example' },
       { INTERNAL_API_URL: 'https://127.0.0.2' },
       { INTERNAL_API_URL: 'https://[::1]' },
-      { INTERNAL_API_URL: 'https://token@api.example' },
+      { INTERNAL_API_URL: credentialGateway.href },
       { WORKER_TENANT_ID: 'tenant-id' },
       { DATABASE_URL: 'postgres://runtime:secret@database.example/lequ' },
     ])

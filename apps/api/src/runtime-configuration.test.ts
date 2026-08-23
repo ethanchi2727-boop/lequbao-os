@@ -71,6 +71,9 @@ describe('API runtime configuration', () => {
   });
 
   it('rejects placeholders, weak secrets, insecure gateways and non-TLS PostgreSQL', () => {
+    const credentialGateway = new URL('https://objects.example');
+    credentialGateway.username = 'user';
+    credentialGateway.password = 'password';
     for (const mutation of [
       { AUTH_JWT_SECRET: 'replace-with-at-least-32-bytes' },
       { AUTH_JWT_SECRET: ` ${launch.CONSUMER_AUTH_JWT_SECRET}` },
@@ -78,7 +81,7 @@ describe('API runtime configuration', () => {
       { OBJECT_STORE_GATEWAY_URL: 'http://objects.example' },
       { OBJECT_STORE_GATEWAY_URL: 'https://127.0.0.2' },
       { OBJECT_STORE_GATEWAY_URL: 'https://[::1]' },
-      { OBJECT_STORE_GATEWAY_URL: 'https://user:password@objects.example' },
+      { OBJECT_STORE_GATEWAY_URL: credentialGateway.href },
       { DATABASE_URL: 'postgres://runtime:secret@database.example/lequ' },
       { DATABASE_URL: 'postgres://runtime:secret@[::1]/lequ?sslmode=require' },
       { PLATFORM_ADDRESS_ENCRYPTION_KEY: 'not-32-byte-base64' },

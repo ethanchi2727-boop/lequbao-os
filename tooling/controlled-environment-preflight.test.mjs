@@ -115,7 +115,10 @@ describe('controlled environment preflight', () => {
     }
 
     const embeddedCredential = completeEnvironment();
-    embeddedCredential.IDENTITY_PROVIDER_GATEWAY_URL = 'https://user:password@identity.example';
+    const credentialGateway = new URL('https://identity.example');
+    credentialGateway.username = 'user';
+    credentialGateway.password = 'password';
+    embeddedCredential.IDENTITY_PROVIDER_GATEWAY_URL = credentialGateway.href;
     expect(inspectControlledEnvironment(embeddedCredential).invalid).toContainEqual({
       name: 'IDENTITY_PROVIDER_GATEWAY_URL',
       reason: 'embedded-credentials',
