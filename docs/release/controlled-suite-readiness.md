@@ -4,6 +4,8 @@ Date: 2026-08-19
 
 This is an execution audit, not a PASS manifest. The exact candidate commit, controlled environment, immutable artifacts and independent reviewer are still required by `pnpm launch:gate`.
 
+The 300-stage continuation now has an executable mapping in `docs/release/controlled-300-stage-map.json`. `pnpm controlled:stage-map` verifies that stages 281–291 cover all 11 suites and all 47 declared artifacts, while stages 292–300 cover candidate binding, non-overwriting capture, independent decisions, result assembly, exact packaging, immutable draft publication, protected verification, independent attestation and the final launch decision. The map intentionally contains no PASS or DONE field. On 2026-08-23, names-only inventory still reported 57 unique requirements and controlled preflight reported 0 configured, so none of stages 281–300 is claimed complete.
+
 Assembly and launch verification inspect the evidence bytes as well as their hashes. Empty, binary, malformed or empty JSON, placeholder-only verdicts and common unredacted credential forms fail closed; this minimum content/redaction gate does not replace the technical review required for each suite.
 
 The 39 JSON slots additionally have exact minimum semantic contracts shared by capture, assembly and launch verification. Generated checklists name every required field/type, candidate/deployment binding, operational range, digest/date format and PASS, true or empty-unresolved invariant; structurally valid but unrelated or differently bound JSON is rejected.

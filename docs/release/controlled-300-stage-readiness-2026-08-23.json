@@ -1,0 +1,32 @@
+{
+  "recordedAt": "2026-08-23",
+  "releaseCommit": "97444c773996ea84d6336366d0df295dff9648ec",
+  "status": "CONTROLLED",
+  "stageRange": [281, 300],
+  "mapping": {
+    "stages": 20,
+    "suites": 11,
+    "releaseControls": 9,
+    "requiredArtifacts": 47,
+    "verification": "PASS"
+  },
+  "configuration": {
+    "uniqueRequiredNames": 57,
+    "configured": 0,
+    "missing": 57,
+    "stageRequirementCounts": { "47": 15, "48": 9, "49": 32, "50": 2 },
+    "note": "RELEASE_COMMIT is required by both stages 49 and 50, so stage counts total 58 while unique names total 57."
+  },
+  "localVerification": {
+    "command": "npm.cmd exec -- vitest run tooling/verify-controlled-300-stage-map.test.mjs tooling/controlled-environment-preflight.test.mjs tooling/controlled-environment-inventory.test.mjs",
+    "testFilesPassed": 3,
+    "testsPassed": 17
+  },
+  "claims": {
+    "controlledSuitesExecuted": false,
+    "externalEvidenceCaptured": false,
+    "independentReviewCompleted": false,
+    "launchGatePassed": false,
+    "githubPushCompleted": false
+  }
+}

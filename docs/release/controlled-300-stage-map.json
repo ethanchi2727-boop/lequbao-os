@@ -1,0 +1,147 @@
+{
+  "version": 1,
+  "status": "CONTROLLED",
+  "stages": [
+    {
+      "stage": 281,
+      "kind": "suite",
+      "suiteCode": "POSTGRES_RLS_FINANCE",
+      "expectedArtifactCount": 4
+    },
+    {
+      "stage": 282,
+      "kind": "suite",
+      "suiteCode": "WORKER_FAULT_INJECTION",
+      "expectedArtifactCount": 3
+    },
+    {
+      "stage": 283,
+      "kind": "suite",
+      "suiteCode": "INTAKE_OBJECT_PIPELINE",
+      "expectedArtifactCount": 3
+    },
+    {
+      "stage": 284,
+      "kind": "suite",
+      "suiteCode": "COMMERCE_CONCURRENCY",
+      "expectedArtifactCount": 3
+    },
+    {
+      "stage": 285,
+      "kind": "suite",
+      "suiteCode": "PAYMENT_PROVIDER_SANDBOX",
+      "expectedArtifactCount": 5
+    },
+    {
+      "stage": 286,
+      "kind": "suite",
+      "suiteCode": "PLUGIN_NETWORK_SANDBOX",
+      "expectedArtifactCount": 4
+    },
+    {
+      "stage": 287,
+      "kind": "suite",
+      "suiteCode": "GREENFIELD_CUTOVER_GUARD",
+      "expectedArtifactCount": 4
+    },
+    {
+      "stage": 288,
+      "kind": "suite",
+      "suiteCode": "BACKUP_RESTORE_PRIVACY",
+      "expectedArtifactCount": 4
+    },
+    {
+      "stage": 289,
+      "kind": "suite",
+      "suiteCode": "PERFORMANCE_CORE_AND_MESSAGES",
+      "expectedArtifactCount": 4
+    },
+    {
+      "stage": 290,
+      "kind": "suite",
+      "suiteCode": "WECHAT_RELEASE_AND_ROLLBACK",
+      "expectedArtifactCount": 6
+    },
+    {
+      "stage": 291,
+      "kind": "suite",
+      "suiteCode": "IDENTITY_SECRETS_PRIVACY_ONCALL",
+      "expectedArtifactCount": 7
+    },
+    {
+      "stage": 292,
+      "kind": "release-control",
+      "code": "CANDIDATE_BINDING",
+      "command": "pnpm controlled:prepare",
+      "completionEvidence": ["releaseCommit", "deploymentId", "environment", "planSha256"]
+    },
+    {
+      "stage": 293,
+      "kind": "release-control",
+      "code": "NON_OVERWRITING_CAPTURE",
+      "command": "pnpm controlled:capture",
+      "completionEvidence": ["47 source artifacts", "47 candidate-bound capture receipts"]
+    },
+    {
+      "stage": 294,
+      "kind": "release-control",
+      "code": "INDEPENDENT_DECISIONS",
+      "completionEvidence": [
+        "opaque executor identities",
+        "different reviewer identities",
+        "ordered review timestamps"
+      ]
+    },
+    {
+      "stage": 295,
+      "kind": "release-control",
+      "code": "RESULT_ASSEMBLY",
+      "command": "pnpm controlled:assemble",
+      "completionEvidence": ["schema v3 results.json", "eleven reviewed suite decisions"]
+    },
+    {
+      "stage": 296,
+      "kind": "release-control",
+      "code": "EXACT_RELEASE_PACKAGE",
+      "command": "pnpm controlled:stage-release",
+      "completionEvidence": ["exact 96-file staging directory", "no extra or missing files"]
+    },
+    {
+      "stage": 297,
+      "kind": "release-control",
+      "code": "IMMUTABLE_DRAFT_RELEASE",
+      "completionEvidence": ["candidate-bound draft release ID", "unique asset ID", "asset SHA-256"]
+    },
+    {
+      "stage": 298,
+      "kind": "release-control",
+      "code": "PROTECTED_WORKFLOW_VERIFY",
+      "completionEvidence": [
+        "trusted main workflow SHA",
+        "same-repository workflow run",
+        "GitHub Actions app identity"
+      ]
+    },
+    {
+      "stage": 299,
+      "kind": "release-control",
+      "code": "INDEPENDENT_ATTESTATION",
+      "completionEvidence": [
+        "environment reviewer approval",
+        "archive hash attestation",
+        "workflow run ID"
+      ]
+    },
+    {
+      "stage": 300,
+      "kind": "release-control",
+      "code": "LAUNCH_DECISION",
+      "command": "pnpm launch:gate",
+      "completionEvidence": [
+        "eleven PASS suites",
+        "exact release commit",
+        "auditable go or no-go decision"
+      ]
+    }
+  ]
+}

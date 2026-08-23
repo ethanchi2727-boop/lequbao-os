@@ -20,6 +20,7 @@
     "launch:gate": "node tooling/verify-acceptance-evidence.mjs --launch",
     "controlled:preflight": "node tooling/controlled-environment-preflight.mjs",
     "controlled:inventory": "node tooling/controlled-environment-inventory.mjs",
+    "controlled:stage-map": "node tooling/verify-controlled-300-stage-map.mjs",
     "controlled:prepare": "node tooling/prepare-controlled-evidence.mjs",
     "controlled:capture": "node tooling/capture-controlled-evidence.mjs",
     "controlled:assemble": "node tooling/assemble-controlled-results.mjs",
