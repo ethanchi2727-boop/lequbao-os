@@ -7,6 +7,7 @@ import { inspectControlledEvidenceFile } from './controlled-evidence.mjs';
 import { inspectControlledJsonEvidence } from './controlled-evidence-contracts.mjs';
 import { inspectControlledSuiteEvidence } from './controlled-suite-evidence.mjs';
 import { inspectCaptureReceipt } from './controlled-capture-receipt.mjs';
+import { parseCanonicalUtcTimestamp } from './canonical-time.mjs';
 
 const suiteFields = [
   'code',
@@ -21,10 +22,7 @@ const suiteFields = [
   'reviewedAt',
 ];
 
-const safeTime = (value) => {
-  const milliseconds = Date.parse(value);
-  return Number.isFinite(milliseconds) ? milliseconds : undefined;
-};
+const opaqueLabel = /^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$/u;
 
 function assertDecision(decision, suite, generatedAt) {
   if (!decision || Array.isArray(decision) || typeof decision !== 'object')
@@ -48,9 +46,9 @@ function assertDecision(decision, suite, generatedAt) {
     decision.reviewedByRole === decision.executedByRole
   )
     throw new Error(`${suite.code} reviewer role must be independent`);
-  const startedAt = safeTime(decision.startedAt);
-  const completedAt = safeTime(decision.completedAt);
-  const reviewedAt = safeTime(decision.reviewedAt);
+  const startedAt = parseCanonicalUtcTimestamp(decision.startedAt);
+  const completedAt = parseCanonicalUtcTimestamp(decision.completedAt);
+  const reviewedAt = parseCanonicalUtcTimestamp(decision.reviewedAt);
   if (
     startedAt === undefined ||
     completedAt === undefined ||
@@ -62,7 +60,7 @@ function assertDecision(decision, suite, generatedAt) {
     throw new Error(`${suite.code} execution and review chronology is invalid`);
 }
 
-async function evidenceRecord(root, suite, file, context, expectedPlanHash) {
+async function evidenceRecord(root, suite, file, context, expectedPlanHash, generatedAt) {
   const relative = path.posix.join(suite.evidenceDirectory, file);
   const absolute = path.resolve(root, ...relative.split('/'));
   const relativeToRoot = path.relative(root, absolute);
@@ -94,6 +92,8 @@ async function evidenceRecord(root, suite, file, context, expectedPlanHash) {
     throw new Error(
       `${suite.code} capture receipt is invalid: ${relative}: ${receipt.failures.join(', ')}`,
     );
+  if (receipt.capturedAt !== undefined && receipt.capturedAt > generatedAt)
+    throw new Error(`${suite.code} capture receipt is later than result generation: ${relative}`);
   return {
     file: relative,
     sha256: inspection.sha256,
@@ -111,6 +111,11 @@ export async function assembleControlledResults({
   if (!path.isAbsolute(evidenceRoot)) throw new Error('evidenceRoot must be absolute');
   if (!decisions || Array.isArray(decisions) || typeof decisions !== 'object')
     throw new Error('decisions must be an object');
+  const extraDecisionFields = Object.keys(decisions).filter(
+    (field) => !['version', 'releaseCommit', 'suites'].includes(field),
+  );
+  if (extraDecisionFields.length)
+    throw new Error(`decisions have undeclared fields: ${extraDecisionFields.join(', ')}`);
   if (decisions.version !== 1) throw new Error('decisions version must be 1');
   if (!/^[a-f0-9]{40}$/u.test(decisions.releaseCommit ?? ''))
     throw new Error('decisions releaseCommit must be an exact lowercase 40-character SHA');
@@ -124,18 +129,44 @@ export async function assembleControlledResults({
   } catch {
     throw new Error('controlled execution context is missing or invalid');
   }
+  const contextFields = [
+    'version',
+    'releaseCommit',
+    'planSha256',
+    'deploymentId',
+    'environment',
+    'createdAt',
+    'suiteCount',
+    'requiredArtifactCount',
+  ];
+  const extraContextFields = Object.keys(context ?? {}).filter(
+    (field) => !contextFields.includes(field),
+  );
+  const missingContextFields = contextFields.filter(
+    (field) => !Object.prototype.hasOwnProperty.call(context ?? {}, field),
+  );
+  if (extraContextFields.length || missingContextFields.length)
+    throw new Error('controlled execution context fields do not match the exact schema');
+  const requiredArtifactCount = plan.suites.reduce(
+    (total, suite) => total + suite.requiredEvidence.length,
+    0,
+  );
   if (
     context?.version !== 1 ||
     context.releaseCommit !== decisions.releaseCommit ||
     context.planSha256 !== expectedPlanHash ||
-    typeof context.deploymentId !== 'string' ||
-    !context.deploymentId ||
-    typeof context.environment !== 'string' ||
-    !context.environment
+    !opaqueLabel.test(context.deploymentId ?? '') ||
+    !opaqueLabel.test(context.environment ?? '') ||
+    context.suiteCount !== plan.suites.length ||
+    context.requiredArtifactCount !== requiredArtifactCount
   )
     throw new Error('controlled execution context does not match the decision candidate and plan');
-  const generatedMilliseconds = safeTime(generatedAt);
-  if (generatedMilliseconds === undefined) throw new Error('generatedAt must be a UTC timestamp');
+  const generatedMilliseconds = parseCanonicalUtcTimestamp(generatedAt);
+  if (generatedMilliseconds === undefined)
+    throw new Error('generatedAt must be a canonical millisecond UTC timestamp');
+  const contextCreatedAt = parseCanonicalUtcTimestamp(context.createdAt);
+  if (contextCreatedAt === undefined || contextCreatedAt > generatedMilliseconds)
+    throw new Error('controlled execution context creation time is invalid');
   const byCode = new Map();
   for (const decision of decisions.suites) {
     if (!decision?.code || byCode.has(decision.code))
@@ -153,7 +184,16 @@ export async function assembleControlledResults({
     assertDecision(decision, suite, generatedMilliseconds);
     const evidence = [];
     for (const file of suite.requiredEvidence)
-      evidence.push(await evidenceRecord(evidenceRoot, suite, file, context, expectedPlanHash));
+      evidence.push(
+        await evidenceRecord(
+          evidenceRoot,
+          suite,
+          file,
+          context,
+          expectedPlanHash,
+          generatedMilliseconds,
+        ),
+      );
     const suiteFailures = await inspectControlledSuiteEvidence(evidenceRoot, suite);
     if (suiteFailures.length)
       throw new Error(`${suite.code} cross-evidence contract failed: ${suiteFailures.join(', ')}`);

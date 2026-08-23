@@ -170,6 +170,32 @@ describe('controlled result assembly', () => {
     ).rejects.toThrow(/different people/u);
   });
 
+  it('rejects ambiguous decision and result timestamps before assembly', async () => {
+    const root = await fixture('f'.repeat(40));
+    await expect(
+      assembleControlledResults({
+        plan,
+        planSource,
+        decisions: {
+          version: 1,
+          releaseCommit: 'f'.repeat(40),
+          suites: [{ ...decision, startedAt: '2026-08-19T09:00:00.000+08:00' }],
+        },
+        evidenceRoot: root,
+        generatedAt: '2026-08-19T01:07:00.000Z',
+      }),
+    ).rejects.toThrow(/chronology is invalid/u);
+    await expect(
+      assembleControlledResults({
+        plan,
+        planSource,
+        decisions: { version: 1, releaseCommit: 'f'.repeat(40), suites: [decision] },
+        evidenceRoot: root,
+        generatedAt: '2026-08-19T09:07:00.000+08:00',
+      }),
+    ).rejects.toThrow(/canonical millisecond UTC timestamp/u);
+  });
+
   it('rejects evidence that bypasses or loses its capture receipt', async () => {
     const root = await fixture('e'.repeat(40));
     await rm(
