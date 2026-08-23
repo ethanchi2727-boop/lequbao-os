@@ -12,6 +12,14 @@ const sensitivePatterns = [
     pattern: /\bpostgres(?:ql)?:\/\/[^\s:@/]+:[^@\s/]+@/iu,
   },
   { label: 'provider secret', pattern: /\b(?:sk|rk)_(?:live|test)_[A-Za-z0-9]{16,}\b/u },
+  {
+    label: 'email address',
+    pattern: /\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,63}\b/iu,
+  },
+  {
+    label: 'mainland China mobile number',
+    pattern: /(?<![A-Za-z0-9])1[3-9]\d{9}(?![A-Za-z0-9])/u,
+  },
 ];
 const sourceSecretLabels = Object.freeze({
   PRIVATE_KEY: 'private key',

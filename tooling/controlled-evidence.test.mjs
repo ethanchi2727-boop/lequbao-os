@@ -63,4 +63,20 @@ describe('controlled evidence content boundary', () => {
       expect(result.failures.some((failure) => failure.includes('unredacted'))).toBe(true);
     }
   });
+
+  it('rejects obvious personal contact data while allowing redacted evidence', async () => {
+    const cases = [
+      ['email.log', 'reviewer email: release.owner@example.com\n'],
+      ['mobile.log', 'customer mobile: 13800138000\n'],
+    ];
+    for (const [name, contents] of cases) {
+      const result = await inspectControlledEvidenceFile(await evidence(name, contents));
+      expect(result.failures.some((failure) => failure.includes('unredacted'))).toBe(true);
+    }
+    const redacted = await evidence(
+      'redacted-contact.log',
+      `reviewer=[REDACTED_EMAIL] customer=[REDACTED_MOBILE] digest=a13800138000f\n`,
+    );
+    await expect(inspectControlledEvidenceFile(redacted)).resolves.toMatchObject({ failures: [] });
+  });
 });
