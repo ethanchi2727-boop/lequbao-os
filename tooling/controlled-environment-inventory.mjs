@@ -6,6 +6,7 @@ import { controlledStageRequirements } from './controlled-environment-preflight.
 
 const workflowPath = '.github/workflows/controlled-preflight.yml';
 const expressionPattern = /^\$\{\{\s*(secrets|vars)\.([A-Z][A-Z0-9_]*)\s*\}\}$/u;
+const secretSettingPattern = /(?:SECRET|TOKEN|KEY|DATABASE_URL|BODY_JSON)$/u;
 
 export function buildControlledEnvironmentInventory(workflowSource) {
   const workflow = parseYaml(workflowSource);
@@ -18,8 +19,23 @@ export function buildControlledEnvironmentInventory(workflowSource) {
     const match = typeof expression === 'string' ? expression.match(expressionPattern) : undefined;
     if (!match || match[2] !== name)
       throw new Error(`controlled setting ${name} must map to the same named secret or variable`);
-    sources.set(name, match[1] === 'secrets' ? 'secret' : 'variable');
+    const source = match[1] === 'secrets' ? 'secret' : 'variable';
+    const expectedSource = secretSettingPattern.test(name) ? 'secret' : 'variable';
+    if (source !== expectedSource)
+      throw new Error(`controlled setting ${name} must be stored as a ${expectedSource}`);
+    sources.set(name, source);
   }
+
+  const expectedWorkflowNames = new Set(
+    Object.values(controlledStageRequirements)
+      .flat()
+      .filter((name) => name !== 'CONTROLLED_RESULTS_FILE'),
+  );
+  const unexpectedNames = [...sources.keys()].filter((name) => !expectedWorkflowNames.has(name));
+  if (unexpectedNames.length)
+    throw new Error(
+      `protected workflow contains unexpected controlled setting ${unexpectedNames[0]}`,
+    );
 
   const stages = {};
   for (const stage of [47, 48, 49, 50]) {

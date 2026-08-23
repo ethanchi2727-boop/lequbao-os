@@ -87,6 +87,26 @@ describe('controlled environment names-only inventory', () => {
     ).toThrow(/duplicate A/u);
   });
 
+  it('rejects sensitive values in variables and undeclared workflow mappings', async () => {
+    const source = await readFile('.github/workflows/controlled-preflight.yml', 'utf8');
+    expect(() =>
+      buildControlledEnvironmentInventory(
+        source.replace(
+          'DATABASE_URL: ${{ secrets.DATABASE_URL }}',
+          'DATABASE_URL: ${{ vars.DATABASE_URL }}',
+        ),
+      ),
+    ).toThrow('controlled setting DATABASE_URL must be stored as a secret');
+    expect(() =>
+      buildControlledEnvironmentInventory(
+        source.replace(
+          '    env:\n',
+          '    env:\n      UNDECLARED_GATEWAY_URL: ${{ vars.UNDECLARED_GATEWAY_URL }}\n',
+        ),
+      ),
+    ).toThrow('protected workflow contains unexpected controlled setting UNDECLARED_GATEWAY_URL');
+  });
+
   it('reads only GitHub environment names and never returns the access token', async () => {
     const calls = [];
     const fetchImpl = async (url, options) => {
