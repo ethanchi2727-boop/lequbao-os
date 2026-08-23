@@ -34,4 +34,19 @@ describe('operations alert policy', () => {
       ]),
     );
   });
+
+  it('rejects severity downgrades, weakened thresholds and substituted actions', async () => {
+    const document = await alerts();
+    const outbox = document.rules.find((rule) => rule.code === 'OUTBOX_DEAD');
+    outbox.severity = 'P1';
+    outbox.condition = 'value > 100000';
+    outbox.action = 'page_privacy_on_call';
+    expect(inspectOperationsAlerts(document)).toEqual(
+      expect.arrayContaining([
+        'OUTBOX_DEAD.severity does not match the required alert policy',
+        'OUTBOX_DEAD.condition does not match the required alert policy',
+        'OUTBOX_DEAD.action does not match the required alert policy',
+      ]),
+    );
+  });
 });
