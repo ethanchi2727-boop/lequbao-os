@@ -402,6 +402,42 @@ describe('controlled JSON evidence contracts', () => {
     );
   });
 
+  it('requires fully ready services and unique supported data stores', () => {
+    const image = (target) => `ghcr.io/example/lequbao-v6-${target}@sha256:${'a'.repeat(64)}`;
+    const service = (target, replicas, readyReplicas, hash) => ({
+      image: image(target),
+      deploymentRefHash: hash.repeat(64),
+      replicas,
+      readyReplicas,
+    });
+    const failures = validateControlledJsonEvidence('deployment-topology.json', {
+      releaseCommit: 'a'.repeat(40),
+      deploymentId: 'controlled-deployment-1',
+      capturedAt: '2026-08-19T01:00:00.000Z',
+      environment: 'controlled-preproduction',
+      services: {
+        api: service('api', 2, 1, '1'),
+        worker: service('worker', 2.5, 2, '2'),
+        web: service('web', 1, 1, '3'),
+      },
+      dataStores: [
+        { kind: 'postgresql', endpointRefHash: '4'.repeat(64), tlsVerified: true },
+        { kind: 'postgresql', endpointRefHash: '4'.repeat(64), tlsVerified: true },
+        { kind: 'object-store', endpointRefHash: '5'.repeat(64), tlsVerified: true },
+        { kind: 'queue', endpointRefHash: '6'.repeat(64), tlsVerified: true },
+      ],
+    });
+    expect(failures).toEqual(
+      expect.arrayContaining([
+        'deployment-topology.json services.api must have every replica ready',
+        'deployment-topology.json services.worker.replicas must be a positive integer',
+        'deployment-topology.json data store kinds must be unique',
+        'deployment-topology.json data store endpoint references must be unique',
+        'deployment-topology.json dataStores[3].kind is not a supported data store',
+      ]),
+    );
+  });
+
   it('rejects non-canonical backup artifact names', () => {
     expect(
       validateControlledJsonEvidence('backup.manifest.json', {

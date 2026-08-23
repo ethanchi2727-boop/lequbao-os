@@ -8,7 +8,7 @@ This runbook produces the required evidence for `PERF-001` and `PERF-002`. It mu
 - Prepare a dedicated performance tenant, an active customer-service conversation and a bounded core-write fixture. Do not use customer or production data.
 - Use separate least-privilege bearer identities for employee context reads, consumer message writes and the bounded core-write fixture. A shared identity is allowed only when the selected endpoints genuinely accept the same identity boundary. Use a database identity that can read PostgreSQL statistics, `outbox_events` and the acknowledged `conversation_messages` rows but cannot mutate schema or business data.
 - Choose a new report path for every run. The harness refuses to overwrite an existing report.
-- Record release commit, deployment identifier, instance/database topology and fixture volume alongside the generated JSON artifact.
+- Record release commit, deployment identifier, instance/database topology and fixture volume alongside the generated JSON artifact. The topology evidence must contain exactly API, Worker and Web; each records an opaque deployment-reference hash, positive expected/ready replica counts and has every replica ready. PostgreSQL and object-store records are mandatory; any optional cache/search/vector records use a unique kind and endpoint-reference hash, and every store must prove TLS.
 - Copy the protected publisher's `candidate-image-digests.json` into the suite directory and prove the running API, Worker and Web use those exact digest references. A matching Git SHA in an image label is insufficient if the deployed digest differs.
 
 ## Required runtime configuration

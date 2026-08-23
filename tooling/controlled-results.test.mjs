@@ -350,9 +350,24 @@ function semanticFixture(artifact, binding) {
     'deployment-topology.json': {
       environment: 'controlled-preproduction',
       services: {
-        api: { image: images.api },
-        worker: { image: images.worker },
-        web: { image: images.web },
+        api: {
+          image: images.api,
+          deploymentRefHash: '1'.repeat(64),
+          replicas: 2,
+          readyReplicas: 2,
+        },
+        worker: {
+          image: images.worker,
+          deploymentRefHash: '2'.repeat(64),
+          replicas: 2,
+          readyReplicas: 2,
+        },
+        web: {
+          image: images.web,
+          deploymentRefHash: '3'.repeat(64),
+          replicas: 2,
+          readyReplicas: 2,
+        },
       },
       dataStores: ['postgresql', 'object-store'].map((kind, index) => ({
         kind,

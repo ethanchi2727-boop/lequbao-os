@@ -200,8 +200,17 @@ export const controlledJsonEvidenceContracts = {
     timestamp('capturedAt'),
     field('environment', 'string'),
     candidateImageDigest('services.api.image', 'api'),
+    sha256('services.api.deploymentRefHash'),
+    field('services.api.replicas', 'number', { minimum: 1 }),
+    field('services.api.readyReplicas', 'number', { minimum: 1 }),
     candidateImageDigest('services.worker.image', 'worker'),
+    sha256('services.worker.deploymentRefHash'),
+    field('services.worker.replicas', 'number', { minimum: 1 }),
+    field('services.worker.readyReplicas', 'number', { minimum: 1 }),
     candidateImageDigest('services.web.image', 'web'),
+    sha256('services.web.deploymentRefHash'),
+    field('services.web.replicas', 'number', { minimum: 1 }),
+    field('services.web.readyReplicas', 'number', { minimum: 1 }),
     field('dataStores', 'array'),
   ],
   'monitoring-snapshot.json': [
@@ -1489,7 +1498,28 @@ function validateDeploymentTopology(value) {
   });
   if (value.environment !== 'controlled-preproduction')
     failures.push(`${artifact} environment must equal "controlled-preproduction"`);
+  if (
+    JSON.stringify(Object.keys(value.services ?? {}).sort()) !==
+    JSON.stringify(['api', 'web', 'worker'])
+  )
+    failures.push(`${artifact} services must contain exactly api, web and worker`);
+  for (const target of ['api', 'worker', 'web']) {
+    const service = value.services?.[target];
+    if (!Number.isSafeInteger(service?.replicas) || service.replicas < 1)
+      failures.push(`${artifact} services.${target}.replicas must be a positive integer`);
+    if (!Number.isSafeInteger(service?.readyReplicas) || service.readyReplicas < 1)
+      failures.push(`${artifact} services.${target}.readyReplicas must be a positive integer`);
+    if (
+      Number.isSafeInteger(service?.replicas) &&
+      Number.isSafeInteger(service?.readyReplicas) &&
+      service.readyReplicas !== service.replicas
+    )
+      failures.push(`${artifact} services.${target} must have every replica ready`);
+  }
   const requiredStores = new Set(['postgresql', 'object-store']);
+  const supportedStores = new Set(['postgresql', 'object-store', 'cache', 'search', 'vector']);
+  const observedStores = new Set();
+  const endpointRefs = new Set();
   for (const [index, store] of (Array.isArray(value.dataStores)
     ? value.dataStores
     : []
@@ -1500,8 +1530,16 @@ function validateDeploymentTopology(value) {
       continue;
     }
     requiredStores.delete(store.kind);
+    if (!supportedStores.has(store.kind))
+      failures.push(`${prefix}.kind is not a supported data store`);
+    else if (observedStores.has(store.kind))
+      failures.push(`${artifact} data store kinds must be unique`);
+    else observedStores.add(store.kind);
     if (!validSha256(store.endpointRefHash))
       failures.push(`${prefix}.endpointRefHash has invalid format`);
+    else if (endpointRefs.has(store.endpointRefHash))
+      failures.push(`${artifact} data store endpoint references must be unique`);
+    else endpointRefs.add(store.endpointRefHash);
     if (store.tlsVerified !== true) failures.push(`${prefix}.tlsVerified must equal true`);
   }
   for (const store of requiredStores) failures.push(`${artifact} dataStores must include ${store}`);
