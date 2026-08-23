@@ -21,6 +21,7 @@ describe('performance evidence boundary', () => {
     expect(gate).toContain('connectionTimeoutMillis: 10_000');
     expect(gate).toContain('statement_timeout: 15_000');
     expect(gate).toContain('query_timeout: 20_000');
+    expect(gate).toContain('-${randomUUID()}`');
     expect(snapshot).toContain("createHash('sha256').update(row.database_name).digest('hex')");
     expect(snapshot).not.toContain('databaseName: row.database_name');
   });

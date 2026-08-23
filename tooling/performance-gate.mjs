@@ -1,4 +1,4 @@
-import { createHash } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import { mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { performance } from 'node:perf_hooks';
@@ -14,7 +14,7 @@ import {
 import { capturePerformanceDatabaseSnapshot } from './performance-database-snapshot.mjs';
 
 const config = validatePerformanceConfig(process.env);
-const runId = `perf-${new Date().toISOString().replace(/[^0-9]/gu, '')}`;
+const runId = `perf-${new Date().toISOString().replace(/[^0-9]/gu, '')}-${randomUUID()}`;
 const database = new pg.Pool({
   connectionString: config.databaseUrl,
   max: 2,
