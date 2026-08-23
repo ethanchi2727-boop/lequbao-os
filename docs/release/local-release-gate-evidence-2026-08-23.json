@@ -1,0 +1,54 @@
+{
+  "recordedAt": "2026-08-23",
+  "productionOrControlledAcceptance": false,
+  "command": "npm.cmd run check",
+  "result": "PASS",
+  "gateSequence": [
+    "format:check",
+    "lint",
+    "frontend:check",
+    "experience:closure",
+    "workbench:performance",
+    "openapi:check",
+    "security:check",
+    "operations:check",
+    "deployment:check",
+    "typecheck",
+    "test",
+    "build",
+    "artifacts:check"
+  ],
+  "evidence": {
+    "frontendLeaves": 197,
+    "workbenchLeaves": 135,
+    "openapiPaths": 201,
+    "securityTextFiles": 665,
+    "sbomComponents": 760,
+    "productionPackageVersions": 364,
+    "approvedLicenseClasses": 10,
+    "operationsAlerts": 13,
+    "toolingTestFiles": 30,
+    "toolingTests": 132,
+    "merchantTests": 32,
+    "workbenchTests": 264,
+    "workerTests": 29,
+    "apiTests": 344,
+    "artifactManifest": "c4fad8773ab892b2",
+    "artifactBytes": {
+      "api": 1111838,
+      "worker": 50664,
+      "web": 637993,
+      "lifeWeb": 639772,
+      "baoMobile": 210465
+    }
+  },
+  "stabilityFixes": [
+    "Formatted the official fifty-stage frontend plan so the repository-wide format gate is deterministic.",
+    "Raised the supply-chain policy test timeout to 15 seconds and the eleven-suite tamper test timeout to 30 seconds after isolated assertions passed and parallel tooling load exceeded prior limits.",
+    "Set the API package test timeout to 15 seconds after six first-build HTTP tests exceeded the default under the full 62-file parallel suite; the suite then passed 344 of 344."
+  ],
+  "boundaries": [
+    "The local root gate excludes controlled credential capture and launch gates by executable policy.",
+    "No real WeChat DevTools, device, provider, PostgreSQL, production deployment or launch acceptance is claimed."
+  ]
+}

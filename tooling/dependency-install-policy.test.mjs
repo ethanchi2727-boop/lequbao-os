@@ -42,7 +42,7 @@ async function repositoryPolicyInput() {
 describe('dependency installation supply-chain policy', () => {
   it('keeps the repository install path frozen, integrity-bound and explicitly reviewed', async () => {
     expect(inspectDependencyInstallPolicy(await repositoryPolicyInput())).toEqual([]);
-  });
+  }, 15_000);
 
   it('rejects unreviewed lifecycle scripts and dangerous blanket approval', async () => {
     const input = await repositoryPolicyInput();
