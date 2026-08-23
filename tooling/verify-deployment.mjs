@@ -230,6 +230,7 @@ for (const marker of [
   'evidenceArchiveSha256',
   'verify-candidate-check-provenance.mjs',
   'links and special archive entries are forbidden',
+  'evidence archive path is not canonical',
   "name == 'results.json'",
   '--no-same-owner --no-same-permissions',
   'node ../trusted/tooling/controlled-evidence-package.mjs',

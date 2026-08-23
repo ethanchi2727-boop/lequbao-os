@@ -125,12 +125,15 @@ jobs:
                   candidate = pathlib.PurePosixPath(name)
                   if not name or '\\' in name or candidate.is_absolute() or '..' in candidate.parts:
                       raise SystemExit(f'unsafe evidence archive path: {member.name}')
+                  canonical = candidate.as_posix()
+                  if canonical == '.' or canonical != name.rstrip('/'):
+                      raise SystemExit(f'evidence archive path is not canonical: {member.name}')
                   if not (member.isfile() or member.isdir()):
                       raise SystemExit(f'links and special archive entries are forbidden: {member.name}')
                   if member.isfile() and member.size > 104857600:
                       raise SystemExit(f'evidence archive entry exceeds 100 MiB: {member.name}')
                   total += member.size
-                  names.append(name.rstrip('/'))
+                  names.append(canonical)
               if total > 1073741824:
                   raise SystemExit('expanded evidence archive exceeds 1 GiB')
               if len(names) != len(set(names)):

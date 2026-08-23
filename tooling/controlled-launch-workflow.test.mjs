@@ -36,6 +36,7 @@ describe('protected controlled-release verification workflow', () => {
     expect(source).not.toContain('gh release download');
     expect(source).toContain('len(members) > 256');
     expect(source).toContain("'..' in candidate.parts");
+    expect(source).toContain('evidence archive path is not canonical');
     expect(source).toContain('member.size > 104857600');
     expect(source).toContain('links and special archive entries are forbidden');
     expect(source).toContain("name == 'results.json'");
