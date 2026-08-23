@@ -110,6 +110,8 @@ export function validateControlledSuiteDocuments(suiteCode, documents) {
     if (report && topology && manifest) {
       if (!same(report.images, manifest.images))
         failures.push('performance report images do not match the candidate manifest');
+      if (report.workflowRunId !== manifest.workflowRunId)
+        failures.push('performance report workflow run does not match the candidate manifest');
       const deployed = {
         api: topology.services?.api?.image,
         worker: topology.services?.worker?.image,

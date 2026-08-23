@@ -44,6 +44,7 @@ describe('controlled performance gate', () => {
       requests: 200,
       environment: 'controlled-preproduction',
       releaseCommit,
+      workflowRunId: '12345',
       images,
       tokens: {
         read: 'employee-read-credential',
@@ -117,6 +118,16 @@ describe('controlled performance gate', () => {
         }),
       }),
     ).toThrow(/deployed worker image/u);
+    const manifest = JSON.parse(validEnvironment.PERFORMANCE_CANDIDATE_IMAGE_MANIFEST_JSON);
+    expect(() =>
+      validatePerformanceConfig({
+        ...validEnvironment,
+        PERFORMANCE_CANDIDATE_IMAGE_MANIFEST_JSON: JSON.stringify({
+          ...manifest,
+          workflowRunId: 'run-main',
+        }),
+      }),
+    ).toThrow(/workflowRunId/u);
   });
 
   it('calculates percentile and error evidence against the frozen threshold', () => {

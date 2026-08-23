@@ -41,19 +41,21 @@ function semanticFixture(artifact, binding) {
             ? `ghcr.io/example/lequ@sha256:${'a'.repeat(64)}`
             : rule.pattern?.includes('{64}')
               ? 'a'.repeat(64)
-              : rule.format === 'date-time'
-                ? '2026-08-19T01:00:00.000Z'
-                : rule.type === 'array'
-                  ? rule.maxItems === 0
-                    ? []
-                    : [`${rule.path}-evidence`]
-                  : rule.type === 'object'
-                    ? { captured: true }
-                    : rule.type === 'number'
-                      ? (rule.minimum ?? 1)
-                      : rule.type === 'boolean'
-                        ? true
-                        : `${rule.path}-evidence`;
+              : rule.pattern?.includes('[1-9][0-9]')
+                ? '12345'
+                : rule.format === 'date-time'
+                  ? '2026-08-19T01:00:00.000Z'
+                  : rule.type === 'array'
+                    ? rule.maxItems === 0
+                      ? []
+                      : [`${rule.path}-evidence`]
+                    : rule.type === 'object'
+                      ? { captured: true }
+                      : rule.type === 'number'
+                        ? (rule.minimum ?? 1)
+                        : rule.type === 'boolean'
+                          ? true
+                          : `${rule.path}-evidence`;
     target[segments.at(-1)] = sample;
   }
   const images = {

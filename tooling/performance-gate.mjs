@@ -48,6 +48,7 @@ const report = {
   runId,
   environment: config.environment,
   releaseCommit: config.releaseCommit,
+  workflowRunId: config.workflowRunId,
   images: config.images,
   baseOrigin: config.base.origin,
   startedAt: startedAt.toISOString(),

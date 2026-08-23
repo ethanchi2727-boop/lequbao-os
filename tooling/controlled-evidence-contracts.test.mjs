@@ -94,7 +94,9 @@ describe('controlled JSON evidence contracts', () => {
     );
     expect(
       validateControlledJsonEvidence('candidate-image-digests.json', {
+        version: 1,
         releaseCommit: 'a'.repeat(40),
+        workflowRunId: 'not-a-run',
         images: { api: 'latest', worker: 'latest', web: 'latest' },
       }),
     ).toEqual(
@@ -102,6 +104,7 @@ describe('controlled JSON evidence contracts', () => {
         'candidate-image-digests.json images.api has invalid format',
         'candidate-image-digests.json images.worker has invalid format',
         'candidate-image-digests.json images.web has invalid format',
+        'candidate-image-digests.json workflowRunId has invalid format',
       ]),
     );
     expect(

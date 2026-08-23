@@ -116,10 +116,11 @@ describe('controlled suite cross-evidence contracts', () => {
 
   it('binds performance topology, WeChat rollback and alert acknowledgement across files', () => {
     const images = { api: digest('api'), worker: digest('worker'), web: digest('web') };
+    const workflowRunId = '12345';
     expect(
       validateControlledSuiteDocuments('PERFORMANCE_CORE_AND_MESSAGES', {
-        'performance-report.json': { images },
-        'candidate-image-digests.json': { images },
+        'performance-report.json': { images, workflowRunId },
+        'candidate-image-digests.json': { images, workflowRunId },
         'deployment-topology.json': {
           services: {
             api: { image: images.api },
@@ -129,6 +130,19 @@ describe('controlled suite cross-evidence contracts', () => {
         },
       }),
     ).toEqual([]);
+    expect(
+      validateControlledSuiteDocuments('PERFORMANCE_CORE_AND_MESSAGES', {
+        'performance-report.json': { images, workflowRunId: '12346' },
+        'candidate-image-digests.json': { images, workflowRunId },
+        'deployment-topology.json': {
+          services: {
+            api: { image: images.api },
+            worker: { image: images.worker },
+            web: { image: images.web },
+          },
+        },
+      }),
+    ).toContain('performance report workflow run does not match the candidate manifest');
     expect(
       validateControlledSuiteDocuments('WECHAT_RELEASE_AND_ROLLBACK', {
         'consumer-build.json': { version: 'consumer-1' },

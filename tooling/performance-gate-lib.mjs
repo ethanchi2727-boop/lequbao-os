@@ -51,6 +51,8 @@ function parseImageBinding(env) {
     throw new Error('candidate image manifest fields are invalid');
   if (manifest.version !== 1 || manifest.releaseCommit !== env.RELEASE_COMMIT)
     throw new Error('candidate image manifest is not bound to RELEASE_COMMIT');
+  if (!/^[1-9][0-9]{0,19}$/u.test(manifest.workflowRunId ?? ''))
+    throw new Error('candidate image manifest workflowRunId must be a positive numeric ID');
   if (!exactKeys(manifest.images ?? {}, ['api', 'web', 'worker']))
     throw new Error('candidate image manifest must contain API Worker and Web');
   if (!exactKeys(deployed, ['api', 'web', 'worker']))
@@ -61,7 +63,11 @@ function parseImageBinding(env) {
     if (deployed[target] !== manifest.images[target])
       throw new Error(`deployed ${target} image does not match the candidate digest`);
   }
-  return { releaseCommit: env.RELEASE_COMMIT, images: manifest.images };
+  return {
+    releaseCommit: env.RELEASE_COMMIT,
+    workflowRunId: manifest.workflowRunId,
+    images: manifest.images,
+  };
 }
 
 export function validatePerformanceConfig(env) {

@@ -174,6 +174,7 @@ export const controlledJsonEvidenceContracts = {
     pass,
     field('schemaVersion', 'number', { equals: 1 }),
     commit,
+    field('workflowRunId', 'string', { pattern: '^[1-9][0-9]{0,19}$' }),
     field('images', 'object'),
     timestamp('startedAt'),
     timestamp('completedAt'),
@@ -202,7 +203,9 @@ export const controlledJsonEvidenceContracts = {
     empty('stopReleaseConditions'),
   ],
   'candidate-image-digests.json': [
+    field('version', 'number', { equals: 1 }),
     commit,
+    field('workflowRunId', 'string', { pattern: '^[1-9][0-9]{0,19}$' }),
     imageDigest('images.api'),
     imageDigest('images.worker'),
     imageDigest('images.web'),
