@@ -987,6 +987,20 @@ function validateLegalRelease(value) {
 function validateBackupManifest(value) {
   const artifact = 'backup.manifest.json';
   const failures = [];
+  if (
+    !hasExactKeys(value, [
+      'backupCompletedAt',
+      'backupFile',
+      'backupStartedAt',
+      'encryptedSha256',
+      'encryptedSizeBytes',
+      'financialSnapshot',
+      'financialSnapshotSha256',
+      'schemaVersion',
+      'writeFrozen',
+    ])
+  )
+    failures.push(`${artifact} fields are invalid`);
   if (!Number.isSafeInteger(value.encryptedSizeBytes))
     failures.push(`${artifact} encryptedSizeBytes must be an integer`);
   const snapshot = value.financialSnapshot;
@@ -1092,6 +1106,20 @@ function validateRestoreReport(value) {
 function validatePhysicalWalEvidence(value) {
   const artifact = 'physical-wal-evidence.json';
   const failures = [];
+  if (
+    !hasExactKeys(value, [
+      'backupSetRefHash',
+      'crossFaultDomain',
+      'recoveryFaultDomainRefHash',
+      'recoveryPoint',
+      'replayedThrough',
+      'result',
+      'sourceFaultDomainRefHash',
+      'timeline',
+      'walReplayVerified',
+    ])
+  )
+    failures.push(`${artifact} fields are invalid`);
   if (value.sourceFaultDomainRefHash === value.recoveryFaultDomainRefHash)
     failures.push(`${artifact} source and recovery fault domains must differ`);
   const recoveryPoint = Date.parse(value.recoveryPoint);
@@ -1118,6 +1146,8 @@ function validatePhysicalWalEvidence(value) {
       failures.push(`${prefix} must be an object`);
       continue;
     }
+    if (!hasExactKeys(event, ['at', 'event', 'evidenceRefHash']))
+      failures.push(`${prefix} fields are invalid`);
     observedEvents.push(event.event);
     if (!validDateTime(event.at)) failures.push(`${prefix}.at must be a non-future ISO date-time`);
     eventTimes.push(Date.parse(event.at));
@@ -1148,6 +1178,8 @@ function validatePhysicalWalEvidence(value) {
 function validateExternalDeletionSamples(value) {
   const artifact = 'external-deletion-samples.json';
   const failures = [];
+  if (!hasExactKeys(value, ['result', 'samples', 'targets', 'unresolvedTargets']))
+    failures.push(`${artifact} fields are invalid`);
   const targetNames = ['object-store', 'search', 'vector', 'cache'];
   const requiredTargets = new Set(targetNames);
   const targetRecords = new Map();
@@ -1158,6 +1190,8 @@ function validateExternalDeletionSamples(value) {
       failures.push(`${prefix} must be an object`);
       continue;
     }
+    if (!hasExactKeys(target, ['deleted', 'receiptRef', 'target', 'verifiedAt']))
+      failures.push(`${prefix} fields are invalid`);
     if (!targetNames.includes(target.target)) failures.push(`${prefix}.target is not supported`);
     else if (targetRecords.has(target.target))
       failures.push(`${artifact} target names must be unique`);
@@ -1183,6 +1217,16 @@ function validateExternalDeletionSamples(value) {
       failures.push(`${artifact} samples[${index}] must be an object`);
       continue;
     }
+    if (
+      !hasExactKeys(sample, [
+        'receiptRef',
+        'remainingMatches',
+        'sampleRefHash',
+        'target',
+        'verifiedAt',
+      ])
+    )
+      failures.push(`${prefix} fields are invalid`);
     if (!targetNames.includes(sample.target)) failures.push(`${prefix}.target is not supported`);
     else sampledTargets.add(sample.target);
     if (!validSha256(sample.sampleRefHash))

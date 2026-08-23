@@ -817,6 +817,7 @@ describe('controlled JSON evidence contracts', () => {
           event: 'RECOVERY_VALIDATED',
           at: '2026-08-19T01:02:00.000Z',
           evidenceRefHash: 'c'.repeat(64),
+          recoveryHost: 'forbidden',
         },
       ],
     });
@@ -825,6 +826,7 @@ describe('controlled JSON evidence contracts', () => {
         'physical-wal-evidence.json source and recovery fault domains must differ',
         'physical-wal-evidence.json replayedThrough must reach or pass recoveryPoint',
         'physical-wal-evidence.json timeline must contain the exact ordered recovery events',
+        'physical-wal-evidence.json timeline[0] fields are invalid',
       ]),
     );
   });
