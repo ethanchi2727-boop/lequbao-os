@@ -110,6 +110,9 @@ describe('controlled evidence capture', () => {
       }),
     ).rejects.toThrow('capturedAt predates the evidence workspace');
     await expect(
+      readFile(path.join(evidenceRoot, 'postgres-rls-finance', 'clean-schema.log')),
+    ).rejects.toThrow();
+    await expect(
       captureControlledEvidenceArtifact({ ...input, planSource: `${planSource}\n` }),
     ).rejects.toThrow('plan hash does not match');
   });

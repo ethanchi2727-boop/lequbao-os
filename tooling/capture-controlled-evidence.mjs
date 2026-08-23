@@ -47,8 +47,14 @@ export async function captureControlledEvidenceArtifact({
     throw new Error('controlled workspace plan hash does not match the current plan');
   if (!/^[a-f0-9]{40}$/u.test(context.releaseCommit ?? ''))
     throw new Error('controlled workspace release commit is invalid');
-  if (parseCanonicalUtcTimestamp(capturedAt) === undefined)
+  const capturedTimestamp = parseCanonicalUtcTimestamp(capturedAt);
+  if (capturedTimestamp === undefined)
     throw new Error('capturedAt must be a canonical millisecond UTC timestamp');
+  const contextCreatedAt = parseCanonicalUtcTimestamp(context.createdAt);
+  if (contextCreatedAt === undefined)
+    throw new Error('controlled workspace createdAt must be a canonical millisecond UTC timestamp');
+  if (capturedTimestamp < contextCreatedAt)
+    throw new Error('capturedAt predates the evidence workspace');
 
   const destinationDirectory = path.join(evidenceRoot, suite.evidenceDirectory);
   const destination = path.join(destinationDirectory, artifact);
