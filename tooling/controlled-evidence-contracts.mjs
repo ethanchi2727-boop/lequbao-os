@@ -1399,8 +1399,8 @@ function validateDeviceMatrix(value) {
     else if (devicePlatforms.has(device.deviceRefHash))
       failures.push(`${artifact} device references must be unique`);
     else devicePlatforms.set(device.deviceRefHash, device.platform);
-    if (typeof device.officialClientVersion !== 'string' || !device.officialClientVersion.trim())
-      failures.push(`${prefix}.officialClientVersion must not be empty`);
+    if (!/^[0-9]+(?:\.[0-9]+){1,3}$/u.test(device.officialClientVersion ?? ''))
+      failures.push(`${prefix}.officialClientVersion must be a dotted numeric version`);
     if (device.result !== 'PASS') failures.push(`${prefix}.result must equal "PASS"`);
   }
   for (const platform of ['iOS', 'Android'])

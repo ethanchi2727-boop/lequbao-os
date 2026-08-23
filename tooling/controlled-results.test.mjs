@@ -466,7 +466,7 @@ function semanticFixture(artifact, binding) {
       devices: ['iOS', 'Android'].map((platform, index) => ({
         platform,
         deviceRefHash: `${index + 1}`.repeat(64),
-        officialClientVersion: 'official-client-1',
+        officialClientVersion: '8.0.52',
         result: 'PASS',
       })),
       scenarios: ['consumer', 'merchant-template'].map((packageName) => ({

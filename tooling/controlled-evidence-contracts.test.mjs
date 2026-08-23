@@ -904,13 +904,13 @@ describe('controlled JSON evidence contracts', () => {
           {
             platform: 'iOS',
             deviceRefHash: 'a'.repeat(64),
-            officialClientVersion: '1',
+            officialClientVersion: 'latest',
             result: 'PASS',
           },
           {
             platform: 'Android',
             deviceRefHash: 'b'.repeat(64),
-            officialClientVersion: '1',
+            officialClientVersion: '8.0.52',
             result: 'PASS',
           },
         ],
@@ -933,6 +933,7 @@ describe('controlled JSON evidence contracts', () => {
     ).toEqual(
       expect.arrayContaining([
         'device-matrix.json scenarios[0].deviceRefs must be unique',
+        'device-matrix.json devices[0].officialClientVersion must be a dotted numeric version',
         'device-matrix.json scenarios[0].deviceRefs must include Android',
         'device-matrix.json scenarios[1].version must not be empty',
         'device-matrix.json scenarios[1].deviceRefs contains an unknown device reference',
