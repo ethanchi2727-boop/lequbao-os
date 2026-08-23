@@ -879,7 +879,7 @@ describe('controlled JSON evidence contracts', () => {
         replayRejected: false,
         deliveryAttempts: 1.5,
         merchantAccountRef: 'not-a-hash',
-        amountFen: 100,
+        amountFen: 100.5,
         paymentState: 'PENDING',
         appliedBusinessTransitions: 2,
         providerEventIdHash: 'a'.repeat(64),
@@ -889,12 +889,34 @@ describe('controlled JSON evidence contracts', () => {
       expect.arrayContaining([
         'provider-callback-redacted.json replayRejected must equal true',
         'provider-callback-redacted.json deliveryAttempts must be an integer',
+        'provider-callback-redacted.json amountFen must be an integer',
         'provider-callback-redacted.json fields are invalid',
         'provider-callback-redacted.json merchantAccountRef has invalid format',
         'provider-callback-redacted.json paymentState must equal "SUCCEEDED"',
         'provider-callback-redacted.json appliedBusinessTransitions must equal 1',
       ]),
     );
+    expect(
+      validateControlledJsonEvidence('provider-request-redacted.json', {
+        orderRefHash: 'a'.repeat(64),
+        merchantAccountRef: 'b'.repeat(64),
+        idempotencyKeyHash: 'c'.repeat(64),
+        serverOrderAmountFen: 1.5,
+        requestedAt: '2026-08-19T01:00:00.000Z',
+      }),
+    ).toContain('provider-request-redacted.json serverOrderAmountFen must be an integer');
+    expect(
+      validateControlledJsonEvidence('merchant-account-reconciliation.json', {
+        orderRefHash: 'a'.repeat(64),
+        providerMerchantAccountRef: 'b'.repeat(64),
+        platformMerchantAccountRef: 'b'.repeat(64),
+        amountFen: 1.5,
+        amountMatch: true,
+        accountMatch: true,
+        unexplainedItems: [],
+        reconciledAt: '2026-08-19T01:00:00.000Z',
+      }),
+    ).toContain('merchant-account-reconciliation.json amountFen must be an integer');
     expect(
       validateControlledJsonEvidence('refund-unknown-recovery.json', {
         initialState: 'UNKNOWN',

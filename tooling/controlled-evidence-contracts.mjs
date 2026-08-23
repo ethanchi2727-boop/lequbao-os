@@ -1650,6 +1650,8 @@ function validateProviderCallback(value) {
     failures.push(`${artifact} fields are invalid`);
   if (!Number.isSafeInteger(value.deliveryAttempts))
     failures.push(`${artifact} deliveryAttempts must be an integer`);
+  if (!Number.isSafeInteger(value.amountFen))
+    failures.push(`${artifact} amountFen must be an integer`);
   const receivedAt = Date.parse(value.receivedAt);
   const appliedAt = Date.parse(value.appliedAt);
   if (Number.isFinite(receivedAt) && Number.isFinite(appliedAt) && appliedAt < receivedAt)
@@ -1659,31 +1661,41 @@ function validateProviderCallback(value) {
 
 function validateProviderRequest(value) {
   const artifact = 'provider-request-redacted.json';
-  return hasExactKeys(value, [
-    'idempotencyKeyHash',
-    'merchantAccountRef',
-    'orderRefHash',
-    'requestedAt',
-    'serverOrderAmountFen',
-  ])
-    ? []
-    : [`${artifact} fields are invalid`];
+  const failures = [];
+  if (
+    !hasExactKeys(value, [
+      'idempotencyKeyHash',
+      'merchantAccountRef',
+      'orderRefHash',
+      'requestedAt',
+      'serverOrderAmountFen',
+    ])
+  )
+    failures.push(`${artifact} fields are invalid`);
+  if (!Number.isSafeInteger(value.serverOrderAmountFen))
+    failures.push(`${artifact} serverOrderAmountFen must be an integer`);
+  return failures;
 }
 
 function validateMerchantReconciliation(value) {
   const artifact = 'merchant-account-reconciliation.json';
-  return hasExactKeys(value, [
-    'accountMatch',
-    'amountFen',
-    'amountMatch',
-    'orderRefHash',
-    'platformMerchantAccountRef',
-    'providerMerchantAccountRef',
-    'reconciledAt',
-    'unexplainedItems',
-  ])
-    ? []
-    : [`${artifact} fields are invalid`];
+  const failures = [];
+  if (
+    !hasExactKeys(value, [
+      'accountMatch',
+      'amountFen',
+      'amountMatch',
+      'orderRefHash',
+      'platformMerchantAccountRef',
+      'providerMerchantAccountRef',
+      'reconciledAt',
+      'unexplainedItems',
+    ])
+  )
+    failures.push(`${artifact} fields are invalid`);
+  if (!Number.isSafeInteger(value.amountFen))
+    failures.push(`${artifact} amountFen must be an integer`);
+  return failures;
 }
 
 function validateReviewPublish(value) {
