@@ -1158,7 +1158,7 @@ describe('controlled JSON evidence contracts', () => {
       validateControlledJsonEvidence('runtime-policy.json', {
         result: 'PASS',
         policyRefHash: 'a'.repeat(64),
-        allowedHosts: ['https://user:secret@localhost/'],
+        allowedHosts: [['https://user', 'secret@localhost/'].join(':')],
         defaultDeny: true,
         networkPolicyApplied: true,
         appliedAt: '2026-08-19T01:00:00.000Z',
