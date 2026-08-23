@@ -241,6 +241,8 @@ export function validateControlledSuiteDocuments(suiteCode, documents) {
     const devices = get('device-matrix.json');
     const rollback = get('rollback.json');
     if (consumer && merchant && publish && rollback) {
+      if (consumer.buildSha256 === merchant.buildSha256)
+        failures.push('consumer and merchant build digests must differ');
       if (consumer.version !== publish.consumerVersion)
         failures.push('published consumer version does not match its official build');
       if (merchant.version !== publish.merchantVersion)

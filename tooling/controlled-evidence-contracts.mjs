@@ -1262,6 +1262,15 @@ function validateReviewPublish(value) {
   return failures;
 }
 
+function validateWechatBuild(artifact, value) {
+  const failures = [];
+  if (!opaqueReference.test(value.version ?? ''))
+    failures.push(`${artifact} version must be opaque`);
+  if (!/^[0-9]+(?:\.[0-9]+){1,3}$/u.test(value.officialToolVersion ?? ''))
+    failures.push(`${artifact} officialToolVersion must be a dotted numeric version`);
+  return failures;
+}
+
 function validateWechatCallback(value) {
   const artifact = 'callback-redacted.json';
   const failures = [];
@@ -2246,6 +2255,9 @@ const controlledArtifactValidators = {
   'refund-unknown-recovery.json': validateRefundUnknownRecovery,
   'provider-callback-redacted.json': validateProviderCallback,
   'review-publish.json': validateReviewPublish,
+  'consumer-build.json': (value) => validateWechatBuild('consumer-build.json', value),
+  'merchant-template-build.json': (value) =>
+    validateWechatBuild('merchant-template-build.json', value),
   'callback-redacted.json': validateWechatCallback,
   'rollback.json': validateWechatRollback,
   'device-matrix.json': validateDeviceMatrix,

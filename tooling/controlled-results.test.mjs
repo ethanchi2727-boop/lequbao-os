@@ -428,8 +428,12 @@ function semanticFixture(artifact, binding) {
       saturation: { cpuMaxPercent: 70, memoryMaxPercent: 75, databaseConnectionMaxPercent: 60 },
       backlog: { outboxDeadDelta: 0, unacknowledgedMessageCount: 0 },
     },
-    'consumer-build.json': { version: 'consumer-1' },
-    'merchant-template-build.json': { version: 'merchant-1' },
+    'consumer-build.json': { version: 'consumer-1', officialToolVersion: '1.06.2504010' },
+    'merchant-template-build.json': {
+      version: 'merchant-1',
+      officialToolVersion: '1.06.2504010',
+      buildSha256: 'b'.repeat(64),
+    },
     'review-publish.json': {
       consumerVersion: 'consumer-1',
       merchantVersion: 'merchant-1',

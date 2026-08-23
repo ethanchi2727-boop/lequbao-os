@@ -280,10 +280,12 @@ describe('controlled suite cross-evidence contracts', () => {
       validateControlledSuiteDocuments('WECHAT_RELEASE_AND_ROLLBACK', {
         'consumer-build.json': {
           version: 'consumer-1',
+          buildSha256: 'a'.repeat(64),
           builtAt: '2026-08-19T01:02:00.000Z',
         },
         'merchant-template-build.json': {
           version: 'merchant-1',
+          buildSha256: 'a'.repeat(64),
           builtAt: '2026-08-19T00:59:00.000Z',
         },
         'review-publish.json': {
@@ -314,6 +316,7 @@ describe('controlled suite cross-evidence contracts', () => {
     ).toEqual(
       expect.arrayContaining([
         'published consumer version does not match its official build',
+        'consumer and merchant build digests must differ',
         'published WeChat version does not match the approved review version',
         'rollback source does not match the published version',
         'rollback must create a different safe release version',

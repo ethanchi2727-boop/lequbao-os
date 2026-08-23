@@ -805,6 +805,22 @@ describe('controlled JSON evidence contracts', () => {
 
   it('requires official WeChat build, bounded publication and real-device evidence', () => {
     expect(
+      validateControlledJsonEvidence('consumer-build.json', {
+        result: 'PASS',
+        releaseCommit: 'a'.repeat(40),
+        version: 'consumer version with spaces',
+        officialTool: 'WeChat DevTools CLI',
+        officialToolVersion: 'latest',
+        buildSha256: 'b'.repeat(64),
+        builtAt: '2026-08-19T01:00:00.000Z',
+      }),
+    ).toEqual(
+      expect.arrayContaining([
+        'consumer-build.json version must be opaque',
+        'consumer-build.json officialToolVersion must be a dotted numeric version',
+      ]),
+    );
+    expect(
       validateControlledJsonEvidence('review-publish.json', {
         result: 'PASS',
         consumerVersion: 'consumer-1',
