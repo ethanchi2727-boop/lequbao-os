@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  duplicateAcknowledgedMessageIds,
   missingPersistedMessageIds,
   summarizeScenario,
   validatePerformanceConfig,
@@ -113,5 +114,6 @@ describe('controlled performance gate', () => {
 
   it('detects every acknowledged customer message missing from PostgreSQL', () => {
     expect(missingPersistedMessageIds(['a', 'b', 'b', 'c'], ['a', 'c'])).toEqual(['b']);
+    expect(duplicateAcknowledgedMessageIds(['a', 'b', 'b', 'c', 'a', 'b'])).toEqual(['b', 'a']);
   });
 });

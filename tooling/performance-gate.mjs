@@ -3,6 +3,7 @@ import path from 'node:path';
 import { performance } from 'node:perf_hooks';
 import pg from 'pg';
 import {
+  duplicateAcknowledgedMessageIds,
   missingPersistedMessageIds,
   summarizeScenario,
   validatePerformanceConfig,
@@ -54,7 +55,12 @@ const report = {
   requestsPerScenario: config.requests,
   scenarios: [],
   database: { before: null, after: null },
-  persistence: { expectedMessageIds: 0, persistedMessageIds: 0, missingMessageIds: [] },
+  persistence: {
+    expectedMessageIds: 0,
+    persistedMessageIds: 0,
+    missingMessageIds: [],
+    duplicateAcknowledgedMessageIds: [],
+  },
   failure: null,
 };
 let failed = false;
@@ -127,10 +133,12 @@ try {
     : { rows: [] };
   const persistedIds = persisted.rows.map((row) => row.id);
   const missing = missingPersistedMessageIds(expectedMessageIds, persistedIds);
+  const duplicates = duplicateAcknowledgedMessageIds(expectedMessageIds);
   report.persistence = {
     expectedMessageIds: expectedMessageIds.length,
     persistedMessageIds: persistedIds.length,
     missingMessageIds: missing,
+    duplicateAcknowledgedMessageIds: duplicates,
   };
   const customerScenario = report.scenarios.find(
     (scenario) => scenario.name === 'customer-message-write',
@@ -138,7 +146,9 @@ try {
   if (
     !customerScenario ||
     expectedMessageIds.length !== customerScenario.successes ||
-    missing.length
+    persistedIds.length !== expectedMessageIds.length ||
+    missing.length ||
+    duplicates.length
   )
     failed = true;
   stage = 'database-after';

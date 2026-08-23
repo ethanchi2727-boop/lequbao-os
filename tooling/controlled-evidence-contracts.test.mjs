@@ -224,13 +224,19 @@ describe('controlled JSON evidence contracts', () => {
         durationSeconds: 60,
         scenarios: ['passed'],
         database: { before: {}, after: {} },
-        persistence: { expectedMessageIds: 0, persistedMessageIds: 0, missingMessageIds: [] },
+        persistence: {
+          expectedMessageIds: 0,
+          persistedMessageIds: 0,
+          missingMessageIds: [],
+          duplicateAcknowledgedMessageIds: ['same-message-id'],
+        },
       }),
     ).toEqual(
       expect.arrayContaining([
         expect.stringContaining('scenarios[0] must be an object'),
         expect.stringContaining('scenarios must include core-read'),
         expect.stringContaining('database.before.tableCount'),
+        'performance-report.json persistence duplicateAcknowledgedMessageIds must be empty',
       ]),
     );
     expect(

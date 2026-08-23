@@ -149,3 +149,13 @@ export function missingPersistedMessageIds(expectedIds, persistedIds) {
   const persisted = new Set(persistedIds);
   return [...new Set(expectedIds)].filter((id) => !persisted.has(id));
 }
+
+export function duplicateAcknowledgedMessageIds(expectedIds) {
+  const seen = new Set();
+  const duplicates = new Set();
+  for (const id of expectedIds) {
+    if (seen.has(id)) duplicates.add(id);
+    else seen.add(id);
+  }
+  return [...duplicates];
+}

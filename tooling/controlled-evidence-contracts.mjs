@@ -840,6 +840,11 @@ function validatePerformanceReport(value) {
     value.persistence.missingMessageIds.length
   )
     failures.push(`${artifact} persistence missingMessageIds must be empty`);
+  if (
+    !Array.isArray(value.persistence?.duplicateAcknowledgedMessageIds) ||
+    value.persistence.duplicateAcknowledgedMessageIds.length
+  )
+    failures.push(`${artifact} persistence duplicateAcknowledgedMessageIds must be empty`);
   validatePerformanceSnapshot(artifact, 'database.before', value.database?.before, failures);
   validatePerformanceSnapshot(artifact, 'database.after', value.database?.after, failures);
   const beforeDead = value.database?.before?.messageBacklog?.deadCount;

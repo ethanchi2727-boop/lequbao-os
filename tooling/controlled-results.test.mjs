@@ -325,7 +325,12 @@ function semanticFixture(artifact, binding) {
       requestsPerScenario: 10,
       scenarios: performanceScenarios,
       database: { before: performanceSnapshot, after: performanceSnapshot },
-      persistence: { expectedMessageIds: 10, persistedMessageIds: 10, missingMessageIds: [] },
+      persistence: {
+        expectedMessageIds: 10,
+        persistedMessageIds: 10,
+        missingMessageIds: [],
+        duplicateAcknowledgedMessageIds: [],
+      },
     },
     'candidate-image-digests.json': { images },
     'deployment-topology.json': {

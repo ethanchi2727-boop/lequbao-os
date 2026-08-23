@@ -42,8 +42,8 @@ Run `pnpm performance:gate` from the repository root. Preserve the command exit 
 - Core write P95 is at most 800 ms.
 - Customer-message persistence P95 is at most 500 ms.
 - Each scenario has at most 1% non-2xx/3xx responses.
-- Every acknowledged customer-message ID exists in PostgreSQL after the run.
+- Every acknowledged customer-message ID is unique and exists in PostgreSQL after the run.
 - No new dead Outbox event appears during the run.
 - The report contains P50/P95/P99, errors, duration, concurrency, request count, database size/live-row estimate, transaction/block/temp/deadlock counters and Outbox backlog before and after.
 
-Any missing response ID, persistence mismatch, threshold breach, new dead event, unreachable database or missing report is a failed gate. The launch verifier parses the generated report rather than trusting its `PASS` label: it requires exactly `core-read`, `customer-message-write` and `core-write`, reconciles requests/successes/errors, enforces the frozen per-scenario threshold and one-percent error ceiling, requires every acknowledged message to persist and compares the before/after Outbox and complete 164-table database snapshots. Do not rerun with lower load to replace a failure; retain the failed artifact, investigate, deploy a new candidate and create a separate report.
+Any missing or repeated response ID, persistence mismatch, threshold breach, new dead event, unreachable database or missing report is a failed gate. The launch verifier parses the generated report rather than trusting its `PASS` label: it requires exactly `core-read`, `customer-message-write` and `core-write`, reconciles requests/successes/errors, enforces the frozen per-scenario threshold and one-percent error ceiling, requires every acknowledged message ID to be unique and persist, and compares the before/after Outbox and complete 164-table database snapshots. Do not rerun with lower load to replace a failure; retain the failed artifact, investigate, deploy a new candidate and create a separate report.
