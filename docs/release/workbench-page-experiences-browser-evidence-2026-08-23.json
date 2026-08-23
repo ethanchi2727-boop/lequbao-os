@@ -1,0 +1,52 @@
+{
+  "recordedAt": "2026-08-23",
+  "surface": "apps/workbench-web",
+  "environment": "local browser acceptance server",
+  "productionOrControlledAcceptance": false,
+  "pages": [
+    { "page": "page-003", "layout": "conversation-start", "panels": 3 },
+    { "page": "page-004", "layout": "conversation-thread", "panels": 3 },
+    { "page": "page-005", "layout": "task-plan", "panels": 4 },
+    { "page": "page-006", "layout": "artifact-preview", "panels": 4 },
+    { "page": "page-007", "layout": "provenance-timeline", "panels": 4 },
+    { "page": "page-009", "layout": "session-inbox", "panels": 4 },
+    { "page": "page-010", "layout": "job-queue", "panels": 4 },
+    { "page": "page-011", "layout": "source-library", "panels": 4 },
+    { "page": "page-012", "layout": "identity-switcher", "panels": 4 },
+    { "page": "page-015", "layout": "material-capture", "panels": 4 },
+    { "page": "page-016", "layout": "recognition-review", "panels": 4 },
+    { "page": "page-017", "layout": "missing-items", "panels": 4 },
+    { "page": "page-018", "layout": "change-confirmation", "panels": 4 },
+    { "page": "page-019", "layout": "field-provenance", "panels": 4 },
+    { "page": "page-020", "layout": "raw-materials", "panels": 4 },
+    { "page": "page-021", "layout": "publication-impact", "panels": 4 },
+    { "page": "page-024", "layout": "today-revenue", "panels": 4 }
+  ],
+  "sharedObservations": {
+    "desktopHorizontalOverflowCount": 0,
+    "distinctLayoutCount": 17,
+    "demoModeLabel": "演示结构",
+    "productionModeLabel": "权威数据模式",
+    "productionDemoPanelCount": 0,
+    "productionProtectedEmpty": true
+  },
+  "mobileObservation": {
+    "page": "page-005",
+    "viewport": { "width": 320, "height": 800 },
+    "documentScrollWidth": 320,
+    "panelColumns": 1,
+    "actionTargetMinimumHeight": 44
+  },
+  "intakeJourneyObservation": {
+    "page014StepCount": 4,
+    "page014CurrentStep": "开始",
+    "page177CurrentStep": "识别",
+    "mobileJourneyScrollable": true,
+    "mobileDocumentScrollWidth": 320
+  },
+  "boundaries": [
+    "This is local browser evidence, not controlled or production acceptance.",
+    "No real employee, merchant, provider, payment or WeChat device was used.",
+    "Production mode showed no demo business records."
+  ]
+}

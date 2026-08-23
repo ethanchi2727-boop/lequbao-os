@@ -16,6 +16,7 @@ import {
 } from './state.mjs';
 import { ApiError, createMerchantIntakeApi, createWorkbenchApi } from './api-client.js';
 import { resolveLivePageRequest } from './live-page-registry.mjs';
+import { loadWorkbenchPageExperience } from './experience-registry.mjs';
 import {
   resolveIntakeMutationMode,
   resolveIntakeProjection,
@@ -50,6 +51,8 @@ const resultPanelStorageKey = 'lequbao.workbench-result-panel';
 let resultPanel = resultPanelFromStorage(sessionStorage.getItem(resultPanelStorageKey));
 let draftMessage = '';
 const scrollPositions = new Map();
+let activeExperience = null;
+let experienceLoadVersion = 0;
 
 const demoFields = [
   ['主体名称', '南京拾味餐饮管理有限公司', '99%', '已识别'],
@@ -179,6 +182,8 @@ const intakePages = new Set(['page-014', 'page-175', 'page-176', 'page-177', 'pa
 function genericWorkbenchPage() {
   const contract = view.contract;
   if (!contract) return '';
+  const experience = activeExperience?.page === view.page ? activeExperience : null;
+  if (experience) return renderDedicatedExperience(experience, contract);
   const domains = contract.apiDomains.length ? contract.apiDomains : ['无外部数据'];
   const stateContent = livePageState.data
     ? renderLiveData(livePageState.data, livePageState.request?.kind)
@@ -201,6 +206,35 @@ function genericWorkbenchPage() {
     <div class="generic-scope"><span>数据域</span>${domains.map((domain) => `<b>${escapeHtml(domain)}</b>`).join('')}<em>服务端权限与租户范围最终裁决</em></div>
     ${stateContent}
     <footer>${renderLiveCommands(contract)}<small>${escapeHtml(contract.acceptance)}</small></footer>
+  </section>`;
+}
+
+function renderDedicatedExperience(experience, contract) {
+  const liveContent = livePageState.data
+    ? renderLiveData(livePageState.data, livePageState.request?.kind)
+    : demoMode
+      ? `<div class="experience-panels">${experience.panels
+          .map(
+            ([title, description], index) =>
+              `<article><b>${String(index + 1).padStart(2, '0')}</b><div><strong>${escapeHtml(title)}</strong><p>${escapeHtml(description)}</p></div></article>`,
+          )
+          .join('')}</div>`
+      : view.state === 'loading'
+        ? '<div class="loading-skeleton" aria-hidden="true"><span></span><span></span><span></span></div>'
+        : '<div class="protected-empty"><strong>等待权威页面数据</strong><p>生产模式不展示演示业务记录；只有服务端完成身份、租户和资源范围校验后才会显示内容。</p></div>';
+  const blocked = ['loading', 'denied', 'stopped', 'recoverable-failure'].includes(view.state);
+  const actions = experience.actions
+    .map(
+      ([label, route], index) =>
+        `<button class="${index === 0 ? 'primary' : ''}" data-route="${route}" ${blocked ? 'disabled' : ''}>${escapeHtml(label)}</button>`,
+    )
+    .join('');
+  return `<section class="dedicated-page experience-${experience.layout}" data-page-id="${contract.id}" data-experience="${experience.layout}">
+    <header><div><small>${escapeHtml(experience.kicker)}</small><h1>${escapeHtml(experience.headline)}</h1><p>${escapeHtml(experience.description)}</p></div><span class="experience-mode">${demoMode ? '演示结构' : '权威数据模式'}</span></header>
+    <div class="experience-scope"><span>${escapeHtml(contract.primaryRole)}</span>${contract.apiDomains.map((domain) => `<b>${escapeHtml(domain)}</b>`).join('')}<em>服务端最终裁决</em></div>
+    ${liveContent}
+    <aside class="experience-guardrail">${icon('warning')}<span><strong>执行边界</strong><small>${escapeHtml(experience.guardrail)}</small></span></aside>
+    <footer>${actions}<a href="/bao/page-170${demoMode ? '?demo=1' : ''}">${icon('help')} 帮助与审计</a></footer>
   </section>`;
 }
 
@@ -597,6 +631,28 @@ function bottomNav() {
     .join('')}</nav>`;
 }
 
+function intakeJourney() {
+  const currentStep =
+    view.page === 'page-178'
+      ? 3
+      : view.page === 'page-177'
+        ? 2
+        : ['page-175', 'page-176'].includes(view.page)
+          ? 1
+          : 0;
+  return `<nav class="intake-journey" aria-label="商户建档进度"><ol>${[
+    ['开始', '说明目标与主体'],
+    ['材料', '添加并安全检查'],
+    ['识别', '补充与处理冲突'],
+    ['确认', '核对影响后提交'],
+  ]
+    .map(
+      ([label, description], index) =>
+        `<li class="${index < currentStep ? 'complete' : index === currentStep ? 'current' : ''}" ${index === currentStep ? 'aria-current="step"' : ''}><b>${index + 1}</b><span><strong>${label}</strong><small>${description}</small></span></li>`,
+    )
+    .join('')}</ol></nav>`;
+}
+
 function focusMainContent() {
   document.querySelector('#main-content')?.focus({ preventScroll: true });
 }
@@ -605,11 +661,21 @@ function navigateTo(page) {
   scrollPositions.set(location.href, captureScrollPosition());
   history.pushState({}, '', `/bao/${page}${location.search}`);
   view = viewFor(page);
+  activeExperience = null;
   livePageState = { request: null, data: null };
   render();
   focusMainContent();
   restoreScrollPosition();
+  void bootstrapExperience(page);
   if (!demoMode && !intakePages.has(view.page)) void bootstrapLivePage();
+}
+
+async function bootstrapExperience(page) {
+  const loadVersion = ++experienceLoadVersion;
+  const experience = await loadWorkbenchPageExperience(page);
+  if (loadVersion !== experienceLoadVersion || view.page !== page) return;
+  activeExperience = experience;
+  if (experience) render();
 }
 
 function captureScrollPosition() {
@@ -638,7 +704,7 @@ function render() {
   document.body.dataset.mobilePage = String(view.mobile);
   document.title = `乐趣宝 · ${view.title}`;
   const intake = intakePages.has(view.page);
-  app.innerHTML = `<a class="skip-link" href="#main-content">跳到主要内容</a><div class="shell">${sidebar()}<main id="main-content" tabindex="-1" aria-busy="${view.state === 'loading'}">${topbar()}${statePanel()}${intake ? `<div class="workspace ${resultPanel.open ? '' : 'results-closed'}"><section class="chat"><div class="chat-heading"><div><h1>新商户资料建档</h1><p><i></i> 支持图片、PDF、门店定位与语音，系统自动整理</p></div>${demoMode ? `<button aria-label="更多">${icon('menu')}</button>` : ''}</div>${conversation()}${mobileSheet()}${composer()}</section>${results()}</div>` : genericWorkbenchPage()}${bottomNav()}</main></div>`;
+  app.innerHTML = `<a class="skip-link" href="#main-content">跳到主要内容</a><div class="shell">${sidebar()}<main id="main-content" tabindex="-1" aria-busy="${view.state === 'loading'}">${topbar()}${statePanel()}${intake ? `${intakeJourney()}<div class="workspace ${resultPanel.open ? '' : 'results-closed'}"><section class="chat"><div class="chat-heading"><div><h1>新商户资料建档</h1><p><i></i> 支持图片、PDF、门店定位与语音，系统自动整理</p></div>${demoMode ? `<button aria-label="更多">${icon('menu')}</button>` : ''}</div>${conversation()}${mobileSheet()}${composer()}</section>${results()}</div>` : genericWorkbenchPage()}${bottomNav()}</main></div>`;
   if (['denied', 'stopped', 'success'].includes(view.state))
     document.querySelector('.workspace')?.setAttribute('inert', '');
   if (restoreMainFocus) focusMainContent();
@@ -723,10 +789,12 @@ app.addEventListener('submit', (event) => {
 });
 addEventListener('popstate', () => {
   view = viewFor(resolvePage(location.pathname));
+  activeExperience = null;
   livePageState = { request: null, data: null };
   render();
   focusMainContent();
   restoreScrollPosition(scrollPositions.get(location.href));
+  void bootstrapExperience(view.page);
   if (!demoMode && !intakePages.has(view.page)) void bootstrapLivePage();
 });
 addEventListener('keydown', (event) => {
@@ -841,6 +909,7 @@ app.addEventListener('focusin', (event) => {
     option.setAttribute('aria-selected', String(option === event.target));
 });
 render();
+void bootstrapExperience(view.page);
 if (!demoMode) {
   if (!sessionToken) {
     view = { ...view, state: 'denied' };

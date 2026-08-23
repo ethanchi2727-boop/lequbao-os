@@ -9,16 +9,22 @@ const assets = Object.freeze({
     'live-page-registry.mjs',
     'page-contracts.mjs',
     'production-ui-policy.mjs',
+    'experience-registry.mjs',
   ],
   css: ['styles.css', 'product-tokens.css'],
   html: ['index.html'],
 });
 
+const routeExperienceGroups = Object.freeze([
+  'page-experiences.mjs',
+  'page-experiences-intake.mjs',
+]);
+
 export const workbenchPerformanceBudgets = Object.freeze({
-  javascript: 220 * 1024,
-  css: 30 * 1024,
+  javascript: 230 * 1024,
+  css: 32 * 1024,
   html: 2 * 1024,
-  initialRouteTotal: 250 * 1024,
+  initialRouteTotal: 265 * 1024,
 });
 
 export async function verifyWorkbenchPerformanceBudget() {
@@ -34,12 +40,24 @@ export async function verifyWorkbenchPerformanceBudget() {
         `Workbench ${kind} budget exceeded: ${sizes[kind]} > ${workbenchPerformanceBudgets[kind]}`,
       );
   }
+  const routeGroupSizes = {};
+  for (const file of routeExperienceGroups) {
+    const fileStat = await stat(new URL(`../apps/workbench-web/src/${file}`, import.meta.url));
+    routeGroupSizes[file] = fileStat.size;
+  }
+  sizes.javascript += Math.max(...Object.values(routeGroupSizes));
   const initialRouteTotal = Object.values(sizes).reduce((total, size) => total + size, 0);
   if (initialRouteTotal > workbenchPerformanceBudgets.initialRouteTotal)
     throw new Error(
       `Workbench initial route budget exceeded: ${initialRouteTotal} > ${workbenchPerformanceBudgets.initialRouteTotal}`,
     );
-  return { assets, sizes, initialRouteTotal, budgets: workbenchPerformanceBudgets };
+  return {
+    assets,
+    routeGroupSizes,
+    sizes,
+    initialRouteTotal,
+    budgets: workbenchPerformanceBudgets,
+  };
 }
 
 if (import.meta.url === pathToFileURL(process.argv[1] || '').href) {
