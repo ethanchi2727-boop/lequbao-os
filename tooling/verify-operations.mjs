@@ -1,23 +1,8 @@
 import { readFile } from 'node:fs/promises';
 import { parse } from 'yaml';
+import { inspectOperationsAlerts, requiredAlertCodes } from './operations-alert-policy.mjs';
 const alerts = parse(await readFile('ops/alerts.yaml', 'utf8')),
-  codes = new Set((alerts.rules ?? []).map((r) => r.code));
-const required = [
-  'AUTH_ANOMALY',
-  'CROSS_TENANT_DENIAL_SPIKE',
-  'PERMISSION_CHANGE_SPIKE',
-  'BULK_EXPORT_SPIKE',
-  'REFUND_SPIKE',
-  'RELEASE_SPIKE',
-  'PAYMENT_CALLBACK_DELAY',
-  'REWARD_LEDGER_UNBALANCED',
-  'OUTBOX_DEAD',
-  'PLUGIN_CIRCUIT_OPEN',
-  'SECRET_READ_ANOMALY',
-  'DATABASE_SLOW_QUERY',
-  'AUDIT_WRITE_FAILURE',
-];
-const failures = required.filter((code) => !codes.has(code)).map((code) => `missing alert ${code}`);
+  failures = inspectOperationsAlerts(alerts);
 for (const file of [
   'docs/runbooks/P0_ALERT_AND_FREEZE.md',
   'docs/runbooks/BACKUP_RESTORE.md',
@@ -79,5 +64,5 @@ if (failures.length) {
   process.exitCode = 1;
 } else
   console.log(
-    `Operations gate verified ${required.length} mandatory alerts, migration/restore/privacy controls and runbooks.`,
+    `Operations gate verified ${requiredAlertCodes.length} mandatory alerts, migration/restore/privacy controls and runbooks.`,
   );

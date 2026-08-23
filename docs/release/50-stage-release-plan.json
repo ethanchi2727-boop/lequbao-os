@@ -397,7 +397,7 @@
       "status": "local-complete",
       "acceptancePrefixes": [],
       "evidence": ["apps/api/src/operational-observability.ts", "ops/alerts.yaml"],
-      "selfCheck": "trace metrics redaction and 13 mandatory alerts"
+      "selfCheck": "trace metrics redaction and 14 mandatory alerts"
     },
     {
       "id": 43,
