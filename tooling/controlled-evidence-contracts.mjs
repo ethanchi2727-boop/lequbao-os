@@ -1384,6 +1384,16 @@ function validateCandidateImageOwner(artifact, images) {
     : [];
 }
 
+function validateCandidateImageDigests(value) {
+  const artifact = 'candidate-image-digests.json';
+  const failures = validateCandidateImageOwner(artifact, value.images);
+  if (!hasExactKeys(value, ['images', 'releaseCommit', 'version', 'workflowRunId']))
+    failures.push(`${artifact} fields are invalid`);
+  if (!hasExactKeys(value.images, ['api', 'web', 'worker']))
+    failures.push(`${artifact} images fields are invalid`);
+  return failures;
+}
+
 function validatePerformanceReport(value) {
   const artifact = 'performance-report.json';
   const failures = validateCandidateImageOwner(artifact, value.images);
@@ -2920,6 +2930,17 @@ function validateDeploymentTopology(value) {
     worker: value.services?.worker?.image,
     web: value.services?.web?.image,
   });
+  if (
+    !hasExactKeys(value, [
+      'capturedAt',
+      'dataStores',
+      'deploymentId',
+      'environment',
+      'releaseCommit',
+      'services',
+    ])
+  )
+    failures.push(`${artifact} fields are invalid`);
   if (value.environment !== 'controlled-preproduction')
     failures.push(`${artifact} environment must equal "controlled-preproduction"`);
   if (
@@ -2929,6 +2950,8 @@ function validateDeploymentTopology(value) {
     failures.push(`${artifact} services must contain exactly api, web and worker`);
   for (const target of ['api', 'worker', 'web']) {
     const service = value.services?.[target];
+    if (!hasExactKeys(service, ['deploymentRefHash', 'image', 'readyReplicas', 'replicas']))
+      failures.push(`${artifact} services.${target} fields are invalid`);
     if (!Number.isSafeInteger(service?.replicas) || service.replicas < 1)
       failures.push(`${artifact} services.${target}.replicas must be a positive integer`);
     if (!Number.isSafeInteger(service?.readyReplicas) || service.readyReplicas < 1)
@@ -2953,6 +2976,8 @@ function validateDeploymentTopology(value) {
       failures.push(`${prefix} must be an object`);
       continue;
     }
+    if (!hasExactKeys(store, ['endpointRefHash', 'kind', 'tlsVerified']))
+      failures.push(`${prefix} fields are invalid`);
     requiredStores.delete(store.kind);
     if (!supportedStores.has(store.kind))
       failures.push(`${prefix}.kind is not a supported data store`);
@@ -2973,6 +2998,20 @@ function validateDeploymentTopology(value) {
 function validateMonitoringSnapshot(value) {
   const artifact = 'monitoring-snapshot.json';
   const failures = [];
+  if (
+    !hasExactKeys(value, [
+      'alerts',
+      'backlog',
+      'capturedAt',
+      'deploymentId',
+      'releaseCommit',
+      'saturation',
+      'stopReleaseConditions',
+      'windowCompletedAt',
+      'windowStartedAt',
+    ])
+  )
+    failures.push(`${artifact} fields are invalid`);
   const saturationLimits = {
     cpuMaxPercent: 85,
     memoryMaxPercent: 85,
@@ -3004,6 +3043,8 @@ function validateMonitoringSnapshot(value) {
       failures.push(`${prefix} must be an object`);
       continue;
     }
+    if (!hasExactKeys(alert, ['alertId', 'observedAt', 'status']))
+      failures.push(`${prefix} fields are invalid`);
     if (typeof alert.alertId !== 'string' || !alert.alertId.trim())
       failures.push(`${prefix}.alertId must not be empty`);
     else if (alertIds.has(alert.alertId)) failures.push(`${artifact} alert IDs must be unique`);
@@ -3034,8 +3075,7 @@ const controlledArtifactValidators = {
   'physical-wal-evidence.json': validatePhysicalWalEvidence,
   'external-deletion-samples.json': validateExternalDeletionSamples,
   'performance-report.json': validatePerformanceReport,
-  'candidate-image-digests.json': (value) =>
-    validateCandidateImageOwner('candidate-image-digests.json', value.images),
+  'candidate-image-digests.json': validateCandidateImageDigests,
   'refund-unknown-recovery.json': validateRefundUnknownRecovery,
   'provider-callback-redacted.json': validateProviderCallback,
   'provider-request-redacted.json': validateProviderRequest,

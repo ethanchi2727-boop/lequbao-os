@@ -665,7 +665,12 @@ describe('controlled JSON evidence contracts', () => {
       windowCompletedAt: '2026-08-19T01:01:00.000Z',
       capturedAt: '2026-08-19T01:00:00.000Z',
       alerts: [
-        { alertId: 'load-alert', status: 'EXPECTED', observedAt: '2026-08-19T01:00:00.000Z' },
+        {
+          alertId: 'load-alert',
+          status: 'EXPECTED',
+          observedAt: '2026-08-19T01:00:00.000Z',
+          rawQuery: 'forbidden',
+        },
         { alertId: 'load-alert', status: 'OPEN', observedAt: 'not-a-time' },
       ],
       saturation: {
@@ -682,6 +687,7 @@ describe('controlled JSON evidence contracts', () => {
         'monitoring-snapshot.json saturation.memoryMaxPercent must be within 0..85',
         'monitoring-snapshot.json saturation.databaseConnectionMaxPercent must be within 0..80',
         'monitoring-snapshot.json alert IDs must be unique',
+        'monitoring-snapshot.json alerts[0] fields are invalid',
         'monitoring-snapshot.json alerts[1].status must be EXPECTED or RESOLVED',
         'monitoring-snapshot.json alerts[1].observedAt must be a non-future ISO date-time',
         'monitoring-snapshot.json monitoring window and capture timestamps are out of order',
@@ -696,6 +702,7 @@ describe('controlled JSON evidence contracts', () => {
       deploymentRefHash: hash.repeat(64),
       replicas,
       readyReplicas,
+      endpoint: 'forbidden',
     });
     const failures = validateControlledJsonEvidence('deployment-topology.json', {
       releaseCommit: 'a'.repeat(40),
@@ -710,7 +717,12 @@ describe('controlled JSON evidence contracts', () => {
       dataStores: [
         { kind: 'postgresql', endpointRefHash: '4'.repeat(64), tlsVerified: true },
         { kind: 'postgresql', endpointRefHash: '4'.repeat(64), tlsVerified: true },
-        { kind: 'object-store', endpointRefHash: '5'.repeat(64), tlsVerified: true },
+        {
+          kind: 'object-store',
+          endpointRefHash: '5'.repeat(64),
+          tlsVerified: true,
+          rawEndpoint: 'forbidden',
+        },
         { kind: 'queue', endpointRefHash: '6'.repeat(64), tlsVerified: true },
       ],
     });
@@ -718,6 +730,8 @@ describe('controlled JSON evidence contracts', () => {
       expect.arrayContaining([
         'deployment-topology.json services.api must have every replica ready',
         'deployment-topology.json services.worker.replicas must be a positive integer',
+        'deployment-topology.json services.api fields are invalid',
+        'deployment-topology.json dataStores[2] fields are invalid',
         'deployment-topology.json data store kinds must be unique',
         'deployment-topology.json data store endpoint references must be unique',
         'deployment-topology.json dataStores[3].kind is not a supported data store',
