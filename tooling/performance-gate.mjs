@@ -89,6 +89,7 @@ try {
               : undefined;
             const response = await fetch(new URL(scenario.path, config.base), {
               method: scenario.method,
+              redirect: 'error',
               headers: {
                 authorization: `Bearer ${scenario.token}`,
                 'content-type': 'application/json',
