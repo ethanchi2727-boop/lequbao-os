@@ -139,8 +139,11 @@ export const controlledJsonEvidenceContracts = {
   ],
   'refund-unknown-recovery.json': [
     field('initialState', 'string', { equals: 'UNKNOWN' }),
+    sha256('refundRefHash'),
     sha256('merchantAccountRef'),
+    sha256('idempotencyKeyHash'),
     field('providerQuery', 'object'),
+    sha256('providerQuery.idempotencyKeyHash'),
     timestamp('observedUnknownAt'),
     timestamp('providerQuery.queriedAt'),
     field('finalState', 'string'),
@@ -1293,6 +1296,8 @@ function validateRefundUnknownRecovery(value) {
     failures.push(`${artifact} providerQuery.performed must equal true`);
   if (value.providerQuery?.sameIdempotencyKey !== true)
     failures.push(`${artifact} providerQuery.sameIdempotencyKey must equal true`);
+  if (value.providerQuery?.idempotencyKeyHash !== value.idempotencyKeyHash)
+    failures.push(`${artifact} provider query idempotency hash does not match recovery`);
   if (!['REFUND_SUCCEEDED', 'REFUND_FAILED'].includes(value.finalState))
     failures.push(`${artifact} finalState must be a terminal provider-confirmed refund state`);
   const timeline = [value.observedUnknownAt, value.providerQuery?.queriedAt, value.completedAt].map(

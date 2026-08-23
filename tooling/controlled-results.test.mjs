@@ -212,10 +212,13 @@ function semanticFixture(artifact, binding) {
       amountFen: 100,
     },
     'refund-unknown-recovery.json': {
+      refundRefHash: 'd'.repeat(64),
       merchantAccountRef: 'f'.repeat(64),
+      idempotencyKeyHash: 'e'.repeat(64),
       providerQuery: {
         performed: true,
         sameIdempotencyKey: true,
+        idempotencyKeyHash: 'e'.repeat(64),
         queriedAt: '2026-08-19T01:00:00.000Z',
       },
       finalState: 'REFUND_SUCCEEDED',
