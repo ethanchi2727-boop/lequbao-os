@@ -576,8 +576,13 @@ const validDateTime = (value) =>
 function validateFreshTimestamp(artifact, pathName, value, binding, failures) {
   const timestamp = parseCanonicalUtcTimestamp(value);
   const workspaceCreatedAt = parseCanonicalUtcTimestamp(binding?.createdAt);
+  const capturedAt = Number.isFinite(binding?.capturedAt)
+    ? binding.capturedAt
+    : parseCanonicalUtcTimestamp(binding?.capturedAt);
   if (timestamp !== undefined && workspaceCreatedAt !== undefined && timestamp < workspaceCreatedAt)
     failures.push(`${artifact} ${pathName} predates the controlled evidence workspace`);
+  if (timestamp !== undefined && capturedAt !== undefined && timestamp > capturedAt)
+    failures.push(`${artifact} ${pathName} postdates evidence capture`);
 }
 const hasExactKeys = (value, keys) =>
   value &&
@@ -3384,6 +3389,16 @@ export function validateControlledJsonEvidence(artifact, value, binding = {}) {
         timestamp < workspaceCreatedAt
       )
         failures.push(`${artifact} ${rule.path} predates the controlled evidence workspace`);
+      const capturedAt = Number.isFinite(binding.capturedAt)
+        ? binding.capturedAt
+        : parseCanonicalUtcTimestamp(binding.capturedAt);
+      if (
+        !rule.allowFuture &&
+        timestamp !== undefined &&
+        capturedAt !== undefined &&
+        timestamp > capturedAt
+      )
+        failures.push(`${artifact} ${rule.path} postdates evidence capture`);
     }
     if (rule.type === 'object' && candidate.value && Object.keys(candidate.value).length === 0)
       failures.push(`${artifact} ${rule.path} must not be empty`);

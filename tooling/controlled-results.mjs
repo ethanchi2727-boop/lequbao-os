@@ -240,15 +240,6 @@ export async function verifyControlledResults({ plan, planSource, resultsFile, r
         const inspection = await inspectControlledEvidenceFile(physicalFile);
         for (const reason of inspection.failures)
           failures.push(`${result.code} evidence is invalid for ${expectedRelative}: ${reason}`);
-        const semanticFailures = await inspectControlledJsonEvidence(
-          physicalFile,
-          requiredFile,
-          context ?? {},
-        );
-        for (const reason of semanticFailures)
-          failures.push(
-            `${result.code} evidence violates its semantic contract for ${expectedRelative}: ${reason}`,
-          );
         if (inspection.sha256 && inspection.sha256 !== item.sha256)
           failures.push(`${result.code} evidence hash mismatch for ${expectedRelative}`);
         const receipt = await inspectCaptureReceipt({
@@ -263,6 +254,14 @@ export async function verifyControlledResults({ plan, planSource, resultsFile, r
           failures.push(`${result.code} ${reason} for ${expectedRelative}`);
         if (receipt.sha256 && receipt.sha256 !== item.captureReceiptSha256)
           failures.push(`${result.code} capture receipt hash mismatch for ${expectedRelative}`);
+        const semanticFailures = await inspectControlledJsonEvidence(physicalFile, requiredFile, {
+          ...(context ?? {}),
+          capturedAt: receipt.capturedAt,
+        });
+        for (const reason of semanticFailures)
+          failures.push(
+            `${result.code} evidence violates its semantic contract for ${expectedRelative}: ${reason}`,
+          );
         if (
           receipt.capturedAt !== undefined &&
           generatedAt !== undefined &&

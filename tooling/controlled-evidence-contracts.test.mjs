@@ -157,6 +157,23 @@ describe('controlled JSON evidence contracts', () => {
     expect(failures).toContain(
       'upload-response.json uploadedAt predates the controlled evidence workspace',
     );
+    expect(
+      validateControlledJsonEvidence(
+        'upload-response.json',
+        {
+          status: 201,
+          requestId: 'request-1',
+          objectRefHash: 'a'.repeat(64),
+          malwareScan: 'CLEAN',
+          rawObjectKeyExposed: false,
+          uploadedAt: '2026-08-19T01:00:00.000Z',
+        },
+        {
+          createdAt: '2026-08-19T00:58:00.000Z',
+          capturedAt: Date.parse('2026-08-19T00:59:00.000Z'),
+        },
+      ),
+    ).toContain('upload-response.json uploadedAt postdates evidence capture');
   });
 
   it('rejects hollow greenfield, financial and legal approvals', () => {

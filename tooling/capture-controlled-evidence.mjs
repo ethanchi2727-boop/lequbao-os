@@ -75,7 +75,12 @@ export async function captureControlledEvidenceArtifact({
   const sourceInspection = await inspectControlledEvidenceFile(physicalSource);
   if (sourceInspection.failures.length)
     throw new Error(`source evidence is invalid: ${sourceInspection.failures.join(', ')}`);
-  const semanticFailures = await inspectControlledJsonEvidence(physicalSource, artifact, context);
+  const semanticBinding = { ...context, capturedAt: capturedTimestamp };
+  const semanticFailures = await inspectControlledJsonEvidence(
+    physicalSource,
+    artifact,
+    semanticBinding,
+  );
   if (semanticFailures.length)
     throw new Error(
       `source evidence violates its semantic contract: ${semanticFailures.join(', ')}`,
@@ -91,7 +96,7 @@ export async function captureControlledEvidenceArtifact({
   const destinationSemanticFailures = await inspectControlledJsonEvidence(
     destination,
     artifact,
-    context,
+    semanticBinding,
   );
   if (destinationSemanticFailures.length)
     throw new Error(

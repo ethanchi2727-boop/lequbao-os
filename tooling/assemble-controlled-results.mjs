@@ -89,11 +89,6 @@ async function evidenceRecord(
     throw new Error(
       `${suite.code} evidence is invalid: ${relative}: ${inspection.failures.join(', ')}`,
     );
-  const semanticFailures = await inspectControlledJsonEvidence(physicalFile, file, context);
-  if (semanticFailures.length)
-    throw new Error(
-      `${suite.code} evidence violates its semantic contract: ${relative}: ${semanticFailures.join(', ')}`,
-    );
   const receipt = await inspectCaptureReceipt({
     evidenceRoot: root,
     suite,
@@ -105,6 +100,14 @@ async function evidenceRecord(
   if (receipt.failures.length)
     throw new Error(
       `${suite.code} capture receipt is invalid: ${relative}: ${receipt.failures.join(', ')}`,
+    );
+  const semanticFailures = await inspectControlledJsonEvidence(physicalFile, file, {
+    ...context,
+    capturedAt: receipt.capturedAt,
+  });
+  if (semanticFailures.length)
+    throw new Error(
+      `${suite.code} evidence violates its semantic contract: ${relative}: ${semanticFailures.join(', ')}`,
     );
   if (receipt.capturedAt !== undefined && receipt.capturedAt > generatedAt)
     throw new Error(`${suite.code} capture receipt is later than result generation: ${relative}`);
