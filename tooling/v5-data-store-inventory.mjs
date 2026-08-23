@@ -66,11 +66,9 @@ export async function inspectV5SqliteSource(source) {
       locationSha256: createHash('sha256').update(physicalPath).digest('hex'),
       fileSha256: await sha256File(physicalPath),
       bytes: metadata.size,
-      userVersion: Number(database.prepare('PRAGMA user_version').get().user_version),
       tableCount: tables.length,
       nonEmptyTableCount: nonEmptyTables.length,
       rowCount: rows,
-      tables,
       outcome: stopRelease
         ? 'STOP_RELEASE_DATA_PRESENT'
         : dataPresent

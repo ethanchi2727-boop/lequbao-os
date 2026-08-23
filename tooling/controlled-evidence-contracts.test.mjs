@@ -162,6 +162,7 @@ describe('controlled JSON evidence contracts', () => {
     );
     expect(
       validateControlledJsonEvidence('legacy-production-inventory.json', {
+        version: 1,
         releaseCommit: 'a'.repeat(40),
         generatedAt: '2026-08-19T01:00:00.000Z',
         verdict: 'INDEPENDENT_REVIEW_REQUIRED',

@@ -278,6 +278,7 @@ function semanticFixture(artifact, binding) {
       },
     },
     'legacy-production-inventory.json': {
+      version: 1,
       generatedAt: '2026-08-19T01:00:00.000Z',
       verdict: 'INDEPENDENT_REVIEW_REQUIRED',
       limitations: ['independent waiver required'],

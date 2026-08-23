@@ -3,6 +3,7 @@ import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
+import { validateControlledJsonEvidence } from './controlled-evidence-contracts.mjs';
 import { buildV5Inventory } from './v5-data-store-inventory.mjs';
 
 const temporaryDirectories = [];
@@ -44,8 +45,22 @@ describe('V5 data-store inventory', () => {
       tableCount: 1,
       nonEmptyTableCount: 1,
       rowCount: 1,
-      tables: [{ name: 'users', rowCount: 1 }],
     });
+    expect(Object.keys(inventory.sources[0]).sort()).toEqual([
+      'bytes',
+      'declaredEnvironment',
+      'fileSha256',
+      'id',
+      'kind',
+      'locationSha256',
+      'nonEmptyTableCount',
+      'outcome',
+      'rowCount',
+      'tableCount',
+    ]);
+    expect(validateControlledJsonEvidence('legacy-production-inventory.json', inventory)).toEqual(
+      [],
+    );
     const serialized = JSON.stringify(inventory);
     expect(serialized).not.toContain(file);
     expect(serialized).not.toContain('1380000');

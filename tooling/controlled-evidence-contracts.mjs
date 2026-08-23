@@ -200,6 +200,7 @@ export const controlledJsonEvidenceContracts = {
     empty('forbiddenClaims'),
   ],
   'legacy-production-inventory.json': [
+    field('version', 'number', { equals: 1 }),
     commit,
     timestamp('generatedAt'),
     field('verdict', 'string', { equals: 'INDEPENDENT_REVIEW_REQUIRED' }),
@@ -605,7 +606,16 @@ function validateApprovalSet(artifact, approvals, requiredRoles) {
 function validateLegacyInventory(value) {
   const artifact = 'legacy-production-inventory.json';
   const failures = [];
-  if (!hasExactKeys(value, ['generatedAt', 'limitations', 'releaseCommit', 'sources', 'verdict']))
+  if (
+    !hasExactKeys(value, [
+      'generatedAt',
+      'limitations',
+      'releaseCommit',
+      'sources',
+      'verdict',
+      'version',
+    ])
+  )
     failures.push(`${artifact} fields are invalid`);
   const sourceIds = new Set();
   const locations = new Set();
