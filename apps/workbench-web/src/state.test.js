@@ -2,7 +2,14 @@ import { describe, expect, it } from 'vitest';
 import {
   canCommit,
   escapeHtml,
+  mobileNavigationPage,
+  nextSearchResultIndex,
+  nextResultTab,
+  parseCommandInput,
+  primaryNavigationPage,
   resolvePage,
+  searchWorkbenchPages,
+  statusAnnouncement,
   statusCopy,
   updateResultPanel,
   viewFor,
@@ -45,5 +52,62 @@ describe('乐趣宝建档页面状态', () => {
     panel = updateResultPanel(panel, 'close');
     expect(panel.open).toBe(false);
     expect(updateResultPanel(panel, 'open').open).toBe(true);
+  });
+  it('主导航按当前业务分区高亮而不是永久停在 AI 对话', () => {
+    expect(primaryNavigationPage('page-014')).toBe('page-003');
+    expect(primaryNavigationPage('page-078')).toBe('page-053');
+    expect(primaryNavigationPage('page-122')).toBe('page-100');
+    expect(primaryNavigationPage('page-174')).toBe('page-137');
+    expect(primaryNavigationPage('page-178')).toBe('page-003');
+  });
+  it('移动导航只对五个固定入口设置当前项', () => {
+    expect(mobileNavigationPage('page-026')).toBe('page-026');
+    expect(mobileNavigationPage('page-178')).toBe('page-003');
+  });
+  it('错误与拒绝状态立即播报，普通进度礼貌播报', () => {
+    expect(statusAnnouncement('recoverable-failure')).toEqual({
+      role: 'alert',
+      live: 'assertive',
+    });
+    expect(statusAnnouncement('loading')).toEqual({ role: 'status', live: 'polite' });
+  });
+  it('静态页面搜索可以按名称和职责定位页面且限制结果数量', () => {
+    expect(searchWorkbenchPages('月度价值报告')[0]).toMatchObject({
+      id: 'page-122',
+      title: '月度价值报告',
+    });
+    expect(searchWorkbenchPages('商户', 3)).toHaveLength(3);
+    expect(searchWorkbenchPages('   ')).toEqual([]);
+  });
+  it('命令字段解析返回可展示的具体错误而不是静默失败', () => {
+    expect(parseCommandInput({ label: '数量', required: true }, '')).toEqual({
+      ok: false,
+      message: '请填写数量',
+    });
+    expect(parseCommandInput({ label: '数量', type: 'number' }, '2')).toMatchObject({
+      ok: true,
+      value: 2,
+    });
+    expect(parseCommandInput({ label: '配置', type: 'json' }, '[]')).toEqual({
+      ok: false,
+      message: '配置必须是 JSON 对象',
+    });
+    expect(parseCommandInput({ label: '范围', type: 'csv' }, 'a, b')).toMatchObject({
+      ok: true,
+      value: ['a', 'b'],
+    });
+  });
+  it('页面搜索结果支持上下箭头循环移动', () => {
+    expect(nextSearchResultIndex(-1, 2, 'ArrowDown')).toBe(0);
+    expect(nextSearchResultIndex(0, 2, 'ArrowDown')).toBe(1);
+    expect(nextSearchResultIndex(1, 2, 'ArrowDown')).toBe(0);
+    expect(nextSearchResultIndex(0, 2, 'ArrowUp')).toBe(1);
+    expect(nextSearchResultIndex(-1, 0, 'ArrowDown')).toBe(-1);
+  });
+  it('任务与成果页签支持左右循环和首尾键', () => {
+    expect(nextResultTab('task', 'ArrowLeft')).toBe('source');
+    expect(nextResultTab('source', 'ArrowRight')).toBe('task');
+    expect(nextResultTab('source', 'Home')).toBe('task');
+    expect(nextResultTab('task', 'End')).toBe('source');
   });
 });

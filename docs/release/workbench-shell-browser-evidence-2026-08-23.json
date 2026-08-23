@@ -1,0 +1,88 @@
+{
+  "recordedAt": "2026-08-23",
+  "surface": "apps/workbench-web",
+  "environment": "local browser acceptance server with deterministic local session fixture",
+  "productionOrControlledAcceptance": false,
+  "results": [
+    {
+      "case": "desktop navigation and search",
+      "route": "/bao/page-122",
+      "viewport": { "width": 1265, "height": 768 },
+      "observed": {
+        "documentTitle": "乐趣宝 · 月度价值报告",
+        "activeNavigation": "AI 客服",
+        "searchExpanded": true,
+        "searchResult": "月度价值报告",
+        "horizontalOverflow": false
+      }
+    },
+    {
+      "case": "search navigation focus persistence",
+      "route": "/bao/page-026",
+      "observed": {
+        "heading": "商机列表",
+        "activeNavigation": "商务中心",
+        "activeElementAfterAsyncLoad": "main-content"
+      }
+    },
+    {
+      "case": "minimum supported width",
+      "route": "/bao/page-026",
+      "viewport": { "width": 320, "height": 800 },
+      "observed": {
+        "documentScrollWidth": 320,
+        "mainWidth": 320,
+        "sidebarDisplay": "none",
+        "bottomNavigationDisplay": "flex",
+        "horizontalOverflow": false
+      }
+    },
+    {
+      "case": "combobox keyboard navigation",
+      "route": "/bao/page-026",
+      "query": "商机",
+      "observed": {
+        "arrowDownFirstResult": "商机列表",
+        "arrowDownSecondResult": "商机详情",
+        "selectedState": true,
+        "escapeReturnsFocusToSearch": true,
+        "escapeCollapsesResults": true
+      }
+    },
+    {
+      "case": "recoverable failure announcement",
+      "route": "/bao/page-026?demo=1&state=recoverable-failure",
+      "observed": {
+        "role": "alert",
+        "ariaLive": "assertive",
+        "ariaAtomic": true,
+        "heading": "操作没有完成",
+        "retryAction": "重试失败部分"
+      }
+    },
+    {
+      "case": "results tab keyboard and recovery",
+      "route": "/bao/page-014?demo=1",
+      "observed": {
+        "arrowRightFrom": "成果",
+        "arrowRightTo": "来源",
+        "tabpanelLabelledBy": "results-tab-source",
+        "closeReturnsFocusToOpenAction": true,
+        "reopenSucceeds": true
+      }
+    },
+    {
+      "case": "loading and empty search announcements",
+      "route": "/bao/page-014?demo=1&state=loading",
+      "observed": {
+        "mainAriaBusy": true,
+        "emptySearchAnnouncement": "没有匹配的工作台页面"
+      }
+    }
+  ],
+  "boundaries": [
+    "This is local browser evidence, not production acceptance.",
+    "No real merchant, employee, payment, provider or WeChat device was used.",
+    "Controlled-environment stages remain CONTROLLED."
+  ]
+}

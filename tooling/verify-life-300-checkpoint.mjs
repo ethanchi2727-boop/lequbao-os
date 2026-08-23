@@ -61,11 +61,11 @@ const allLifeLeaves = Object.freeze([
 ]);
 
 function check(condition, label, results) {
-  if (!condition) throw new Error(`Life 300-stage checkpoint failed: ${label}`);
+  if (!condition) throw new Error(`Life 300-checkpoint verification failed: ${label}`);
   results.push(label);
 }
 
-export async function verifyLife300Stage() {
+export async function verifyLife300Checkpoints() {
   const [pagesSource, serviceSource, matrixSource] = await Promise.all([
     readFile(new URL('../apps/life-uniapp/src/pages.json', import.meta.url), 'utf8'),
     readFile(
@@ -130,6 +130,6 @@ export async function verifyLife300Stage() {
 }
 
 if (import.meta.url === pathToFileURL(process.argv[1] || '').href) {
-  const results = await verifyLife300Stage();
+  const results = await verifyLife300Checkpoints();
   console.log(`Life closure verified: ${results.length} executable checkpoints.`);
 }

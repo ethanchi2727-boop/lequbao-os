@@ -2,6 +2,19 @@ import { workbenchPageById } from './page-contracts.mjs';
 
 export const allowedPages = new Set(workbenchPageById.keys());
 
+const primaryNavigationStarts = Object.freeze([
+  ['page-137', 137],
+  ['page-129', 129],
+  ['page-126', 126],
+  ['page-100', 100],
+  ['page-079', 79],
+  ['page-053', 53],
+  ['page-026', 26],
+  ['page-003', 0],
+]);
+
+const mobileNavigationPages = new Set(['page-003', 'page-026', 'page-004', 'page-009', 'page-012']);
+
 export const escapeHtml = (value) =>
   String(value).replace(
     /[&<>"']/gu,
@@ -43,6 +56,97 @@ export function viewFor(page, requestedState = 'default') {
             ? '识别确认'
             : (contract?.title ?? 'AI 对话建档'),
   };
+}
+
+export function primaryNavigationPage(page) {
+  const pageNumber = Number.parseInt(page.replace('page-', ''), 10);
+  if (pageNumber >= 175) return 'page-003';
+  return primaryNavigationStarts.find(([, start]) => pageNumber >= start)?.[0] ?? 'page-003';
+}
+
+export function mobileNavigationPage(page) {
+  return mobileNavigationPages.has(page) ? page : 'page-003';
+}
+
+export function statusAnnouncement(state) {
+  const urgentStates = new Set(['partial-error', 'denied', 'stopped', 'recoverable-failure']);
+  return urgentStates.has(state)
+    ? { role: 'alert', live: 'assertive' }
+    : { role: 'status', live: 'polite' };
+}
+
+export function searchWorkbenchPages(query, limit = 8) {
+  const normalizedQuery = query.trim().toLocaleLowerCase('zh-CN');
+  if (!normalizedQuery) return [];
+  return [...workbenchPageById.values()]
+    .filter((page) =>
+      [page.id, page.title, page.purpose, page.primaryRole]
+        .join(' ')
+        .toLocaleLowerCase('zh-CN')
+        .includes(normalizedQuery),
+    )
+    .slice(0, limit)
+    .map(({ id, title, purpose }) => ({ id, title, purpose }));
+}
+
+export function nextSearchResultIndex(currentIndex, resultCount, key) {
+  if (resultCount <= 0) return -1;
+  if (key === 'ArrowDown') return currentIndex < 0 ? 0 : (currentIndex + 1) % resultCount;
+  if (key === 'ArrowUp')
+    return currentIndex < 0 ? resultCount - 1 : (currentIndex - 1 + resultCount) % resultCount;
+  return currentIndex;
+}
+
+const resultTabs = Object.freeze(['task', 'result', 'source']);
+
+export function nextResultTab(currentTab, key) {
+  const currentIndex = Math.max(0, resultTabs.indexOf(currentTab));
+  if (key === 'Home') return resultTabs[0];
+  if (key === 'End') return resultTabs.at(-1);
+  if (key === 'ArrowRight') return resultTabs[(currentIndex + 1) % resultTabs.length];
+  if (key === 'ArrowLeft')
+    return resultTabs[(currentIndex - 1 + resultTabs.length) % resultTabs.length];
+  return currentTab;
+}
+
+export function parseCommandInput(input, rawValue) {
+  const value = rawValue.trim();
+  if (!value)
+    return input.required
+      ? { ok: false, message: `请填写${input.label}` }
+      : { ok: true, empty: true };
+  if (input.type === 'number') {
+    const number = Number(value);
+    return Number.isSafeInteger(number)
+      ? { ok: true, value: number }
+      : { ok: false, message: `${input.label}必须是整数` };
+  }
+  if (input.type === 'datetime-local') {
+    const date = new Date(value);
+    return Number.isNaN(date.getTime())
+      ? { ok: false, message: `请选择有效的${input.label}` }
+      : { ok: true, value: date.toISOString() };
+  }
+  if (input.type === 'csv') {
+    const values = value
+      .split(',')
+      .map((item) => item.trim())
+      .filter(Boolean);
+    return values.length
+      ? { ok: true, value: values }
+      : { ok: false, message: `${input.label}至少需要一项` };
+  }
+  if (input.type === 'json') {
+    try {
+      const object = JSON.parse(value);
+      return object && !Array.isArray(object) && typeof object === 'object'
+        ? { ok: true, value: object }
+        : { ok: false, message: `${input.label}必须是 JSON 对象` };
+    } catch {
+      return { ok: false, message: `${input.label}不是有效的 JSON` };
+    }
+  }
+  return { ok: true, value };
 }
 
 export function canCommit(fields) {

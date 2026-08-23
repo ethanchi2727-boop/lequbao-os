@@ -1,4 +1,17 @@
-import { escapeHtml, resolvePage, statusCopy, updateResultPanel, viewFor } from './state.mjs';
+import {
+  escapeHtml,
+  mobileNavigationPage,
+  nextSearchResultIndex,
+  nextResultTab,
+  parseCommandInput,
+  primaryNavigationPage,
+  resolvePage,
+  searchWorkbenchPages,
+  statusAnnouncement,
+  statusCopy,
+  updateResultPanel,
+  viewFor,
+} from './state.mjs';
 import { ApiError, createMerchantIntakeApi, createWorkbenchApi } from './api-client.js';
 import { resolveLivePageRequest } from './live-page-registry.mjs';
 import {
@@ -110,22 +123,22 @@ function icon(name) {
 function statePanel() {
   const copy = statusCopy(view.state, intakePages.has(view.page) ? 'intake' : 'generic');
   if (!copy) return '';
-  return `<section class="state-panel state-${view.state}" role="status"><div class="state-symbol">${icon(view.state === 'success' ? 'check' : 'warning')}</div><div><h2>${copy[0]}</h2><p>${copy[1]}</p></div>${['partial-error', 'recoverable-failure'].includes(view.state) ? '<button data-action="recover">重试失败部分</button>' : ''}</section>`;
+  const announcement = statusAnnouncement(view.state);
+  return `<section class="state-panel state-${view.state}" role="${announcement.role}" aria-live="${announcement.live}" aria-atomic="true"><div class="state-symbol">${icon(view.state === 'success' ? 'check' : 'warning')}</div><div><h2>${copy[0]}</h2><p>${copy[1]}</p></div>${['partial-error', 'recoverable-failure'].includes(view.state) ? '<button data-action="recover">重试失败部分</button>' : ''}</section>`;
 }
 
 function sidebar() {
   const shell = resolveWorkbenchShell(demoMode);
+  const activePage = primaryNavigationPage(view.page);
   const routeSuffix = demoMode ? '?demo=1' : '';
-  const demoSearch = demoMode
-    ? `<label class="search">${icon('search')}<input aria-label="搜索页面、商户或任务" placeholder="搜页面、商户或任务"/><kbd>Ctrl K</kbd></label>`
-    : '';
+  const pageSearch = `<div class="search-shell"><label class="search">${icon('search')}<input data-action="page-search" role="combobox" aria-label="搜索工作台页面" aria-controls="page-search-results" aria-expanded="false" aria-autocomplete="list" aria-haspopup="listbox" autocomplete="off" placeholder="搜索工作台页面"/><kbd>Ctrl K</kbd></label><div class="search-results" id="page-search-results" role="listbox" aria-label="页面搜索结果" hidden></div><div class="sr-only" id="page-search-announcement" aria-live="polite" aria-atomic="true"></div></div>`;
   const recent = shell.recentServices.length
     ? `<section class="recent"><small>我的持续服务</small>${shell.recentServices.map((item) => `<a href="#">${escapeHtml(item)}</a>`).join('')}</section>`
     : '<section class="recent"><small>我的持续服务</small><span>从当前页面的权威结果进入相关服务</span></section>';
   return `<aside class="sidebar" aria-label="主导航">
     <a class="brand" href="/bao/page-014${routeSuffix}"><b>${icon('logo')}</b><span><strong>乐趣宝</strong><small>AI 经营工作台</small></span></a>
     <button class="new-task" data-route="page-003">${icon('plus')} 新建 AI 任务 <kbd>Ctrl N</kbd></button>
-    ${demoSearch}
+    ${pageSearch}
     <nav>${[
       ['chat', 'AI 对话', 'page-003'],
       ['work', '商务中心', 'page-026'],
@@ -137,8 +150,8 @@ function sidebar() {
       ['money', '收益结算', 'page-137'],
     ]
       .map(
-        ([i, t, page], n) =>
-          `<a class="${n === 0 ? 'active' : ''}" href="/bao/${page}${routeSuffix}">${icon(i)} ${t}${demoMode && t === '商户交付' ? '<em>3</em>' : ''}</a>`,
+        ([i, t, page]) =>
+          `<a class="${page === activePage ? 'active' : ''}" ${page === activePage ? 'aria-current="page"' : ''} href="/bao/${page}${routeSuffix}">${icon(i)} ${t}${demoMode && t === '商户交付' ? '<em>3</em>' : ''}</a>`,
       )
       .join('')}</nav>
     ${recent}
@@ -148,9 +161,12 @@ function sidebar() {
 
 function topbar() {
   const shell = resolveWorkbenchShell(demoMode);
-  const demoActions = demoMode
-    ? `<button>快速执行</button><button data-action="open-results">${icon('clock')} 后台任务 ${shell.backgroundTaskCount}</button><button aria-label="分享">${icon('share')}</button>`
+  const resultAction = intakePages.has(view.page)
+    ? `<button data-action="open-results" aria-controls="workbench-results" aria-expanded="${resultPanel.open}">${icon('clock')} ${demoMode ? `后台任务 ${shell.backgroundTaskCount}` : '任务与成果'}</button>`
     : '';
+  const demoActions = demoMode
+    ? `<button>快速执行</button>${resultAction}<button aria-label="分享">${icon('share')}</button>`
+    : resultAction;
   return `<header class="topbar"><div class="mobile-title"><button data-action="back" aria-label="返回">${icon('back')}</button><strong>${escapeHtml(view.title)}</strong><small>${escapeHtml(shell.status)}</small></div><div class="crumb">乐趣宝 <b>›</b> <strong>${escapeHtml(view.title)}</strong></div><div class="top-actions"><span>${escapeHtml(shell.status)}</span>${demoActions}</div></header>`;
 }
 
@@ -188,12 +204,14 @@ function renderLiveCommands(contract) {
     return commands
       .map((command, index) => {
         const inputs = (command.inputs ?? [])
-          .map((input) => {
+          .map((input, inputIndex) => {
             const options = input.options ?? [];
+            const inputId = `command-${index}-field-${inputIndex}`;
+            const errorId = `${inputId}-error`;
             const control = options.length
-              ? `<select data-command-field="${escapeHtml(input.name)}" ${input.required ? 'required' : ''}><option value="">请选择</option>${options.map((option) => `<option value="${escapeHtml(option.value)}">${escapeHtml(option.label)}</option>`).join('')}</select>`
-              : `<input data-command-field="${escapeHtml(input.name)}" type="${escapeHtml(input.type ?? 'text')}" ${input.required ? 'required' : ''} ${input.placeholder ? `placeholder="${escapeHtml(input.placeholder)}"` : ''}/>`;
-            return `<label><span>${escapeHtml(input.label)}</span>${control}</label>`;
+              ? `<select id="${inputId}" data-command-field="${escapeHtml(input.name)}" aria-describedby="${errorId}" ${input.required ? 'required' : ''}><option value="">请选择</option>${options.map((option) => `<option value="${escapeHtml(option.value)}">${escapeHtml(option.label)}</option>`).join('')}</select>`
+              : `<input id="${inputId}" data-command-field="${escapeHtml(input.name)}" aria-describedby="${errorId}" type="${escapeHtml(input.type ?? 'text')}" ${input.required ? 'required' : ''} ${input.placeholder ? `placeholder="${escapeHtml(input.placeholder)}"` : ''}/>`;
+            return `<label><span>${escapeHtml(input.label)}</span>${control}<small class="field-error" id="${errorId}" role="alert"></small></label>`;
           })
           .join('');
         return `<div class="command-form" data-command-form="${escapeHtml(command.id)}">${inputs}<button class="${index === 0 ? 'primary' : ''}" data-command="${escapeHtml(command.id)}" ${['denied', 'stopped', 'loading'].includes(view.state) ? 'disabled' : ''}>${escapeHtml(command.label)}</button></div>`;
@@ -498,7 +516,7 @@ function results() {
   ]
     .map(
       ([code, label, count]) =>
-        `<button class="${resultPanel.tab === code ? 'active' : ''}" data-action="result-tab" data-tab="${code}">${label} <sup>${count}</sup></button>`,
+        `<button id="results-tab-${code}" role="tab" aria-controls="results-panel-${code}" aria-selected="${resultPanel.tab === code}" tabindex="${resultPanel.tab === code ? '0' : '-1'}" class="${resultPanel.tab === code ? 'active' : ''}" data-action="result-tab" data-tab="${code}">${label} <sup>${count}</sup></button>`,
     )
     .join('');
   const missingRows = projection.missingItems.length
@@ -530,7 +548,9 @@ function results() {
       ? '<div class="result-row"><span><small>营业执照原图</small><strong>安全扫描通过 · SHA-256 已留证</strong></span><em>原件</em></div><div class="result-row"><span><small>微信门店定位</small><strong>南京市秦淮区中山南路 18 号</strong></span><em>定位</em></div><div class="result-row"><span><small>店长语音</small><strong>营业时间转写与原音共同保留</strong></span><em>语音</em></div>'
       : '';
   const source = `<h3>可信来源</h3>${sourceRows || '<p class="safe-note">当前没有服务端绑定的来源证据。</p>'}<p class="safe-note">${icon('check')} 来源只用于已声明目的；修正不会覆盖原始证据。</p>`;
-  return `<aside class="results" aria-label="任务与成果"><nav>${tabs}<button data-action="close-results" aria-label="关闭任务与成果">${icon('close')}</button></nav>${resultPanel.tab === 'task' ? task : resultPanel.tab === 'source' ? source : result}</aside>`;
+  const activePanel =
+    resultPanel.tab === 'task' ? task : resultPanel.tab === 'source' ? source : result;
+  return `<aside class="results" id="workbench-results" aria-label="任务与成果"><nav role="tablist" aria-label="任务与成果分类">${tabs}<button data-action="close-results" aria-label="关闭任务与成果">${icon('close')}</button></nav><section id="results-panel-${resultPanel.tab}" role="tabpanel" aria-labelledby="results-tab-${resultPanel.tab}" tabindex="0">${activePanel}</section></aside>`;
 }
 
 function mobileSheet() {
@@ -554,15 +574,43 @@ function mobileSheet() {
 
 function bottomNav() {
   const suffix = demoMode ? '?demo=1' : '';
-  return `<nav class="bottom-nav"><a class="active" href="/bao/page-003${suffix}">${icon('chat')}<small>对话</small></a><a href="/bao/page-026${suffix}">${icon('work')}<small>工作</small></a><a href="/bao/page-004${suffix}">${icon('task')}<small>任务</small></a><a href="/bao/page-009${suffix}">${icon('message')}<small>消息</small></a><a href="/bao/page-012${suffix}">${icon('user')}<small>我的</small></a></nav>`;
+  const activePage = mobileNavigationPage(view.page);
+  return `<nav class="bottom-nav" aria-label="移动端导航">${[
+    ['page-003', 'chat', '对话'],
+    ['page-026', 'work', '工作'],
+    ['page-004', 'task', '任务'],
+    ['page-009', 'message', '消息'],
+    ['page-012', 'user', '我的'],
+  ]
+    .map(
+      ([page, itemIcon, label]) =>
+        `<a class="${page === activePage ? 'active' : ''}" ${page === activePage ? 'aria-current="page"' : ''} href="/bao/${page}${suffix}">${icon(itemIcon)}<small>${label}</small></a>`,
+    )
+    .join('')}</nav>`;
+}
+
+function focusMainContent() {
+  document.querySelector('#main-content')?.focus({ preventScroll: true });
+}
+
+function navigateTo(page) {
+  history.pushState({}, '', `/bao/${page}${location.search}`);
+  view = viewFor(page);
+  livePageState = { request: null, data: null };
+  render();
+  focusMainContent();
+  if (!demoMode && !intakePages.has(view.page)) void bootstrapLivePage();
 }
 
 function render() {
+  const restoreMainFocus = document.activeElement?.id === 'main-content';
   document.body.dataset.mobilePage = String(view.mobile);
+  document.title = `乐趣宝 · ${view.title}`;
   const intake = intakePages.has(view.page);
-  app.innerHTML = `<div class="shell">${sidebar()}<main>${topbar()}${statePanel()}${intake ? `<div class="workspace ${resultPanel.open ? '' : 'results-closed'}"><section class="chat"><div class="chat-heading"><div><h1>新商户资料建档</h1><p><i></i> 支持图片、PDF、门店定位与语音，系统自动整理</p></div>${demoMode ? `<button aria-label="更多">${icon('menu')}</button>` : ''}</div>${conversation()}${mobileSheet()}${composer()}</section>${results()}</div>` : genericWorkbenchPage()}${bottomNav()}</main></div>`;
+  app.innerHTML = `<a class="skip-link" href="#main-content">跳到主要内容</a><div class="shell">${sidebar()}<main id="main-content" tabindex="-1" aria-busy="${view.state === 'loading'}">${topbar()}${statePanel()}${intake ? `<div class="workspace ${resultPanel.open ? '' : 'results-closed'}"><section class="chat"><div class="chat-heading"><div><h1>新商户资料建档</h1><p><i></i> 支持图片、PDF、门店定位与语音，系统自动整理</p></div>${demoMode ? `<button aria-label="更多">${icon('menu')}</button>` : ''}</div>${conversation()}${mobileSheet()}${composer()}</section>${results()}</div>` : genericWorkbenchPage()}${bottomNav()}</main></div>`;
   if (['denied', 'stopped', 'success'].includes(view.state))
     document.querySelector('.workspace')?.setAttribute('inert', '');
+  if (restoreMainFocus) focusMainContent();
 }
 
 app.addEventListener('click', (event) => {
@@ -574,11 +622,7 @@ app.addEventListener('click', (event) => {
   }
   const route = target.dataset.route;
   if (route) {
-    history.pushState({}, '', `/bao/${route}${location.search}`);
-    view = viewFor(route);
-    livePageState = { request: null, data: null };
-    render();
-    if (!demoMode && !intakePages.has(view.page)) void bootstrapLivePage();
+    navigateTo(route);
     return;
   }
   if (target.dataset.action === 'back') {
@@ -593,6 +637,7 @@ app.addEventListener('click', (event) => {
   if (target.dataset.action === 'close-results') {
     resultPanel = updateResultPanel(resultPanel, 'close');
     render();
+    document.querySelector('[data-action="open-results"]')?.focus();
     return;
   }
   if (target.dataset.action === 'result-tab') {
@@ -648,7 +693,110 @@ addEventListener('popstate', () => {
   view = viewFor(resolvePage(location.pathname));
   livePageState = { request: null, data: null };
   render();
+  focusMainContent();
   if (!demoMode && !intakePages.has(view.page)) void bootstrapLivePage();
+});
+addEventListener('keydown', (event) => {
+  if (event.key === 'Escape') {
+    const search = document.querySelector('[data-action="page-search"]');
+    const results = document.querySelector('#page-search-results');
+    if (search instanceof HTMLInputElement && results instanceof HTMLElement && !results.hidden) {
+      results.hidden = true;
+      search.setAttribute('aria-expanded', 'false');
+      search.focus();
+    }
+    return;
+  }
+  if (!(event.ctrlKey || event.metaKey)) return;
+  if (event.key.toLowerCase() === 'n') {
+    event.preventDefault();
+    navigateTo('page-003');
+  }
+  if (event.key.toLowerCase() === 'k') {
+    const search = document.querySelector('[data-action="page-search"]');
+    if (search instanceof HTMLInputElement) {
+      event.preventDefault();
+      search.focus();
+    }
+  }
+});
+app.addEventListener('input', (event) => {
+  if (event.target instanceof HTMLInputElement && event.target.dataset.action === 'page-search') {
+    const matches = searchWorkbenchPages(event.target.value);
+    const results = document.querySelector('#page-search-results');
+    const announcement = document.querySelector('#page-search-announcement');
+    if (!(results instanceof HTMLElement)) return;
+    results.innerHTML = matches.length
+      ? matches
+          .map(
+            (page) =>
+              `<button role="option" aria-selected="false" data-route="${page.id.toLowerCase()}"><strong>${escapeHtml(page.title)}</strong><small>${escapeHtml(page.purpose)}</small></button>`,
+          )
+          .join('')
+      : '<span>没有匹配的工作台页面</span>';
+    results.hidden = !event.target.value.trim();
+    event.target.setAttribute('aria-expanded', String(!results.hidden));
+    if (announcement)
+      announcement.textContent = event.target.value.trim()
+        ? matches.length
+          ? `找到 ${matches.length} 个页面`
+          : '没有匹配的工作台页面'
+        : '';
+    return;
+  }
+  if (
+    (event.target instanceof HTMLInputElement || event.target instanceof HTMLSelectElement) &&
+    event.target.dataset.commandField
+  ) {
+    event.target.removeAttribute('aria-invalid');
+    const error = document.querySelector(`#${CSS.escape(event.target.id)}-error`);
+    if (error) error.textContent = '';
+  }
+});
+app.addEventListener('keydown', (event) => {
+  const search = document.querySelector('[data-action="page-search"]');
+  const options = [...document.querySelectorAll('#page-search-results [role="option"]')];
+  if (
+    event.target instanceof HTMLInputElement &&
+    event.target.dataset.action === 'page-search' &&
+    ['ArrowDown', 'ArrowUp'].includes(event.key)
+  ) {
+    const nextIndex = nextSearchResultIndex(-1, options.length, event.key);
+    if (nextIndex >= 0) {
+      event.preventDefault();
+      options[nextIndex].focus();
+    }
+    return;
+  }
+  if (event.target instanceof HTMLElement && event.target.getAttribute('role') === 'option') {
+    if (['ArrowDown', 'ArrowUp'].includes(event.key)) {
+      event.preventDefault();
+      const currentIndex = options.indexOf(event.target);
+      options[nextSearchResultIndex(currentIndex, options.length, event.key)]?.focus();
+    } else if (event.key === 'Escape' && search instanceof HTMLInputElement) {
+      event.preventDefault();
+      document.querySelector('#page-search-results')?.setAttribute('hidden', '');
+      search.setAttribute('aria-expanded', 'false');
+      search.focus();
+    }
+  }
+  if (
+    event.target instanceof HTMLButtonElement &&
+    event.target.dataset.action === 'result-tab' &&
+    ['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)
+  ) {
+    event.preventDefault();
+    const tab = nextResultTab(event.target.dataset.tab, event.key);
+    resultPanel = updateResultPanel(resultPanel, 'tab', tab);
+    render();
+    document.querySelector(`[data-action="result-tab"][data-tab="${tab}"]`)?.focus();
+  }
+});
+app.addEventListener('focusin', (event) => {
+  if (!(event.target instanceof HTMLElement) || event.target.getAttribute('role') !== 'option')
+    return;
+  for (const option of document.querySelectorAll('#page-search-results [role="option"]'))
+    option.setAttribute('aria-selected', String(option === event.target));
 });
 render();
 if (!demoMode) {
@@ -715,45 +863,15 @@ async function executeLiveCommand(commandId) {
       control instanceof HTMLInputElement || control instanceof HTMLSelectElement
         ? control.value.trim()
         : '';
-    if (!rawValue && input.required) {
+    const parsed = parseCommandInput(input, rawValue);
+    if (!parsed.ok) {
+      control?.setAttribute('aria-invalid', 'true');
+      const error = control?.id ? document.querySelector(`#${CSS.escape(control.id)}-error`) : null;
+      if (error) error.textContent = parsed.message;
       control?.focus();
       return;
     }
-    if (!rawValue) continue;
-    if (input.type === 'number') {
-      const value = Number(rawValue);
-      if (!Number.isSafeInteger(value)) {
-        control?.focus();
-        return;
-      }
-      inputBody[input.name] = value;
-    } else if (input.type === 'datetime-local') {
-      const value = new Date(rawValue);
-      if (Number.isNaN(value.getTime())) {
-        control?.focus();
-        return;
-      }
-      inputBody[input.name] = value.toISOString();
-    } else if (input.type === 'csv') {
-      const values = rawValue
-        .split(',')
-        .map((value) => value.trim())
-        .filter(Boolean);
-      if (!values.length) {
-        control?.focus();
-        return;
-      }
-      inputBody[input.name] = values;
-    } else if (input.type === 'json') {
-      try {
-        const value = JSON.parse(rawValue);
-        if (!value || Array.isArray(value) || typeof value !== 'object') throw new Error();
-        inputBody[input.name] = value;
-      } catch {
-        control?.focus();
-        return;
-      }
-    } else inputBody[input.name] = rawValue;
+    if (!parsed.empty) inputBody[input.name] = parsed.value;
   }
   if (command.confirm && !globalThis.confirm(command.confirm)) return;
   view = { ...view, state: 'loading' };
