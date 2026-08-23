@@ -1,6 +1,14 @@
-import { readFile } from 'node:fs/promises';
+import { readFile, readdir } from 'node:fs/promises';
 import { inspectContainerImagePins } from './container-image-policy.mjs';
 import { inspectGitHubActionPins } from './github-actions-policy.mjs';
+
+const workflowFiles = (await readdir('.github/workflows', { withFileTypes: true }))
+  .filter((entry) => entry.isFile() && /\.ya?ml$/iu.test(entry.name))
+  .map((entry) => `.github/workflows/${entry.name}`)
+  .sort();
+const allWorkflowSources = Object.fromEntries(
+  await Promise.all(workflowFiles.map(async (file) => [file, await readFile(file, 'utf8')])),
+);
 
 const [
   dockerfile,
@@ -59,18 +67,11 @@ failures.push(
     manifests: {
       'compose.yaml': previewCompose,
       '.devcontainer/compose.yaml': await readFile('.devcontainer/compose.yaml', 'utf8'),
-      '.github/workflows/ci.yml': workflow,
+      ...allWorkflowSources,
     },
   }),
 );
-failures.push(
-  ...inspectGitHubActionPins({
-    '.github/workflows/ci.yml': workflow,
-    '.github/workflows/controlled-preflight.yml': controlledPreflight,
-    '.github/workflows/publish-candidate-images.yml': candidatePublisher,
-    '.github/workflows/verify-controlled-release.yml': controlledReleaseVerifier,
-  }),
-);
+failures.push(...inspectGitHubActionPins(allWorkflowSources));
 for (const target of ['api', 'worker', 'web']) {
   if (!new RegExp(` AS ${target}\\r?\\n`, 'u').test(dockerfile))
     failures.push(`Docker target missing: ${target}`);

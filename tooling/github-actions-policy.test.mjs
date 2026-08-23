@@ -1,15 +1,14 @@
-import { readFile } from 'node:fs/promises';
+import { readFile, readdir } from 'node:fs/promises';
 import { describe, expect, it } from 'vitest';
 import { inspectGitHubActionPins, trustedActionPins } from './github-actions-policy.mjs';
 
 describe('GitHub Actions supply-chain policy', () => {
   it('pins every repository workflow action to the approved full commit', async () => {
-    const files = [
-      '.github/workflows/ci.yml',
-      '.github/workflows/controlled-preflight.yml',
-      '.github/workflows/publish-candidate-images.yml',
-      '.github/workflows/verify-controlled-release.yml',
-    ];
+    const files = (await readdir('.github/workflows', { withFileTypes: true }))
+      .filter((entry) => entry.isFile() && /\.ya?ml$/iu.test(entry.name))
+      .map((entry) => `.github/workflows/${entry.name}`)
+      .sort();
+    expect(files.length).toBeGreaterThan(0);
     const workflows = Object.fromEntries(
       await Promise.all(files.map(async (file) => [file, await readFile(file, 'utf8')])),
     );
