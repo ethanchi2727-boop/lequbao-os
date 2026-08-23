@@ -542,6 +542,11 @@ const opaqueReference = /^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$/u;
 const validDateTime = (value) =>
   parseCanonicalUtcTimestamp(value) !== undefined &&
   parseCanonicalUtcTimestamp(value) <= Date.now() + 5 * 60_000;
+const hasExactKeys = (value, keys) =>
+  value &&
+  !Array.isArray(value) &&
+  typeof value === 'object' &&
+  JSON.stringify(Object.keys(value).sort()) === JSON.stringify([...keys].sort());
 
 function validateApprovalSet(artifact, approvals, requiredRoles) {
   const failures = [];
@@ -1294,6 +1299,30 @@ function validatePerformanceReport(value) {
 function validateRefundUnknownRecovery(value) {
   const artifact = 'refund-unknown-recovery.json';
   const failures = [];
+  if (
+    !hasExactKeys(value, [
+      'completedAt',
+      'convergenceCount',
+      'finalState',
+      'idempotencyKeyHash',
+      'initialState',
+      'merchantAccountRef',
+      'observedUnknownAt',
+      'providerQuery',
+      'queryBeforeRetry',
+      'refundRefHash',
+    ])
+  )
+    failures.push(`${artifact} fields are invalid`);
+  if (
+    !hasExactKeys(value.providerQuery, [
+      'idempotencyKeyHash',
+      'performed',
+      'queriedAt',
+      'sameIdempotencyKey',
+    ])
+  )
+    failures.push(`${artifact} providerQuery fields are invalid`);
   if (value.providerQuery?.performed !== true)
     failures.push(`${artifact} providerQuery.performed must equal true`);
   if (value.providerQuery?.sameIdempotencyKey !== true)
@@ -1316,6 +1345,22 @@ function validateRefundUnknownRecovery(value) {
 function validateProviderCallback(value) {
   const artifact = 'provider-callback-redacted.json';
   const failures = [];
+  if (
+    !hasExactKeys(value, [
+      'amountFen',
+      'appliedAt',
+      'appliedBusinessTransitions',
+      'deliveryAttempts',
+      'merchantAccountRef',
+      'orderRefHash',
+      'paymentState',
+      'providerEventIdHash',
+      'receivedAt',
+      'replayRejected',
+      'signatureVerified',
+    ])
+  )
+    failures.push(`${artifact} fields are invalid`);
   if (!Number.isSafeInteger(value.deliveryAttempts))
     failures.push(`${artifact} deliveryAttempts must be an integer`);
   const receivedAt = Date.parse(value.receivedAt);
@@ -1323,6 +1368,35 @@ function validateProviderCallback(value) {
   if (Number.isFinite(receivedAt) && Number.isFinite(appliedAt) && appliedAt < receivedAt)
     failures.push(`${artifact} appliedAt must not precede receivedAt`);
   return failures;
+}
+
+function validateProviderRequest(value) {
+  const artifact = 'provider-request-redacted.json';
+  return hasExactKeys(value, [
+    'idempotencyKeyHash',
+    'merchantAccountRef',
+    'orderRefHash',
+    'requestedAt',
+    'serverOrderAmountFen',
+  ])
+    ? []
+    : [`${artifact} fields are invalid`];
+}
+
+function validateMerchantReconciliation(value) {
+  const artifact = 'merchant-account-reconciliation.json';
+  return hasExactKeys(value, [
+    'accountMatch',
+    'amountFen',
+    'amountMatch',
+    'orderRefHash',
+    'platformMerchantAccountRef',
+    'providerMerchantAccountRef',
+    'reconciledAt',
+    'unexplainedItems',
+  ])
+    ? []
+    : [`${artifact} fields are invalid`];
 }
 
 function validateReviewPublish(value) {
@@ -2421,6 +2495,8 @@ const controlledArtifactValidators = {
     validateCandidateImageOwner('candidate-image-digests.json', value.images),
   'refund-unknown-recovery.json': validateRefundUnknownRecovery,
   'provider-callback-redacted.json': validateProviderCallback,
+  'provider-request-redacted.json': validateProviderRequest,
+  'merchant-account-reconciliation.json': validateMerchantReconciliation,
   'review-publish.json': validateReviewPublish,
   'consumer-build.json': (value) => validateWechatBuild('consumer-build.json', value),
   'merchant-template-build.json': (value) =>
