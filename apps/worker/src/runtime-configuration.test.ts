@@ -42,6 +42,7 @@ describe('Worker runtime configuration', () => {
   it('rejects placeholder or weak tokens, insecure gateways, mutable tenant ids and non-TLS databases', () => {
     for (const mutation of [
       { OUTBOX_EVENT_GATEWAY_TOKEN: 'placeholder-event-token' },
+      { OUTBOX_EVENT_GATEWAY_TOKEN: `${base.OUTBOX_EVENT_GATEWAY_TOKEN} ` },
       { INTERNAL_WORKER_TOKEN: 'short' },
       { INTERNAL_API_URL: 'http://api.example' },
       { WORKER_TENANT_ID: 'tenant-id' },

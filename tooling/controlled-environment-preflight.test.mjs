@@ -95,6 +95,13 @@ describe('controlled environment preflight', () => {
       name: 'PLATFORM_ADDRESS_ENCRYPTION_KEY',
       reason: 'invalid-32-byte-base64',
     });
+
+    const paddedSecret = completeEnvironment();
+    paddedSecret.INTERNAL_WORKER_TOKEN = ` ${paddedSecret.INTERNAL_WORKER_TOKEN}`;
+    expect(inspectControlledEnvironment(paddedSecret).invalid).toContainEqual({
+      name: 'INTERNAL_WORKER_TOKEN',
+      reason: 'surrounding-whitespace',
+    });
   });
 
   it('accepts a complete non-loopback controlled profile', () => {

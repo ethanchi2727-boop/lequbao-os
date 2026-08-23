@@ -73,6 +73,7 @@ describe('API runtime configuration', () => {
   it('rejects placeholders, weak secrets, insecure gateways and non-TLS PostgreSQL', () => {
     for (const mutation of [
       { AUTH_JWT_SECRET: 'replace-with-at-least-32-bytes' },
+      { AUTH_JWT_SECRET: ` ${launch.CONSUMER_AUTH_JWT_SECRET}` },
       { COMMERCE_CALLBACK_SECRET: 'too-short' },
       { OBJECT_STORE_GATEWAY_URL: 'http://objects.example' },
       { DATABASE_URL: 'postgres://runtime:secret@database.example/lequ' },

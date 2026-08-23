@@ -64,6 +64,11 @@ const productionSecrets = [
 
 function validateProductionValues(environment: RuntimeEnvironment) {
   const failures: string[] = [];
+  for (const name of apiProductionRequiredSettings) {
+    const value = environment[name];
+    if (value !== undefined && value !== value.trim())
+      failures.push(`${name} (surrounding whitespace forbidden)`);
+  }
   for (const name of productionUrls) {
     try {
       const url = new URL(environment[name]!);

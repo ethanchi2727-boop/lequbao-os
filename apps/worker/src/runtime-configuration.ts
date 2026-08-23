@@ -32,6 +32,11 @@ const productionTokens = [
 
 function validateProductionValues(environment: RuntimeEnvironment) {
   const failures: string[] = [];
+  for (const name of workerProductionRequiredSettings) {
+    const value = environment[name];
+    if (value !== undefined && value !== value.trim())
+      failures.push(`${name} (surrounding whitespace forbidden)`);
+  }
   for (const name of productionUrls) {
     try {
       const url = new URL(environment[name]!);
