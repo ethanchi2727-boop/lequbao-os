@@ -38,6 +38,8 @@ describe('backup and restore evidence boundary', () => {
       'restore drill contains no privacy deletion replay evidence',
       'database fixture failed',
       'databaseFixturesPassed',
+      'RESTORE_DRILL_CONFIRMED_NON_PRODUCTION=true is required',
+      'refusing a production-shaped restore target',
       'backup manifest fields are incomplete or undeclared',
       'backup manifest filename mismatch',
       'backup manifest digest format is invalid',
@@ -54,5 +56,6 @@ describe('backup and restore evidence boundary', () => {
     expect(restore).toContain('[Text.UTF8Encoding]::new($false)');
     expect(restore).toContain('[IO.File]::Move($reportTemp, $reportFile)');
     expect(restore).not.toContain('[IO.File]::WriteAllText(\n    $reportFile');
+    expect(restore).toContain('$env:RESTORE_DRILL_ENVIRONMENT -notin');
   });
 });

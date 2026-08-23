@@ -55,6 +55,8 @@ for (const marker of [
   'backup or failure timestamp is not canonical UTC',
   'drill failure time is in the future',
   'RTO cannot be negative',
+  'RESTORE_DRILL_CONFIRMED_NON_PRODUCTION=true is required',
+  'refusing a production-shaped restore target',
   '$manifest.writeFrozen -isnot [bool]',
 ])
   if (!backupRestore.includes(marker))

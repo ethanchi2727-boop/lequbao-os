@@ -14,6 +14,19 @@ function Format-CanonicalUtc([DateTimeOffset]$Value) {
 if (-not $env:RESTORE_ADMIN_URL) { throw 'RESTORE_ADMIN_URL is required' }
 if (-not $env:AGE_IDENTITY_FILE) { throw 'AGE_IDENTITY_FILE is required' }
 if (-not $env:DRILL_FAILURE_TIME_UTC) { throw 'DRILL_FAILURE_TIME_UTC is required' }
+if ($env:RESTORE_DRILL_ENVIRONMENT -notin @('controlled-preproduction', 'staging')) {
+  throw 'RESTORE_DRILL_ENVIRONMENT must be controlled-preproduction or staging'
+}
+if ($env:RESTORE_DRILL_CONFIRMED_NON_PRODUCTION -ne 'true') {
+  throw 'RESTORE_DRILL_CONFIRMED_NON_PRODUCTION=true is required'
+}
+$adminUri = [Uri]$env:RESTORE_ADMIN_URL
+if ($adminUri.Scheme -notin @('postgres', 'postgresql') -or -not $adminUri.Host -or $adminUri.Fragment) {
+  throw 'RESTORE_ADMIN_URL must be a PostgreSQL connection URL without a fragment'
+}
+if ("$($adminUri.Host) $($adminUri.AbsolutePath)" -match 'prod(uction)?') {
+  throw 'refusing a production-shaped restore target'
+}
 foreach ($tool in @('age', 'createdb', 'dropdb', 'pg_restore', 'psql')) {
   if (-not (Get-Command $tool -ErrorAction SilentlyContinue)) { throw "$tool is required" }
 }
