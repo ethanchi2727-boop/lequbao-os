@@ -3,6 +3,7 @@ import { readFile } from 'node:fs/promises';
 import { spawnSync } from 'node:child_process';
 import { inspectDependencyInstallPolicy } from './dependency-install-policy.mjs';
 import { inspectDevelopmentMockProfile } from './development-mock-profile.mjs';
+import { buildSbomDocument } from './generate-sbom.mjs';
 import {
   inspectProductionLicenseReport,
   readInstalledProductionLicenseReport,
@@ -44,6 +45,8 @@ const recorded = sbom.metadata?.properties?.find(
 )?.value;
 if (recorded !== lockHash) failures.push('SBOM_LOCK_HASH_MISMATCH');
 if (!Array.isArray(sbom.components) || sbom.components.length < 1) failures.push('SBOM_EMPTY');
+if (JSON.stringify(sbom) !== JSON.stringify(buildSbomDocument(lockText)))
+  failures.push('SBOM_CONTENT_MISMATCH');
 const packageFiles = repositoryFiles
     .filter((file) =>
       /^(?:package\.json|apps\/[^/]+\/package\.json|packages\/[^/]+\/package\.json)$/u.test(file),
