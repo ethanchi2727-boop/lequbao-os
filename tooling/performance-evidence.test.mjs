@@ -9,6 +9,7 @@ describe('performance evidence boundary', () => {
     expect(gate).not.toContain('environment: config.environment');
     expect(gate).not.toContain('runId,\n  environment');
     expect(gate).toContain("redirect: 'error'");
+    expect(gate).toContain('readBoundedPerformanceResponse(response)');
     expect(snapshot).toContain("createHash('sha256').update(row.database_name).digest('hex')");
     expect(snapshot).not.toContain('databaseName: row.database_name');
   });

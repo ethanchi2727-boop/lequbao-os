@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest';
 import {
   duplicateAcknowledgedMessageIds,
   missingPersistedMessageIds,
+  readBoundedPerformanceResponse,
   summarizeScenario,
   validatePerformanceConfig,
 } from './performance-gate-lib.mjs';
@@ -198,5 +199,20 @@ describe('controlled performance gate', () => {
   it('detects every acknowledged customer message missing from PostgreSQL', () => {
     expect(missingPersistedMessageIds(['a', 'b', 'b', 'c'], ['a', 'c'])).toEqual(['b']);
     expect(duplicateAcknowledgedMessageIds(['a', 'b', 'b', 'c', 'a', 'b'])).toEqual(['b', 'a']);
+  });
+
+  it('reads response bytes within the cap and rejects declared or streamed overflow', async () => {
+    await expect(
+      readBoundedPerformanceResponse(new Response('{"id":"message-1"}'), 64),
+    ).resolves.toEqual(Buffer.from('{"id":"message-1"}'));
+    await expect(
+      readBoundedPerformanceResponse(
+        new Response('short', { headers: { 'content-length': '65' } }),
+        64,
+      ),
+    ).rejects.toThrow('exceeds the byte limit');
+    await expect(readBoundedPerformanceResponse(new Response('x'.repeat(65)), 64)).rejects.toThrow(
+      'exceeds the byte limit',
+    );
   });
 });

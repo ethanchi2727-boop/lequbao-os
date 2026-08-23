@@ -191,3 +191,30 @@ export function duplicateAcknowledgedMessageIds(expectedIds) {
   }
   return [...duplicates];
 }
+
+export async function readBoundedPerformanceResponse(response, maximumBytes = 1024 * 1024) {
+  if (!Number.isSafeInteger(maximumBytes) || maximumBytes < 1)
+    throw new Error('performance response maximumBytes must be a positive integer');
+  const declaredLength = Number(response.headers.get('content-length'));
+  if (Number.isFinite(declaredLength) && declaredLength > maximumBytes)
+    throw new Error('performance response exceeds the byte limit');
+  if (!response.body) return Buffer.alloc(0);
+  const reader = response.body.getReader();
+  const chunks = [];
+  let size = 0;
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      size += value.byteLength;
+      if (size > maximumBytes) {
+        await reader.cancel('performance response exceeds the byte limit');
+        throw new Error('performance response exceeds the byte limit');
+      }
+      chunks.push(Buffer.from(value));
+    }
+  } finally {
+    reader.releaseLock();
+  }
+  return Buffer.concat(chunks, size);
+}

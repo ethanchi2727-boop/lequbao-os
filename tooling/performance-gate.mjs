@@ -5,6 +5,7 @@ import pg from 'pg';
 import {
   duplicateAcknowledgedMessageIds,
   missingPersistedMessageIds,
+  readBoundedPerformanceResponse,
   summarizeScenario,
   validatePerformanceConfig,
 } from './performance-gate-lib.mjs';
@@ -99,7 +100,10 @@ try {
               signal: AbortSignal.timeout(15000),
             });
             statuses.push(response.status);
-            const payload = await response.json().catch(() => undefined);
+            const responseBody = await readBoundedPerformanceResponse(response);
+            const payload = scenario.proveMessagePersistence
+              ? JSON.parse(responseBody.toString('utf8'))
+              : undefined;
             if (
               scenario.proveMessagePersistence &&
               response.status >= 200 &&
