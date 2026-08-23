@@ -29,8 +29,10 @@ describe('protected controlled-release verification workflow', () => {
     expect(source).toContain('(.assets | length) == 1');
     expect(source).toContain('.assets[0].name == "controlled-evidence.tar.gz"');
     expect(source).toContain('.assets[0].state == "uploaded"');
+    expect(source).toContain('(.assets[0].digest | test("^sha256:[0-9a-f]{64}$"))');
     expect(source).toContain('repos/${GITHUB_REPOSITORY}/releases/assets/${asset_id}');
     expect(source).toContain('stat --format=%s evidence-package/controlled-evidence.tar.gz');
+    expect(source).toContain('evidence archive digest differs from GitHub release asset metadata');
     expect(source).not.toContain('gh release download');
     expect(source).toContain('len(members) > 256');
     expect(source).toContain("'..' in candidate.parts");

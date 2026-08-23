@@ -78,11 +78,14 @@ jobs:
             --arg candidate "$CANDIDATE_COMMIT" \
             '.draft == true and .tag_name == $tag and .target_commitish == $candidate and
               (.assets | length) == 1 and .assets[0].name == "controlled-evidence.tar.gz" and
-              .assets[0].state == "uploaded" and .assets[0].size > 0 and .assets[0].size <= 536870912' \
+              .assets[0].state == "uploaded" and .assets[0].size > 0 and
+              .assets[0].size <= 536870912 and
+              (.assets[0].digest | test("^sha256:[0-9a-f]{64}$"))' \
             <<<"$release" >/dev/null
           release_id="$(jq --raw-output '.id' <<<"$release")"
           asset_id="$(jq --raw-output '.assets[0].id' <<<"$release")"
           asset_size="$(jq --raw-output '.assets[0].size' <<<"$release")"
+          asset_digest="$(jq --raw-output '.assets[0].digest' <<<"$release")"
           if ! [[ "$release_id" =~ ^[1-9][0-9]*$ && "$asset_id" =~ ^[1-9][0-9]*$ ]]; then
             echo 'release and asset IDs must be positive integers'
             exit 1
@@ -94,6 +97,11 @@ jobs:
             >evidence-package/controlled-evidence.tar.gz
           test "$(find evidence-package -maxdepth 1 -type f -name 'controlled-evidence.tar.gz' | wc -l)" -eq 1
           test "$(stat --format=%s evidence-package/controlled-evidence.tar.gz)" = "$asset_size"
+          downloaded_digest="sha256:$(sha256sum evidence-package/controlled-evidence.tar.gz | awk '{print $1}')"
+          if [ "$downloaded_digest" != "$asset_digest" ]; then
+            echo 'evidence archive digest differs from GitHub release asset metadata'
+            exit 1
+          fi
           printf 'EVIDENCE_RELEASE_ID=%s\nEVIDENCE_ASSET_ID=%s\n' \
             "$release_id" "$asset_id" >>"$GITHUB_ENV"
       - name: Validate and extract evidence archive safely
