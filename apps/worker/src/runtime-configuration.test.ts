@@ -45,6 +45,8 @@ describe('Worker runtime configuration', () => {
       { OUTBOX_EVENT_GATEWAY_TOKEN: `${base.OUTBOX_EVENT_GATEWAY_TOKEN} ` },
       { INTERNAL_WORKER_TOKEN: 'short' },
       { INTERNAL_API_URL: 'http://api.example' },
+      { INTERNAL_API_URL: 'https://127.0.0.2' },
+      { INTERNAL_API_URL: 'https://[::1]' },
       { WORKER_TENANT_ID: 'tenant-id' },
       { DATABASE_URL: 'postgres://runtime:secret@database.example/lequ' },
     ])

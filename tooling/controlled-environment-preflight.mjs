@@ -77,6 +77,28 @@ function configured(environment, name) {
   return typeof environment[name] === 'string' && environment[name].trim().length > 0;
 }
 
+function isForbiddenLocalHostname(hostname) {
+  const normalized = hostname
+    .toLowerCase()
+    .replace(/^\[|\]$/gu, '')
+    .replace(/\.$/u, '');
+  if (
+    normalized === 'localhost' ||
+    normalized.endsWith('.localhost') ||
+    normalized === '::' ||
+    normalized === '::1'
+  )
+    return true;
+  if (isIP(normalized) === 4) {
+    const firstOctet = Number(normalized.split('.')[0]);
+    return firstOctet === 0 || firstOctet === 127;
+  }
+  const mapped = /^::ffff:([0-9a-f]{1,4}):/u.exec(normalized);
+  if (!mapped) return false;
+  const firstMappedHextet = Number.parseInt(mapped[1], 16);
+  return firstMappedHextet === 0 || (firstMappedHextet >= 0x7f00 && firstMappedHextet <= 0x7fff);
+}
+
 function invalidValue(environment, name) {
   const rawValue = environment[name];
   if (rawValue !== rawValue.trim()) return 'surrounding-whitespace';
@@ -106,7 +128,7 @@ function invalidValue(environment, name) {
     try {
       const url = new URL(value);
       if (!['postgres:', 'postgresql:'].includes(url.protocol)) return 'invalid-postgres-url';
-      if (['127.0.0.1', 'localhost', '::1'].includes(url.hostname)) return 'loopback';
+      if (isForbiddenLocalHostname(url.hostname)) return 'local-host';
       if (!['require', 'verify-full'].includes(url.searchParams.get('sslmode') ?? ''))
         return 'tls-required';
     } catch {
@@ -116,7 +138,7 @@ function invalidValue(environment, name) {
     try {
       const url = new URL(value);
       if (url.protocol !== 'https:') return 'not-https';
-      if (['127.0.0.1', 'localhost', '::1'].includes(url.hostname)) return 'loopback';
+      if (isForbiddenLocalHostname(url.hostname)) return 'local-host';
     } catch {
       return 'invalid-url';
     }

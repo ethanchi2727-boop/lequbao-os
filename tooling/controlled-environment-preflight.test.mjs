@@ -104,6 +104,15 @@ describe('controlled environment preflight', () => {
       name: 'INTERNAL_WORKER_TOKEN',
       reason: 'surrounding-whitespace',
     });
+
+    for (const hostname of ['127.0.0.2', '0.0.0.0', '[::1]', '[::ffff:7f00:1]']) {
+      const localGateway = completeEnvironment();
+      localGateway.IDENTITY_PROVIDER_GATEWAY_URL = `https://${hostname}`;
+      expect(inspectControlledEnvironment(localGateway).invalid).toContainEqual({
+        name: 'IDENTITY_PROVIDER_GATEWAY_URL',
+        reason: 'local-host',
+      });
+    }
   });
 
   it('accepts a complete non-loopback controlled profile', () => {

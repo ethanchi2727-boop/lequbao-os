@@ -1,3 +1,5 @@
+import { isIP } from 'node:net';
+
 type RuntimeEnvironment = Record<string, string | undefined>;
 
 const alwaysRequired = [
@@ -21,6 +23,28 @@ export const workerProductionRequiredSettings = [
 const configured = (environment: RuntimeEnvironment, name: string) =>
   Boolean(environment[name]?.trim());
 
+function isForbiddenLocalHostname(hostname: string) {
+  const normalized = hostname
+    .toLowerCase()
+    .replace(/^\[|\]$/gu, '')
+    .replace(/\.$/u, '');
+  if (
+    normalized === 'localhost' ||
+    normalized.endsWith('.localhost') ||
+    normalized === '::' ||
+    normalized === '::1'
+  )
+    return true;
+  if (isIP(normalized) === 4) {
+    const firstOctet = Number(normalized.split('.')[0]);
+    return firstOctet === 0 || firstOctet === 127;
+  }
+  const mapped = /^::ffff:([0-9a-f]{1,4}):/u.exec(normalized);
+  if (!mapped) return false;
+  const firstMappedHextet = Number.parseInt(mapped[1]!, 16);
+  return firstMappedHextet === 0 || (firstMappedHextet >= 0x7f00 && firstMappedHextet <= 0x7fff);
+}
+
 const productionUrls = [
   'OUTBOX_EVENT_GATEWAY_URL',
   ...launchGroups.flatMap((group) => group.filter((name) => name.endsWith('_URL'))),
@@ -41,8 +65,7 @@ function validateProductionValues(environment: RuntimeEnvironment) {
     try {
       const url = new URL(environment[name]!);
       if (url.protocol !== 'https:') failures.push(`${name} (HTTPS required)`);
-      if (['127.0.0.1', 'localhost', '::1'].includes(url.hostname))
-        failures.push(`${name} (loopback forbidden)`);
+      if (isForbiddenLocalHostname(url.hostname)) failures.push(`${name} (local host forbidden)`);
     } catch {
       failures.push(`${name} (invalid URL)`);
     }
@@ -57,8 +80,8 @@ function validateProductionValues(environment: RuntimeEnvironment) {
     const database = new URL(environment.DATABASE_URL!);
     if (!['postgres:', 'postgresql:'].includes(database.protocol))
       failures.push('DATABASE_URL (PostgreSQL required)');
-    if (['127.0.0.1', 'localhost', '::1'].includes(database.hostname))
-      failures.push('DATABASE_URL (loopback forbidden)');
+    if (isForbiddenLocalHostname(database.hostname))
+      failures.push('DATABASE_URL (local host forbidden)');
     if (!['require', 'verify-full'].includes(database.searchParams.get('sslmode') ?? ''))
       failures.push('DATABASE_URL (sslmode=require or verify-full required)');
   } catch {
