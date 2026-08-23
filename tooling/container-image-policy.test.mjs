@@ -44,6 +44,17 @@ describe('container image supply-chain policy', () => {
     ).toEqual([expect.stringContaining('not in the trusted allowlist')]);
   });
 
+  it('rejects mutable scalar job containers and malformed YAML', () => {
+    expect(
+      inspectContainerImagePins({
+        manifests: { workflow: 'jobs:\n  verify:\n    container: node:latest\n' },
+      }),
+    ).toEqual([expect.stringContaining('not pinned by SHA-256')]);
+    expect(inspectContainerImagePins({ manifests: { workflow: 'jobs: [\n' } })).toEqual([
+      expect.stringContaining('not valid YAML'),
+    ]);
+  });
+
   it('allows internal Docker stages and rejects changed approved digests', () => {
     const trusted = trustedContainerImages['node:22.23.1-bookworm-slim'];
     expect(

@@ -36,8 +36,28 @@ export function inspectContainerImagePins({ dockerfiles = {}, manifests = {} }) 
       if (stage) stages.add(stage);
     }
   }
-  for (const [file, source] of Object.entries(manifests))
-    for (const match of source.matchAll(/^\s*image:\s*(?<reference>[^\s#]+)\s*(?:#.*)?$/gimu))
-      inspectReference(file, match.groups.reference, failures);
+  for (const [file, source] of Object.entries(manifests)) {
+    let manifest;
+    try {
+      manifest = YAML.parse(source);
+    } catch {
+      failures.push(`${file}: container manifest is not valid YAML`);
+      continue;
+    }
+    const visit = (value) => {
+      if (Array.isArray(value)) {
+        for (const item of value) visit(item);
+        return;
+      }
+      if (!value || typeof value !== 'object') return;
+      for (const [key, nested] of Object.entries(value)) {
+        if ((key === 'image' || key === 'container') && typeof nested === 'string')
+          inspectReference(file, nested, failures);
+        else visit(nested);
+      }
+    };
+    visit(manifest);
+  }
   return failures;
 }
+import YAML from 'yaml';
