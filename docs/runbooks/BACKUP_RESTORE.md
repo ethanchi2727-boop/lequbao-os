@@ -11,10 +11,10 @@ Production uses encrypted PostgreSQL physical/WAL backups with a core-transactio
 
 ## Restore and verify
 
-1. Record the simulated failure time in UTC and set it as `DRILL_FAILURE_TIME_UTC`. Set `RESTORE_ADMIN_URL` and `AGE_IDENTITY_FILE` only in the controlled runner.
+1. Record the simulated failure time in canonical .NET round-trip UTC form (`yyyy-MM-ddTHH:mm:ss.fffffffZ`) and set it as `DRILL_FAILURE_TIME_UTC`. Set `RESTORE_ADMIN_URL` and `AGE_IDENTITY_FILE` only in the controlled runner.
 2. Choose a database name matching `lequ_restore_[a-z0-9_]+` that does not exist. Choose a new `.json` report path; the script refuses to replace existing evidence.
 3. Run `ops/scripts/restore-verify.ps1 -EncryptedBackup <file.dump.age> -TargetDatabase <lequ_restore_name> -ReportPath <new-report.json>`.
-4. The script verifies the encrypted hash, decrypts only to an OS temporary file, creates a fresh database, restores with fail-fast options, enqueues deletion replay, compares the restored per-tenant financial digest with the backup manifest and runs every SQL fixture including RLS and immutable-ledger checks.
+4. The script requires the exact manifest schema and native JSON types, then verifies the backup filename, positive byte size and lowercase SHA-256 values before decrypting only to an OS temporary file. It creates a fresh database, restores with fail-fast options, enqueues deletion replay, compares the restored per-tenant financial digest with the backup manifest and runs every SQL fixture including RLS and immutable-ledger checks.
 5. The report records backup/failure/restore times, measured RPO/RTO, the exact encrypted-artifact and financial-snapshot SHA-256 values repeated from the manifest, verification booleans, privacy replay count and the exact fixture list. PASS requires both hashes to match the manifest, all 22 fixtures, at least one privacy replay task, RPO at most 300 seconds and RTO at most 3,600 seconds.
 
 The restored database remains available for approver inspection and must never be promoted automatically. Separately sample object-store, search, vector and cache deletion receipts with zero remaining matches and attach a structured cross-fault-domain WAL/physical-backup timeline. Promotion is prohibited on an unexplained one-cent difference, mismatched artifact/snapshot hash, missing deletion replay, failed audit immutability, cross-tenant result, absent report or failed result.

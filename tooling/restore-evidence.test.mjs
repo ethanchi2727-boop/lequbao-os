@@ -29,7 +29,14 @@ describe('backup and restore evidence boundary', () => {
       'restore drill contains no privacy deletion replay evidence',
       'database fixture failed',
       'databaseFixturesPassed',
+      'backup manifest fields are incomplete or undeclared',
+      'backup manifest filename mismatch',
+      'backup manifest digest format is invalid',
+      'encrypted backup size mismatch',
+      'backup manifest chronology is invalid',
+      'backup or failure timestamp is not canonical UTC',
     ])
       expect(restore).toContain(marker);
+    expect(restore).toContain('$manifest.writeFrozen -isnot [bool]');
   });
 });

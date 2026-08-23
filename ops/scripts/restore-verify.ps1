@@ -20,7 +20,54 @@ if (-not (Test-Path -LiteralPath $backup)) { throw 'backup missing' }
 if (-not (Test-Path -LiteralPath $manifestPath)) { throw 'backup manifest missing' }
 if (Test-Path -LiteralPath $reportFile) { throw 'restore report already exists' }
 $manifest = Get-Content -Raw -Encoding UTF8 -LiteralPath $manifestPath | ConvertFrom-Json
-if ($manifest.schemaVersion -ne 1 -or -not $manifest.writeFrozen) { throw 'unsupported or unsafe backup manifest' }
+$expectedManifestFields = @(
+  'backupCompletedAt',
+  'backupFile',
+  'backupStartedAt',
+  'encryptedSha256',
+  'encryptedSizeBytes',
+  'financialSnapshot',
+  'financialSnapshotSha256',
+  'schemaVersion',
+  'writeFrozen'
+)
+$actualManifestFields = @($manifest.PSObject.Properties.Name | Sort-Object)
+if (($actualManifestFields -join "`n") -ne ($expectedManifestFields -join "`n")) {
+  throw 'backup manifest fields are incomplete or undeclared'
+}
+if (($manifest.schemaVersion -isnot [int] -and $manifest.schemaVersion -isnot [long]) -or $manifest.schemaVersion -ne 1) {
+  throw 'unsupported backup manifest schema'
+}
+if ($manifest.writeFrozen -isnot [bool] -or $manifest.writeFrozen -ne $true) {
+  throw 'backup manifest does not prove a write-frozen snapshot'
+}
+if ([string]$manifest.backupFile -cne [System.IO.Path]::GetFileName($backup)) {
+  throw 'backup manifest filename mismatch'
+}
+if ([string]$manifest.encryptedSha256 -cnotmatch '^[a-f0-9]{64}$' -or
+    [string]$manifest.financialSnapshotSha256 -cnotmatch '^[a-f0-9]{64}$') {
+  throw 'backup manifest digest format is invalid'
+}
+$encryptedSize = (Get-Item -LiteralPath $backup).Length
+if (($manifest.encryptedSizeBytes -isnot [int] -and $manifest.encryptedSizeBytes -isnot [long]) -or
+    $manifest.encryptedSizeBytes -le 0 -or $manifest.encryptedSizeBytes -ne $encryptedSize) {
+  throw 'encrypted backup size mismatch'
+}
+if ($null -eq $manifest.financialSnapshot -or $manifest.financialSnapshot -isnot [pscustomobject]) {
+  throw 'backup manifest financial snapshot is invalid'
+}
+$canonicalUtcPattern = '^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{7}Z$'
+$backupStartedAtText = if ($manifest.backupStartedAt -is [DateTime]) {
+  ([DateTime]$manifest.backupStartedAt).ToUniversalTime().ToString('o')
+} else { [string]$manifest.backupStartedAt }
+$backupCompletedAtText = if ($manifest.backupCompletedAt -is [DateTime]) {
+  ([DateTime]$manifest.backupCompletedAt).ToUniversalTime().ToString('o')
+} else { [string]$manifest.backupCompletedAt }
+if ($backupStartedAtText -cnotmatch $canonicalUtcPattern -or
+    $backupCompletedAtText -cnotmatch $canonicalUtcPattern -or
+    $env:DRILL_FAILURE_TIME_UTC -cnotmatch $canonicalUtcPattern) {
+  throw 'backup or failure timestamp is not canonical UTC'
+}
 $actualHash = (Get-FileHash -Algorithm SHA256 -LiteralPath $backup).Hash.ToLowerInvariant()
 if ($actualHash -ne $manifest.encryptedSha256) { throw 'encrypted backup hash mismatch' }
 
@@ -38,6 +85,16 @@ $backupCompletedAt = if ($manifest.backupCompletedAt -is [DateTime]) {
     [Globalization.DateTimeStyles]::AssumeUniversal
   ).ToUniversalTime()
 }
+$backupStartedAt = if ($manifest.backupStartedAt -is [DateTime]) {
+  ([DateTimeOffset]$manifest.backupStartedAt).ToUniversalTime()
+} else {
+  [DateTimeOffset]::Parse(
+    [string]$manifest.backupStartedAt,
+    [Globalization.CultureInfo]::InvariantCulture,
+    [Globalization.DateTimeStyles]::AssumeUniversal
+  ).ToUniversalTime()
+}
+if ($backupStartedAt -gt $backupCompletedAt) { throw 'backup manifest chronology is invalid' }
 $rpoSeconds = ($failureTime - $backupCompletedAt).TotalSeconds
 if ($rpoSeconds -lt 0) { throw 'drill failure time precedes backup completion' }
 

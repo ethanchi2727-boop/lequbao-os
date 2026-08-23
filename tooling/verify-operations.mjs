@@ -49,6 +49,11 @@ for (const marker of [
   'RTO exceeds 3600 seconds',
   'databaseFixturesPassed',
   'reward_entry_net_cents',
+  'backup manifest fields are incomplete or undeclared',
+  'backup manifest filename mismatch',
+  'encrypted backup size mismatch',
+  'backup or failure timestamp is not canonical UTC',
+  '$manifest.writeFrozen -isnot [bool]',
 ])
   if (!backupRestore.includes(marker))
     failures.push(`backup/restore evidence boundary missing ${marker}`);

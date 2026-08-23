@@ -35,6 +35,9 @@ try {
   if ($LASTEXITCODE -ne 0) { throw 'pg_dump failed' }
   & age --recipient $env:BACKUP_ENCRYPTION_RECIPIENT --output $encrypted $plain
   if ($LASTEXITCODE -ne 0) { throw 'backup encryption failed' }
+  if (-not (Test-Path -LiteralPath $encrypted) -or (Get-Item -LiteralPath $encrypted).Length -le 0) {
+    throw 'backup encryption produced no artifact'
+  }
 
   $completedAt = (Get-Date).ToUniversalTime()
   $hash = (Get-FileHash -Algorithm SHA256 -LiteralPath $encrypted).Hash.ToLowerInvariant()
@@ -43,7 +46,7 @@ try {
     backupFile = [System.IO.Path]::GetFileName($encrypted)
     backupStartedAt = $startedAt.ToString('o')
     backupCompletedAt = $completedAt.ToString('o')
-    encryptedSizeBytes = (Get-Item -LiteralPath $encrypted).Length
+    encryptedSizeBytes = [long](Get-Item -LiteralPath $encrypted).Length
     encryptedSha256 = $hash
     financialSnapshotSha256 = $snapshotDigest
     financialSnapshot = $snapshotObject
