@@ -35,6 +35,8 @@ describe('backup and restore evidence boundary', () => {
       'encrypted backup size mismatch',
       'backup manifest chronology is invalid',
       'backup or failure timestamp is not canonical UTC',
+      'drill failure time is in the future',
+      'RTO cannot be negative',
     ])
       expect(restore).toContain(marker);
     expect(restore).toContain('$manifest.writeFrozen -isnot [bool]');

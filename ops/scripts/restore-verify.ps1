@@ -76,6 +76,8 @@ $failureTime = [DateTimeOffset]::Parse(
   [Globalization.CultureInfo]::InvariantCulture,
   [Globalization.DateTimeStyles]::AssumeUniversal
 ).ToUniversalTime()
+$validationTime = [DateTimeOffset]::UtcNow
+if ($failureTime -gt $validationTime) { throw 'drill failure time is in the future' }
 $backupCompletedAt = if ($manifest.backupCompletedAt -is [DateTime]) {
   ([DateTimeOffset]$manifest.backupCompletedAt).ToUniversalTime()
 } else {
@@ -152,6 +154,7 @@ try {
   $completedAt = (Get-Date).ToUniversalTime()
   $rtoSeconds = ([DateTimeOffset]$completedAt - $failureTime).TotalSeconds
   if ($rpoSeconds -gt 300) { throw 'RPO exceeds 300 seconds' }
+  if ($rtoSeconds -lt 0) { throw 'RTO cannot be negative' }
   if ($rtoSeconds -gt 3600) { throw 'RTO exceeds 3600 seconds' }
 }
 catch {

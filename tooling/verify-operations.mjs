@@ -53,6 +53,8 @@ for (const marker of [
   'backup manifest filename mismatch',
   'encrypted backup size mismatch',
   'backup or failure timestamp is not canonical UTC',
+  'drill failure time is in the future',
+  'RTO cannot be negative',
   '$manifest.writeFrozen -isnot [bool]',
 ])
   if (!backupRestore.includes(marker))
