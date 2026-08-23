@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { performance } from 'node:perf_hooks';
@@ -57,8 +58,8 @@ const report = {
   persistence: {
     expectedMessageIds: 0,
     persistedMessageIds: 0,
-    missingMessageIds: [],
-    duplicateAcknowledgedMessageIds: [],
+    missingMessageRefHashes: [],
+    duplicateAcknowledgedMessageRefHashes: [],
   },
   failure: null,
 };
@@ -141,11 +142,12 @@ try {
   const persistedIds = persisted.rows.map((row) => row.id);
   const missing = missingPersistedMessageIds(expectedMessageIds, persistedIds);
   const duplicates = duplicateAcknowledgedMessageIds(expectedMessageIds);
+  const messageRefHash = (id) => createHash('sha256').update(id).digest('hex');
   report.persistence = {
     expectedMessageIds: expectedMessageIds.length,
     persistedMessageIds: persistedIds.length,
-    missingMessageIds: missing,
-    duplicateAcknowledgedMessageIds: duplicates,
+    missingMessageRefHashes: missing.map(messageRefHash),
+    duplicateAcknowledgedMessageRefHashes: duplicates.map(messageRefHash),
   };
   const customerScenario = report.scenarios.find(
     (scenario) => scenario.name === 'customer-message-write',

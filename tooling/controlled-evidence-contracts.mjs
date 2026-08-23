@@ -1438,9 +1438,9 @@ function validatePerformanceReport(value) {
     failures.push(`${artifact} database fields are invalid`);
   if (
     !hasExactKeys(value.persistence, [
-      'duplicateAcknowledgedMessageIds',
+      'duplicateAcknowledgedMessageRefHashes',
       'expectedMessageIds',
-      'missingMessageIds',
+      'missingMessageRefHashes',
       'persistedMessageIds',
     ])
   )
@@ -1520,15 +1520,15 @@ function validatePerformanceReport(value) {
   if (value.persistence?.persistedMessageIds !== value.persistence?.expectedMessageIds)
     failures.push(`${artifact} every acknowledged message must persist`);
   if (
-    !Array.isArray(value.persistence?.missingMessageIds) ||
-    value.persistence.missingMessageIds.length
+    !Array.isArray(value.persistence?.missingMessageRefHashes) ||
+    value.persistence.missingMessageRefHashes.length
   )
-    failures.push(`${artifact} persistence missingMessageIds must be empty`);
+    failures.push(`${artifact} persistence missingMessageRefHashes must be empty`);
   if (
-    !Array.isArray(value.persistence?.duplicateAcknowledgedMessageIds) ||
-    value.persistence.duplicateAcknowledgedMessageIds.length
+    !Array.isArray(value.persistence?.duplicateAcknowledgedMessageRefHashes) ||
+    value.persistence.duplicateAcknowledgedMessageRefHashes.length
   )
-    failures.push(`${artifact} persistence duplicateAcknowledgedMessageIds must be empty`);
+    failures.push(`${artifact} persistence duplicateAcknowledgedMessageRefHashes must be empty`);
   validatePerformanceSnapshot(artifact, 'database.before', value.database?.before, failures);
   validatePerformanceSnapshot(artifact, 'database.after', value.database?.after, failures);
   if (

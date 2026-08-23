@@ -412,8 +412,8 @@ function semanticFixture(artifact, binding) {
       persistence: {
         expectedMessageIds: 20,
         persistedMessageIds: 20,
-        missingMessageIds: [],
-        duplicateAcknowledgedMessageIds: [],
+        missingMessageRefHashes: [],
+        duplicateAcknowledgedMessageRefHashes: [],
       },
     },
     'candidate-image-digests.json': { images },

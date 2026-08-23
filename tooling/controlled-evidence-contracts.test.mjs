@@ -515,8 +515,8 @@ describe('controlled JSON evidence contracts', () => {
         persistence: {
           expectedMessageIds: 0,
           persistedMessageIds: 0,
-          missingMessageIds: [],
-          duplicateAcknowledgedMessageIds: ['same-message-id'],
+          missingMessageRefHashes: [],
+          duplicateAcknowledgedMessageRefHashes: ['a'.repeat(64)],
         },
       }),
     ).toEqual(
@@ -524,7 +524,7 @@ describe('controlled JSON evidence contracts', () => {
         expect.stringContaining('scenarios[0] must be an object'),
         expect.stringContaining('scenarios must include core-read'),
         expect.stringContaining('database.before.tableCount'),
-        'performance-report.json persistence duplicateAcknowledgedMessageIds must be empty',
+        'performance-report.json persistence duplicateAcknowledgedMessageRefHashes must be empty',
       ]),
     );
     expect(
@@ -626,8 +626,8 @@ describe('controlled JSON evidence contracts', () => {
       persistence: {
         expectedMessageIds: -1,
         persistedMessageIds: 10.5,
-        missingMessageIds: [],
-        duplicateAcknowledgedMessageIds: [],
+        missingMessageRefHashes: [],
+        duplicateAcknowledgedMessageRefHashes: [],
       },
       database: {
         before: {
