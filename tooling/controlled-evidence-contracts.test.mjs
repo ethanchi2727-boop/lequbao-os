@@ -112,6 +112,14 @@ describe('controlled JSON evidence contracts', () => {
         verifiedAt: '2099-01-01T00:00:00.000Z',
       }),
     ).toContain('rollback.json verifiedAt must not be in the future');
+    expect(
+      validateControlledJsonEvidence('rollback.json', {
+        result: 'PASS',
+        fromVersion: '1.0.0',
+        toVersion: '1.0.1',
+        verifiedAt: '2026-08-19T09:00:00.000+08:00',
+      }),
+    ).toContain('rollback.json verifiedAt must be a canonical millisecond UTC timestamp');
   });
 
   it('rejects hollow greenfield, financial and legal approvals', () => {

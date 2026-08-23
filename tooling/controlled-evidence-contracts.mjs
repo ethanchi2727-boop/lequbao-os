@@ -1,5 +1,6 @@
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
+import { parseCanonicalUtcTimestamp } from './canonical-time.mjs';
 
 const field = (pathName, type, options = {}) => ({ path: pathName, type, ...options });
 const pass = field('result', 'string', { equals: 'PASS' });
@@ -442,9 +443,8 @@ export const controlledJsonEvidenceReviewRules = Object.freeze({
 
 const validSha256 = (value) => typeof value === 'string' && /^[a-f0-9]{64}$/u.test(value);
 const validDateTime = (value) =>
-  typeof value === 'string' &&
-  Number.isFinite(Date.parse(value)) &&
-  Date.parse(value) <= Date.now() + 5 * 60_000;
+  parseCanonicalUtcTimestamp(value) !== undefined &&
+  parseCanonicalUtcTimestamp(value) <= Date.now() + 5 * 60_000;
 
 function validateApprovalSet(artifact, approvals, requiredRoles) {
   const failures = [];
@@ -1486,19 +1486,13 @@ export function validateControlledJsonEvidence(artifact, value, binding = {}) {
       !new RegExp(rule.pattern, 'u').test(candidate.value)
     )
       failures.push(`${artifact} ${rule.path} has invalid format`);
-    if (
-      typeof candidate.value === 'string' &&
-      rule.format === 'date-time' &&
-      !Number.isFinite(Date.parse(candidate.value))
-    )
-      failures.push(`${artifact} ${rule.path} must be an ISO date-time`);
-    if (
-      typeof candidate.value === 'string' &&
-      rule.format === 'date-time' &&
-      Number.isFinite(Date.parse(candidate.value)) &&
-      Date.parse(candidate.value) > Date.now() + 5 * 60_000
-    )
-      failures.push(`${artifact} ${rule.path} must not be in the future`);
+    if (typeof candidate.value === 'string' && rule.format === 'date-time') {
+      const timestamp = parseCanonicalUtcTimestamp(candidate.value);
+      if (timestamp === undefined)
+        failures.push(`${artifact} ${rule.path} must be a canonical millisecond UTC timestamp`);
+      else if (timestamp > Date.now() + 5 * 60_000)
+        failures.push(`${artifact} ${rule.path} must not be in the future`);
+    }
     if (rule.type === 'object' && candidate.value && Object.keys(candidate.value).length === 0)
       failures.push(`${artifact} ${rule.path} must not be empty`);
   }
