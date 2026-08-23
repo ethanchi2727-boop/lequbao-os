@@ -361,6 +361,8 @@ function semanticFixture(artifact, binding) {
       backupFile: 'lequ-20260819T010000Z.dump.age',
       encryptedSha256: 'd'.repeat(64),
       financialSnapshotSha256: 'e'.repeat(64),
+      targetDatabaseRefHash: 'f'.repeat(64),
+      fixtureDatabaseRefHash: '0'.repeat(64),
       databaseFixturesPassed: requiredDatabaseFixtureFiles,
       error: null,
     },

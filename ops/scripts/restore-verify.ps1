@@ -11,6 +11,11 @@ function Format-CanonicalUtc([DateTimeOffset]$Value) {
     [Globalization.CultureInfo]::InvariantCulture
   )
 }
+function Get-TextSha256([string]$Value) {
+  [Convert]::ToHexString(
+    [System.Security.Cryptography.SHA256]::HashData([System.Text.Encoding]::UTF8.GetBytes($Value))
+  ).ToLowerInvariant()
+}
 if (-not $env:RESTORE_ADMIN_URL) { throw 'RESTORE_ADMIN_URL is required' }
 if (-not $env:AGE_IDENTITY_FILE) { throw 'AGE_IDENTITY_FILE is required' }
 if (-not $env:DRILL_FAILURE_TIME_UTC) { throw 'DRILL_FAILURE_TIME_UTC is required' }
@@ -195,8 +200,8 @@ finally {
     schemaVersion = 1
     result = $(if ($failure) { 'FAIL' } else { 'PASS' })
     backupFile = [System.IO.Path]::GetFileName($backup)
-    targetDatabase = $TargetDatabase
-    fixtureDatabase = $fixtureDatabase
+    targetDatabaseRefHash = Get-TextSha256 $TargetDatabase
+    fixtureDatabaseRefHash = Get-TextSha256 $fixtureDatabase
     failureTime = Format-CanonicalUtc $failureTime
     backupCompletedAt = Format-CanonicalUtc $backupCompletedAt
     restoreStartedAt = Format-CanonicalUtc $startedAt

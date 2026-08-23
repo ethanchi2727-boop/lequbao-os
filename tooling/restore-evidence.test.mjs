@@ -55,6 +55,10 @@ describe('backup and restore evidence boundary', () => {
     expect(restore).not.toContain("ToString('o')");
     expect(restore).toContain('[Text.UTF8Encoding]::new($false)');
     expect(restore).toContain('[IO.File]::Move($reportTemp, $reportFile)');
+    expect(restore).toContain('targetDatabaseRefHash = Get-TextSha256 $TargetDatabase');
+    expect(restore).toContain('fixtureDatabaseRefHash = Get-TextSha256 $fixtureDatabase');
+    expect(restore).not.toContain('targetDatabase = $TargetDatabase');
+    expect(restore).not.toContain('fixtureDatabase = $fixtureDatabase');
     expect(restore).not.toContain('[IO.File]::WriteAllText(\n    $reportFile');
     expect(restore).toContain('$env:RESTORE_DRILL_ENVIRONMENT -notin');
     expect(restore).toContain('if ($fixtureCreated)');

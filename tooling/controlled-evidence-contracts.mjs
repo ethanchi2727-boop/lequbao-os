@@ -221,6 +221,8 @@ export const controlledJsonEvidenceContracts = {
     field('rtoThresholdSeconds', 'number', { equals: 3600 }),
     sha256('encryptedSha256'),
     sha256('financialSnapshotSha256'),
+    sha256('targetDatabaseRefHash'),
+    sha256('fixtureDatabaseRefHash'),
     yes('encryptedSha256Verified'),
     yes('financialSnapshotMatch'),
     field('privacyReplayTasksEnqueued', 'number', { minimum: 1 }),
@@ -584,6 +586,8 @@ function validateApprovalSet(artifact, approvals, requiredRoles) {
 function validateLegacyInventory(value) {
   const artifact = 'legacy-production-inventory.json';
   const failures = [];
+  if (!hasExactKeys(value, ['generatedAt', 'limitations', 'releaseCommit', 'sources', 'verdict']))
+    failures.push(`${artifact} fields are invalid`);
   const sourceIds = new Set();
   const locations = new Set();
   for (const [index, source] of (Array.isArray(value.sources) ? value.sources : []).entries()) {
@@ -592,6 +596,21 @@ function validateLegacyInventory(value) {
       failures.push(`${prefix} must be an object`);
       continue;
     }
+    if (
+      !hasExactKeys(source, [
+        'bytes',
+        'declaredEnvironment',
+        'fileSha256',
+        'id',
+        'kind',
+        'locationSha256',
+        'nonEmptyTableCount',
+        'outcome',
+        'rowCount',
+        'tableCount',
+      ])
+    )
+      failures.push(`${prefix} fields are invalid`);
     if (source.kind !== 'sqlite') failures.push(`${prefix}.kind must equal "sqlite"`);
     if (!opaqueReference.test(source.id ?? '')) failures.push(`${prefix}.id must be opaque`);
     else if (sourceIds.has(source.id)) failures.push(`${artifact} source IDs must be unique`);
@@ -1065,6 +1084,40 @@ function validateBackupManifest(value) {
 function validateRestoreReport(value) {
   const artifact = 'restore-report.json';
   const failures = [];
+  if (
+    !hasExactKeys(value, [
+      'backupCompletedAt',
+      'backupFile',
+      'databaseFixturesPassed',
+      'encryptedSha256',
+      'encryptedSha256Verified',
+      'error',
+      'failureTime',
+      'financialSnapshotMatch',
+      'financialSnapshotSha256',
+      'fixtureDatabaseRefHash',
+      'privacyReplayTasksEnqueued',
+      'restoreCompletedAt',
+      'restoreStartedAt',
+      'result',
+      'rpoSeconds',
+      'rpoThresholdSeconds',
+      'rtoSeconds',
+      'rtoThresholdSeconds',
+      'schemaVersion',
+      'targetDatabaseRefHash',
+    ])
+  )
+    failures.push(`${artifact} fields are invalid`);
+  if (!validSha256(value.targetDatabaseRefHash))
+    failures.push(`${artifact} targetDatabaseRefHash has invalid format`);
+  if (!validSha256(value.fixtureDatabaseRefHash))
+    failures.push(`${artifact} fixtureDatabaseRefHash has invalid format`);
+  if (
+    validSha256(value.targetDatabaseRefHash) &&
+    value.targetDatabaseRefHash === value.fixtureDatabaseRefHash
+  )
+    failures.push(`${artifact} target and fixture database references must differ`);
   if (value.error !== null) failures.push(`${artifact} error must equal null for PASS`);
   const fixtures = Array.isArray(value.databaseFixturesPassed) ? value.databaseFixturesPassed : [];
   if (
@@ -1262,6 +1315,28 @@ function validatePerformanceSnapshot(artifact, pathName, snapshot, failures) {
     failures.push(`${artifact} ${pathName} must be an object`);
     return;
   }
+  if (
+    !hasExactKeys(snapshot, [
+      'blocksHit',
+      'blocksRead',
+      'capturedAt',
+      'committedTransactions',
+      'connections',
+      'databaseName',
+      'deadlocks',
+      'estimatedLiveRows',
+      'messageBacklog',
+      'migrationVersions',
+      'rolledBackTransactions',
+      'sizeBytes',
+      'tableCount',
+      'tempBytes',
+      'tempFiles',
+    ])
+  )
+    failures.push(`${artifact} ${pathName} fields are invalid`);
+  if (!hasExactKeys(snapshot.messageBacklog, ['activeCount', 'deadCount', 'oldestActiveSeconds']))
+    failures.push(`${artifact} ${pathName}.messageBacklog fields are invalid`);
   if (typeof snapshot.databaseName !== 'string' || !snapshot.databaseName.trim())
     failures.push(`${artifact} ${pathName}.databaseName must not be empty`);
   if (!validDateTime(snapshot.capturedAt))
@@ -1312,6 +1387,38 @@ function validateCandidateImageOwner(artifact, images) {
 function validatePerformanceReport(value) {
   const artifact = 'performance-report.json';
   const failures = validateCandidateImageOwner(artifact, value.images);
+  if (
+    !hasExactKeys(value, [
+      'completedAt',
+      'concurrency',
+      'database',
+      'durationSeconds',
+      'failure',
+      'images',
+      'persistence',
+      'releaseCommit',
+      'requestsPerScenario',
+      'result',
+      'scenarios',
+      'schemaVersion',
+      'startedAt',
+      'workflowRunId',
+    ])
+  )
+    failures.push(`${artifact} fields are invalid`);
+  if (!hasExactKeys(value.images, ['api', 'web', 'worker']))
+    failures.push(`${artifact} images fields are invalid`);
+  if (!hasExactKeys(value.database, ['after', 'before']))
+    failures.push(`${artifact} database fields are invalid`);
+  if (
+    !hasExactKeys(value.persistence, [
+      'duplicateAcknowledgedMessageIds',
+      'expectedMessageIds',
+      'missingMessageIds',
+      'persistedMessageIds',
+    ])
+  )
+    failures.push(`${artifact} persistence fields are invalid`);
   if (!Number.isSafeInteger(value.concurrency))
     failures.push(`${artifact} concurrency must be an integer`);
   if (!Number.isSafeInteger(value.requestsPerScenario))
@@ -1325,6 +1432,20 @@ function validatePerformanceReport(value) {
       failures.push(`${prefix} must be an object`);
       continue;
     }
+    if (
+      !hasExactKeys(scenario, [
+        'errorRate',
+        'errors',
+        'name',
+        'p50Ms',
+        'p95Ms',
+        'p99Ms',
+        'requests',
+        'successes',
+        'thresholdP95Ms',
+      ])
+    )
+      failures.push(`${prefix} fields are invalid`);
     names.add(scenario.name);
     const limit = performanceScenarioLimits[scenario.name];
     if (limit === undefined) failures.push(`${prefix}.name is not an approved scenario`);
