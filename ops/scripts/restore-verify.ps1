@@ -130,6 +130,7 @@ $fixtureUrl = $fixtureBuilder.Uri.AbsoluteUri.TrimEnd('/')
 $temp = Join-Path ([System.IO.Path]::GetTempPath()) "lequ-restore-$([guid]::NewGuid()).dump"
 $startedAt = (Get-Date).ToUniversalTime()
 $fixtureResults = @()
+$fixtureCreated = $false
 $privacyReplayCount = 0
 $financialMatch = $false
 $failure = $null
@@ -161,6 +162,7 @@ try {
   # business database would mutate recovery evidence and can collide with fixed IDs.
   & createdb --maintenance-db=$env:RESTORE_ADMIN_URL $fixtureDatabase
   if ($LASTEXITCODE -ne 0) { throw 'fresh fixture verification database creation failed' }
+  $fixtureCreated = $true
   $schemaSql = Join-Path $repositoryRoot 'database\schema.sql'
   & psql --dbname=$fixtureUrl --set=ON_ERROR_STOP=1 --file=$schemaSql
   if ($LASTEXITCODE -ne 0) { throw 'fixture verification schema creation failed' }
@@ -183,8 +185,10 @@ catch {
 }
 finally {
   if (Test-Path -LiteralPath $temp) { Remove-Item -LiteralPath $temp -Force }
-  & dropdb --maintenance-db=$env:RESTORE_ADMIN_URL --if-exists $fixtureDatabase
-  if ($LASTEXITCODE -ne 0 -and -not $failure) { $failure = 'fixture verification database cleanup failed' }
+  if ($fixtureCreated) {
+    & dropdb --maintenance-db=$env:RESTORE_ADMIN_URL --if-exists $fixtureDatabase
+    if ($LASTEXITCODE -ne 0 -and -not $failure) { $failure = 'fixture verification database cleanup failed' }
+  }
   if (-not $completedAt) { $completedAt = (Get-Date).ToUniversalTime() }
   $rtoSeconds = ([DateTimeOffset]$completedAt - $failureTime).TotalSeconds
   $report = [ordered]@{

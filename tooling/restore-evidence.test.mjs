@@ -57,5 +57,7 @@ describe('backup and restore evidence boundary', () => {
     expect(restore).toContain('[IO.File]::Move($reportTemp, $reportFile)');
     expect(restore).not.toContain('[IO.File]::WriteAllText(\n    $reportFile');
     expect(restore).toContain('$env:RESTORE_DRILL_ENVIRONMENT -notin');
+    expect(restore).toContain('if ($fixtureCreated)');
+    expect(restore).toContain('$fixtureCreated = $true');
   });
 });
