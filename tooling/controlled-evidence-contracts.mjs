@@ -505,7 +505,7 @@ export const controlledJsonEvidenceReviewRules = Object.freeze({
   ],
   'restore-report.json': [
     'the exact encrypted and financial hashes are repeated from the backup manifest',
-    'all 22 database fixtures, privacy replay, financial match and encrypted-byte verification pass within RPO/RTO',
+    'the exact current database fixture set, privacy replay, financial match and encrypted-byte verification pass within RPO/RTO',
   ],
   'physical-wal-evidence.json': [
     'WAL replay reaches the declared recovery point in a different fault domain',
