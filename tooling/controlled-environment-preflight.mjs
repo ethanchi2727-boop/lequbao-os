@@ -188,6 +188,7 @@ function invalidValue(environment, name) {
     }
   }
   if (name === 'RELEASE_COMMIT' && !/^[a-f0-9]{40}$/u.test(value)) return 'invalid-commit';
+  if (name === 'PERFORMANCE_REPORT_PATH' && !path.isAbsolute(value)) return 'not-absolute';
   if (name === 'CONTROLLED_RESULTS_FILE' && !path.isAbsolute(value)) return 'not-absolute';
   return undefined;
 }

@@ -113,6 +113,8 @@ export function validatePerformanceConfig(env) {
     throw new Error('PERFORMANCE_CONCURRENCY must be an integer from 1 to 200');
   if (!Number.isSafeInteger(requests) || requests < 20 || requests > 100000)
     throw new Error('PERFORMANCE_REQUESTS must be an integer from 20 to 100000');
+  if (!path.isAbsolute(env.PERFORMANCE_REPORT_PATH))
+    throw new Error('PERFORMANCE_REPORT_PATH must be absolute');
   const reportPath = path.resolve(env.PERFORMANCE_REPORT_PATH);
   if (path.extname(reportPath).toLowerCase() !== '.json')
     throw new Error('PERFORMANCE_REPORT_PATH must end in .json');

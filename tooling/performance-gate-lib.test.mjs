@@ -1,3 +1,4 @@
+import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
   duplicateAcknowledgedMessageIds,
@@ -24,7 +25,7 @@ const validEnvironment = {
   PERFORMANCE_CONVERSATION_BODY_JSON: '{"messageType":"TEXT"}',
   PERFORMANCE_WRITE_PATH: '/api/v1/performance/write-fixture',
   PERFORMANCE_WRITE_BODY_JSON: '{"expectedVersion":1}',
-  PERFORMANCE_REPORT_PATH: 'artifacts/performance/report.json',
+  PERFORMANCE_REPORT_PATH: path.resolve('artifacts/performance/report.json'),
   PERFORMANCE_ENVIRONMENT: 'controlled-preproduction',
   PERFORMANCE_CANDIDATE_IMAGE_MANIFEST_JSON: JSON.stringify({
     version: 1,
@@ -103,6 +104,12 @@ describe('controlled performance gate', () => {
         PERFORMANCE_WRITE_PATH: '/api/v1/performance/write-fixture?unsafe=true',
       }),
     ).toThrow('canonical path');
+    expect(() =>
+      validatePerformanceConfig({
+        ...validEnvironment,
+        PERFORMANCE_REPORT_PATH: 'relative-report.json',
+      }),
+    ).toThrow('must be absolute');
   });
 
   it('rejects a mutable candidate or any deployed image digest mismatch', () => {
