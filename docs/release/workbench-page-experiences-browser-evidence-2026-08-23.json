@@ -52,11 +52,21 @@
     { "page": "page-062", "layout": "review-rejection", "panels": 4 },
     { "page": "page-063", "layout": "review-release", "panels": 4 },
     { "page": "page-064", "layout": "review-detail", "panels": 4 },
-    { "page": "page-065", "layout": "rejection-fix", "panels": 4 }
+    { "page": "page-065", "layout": "rejection-fix", "panels": 4 },
+    { "page": "page-066", "layout": "version-rollback", "panels": 4 },
+    { "page": "page-068", "layout": "geo-merchant-profile", "panels": 4 },
+    { "page": "page-069", "layout": "geo-channel-publication", "panels": 4 },
+    { "page": "page-070", "layout": "geo-consistency-review", "panels": 4 },
+    { "page": "page-072", "layout": "organization-members", "panels": 4 },
+    { "page": "page-073", "layout": "subscription-entitlements", "panels": 4 },
+    { "page": "page-075", "layout": "knowledge-initialization", "panels": 4 },
+    { "page": "page-076", "layout": "customer-service-launch-test", "panels": 4 },
+    { "page": "page-079", "layout": "daily-operations-home", "panels": 4 },
+    { "page": "page-081", "layout": "merchant-data-conversation", "panels": 4 }
   ],
   "sharedObservations": {
     "desktopHorizontalOverflowCount": 0,
-    "distinctLayoutCount": 49,
+    "distinctLayoutCount": 59,
     "demoModeLabel": "演示结构",
     "productionModeLabel": "权威数据模式",
     "productionDemoPanelCount": 0,
@@ -106,6 +116,17 @@
     "page058ContainsSecretText": false,
     "page063MobileDocumentScrollWidth": 320,
     "page063MobileActionMinimumHeight": 44
+  },
+  "operationsAndGeoObservation": {
+    "desktopPageCount": 10,
+    "desktopOverflowCount": 0,
+    "guardrailMissingCount": 0,
+    "page069AuthorityMode": true,
+    "page069ProtectedEmpty": true,
+    "page069ContainsNonPromise": true,
+    "page069ContainsGuaranteedRanking": false,
+    "page079MobileDocumentScrollWidth": 320,
+    "page079MobileActionMinimumHeight": 44
   },
   "boundaries": [
     "This is local browser evidence, not controlled or production acceptance.",
