@@ -45,7 +45,7 @@
     "typecheck": "pnpm --filter @lequ/contracts build && pnpm -r --if-present run typecheck",
     "test": "vitest run tooling && pnpm --filter @lequ/contracts build && pnpm -r --if-present run test",
     "build": "pnpm -r --if-present run build",
-    "check": "pnpm format:check && pnpm lint && pnpm contracts:check && pnpm rbac:check && pnpm release-plan:check && pnpm release-50:check && pnpm acceptance:check && pnpm visual:check && pnpm frontend:check && pnpm workbench:check && pnpm experience:closure && pnpm release:local-sequence && pnpm workbench:performance && pnpm openapi:check && pnpm security:check && pnpm operations:check && pnpm deployment:check && pnpm typecheck && pnpm test && pnpm build && pnpm artifacts:check"
+    "check": "pnpm format:check && pnpm lint && pnpm contracts:check && pnpm rbac:check && pnpm release-plan:check && pnpm release-50:check && pnpm acceptance:check && pnpm visual:check && pnpm frontend:check && pnpm workbench:check && pnpm experience:closure && pnpm release:local-sequence && pnpm controlled:stage-map && pnpm controlled:inventory && pnpm workbench:performance && pnpm openapi:check && pnpm security:check && pnpm operations:check && pnpm deployment:check && pnpm typecheck && pnpm test && pnpm build && pnpm artifacts:check"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",

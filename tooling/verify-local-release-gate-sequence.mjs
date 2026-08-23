@@ -7,6 +7,8 @@ const expectedSequence = [
   'lint',
   'frontend:check',
   'experience:closure',
+  'controlled:stage-map',
+  'controlled:inventory',
   'workbench:performance',
   'openapi:check',
   'security:check',
@@ -18,9 +20,8 @@ const expectedSequence = [
   'artifacts:check',
 ];
 
-const controlledScripts = [
+const controlledExecutionScripts = [
   'controlled:preflight',
-  'controlled:inventory',
   'controlled:prepare',
   'controlled:capture',
   'controlled:assemble',
@@ -47,8 +48,8 @@ export async function verifyLocalReleaseGateSequence(root) {
       (index === 0 || positions[index] > positions[index - 1]),
   }));
   checks.push({
-    name: 'controlled-gates-excluded',
-    passed: controlledScripts.every((script) => !actual.includes(script)),
+    name: 'controlled-execution-gates-excluded',
+    passed: controlledExecutionScripts.every((script) => !actual.includes(script)),
   });
   const failures = checks.filter((check) => !check.passed).map((check) => check.name);
   if (failures.length)
@@ -60,6 +61,6 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
   const root = join(dirname(fileURLToPath(import.meta.url)), '..');
   const report = await verifyLocalReleaseGateSequence(root);
   console.log(
-    `Local release sequence passed: ${report.sequence.length} ordered gates and controlled gates excluded.`,
+    `Local release sequence passed: ${report.sequence.length} ordered local/static gates and controlled execution gates excluded.`,
   );
 }
