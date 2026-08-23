@@ -26,6 +26,7 @@ for (const file of [
   'page-experiences-miniapp.mjs',
   'page-experiences-operations.mjs',
   'page-experiences-commerce.mjs',
+  'page-experiences-service.mjs',
 ]) {
   await copyFile(new URL(`./src/${file}`, import.meta.url), new URL(file, output));
 }

@@ -72,11 +72,21 @@
     { "page": "page-090", "layout": "order-operations-list", "panels": 4 },
     { "page": "page-091", "layout": "order-lifecycle-detail", "panels": 4 },
     { "page": "page-092", "layout": "aftersale-history", "panels": 4 },
-    { "page": "page-093", "layout": "partial-refund-detail", "panels": 4 }
+    { "page": "page-093", "layout": "partial-refund-detail", "panels": 4 },
+    { "page": "page-094", "layout": "redemption-workbench", "panels": 4 },
+    { "page": "page-095", "layout": "refund-aftersale-queue", "panels": 4 },
+    { "page": "page-096", "layout": "daily-reconciliation", "panels": 4 },
+    { "page": "page-099", "layout": "service-conversation-queue", "panels": 4 },
+    { "page": "page-100", "layout": "human-handoff-conversation", "panels": 4 },
+    { "page": "page-101", "layout": "service-order-context", "panels": 4 },
+    { "page": "page-102", "layout": "service-refund-approval", "panels": 4 },
+    { "page": "page-103", "layout": "service-duty-assignment", "panels": 4 },
+    { "page": "page-105", "layout": "customer-directory", "panels": 4 },
+    { "page": "page-106", "layout": "continuous-customer-profile", "panels": 4 }
   ],
   "sharedObservations": {
     "desktopHorizontalOverflowCount": 0,
-    "distinctLayoutCount": 69,
+    "distinctLayoutCount": 79,
     "demoModeLabel": "演示结构",
     "productionModeLabel": "权威数据模式",
     "productionDemoPanelCount": 0,
@@ -148,6 +158,17 @@
     "page093ContainsPaymentCredential": false,
     "page090MobileDocumentScrollWidth": 320,
     "page090MobileActionMinimumHeight": 44
+  },
+  "fulfillmentAndServiceObservation": {
+    "desktopPageCount": 10,
+    "desktopOverflowCount": 0,
+    "guardrailMissingCount": 0,
+    "page100AuthorityMode": true,
+    "page100ProtectedEmpty": true,
+    "page100DemoPanelCount": 0,
+    "page100ContainsCustomerPlaintext": false,
+    "page105MobileDocumentScrollWidth": 320,
+    "page105MobileActionMinimumHeight": 44
   },
   "boundaries": [
     "This is local browser evidence, not controlled or production acceptance.",
