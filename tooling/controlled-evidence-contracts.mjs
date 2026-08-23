@@ -1614,6 +1614,8 @@ function validateRefundUnknownRecovery(value) {
     failures.push(`${artifact} providerQuery.sameIdempotencyKey must equal true`);
   if (value.providerQuery?.idempotencyKeyHash !== value.idempotencyKeyHash)
     failures.push(`${artifact} provider query idempotency hash does not match recovery`);
+  if (!Number.isSafeInteger(value.refundAmountFen))
+    failures.push(`${artifact} refundAmountFen must be an integer`);
   if (!['REFUND_SUCCEEDED', 'REFUND_FAILED'].includes(value.finalState))
     failures.push(`${artifact} finalState must be a terminal provider-confirmed refund state`);
   const timeline = [value.observedUnknownAt, value.providerQuery?.queriedAt, value.completedAt].map(

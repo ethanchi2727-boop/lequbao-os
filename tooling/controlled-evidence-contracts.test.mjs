@@ -901,7 +901,7 @@ describe('controlled JSON evidence contracts', () => {
         refundRefHash: 'a'.repeat(64),
         orderRefHash: 'd'.repeat(64),
         merchantAccountRef: 'a'.repeat(64),
-        refundAmountFen: 1,
+        refundAmountFen: 1.5,
         idempotencyKeyHash: 'b'.repeat(64),
         providerQuery: {
           performed: false,
@@ -922,6 +922,7 @@ describe('controlled JSON evidence contracts', () => {
         'refund-unknown-recovery.json convergenceCount must equal 1',
         'refund-unknown-recovery.json providerQuery.performed must equal true',
         'refund-unknown-recovery.json provider query idempotency hash does not match recovery',
+        'refund-unknown-recovery.json refundAmountFen must be an integer',
         'refund-unknown-recovery.json providerQuery fields are invalid',
         'refund-unknown-recovery.json UNKNOWN, provider query and completion timestamps are out of order',
         expect.stringContaining('terminal provider-confirmed refund state'),
