@@ -197,6 +197,7 @@ describe('controlled evidence capture', () => {
       independentReview: {
         subjectId: 'org:finance-reviewer',
         decision: 'APPROVED',
+        receiptId: 'finance-review-receipt',
         reviewedAt: '2026-08-19T01:00:00.000Z',
       },
       unresolvedItems: [],

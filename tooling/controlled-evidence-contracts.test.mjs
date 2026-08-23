@@ -209,7 +209,7 @@ describe('controlled JSON evidence contracts', () => {
         effectiveAt: '2026-08-19T01:00:00.000Z',
         decisions: { paymentResponsibilityResolved: true },
         approvals: ['approved'],
-        independentReview: { decision: 'PENDING' },
+        independentReview: { decision: 'PENDING', receiptId: 'review-receipt' },
         unresolvedItems: [],
       }),
     ).toEqual(
@@ -256,6 +256,7 @@ describe('controlled JSON evidence contracts', () => {
         independentReview: {
           subjectId: 'reviewer@example.test',
           decision: 'APPROVED',
+          receiptId: 'review-receipt',
           reviewedAt: '2026-08-19T00:59:00.000Z',
         },
         unresolvedItems: [],
@@ -266,6 +267,61 @@ describe('controlled JSON evidence contracts', () => {
         expect.stringContaining('approvals[0].subjectId must be an approved opaque subject'),
         expect.stringContaining('approvals[0].receiptId must be an opaque reference'),
         expect.stringContaining('independentReview.subjectId must be an approved opaque subject'),
+      ]),
+    );
+    expect(
+      validateControlledJsonEvidence('financial-policy-approvals.json', {
+        releaseCommit: 'a'.repeat(40),
+        deploymentId: 'deployment-1',
+        decisionVersion: 'finance decision with spaces',
+        effectiveAt: '2026-08-19T01:00:00.000Z',
+        decisions: {
+          paymentResponsibilityResolved: true,
+          merchantAccountMappingResolved: true,
+          legacyBalanceResolved: true,
+          distributionConflictC001Resolved: true,
+          computeAllocationResolved: true,
+          historicalSnapshotPreserved: true,
+          undeclaredDecision: true,
+        },
+        approvals: [
+          {
+            subjectId: 'org:business-1',
+            role: 'business owner',
+            decision: 'APPROVED',
+            receiptId: 'business-1',
+            approvedAt: '2026-08-19T00:58:00.000Z',
+          },
+          {
+            subjectId: 'org:business-2',
+            role: 'business owner',
+            decision: 'APPROVED',
+            receiptId: 'business-2',
+            approvedAt: '2026-08-19T00:59:00.000Z',
+          },
+          {
+            subjectId: 'org:finance',
+            role: 'finance owner',
+            decision: 'APPROVED',
+            receiptId: 'finance',
+            approvedAt: '2026-08-19T00:59:00.000Z',
+          },
+        ],
+        independentReview: {
+          subjectId: 'org:reviewer',
+          decision: 'APPROVED',
+          receiptId: 'review receipt with spaces',
+          reviewedAt: '2026-08-19T01:01:00.000Z',
+        },
+        unresolvedItems: [],
+      }),
+    ).toEqual(
+      expect.arrayContaining([
+        'financial-policy-approvals.json decisions must contain the exact frozen decision fields',
+        'financial-policy-approvals.json approval roles must be unique',
+        'financial-policy-approvals.json decisionVersion must be opaque',
+        'financial-policy-approvals.json independentReview.receiptId must be an opaque reference',
+        'financial-policy-approvals.json effectiveAt must not precede independent review',
       ]),
     );
     expect(

@@ -129,6 +129,7 @@ export const controlledJsonEvidenceContracts = {
     field('decisions', 'object'),
     field('approvals', 'array'),
     field('independentReview', 'object'),
+    field('independentReview.receiptId', 'string'),
     empty('unresolvedItems'),
   ],
   'runtime-policy.json': [
@@ -527,6 +528,8 @@ function validateApprovalSet(artifact, approvals, requiredRoles) {
       failures.push(`${artifact} approval subjects must differ`);
     else subjects.add(approval.subjectId);
     if (!requiredRoles.includes(approval.role)) failures.push(`${prefix}.role is not approved`);
+    else if (approvedRoles.has(approval.role))
+      failures.push(`${artifact} approval roles must be unique`);
     else approvedRoles.add(approval.role);
     if (approval.decision !== 'APPROVED') failures.push(`${prefix}.decision must equal "APPROVED"`);
     if (!opaqueReference.test(approval.receiptId ?? ''))
@@ -686,14 +689,20 @@ function validateFinancialApprovals(value) {
   const artifact = 'financial-policy-approvals.json';
   const failures = [];
   const approvals = Array.isArray(value.approvals) ? value.approvals : [];
-  for (const decision of [
+  const requiredDecisions = [
     'paymentResponsibilityResolved',
     'merchantAccountMappingResolved',
     'legacyBalanceResolved',
     'distributionConflictC001Resolved',
     'computeAllocationResolved',
     'historicalSnapshotPreserved',
-  ])
+  ];
+  if (
+    JSON.stringify(Object.keys(value.decisions ?? {}).sort()) !==
+    JSON.stringify([...requiredDecisions].sort())
+  )
+    failures.push(`${artifact} decisions must contain the exact frozen decision fields`);
+  for (const decision of requiredDecisions)
     if (value.decisions?.[decision] !== true)
       failures.push(`${artifact} decisions.${decision} must equal true`);
   failures.push(...validateApprovalSet(artifact, approvals, ['business owner', 'finance owner']));
@@ -704,6 +713,10 @@ function validateFinancialApprovals(value) {
     failures.push(`${artifact} independentReview.subjectId must be an approved opaque subject`);
   if (!validDateTime(review?.reviewedAt))
     failures.push(`${artifact} independentReview.reviewedAt must be a non-future ISO date-time`);
+  if (!opaqueReference.test(review?.receiptId ?? ''))
+    failures.push(`${artifact} independentReview.receiptId must be an opaque reference`);
+  if (!opaqueReference.test(value.decisionVersion ?? ''))
+    failures.push(`${artifact} decisionVersion must be opaque`);
   if (approvals.some((approval) => approval?.subjectId === review?.subjectId))
     failures.push(`${artifact} independent reviewer must differ from approvers`);
   const approvalTimes = approvals
@@ -721,6 +734,12 @@ function validateFinancialApprovals(value) {
     Date.parse(value.effectiveAt) < Math.max(...approvalTimes)
   )
     failures.push(`${artifact} effectiveAt must not precede approval`);
+  if (
+    validDateTime(review?.reviewedAt) &&
+    validDateTime(value.effectiveAt) &&
+    Date.parse(value.effectiveAt) < Date.parse(review.reviewedAt)
+  )
+    failures.push(`${artifact} effectiveAt must not precede independent review`);
   return failures;
 }
 
