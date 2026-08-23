@@ -1466,12 +1466,14 @@ describe('controlled JSON evidence contracts', () => {
     );
     expect(
       validateControlledJsonEvidence('concurrency-input.json', {
-        stock: 3,
-        requestedQuantity: 3,
+        stock: 3.5,
+        requestedQuantity: 3.5,
         contenders: ['one'],
       }),
     ).toEqual(
       expect.arrayContaining([
+        'concurrency-input.json stock must be a non-negative integer',
+        'concurrency-input.json requestedQuantity must be a positive integer',
         'concurrency-input.json contenders[0] must be an object',
         'concurrency-input.json contender quantities must equal requestedQuantity',
         'concurrency-input.json requestedQuantity must exceed stock for the contention drill',
@@ -1492,16 +1494,32 @@ describe('controlled JSON evidence contracts', () => {
             quantity: 1,
           },
         ],
-        successfulQuantity: 1,
+        successfulQuantity: 1.5,
         failedContenders: [{ contenderRef: 'same', partialFactCount: 0 }],
       }),
     ).toEqual(
       expect.arrayContaining([
+        'order-results.json successfulQuantity must be a non-negative integer',
         'order-results.json successfulOrders[0].quantity must be a positive integer',
         'order-results.json successfulOrders[0] fields are invalid',
         'order-results.json successful contender references must be unique',
         'order-results.json successful order references must be unique',
         'order-results.json contender cannot both succeed and fail',
+      ]),
+    );
+    expect(
+      validateControlledJsonEvidence('inventory-ledger.json', {
+        openingStock: 3.5,
+        closingStock: 2,
+        soldQuantity: 1.5,
+        entries: [{ type: 'SOLD', orderRefHash: 'a'.repeat(64), quantity: 1.5 }],
+      }),
+    ).toEqual(
+      expect.arrayContaining([
+        'inventory-ledger.json openingStock must be a non-negative integer',
+        'inventory-ledger.json soldQuantity must be a non-negative integer',
+        'inventory-ledger.json entries[0].quantity must be a positive integer',
+        'inventory-ledger.json entry quantities must equal soldQuantity',
       ]),
     );
     expect(

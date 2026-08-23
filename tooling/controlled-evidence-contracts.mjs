@@ -2781,6 +2781,10 @@ function validateConcurrencyInput(value) {
   const failures = [];
   if (!hasExactKeys(value, ['contenders', 'requestedQuantity', 'stock']))
     failures.push(`${artifact} fields are invalid`);
+  if (!Number.isSafeInteger(value.stock) || value.stock < 0)
+    failures.push(`${artifact} stock must be a non-negative integer`);
+  if (!Number.isSafeInteger(value.requestedQuantity) || value.requestedQuantity < 1)
+    failures.push(`${artifact} requestedQuantity must be a positive integer`);
   const contenders = Array.isArray(value.contenders) ? value.contenders : [];
   let requested = 0;
   const refs = new Set();
@@ -2797,7 +2801,7 @@ function validateConcurrencyInput(value) {
     else if (refs.has(contender.contenderRef))
       failures.push(`${artifact} contenderRefs must be unique`);
     else refs.add(contender.contenderRef);
-    if (!Number.isInteger(contender.quantity) || contender.quantity < 1)
+    if (!Number.isSafeInteger(contender.quantity) || contender.quantity < 1)
       failures.push(`${prefix}.quantity must be a positive integer`);
     else requested += contender.quantity;
   }
@@ -2813,10 +2817,12 @@ function validateOrderResults(value) {
   const failures = [];
   if (!hasExactKeys(value, ['failedContenders', 'successfulOrders', 'successfulQuantity']))
     failures.push(`${artifact} fields are invalid`);
+  if (!Number.isSafeInteger(value.successfulQuantity) || value.successfulQuantity < 0)
+    failures.push(`${artifact} successfulQuantity must be a non-negative integer`);
   const successful = Array.isArray(value.successfulOrders) ? value.successfulOrders : [];
   const failed = Array.isArray(value.failedContenders) ? value.failedContenders : [];
   const quantity = successful.reduce(
-    (total, order) => total + (Number.isInteger(order?.quantity) ? order.quantity : 0),
+    (total, order) => total + (Number.isSafeInteger(order?.quantity) ? order.quantity : 0),
     0,
   );
   if (quantity !== value.successfulQuantity)
@@ -2866,6 +2872,9 @@ function validateInventoryLedger(value) {
   const failures = [];
   if (!hasExactKeys(value, ['closingStock', 'entries', 'openingStock', 'soldQuantity']))
     failures.push(`${artifact} fields are invalid`);
+  for (const fieldName of ['openingStock', 'closingStock', 'soldQuantity'])
+    if (!Number.isSafeInteger(value[fieldName]) || value[fieldName] < 0)
+      failures.push(`${artifact} ${fieldName} must be a non-negative integer`);
   let sold = 0;
   const orderRefs = new Set();
   for (const [index, entry] of (Array.isArray(value.entries) ? value.entries : []).entries()) {
@@ -2877,7 +2886,7 @@ function validateInventoryLedger(value) {
     if (!hasExactKeys(entry, ['orderRefHash', 'quantity', 'type']))
       failures.push(`${prefix} fields are invalid`);
     if (entry.type !== 'SOLD') failures.push(`${prefix}.type must equal "SOLD"`);
-    if (!Number.isInteger(entry.quantity) || entry.quantity < 1)
+    if (!Number.isSafeInteger(entry.quantity) || entry.quantity < 1)
       failures.push(`${prefix}.quantity must be a positive integer`);
     else sold += entry.quantity;
     if (!validSha256(entry.orderRefHash))
@@ -2888,6 +2897,8 @@ function validateInventoryLedger(value) {
   }
   if (sold !== value.soldQuantity)
     failures.push(`${artifact} entry quantities must equal soldQuantity`);
+  if (value.closingStock !== value.openingStock - value.soldQuantity)
+    failures.push(`${artifact} closingStock must equal openingStock minus soldQuantity`);
   return failures;
 }
 
