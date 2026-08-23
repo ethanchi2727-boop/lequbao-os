@@ -191,6 +191,23 @@ describe('controlled result assembly', () => {
     ).rejects.toThrow(/different people/u);
   });
 
+  it('requires every capture receipt to fall inside its suite execution window', async () => {
+    const root = await fixture('d'.repeat(40));
+    await expect(
+      assembleControlledResults({
+        plan,
+        planSource,
+        decisions: {
+          version: 1,
+          releaseCommit: 'd'.repeat(40),
+          suites: [{ ...decision, startedAt: '2026-08-19T01:01:00.000Z' }],
+        },
+        evidenceRoot: root,
+        generatedAt: '2026-08-19T01:07:00.000Z',
+      }),
+    ).rejects.toThrow(/capture receipt falls outside suite execution/u);
+  });
+
   it('rejects ambiguous decision and result timestamps before assembly', async () => {
     const root = await fixture('f'.repeat(40));
     await expect(

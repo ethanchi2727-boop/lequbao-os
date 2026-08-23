@@ -65,7 +65,16 @@ function assertDecision(decision, suite, generatedAt, workspaceCreatedAt) {
     throw new Error(`${suite.code} execution and review chronology is invalid`);
 }
 
-async function evidenceRecord(root, suite, file, context, expectedPlanHash, generatedAt) {
+async function evidenceRecord(
+  root,
+  suite,
+  file,
+  context,
+  expectedPlanHash,
+  generatedAt,
+  executionStartedAt,
+  executionCompletedAt,
+) {
   const relative = path.posix.join(suite.evidenceDirectory, file);
   const absolute = path.resolve(root, ...relative.split('/'));
   const relativeToRoot = path.relative(root, absolute);
@@ -99,6 +108,11 @@ async function evidenceRecord(root, suite, file, context, expectedPlanHash, gene
     );
   if (receipt.capturedAt !== undefined && receipt.capturedAt > generatedAt)
     throw new Error(`${suite.code} capture receipt is later than result generation: ${relative}`);
+  if (
+    receipt.capturedAt !== undefined &&
+    (receipt.capturedAt < executionStartedAt || receipt.capturedAt > executionCompletedAt)
+  )
+    throw new Error(`${suite.code} capture receipt falls outside suite execution: ${relative}`);
   return {
     file: relative,
     sha256: inspection.sha256,
@@ -202,6 +216,8 @@ export async function assembleControlledResults({
           context,
           expectedPlanHash,
           generatedMilliseconds,
+          parseCanonicalUtcTimestamp(decision.startedAt),
+          parseCanonicalUtcTimestamp(decision.completedAt),
         ),
       );
     const suiteFailures = await inspectControlledSuiteEvidence(evidenceRoot, suite);
