@@ -56,8 +56,8 @@ const report = {
   scenarios: [],
   database: { before: null, after: null },
   persistence: {
-    expectedMessageIds: 0,
-    persistedMessageIds: 0,
+    expectedMessageCount: 0,
+    persistedMessageCount: 0,
     missingMessageRefHashes: [],
     duplicateAcknowledgedMessageRefHashes: [],
   },
@@ -144,8 +144,8 @@ try {
   const duplicates = duplicateAcknowledgedMessageIds(expectedMessageIds);
   const messageRefHash = (id) => createHash('sha256').update(id).digest('hex');
   report.persistence = {
-    expectedMessageIds: expectedMessageIds.length,
-    persistedMessageIds: persistedIds.length,
+    expectedMessageCount: expectedMessageIds.length,
+    persistedMessageCount: persistedIds.length,
     missingMessageRefHashes: missing.map(messageRefHash),
     duplicateAcknowledgedMessageRefHashes: duplicates.map(messageRefHash),
   };

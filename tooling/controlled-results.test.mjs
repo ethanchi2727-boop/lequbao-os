@@ -410,8 +410,8 @@ function semanticFixture(artifact, binding) {
       scenarios: performanceScenarios,
       database: { before: performanceSnapshot, after: performanceSnapshot },
       persistence: {
-        expectedMessageIds: 20,
-        persistedMessageIds: 20,
+        expectedMessageCount: 20,
+        persistedMessageCount: 20,
         missingMessageRefHashes: [],
         duplicateAcknowledgedMessageRefHashes: [],
       },

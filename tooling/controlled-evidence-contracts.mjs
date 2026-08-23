@@ -1439,9 +1439,9 @@ function validatePerformanceReport(value) {
   if (
     !hasExactKeys(value.persistence, [
       'duplicateAcknowledgedMessageRefHashes',
-      'expectedMessageIds',
+      'expectedMessageCount',
       'missingMessageRefHashes',
-      'persistedMessageIds',
+      'persistedMessageCount',
     ])
   )
     failures.push(`${artifact} persistence fields are invalid`);
@@ -1512,12 +1512,12 @@ function validatePerformanceReport(value) {
     if (!names.has(name)) failures.push(`${artifact} scenarios must include ${name}`);
   if (names.size !== scenarios.length) failures.push(`${artifact} scenario names must be unique`);
   const message = scenarios.find((scenario) => scenario?.name === 'customer-message-write');
-  for (const fieldName of ['expectedMessageIds', 'persistedMessageIds'])
+  for (const fieldName of ['expectedMessageCount', 'persistedMessageCount'])
     if (!Number.isSafeInteger(value.persistence?.[fieldName]) || value.persistence[fieldName] < 0)
       failures.push(`${artifact} persistence ${fieldName} must be a non-negative integer`);
-  if (value.persistence?.expectedMessageIds !== message?.successes)
+  if (value.persistence?.expectedMessageCount !== message?.successes)
     failures.push(`${artifact} persistence expected count must equal acknowledged messages`);
-  if (value.persistence?.persistedMessageIds !== value.persistence?.expectedMessageIds)
+  if (value.persistence?.persistedMessageCount !== value.persistence?.expectedMessageCount)
     failures.push(`${artifact} every acknowledged message must persist`);
   if (
     !Array.isArray(value.persistence?.missingMessageRefHashes) ||
