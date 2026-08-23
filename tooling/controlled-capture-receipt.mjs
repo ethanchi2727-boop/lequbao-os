@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { readFile, realpath } from 'node:fs/promises';
 import path from 'node:path';
 import { inspectControlledEvidenceFile } from './controlled-evidence.mjs';
@@ -7,6 +8,7 @@ const receiptFields = [
   'version',
   'releaseCommit',
   'planSha256',
+  'contextSha256',
   'deploymentId',
   'environment',
   'suiteCode',
@@ -62,6 +64,9 @@ export async function inspectCaptureReceipt({
       version: 1,
       releaseCommit: context.releaseCommit,
       planSha256: expectedPlanHash,
+      contextSha256: createHash('sha256')
+        .update(await readFile(path.join(evidenceRoot, 'controlled-execution-context.json')))
+        .digest('hex'),
       deploymentId: context.deploymentId,
       environment: context.environment,
       suiteCode: suite.code,

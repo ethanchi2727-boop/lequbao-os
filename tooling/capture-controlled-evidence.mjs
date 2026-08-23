@@ -43,9 +43,11 @@ export async function captureControlledEvidenceArtifact({
   if (!suite.requiredEvidence.includes(artifact))
     throw new Error(`${suiteCode} artifact is not declared by the plan: ${artifact}`);
 
-  const context = JSON.parse(
-    await readFile(path.join(evidenceRoot, 'controlled-execution-context.json'), 'utf8'),
+  const contextSource = await readFile(
+    path.join(evidenceRoot, 'controlled-execution-context.json'),
+    'utf8',
   );
+  const context = JSON.parse(contextSource);
   const expectedPlanHash = createHash('sha256').update(planSource).digest('hex');
   if (context.planSha256 !== expectedPlanHash)
     throw new Error('controlled workspace plan hash does not match the current plan');
@@ -106,6 +108,7 @@ export async function captureControlledEvidenceArtifact({
     version: 1,
     releaseCommit: context.releaseCommit,
     planSha256: expectedPlanHash,
+    contextSha256: createHash('sha256').update(contextSource).digest('hex'),
     deploymentId: context.deploymentId,
     environment: context.environment,
     suiteCode,

@@ -863,6 +863,7 @@ describe('controlled launch results', () => {
         'controlled execution context is not bound to the candidate and current plan',
         'controlled execution context suite or artifact counts do not match the plan',
         'controlled execution context createdAt is invalid or after result generation',
+        'POSTGRES capture receipt contextSha256 does not match for postgres/fixture.log',
       ]),
     );
   });
