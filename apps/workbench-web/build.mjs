@@ -28,6 +28,7 @@ for (const file of [
   'page-experiences-commerce.mjs',
   'page-experiences-service.mjs',
   'page-experiences-engagement.mjs',
+  'page-experiences-controls.mjs',
 ]) {
   await copyFile(new URL(`./src/${file}`, import.meta.url), new URL(file, output));
 }

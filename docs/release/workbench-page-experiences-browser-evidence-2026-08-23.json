@@ -92,11 +92,21 @@
     { "page": "page-118", "layout": "reward-rule-versions", "panels": 4 },
     { "page": "page-119", "layout": "reward-ledger", "panels": 4 },
     { "page": "page-122", "layout": "monthly-value-report", "panels": 4 },
-    { "page": "page-124", "layout": "sales-redemption-analytics", "panels": 4 }
+    { "page": "page-124", "layout": "sales-redemption-analytics", "panels": 4 },
+    { "page": "page-125", "layout": "service-conversion-analytics", "panels": 4 },
+    { "page": "page-126", "layout": "geo-health-dashboard", "panels": 4 },
+    { "page": "page-129", "layout": "plugin-catalog", "panels": 4 },
+    { "page": "page-130", "layout": "plugin-detail", "panels": 4 },
+    { "page": "page-132", "layout": "skill-catalog", "panels": 4 },
+    { "page": "page-134", "layout": "developer-review-submission", "panels": 4 },
+    { "page": "page-137", "layout": "current-plan-snapshot", "panels": 4 },
+    { "page": "page-138", "layout": "ai-service-usage", "panels": 4 },
+    { "page": "page-140", "layout": "employees-roles", "panels": 4 },
+    { "page": "page-141", "layout": "tenant-audit-log", "panels": 4 }
   ],
   "sharedObservations": {
     "desktopHorizontalOverflowCount": 0,
-    "distinctLayoutCount": 89,
+    "distinctLayoutCount": 99,
     "demoModeLabel": "演示结构",
     "productionModeLabel": "权威数据模式",
     "productionDemoPanelCount": 0,
@@ -190,6 +200,17 @@
     "page112ContainsProviderSecret": false,
     "page116MobileDocumentScrollWidth": 320,
     "page116MobileActionMinimumHeight": 44
+  },
+  "ecosystemAndControlsObservation": {
+    "desktopPageCount": 10,
+    "desktopOverflowCount": 0,
+    "guardrailMissingCount": 0,
+    "page130AuthorityMode": true,
+    "page130ProtectedEmpty": true,
+    "page130InstallButtonPresent": false,
+    "page138UsesTokenTerminology": true,
+    "page138MobileDocumentScrollWidth": 320,
+    "page138MobileActionMinimumHeight": 44
   },
   "boundaries": [
     "This is local browser evidence, not controlled or production acceptance.",

@@ -45,6 +45,12 @@ describe('乐趣宝专属页面按需加载', () => {
     await expect(loadWorkbenchPageExperience('page-124')).resolves.toMatchObject({
       layout: 'sales-redemption-analytics',
     });
-    await expect(loadWorkbenchPageExperience('page-125')).resolves.toBeNull();
+    await expect(loadWorkbenchPageExperience('page-125')).resolves.toMatchObject({
+      layout: 'service-conversion-analytics',
+    });
+    await expect(loadWorkbenchPageExperience('page-141')).resolves.toMatchObject({
+      layout: 'tenant-audit-log',
+    });
+    await expect(loadWorkbenchPageExperience('page-143')).resolves.toBeNull();
   });
 });
