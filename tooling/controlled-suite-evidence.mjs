@@ -51,6 +51,7 @@ export const controlledSuiteCrossEvidenceRules = {
   ],
   IDENTITY_SECRETS_PRIVACY_ONCALL: [
     'privacy export delivery uses a sampled non-revoked identity session',
+    'privacy export begins and completes while that sampled session is active',
     'on-call acknowledgement covers the exact alert identifiers retained by alert delivery',
     'each acknowledgement is made by the recipient of that alert after delivery',
   ],
@@ -355,13 +356,29 @@ export function validateControlledSuiteDocuments(suiteCode, documents) {
     }
     if (identity && privacy) {
       const exportSession = privacy.export?.sessionRefHash;
-      const sampledSessions = new Set(
-        (identity.sessions ?? []).map((session) => session?.sessionRefHash),
+      const sampledSessions = new Map(
+        (identity.sessions ?? []).map((session) => [session?.sessionRefHash, session]),
       );
       if (!sampledSessions.has(exportSession))
         failures.push('privacy export session is absent from sampled identity sessions');
       if (identity.revocation?.sessionRefHash === exportSession)
         failures.push('privacy export was delivered to the revoked session');
+      const session = sampledSessions.get(exportSession);
+      const exportTimeline = [
+        session?.issuedAt,
+        privacy.export?.requestedAt,
+        privacy.export?.completedAt,
+        session?.expiresAt,
+      ].map(Date.parse);
+      if (
+        exportTimeline.every(Number.isFinite) &&
+        !(
+          exportTimeline[0] <= exportTimeline[1] &&
+          exportTimeline[1] <= exportTimeline[2] &&
+          exportTimeline[2] < exportTimeline[3]
+        )
+      )
+        failures.push('privacy export was not delivered while its sampled session was active');
     }
   }
   return failures;

@@ -409,6 +409,27 @@ describe('controlled suite cross-evidence contracts', () => {
         'privacy export was delivered to the revoked session',
       ]),
     );
+    expect(
+      validateControlledSuiteDocuments('IDENTITY_SECRETS_PRIVACY_ONCALL', {
+        'identity-session-redacted.json': {
+          revocation: { sessionRefHash: 'other-session' },
+          sessions: [
+            {
+              sessionRefHash: 'export-session',
+              issuedAt: '2026-08-19T01:02:00.000Z',
+              expiresAt: '2026-08-19T01:30:00.000Z',
+            },
+          ],
+        },
+        'privacy-export-delete.json': {
+          export: {
+            sessionRefHash: 'export-session',
+            requestedAt: '2026-08-19T01:00:00.000Z',
+            completedAt: '2026-08-19T01:01:00.000Z',
+          },
+        },
+      }),
+    ).toContain('privacy export was not delivered while its sampled session was active');
   });
 
   it('rejects a restore report bound to different backup bytes or financial facts', () => {
