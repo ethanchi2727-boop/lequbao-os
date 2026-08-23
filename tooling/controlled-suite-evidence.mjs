@@ -9,6 +9,7 @@ export const controlledSuiteCrossEvidenceRules = {
     'OCR provenance references that same object after upload and retained storage',
   ],
   COMMERCE_CONCURRENCY: [
+    'input capture precedes order completion and ledger verification',
     'opening stock equals the declared input stock',
     'successful quantity does not exceed stock or requested quantity',
     'ledger sold quantity equals successful quantity',
@@ -85,6 +86,12 @@ export function validateControlledSuiteDocuments(suiteCode, documents) {
     const orders = get('order-results.json');
     const ledger = get('inventory-ledger.json');
     if (input && orders && ledger) {
+      const timeline = [input.capturedAt, orders.completedAt, ledger.verifiedAt].map(Date.parse);
+      if (
+        timeline.every(Number.isFinite) &&
+        !(timeline[0] <= timeline[1] && timeline[1] <= timeline[2])
+      )
+        failures.push('commerce input, order and ledger timestamps are out of order');
       if (ledger.openingStock !== input.stock)
         failures.push('opening stock does not match concurrency input stock');
       if (orders.successfulQuantity > input.stock)

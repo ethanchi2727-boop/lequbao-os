@@ -114,16 +114,19 @@ export const controlledJsonEvidenceContracts = {
     field('provenance', 'object'),
   ],
   'concurrency-input.json': [
+    timestamp('capturedAt'),
     field('stock', 'number', { minimum: 0 }),
     field('requestedQuantity', 'number', { minimum: 1 }),
     field('contenders', 'array'),
   ],
   'order-results.json': [
+    timestamp('completedAt'),
     field('successfulOrders', 'array'),
     field('successfulQuantity', 'number', { minimum: 0 }),
     field('failedContenders', 'array'),
   ],
   'inventory-ledger.json': [
+    timestamp('verifiedAt'),
     field('openingStock', 'number', { minimum: 0 }),
     field('closingStock', 'number', { minimum: 0 }),
     field('soldQuantity', 'number', { minimum: 0 }),
@@ -2884,7 +2887,7 @@ function validateOcrProvenance(value, binding) {
 function validateConcurrencyInput(value) {
   const artifact = 'concurrency-input.json';
   const failures = [];
-  if (!hasExactKeys(value, ['contenders', 'requestedQuantity', 'stock']))
+  if (!hasExactKeys(value, ['capturedAt', 'contenders', 'requestedQuantity', 'stock']))
     failures.push(`${artifact} fields are invalid`);
   if (!Number.isSafeInteger(value.stock) || value.stock < 0)
     failures.push(`${artifact} stock must be a non-negative integer`);
@@ -2920,7 +2923,14 @@ function validateConcurrencyInput(value) {
 function validateOrderResults(value) {
   const artifact = 'order-results.json';
   const failures = [];
-  if (!hasExactKeys(value, ['failedContenders', 'successfulOrders', 'successfulQuantity']))
+  if (
+    !hasExactKeys(value, [
+      'completedAt',
+      'failedContenders',
+      'successfulOrders',
+      'successfulQuantity',
+    ])
+  )
     failures.push(`${artifact} fields are invalid`);
   if (!Number.isSafeInteger(value.successfulQuantity) || value.successfulQuantity < 0)
     failures.push(`${artifact} successfulQuantity must be a non-negative integer`);
@@ -2975,7 +2985,9 @@ function validateOrderResults(value) {
 function validateInventoryLedger(value) {
   const artifact = 'inventory-ledger.json';
   const failures = [];
-  if (!hasExactKeys(value, ['closingStock', 'entries', 'openingStock', 'soldQuantity']))
+  if (
+    !hasExactKeys(value, ['closingStock', 'entries', 'openingStock', 'soldQuantity', 'verifiedAt'])
+  )
     failures.push(`${artifact} fields are invalid`);
   for (const fieldName of ['openingStock', 'closingStock', 'soldQuantity'])
     if (!Number.isSafeInteger(value[fieldName]) || value[fieldName] < 0)

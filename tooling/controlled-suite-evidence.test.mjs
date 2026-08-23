@@ -34,11 +34,13 @@ describe('controlled suite cross-evidence contracts', () => {
     expect(
       validateControlledSuiteDocuments('COMMERCE_CONCURRENCY', {
         'concurrency-input.json': {
+          capturedAt: '2026-08-19T01:00:00.000Z',
           stock: 3,
           requestedQuantity: 3,
           contenders: ['a', 'b', 'c'].map((contenderRef) => ({ contenderRef, quantity: 1 })),
         },
         'order-results.json': {
+          completedAt: '2026-08-19T01:01:00.000Z',
           successfulQuantity: 3,
           successfulOrders: ['a', 'b', 'c'].map((contenderRef, index) => ({
             contenderRef,
@@ -48,6 +50,7 @@ describe('controlled suite cross-evidence contracts', () => {
           failedContenders: [],
         },
         'inventory-ledger.json': {
+          verifiedAt: '2026-08-19T01:02:00.000Z',
           openingStock: 3,
           soldQuantity: 3,
           closingStock: 0,
@@ -99,12 +102,25 @@ describe('controlled suite cross-evidence contracts', () => {
   it('rejects individually plausible but contradictory suite evidence', () => {
     expect(
       validateControlledSuiteDocuments('COMMERCE_CONCURRENCY', {
-        'concurrency-input.json': { stock: 3, requestedQuantity: 3 },
-        'order-results.json': { successfulQuantity: 4 },
-        'inventory-ledger.json': { openingStock: 3, soldQuantity: 2, closingStock: 2 },
+        'concurrency-input.json': {
+          capturedAt: '2026-08-19T01:02:00.000Z',
+          stock: 3,
+          requestedQuantity: 3,
+        },
+        'order-results.json': {
+          completedAt: '2026-08-19T01:01:00.000Z',
+          successfulQuantity: 4,
+        },
+        'inventory-ledger.json': {
+          verifiedAt: '2026-08-19T01:00:00.000Z',
+          openingStock: 3,
+          soldQuantity: 2,
+          closingStock: 2,
+        },
       }),
     ).toEqual(
       expect.arrayContaining([
+        'commerce input, order and ledger timestamps are out of order',
         'successful quantity exceeds sellable stock',
         'successful quantity exceeds requested quantity',
         'ledger sold quantity does not match successful quantity',
