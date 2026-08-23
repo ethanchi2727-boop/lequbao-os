@@ -8,13 +8,35 @@ describe('乐趣生活 UniApp 架构', () => {
   });
 
   it('uses the platform consumer audience and keeps preview data behind build-time flags', async () => {
-    const [session, lifePage, mallPage, cartPage, mePage] = await Promise.all(
+    const [
+      session,
+      lifePage,
+      mallPage,
+      cartPage,
+      mePage,
+      cityPage,
+      categoryPage,
+      searchPage,
+      selectedPage,
+      detailPage,
+      variantPage,
+      tracePage,
+      eventPage,
+    ] = await Promise.all(
       [
         'services/life-session.js',
         'pages/life/index.vue',
         'pages/mall/index.vue',
         'pages/cart/index.vue',
         'pages/me/index.vue',
+        'pages/page-198/index.vue',
+        'pages/page-201/index.vue',
+        'pages/page-204/index.vue',
+        'pages/page-207/index.vue',
+        'pages/page-209/index.vue',
+        'pages/page-210/index.vue',
+        'pages/page-211/index.vue',
+        'pages/page-213/index.vue',
       ].map((file) => readFile(new URL(file, import.meta.url), 'utf8')),
     );
     expect(session).toContain("VITE_LEQU_DEVELOPMENT_MOCKS === '1'");
@@ -30,6 +52,17 @@ describe('乐趣生活 UniApp 架构', () => {
     expect(mePage).toContain('/refunds');
     expect(mePage).toContain("fulfillmentStatus === 'NOT_STARTED'");
     expect(mePage).toContain('已有退款正在处理中');
-    expect(`${lifePage}${mallPage}${cartPage}${mePage}`).not.toContain('/api/v1/consumer/');
+    expect(cityPage).toContain('/api/v1/life/discovery/stores');
+    expect(categoryPage).toContain('/api/v1/life/discovery/products');
+    expect(searchPage).toContain('/api/v1/life/discovery/stores');
+    expect(selectedPage).toContain('/api/v1/life/discovery/products');
+    expect(detailPage).toContain('/api/v1/life/discovery/products/');
+    expect(variantPage).toContain('/api/v1/life/cart/items');
+    expect(tracePage).toContain('/trace-report');
+    expect(tracePage).toContain('不会用商品宣传文案替代');
+    expect(eventPage).toContain('不虚构活动倒计时或原价');
+    expect(
+      `${lifePage}${mallPage}${cartPage}${mePage}${cityPage}${categoryPage}${searchPage}${selectedPage}${detailPage}${variantPage}${tracePage}${eventPage}`,
+    ).not.toContain('/api/v1/consumer/');
   });
 });

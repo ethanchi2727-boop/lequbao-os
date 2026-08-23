@@ -986,12 +986,16 @@ describe('platform API shell', () => {
     const removeItem = vi.fn().mockResolvedValue({ id: 'cart-1', itemCount: 0 });
     const listDiscoveryStores = vi.fn().mockResolvedValue([]);
     const listDiscoveryProducts = vi.fn().mockResolvedValue([]);
+    const getDiscoveryProduct = vi.fn().mockResolvedValue({ id: 'product-1' });
+    const getDiscoveryTraceReport = vi.fn().mockResolvedValue({ id: 'trace-1' });
     app = await buildApp({
       lifeConsumerSession: { verify: () => lifeConsumer },
       platformCart: { get, setItem, removeItem },
       platformDiscovery: {
         listStores: listDiscoveryStores,
         listProducts: listDiscoveryProducts,
+        getProduct: getDiscoveryProduct,
+        getTraceReport: getDiscoveryTraceReport,
       },
     });
     const headers = { authorization: 'Bearer life-consumer' };
@@ -1003,6 +1007,24 @@ describe('platform API shell', () => {
         await app.inject({
           method: 'GET',
           url: '/api/v1/life/discovery/stores?cityCode=3101&limit=20',
+          headers,
+        })
+      ).statusCode,
+    ).toBe(200);
+    expect(
+      (
+        await app.inject({
+          method: 'GET',
+          url: '/api/v1/life/discovery/products/00000000-0000-4000-8000-000000000091',
+          headers,
+        })
+      ).statusCode,
+    ).toBe(200);
+    expect(
+      (
+        await app.inject({
+          method: 'GET',
+          url: '/api/v1/life/discovery/products/00000000-0000-4000-8000-000000000091/trace-report',
           headers,
         })
       ).statusCode,
@@ -1046,6 +1068,14 @@ describe('platform API shell', () => {
     expect(listDiscoveryStores).toHaveBeenCalledWith(
       lifeConsumer,
       expect.objectContaining({ cityCode: '3101', limit: '20' }),
+    );
+    expect(getDiscoveryProduct).toHaveBeenCalledWith(
+      lifeConsumer,
+      '00000000-0000-4000-8000-000000000091',
+    );
+    expect(getDiscoveryTraceReport).toHaveBeenCalledWith(
+      lifeConsumer,
+      '00000000-0000-4000-8000-000000000091',
     );
     expect(setItem).toHaveBeenCalledWith(lifeConsumer, payload);
     expect(removeItem).toHaveBeenCalledWith(lifeConsumer, itemId);

@@ -2773,6 +2773,32 @@ paths:
         '200': { description: 安全商品摘要、当前价格、首选规格和可用库存；无绑定时为空数组 }
         '400': { $ref: '#/components/responses/BadRequest' }
         '401': { description: 平台消费者会话无效、撤销或过期 }
+  /api/v1/life/discovery/products/{productId}:
+    get:
+      operationId: getPlatformConsumerDiscoveryProduct
+      summary: 查询平台消费者有权访问的单个真实在售商品与全部有效规格
+      description: 服务端遍历当前平台账号的有效商户客户绑定，不接受客户端指定租户；商品、价格、规格和库存均实时读取。
+      security: [{ LifeConsumerBearer: [] }]
+      parameters:
+        - { name: productId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200': { description: 商品、所属门店、版本、当前价格和全部有效规格库存 }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { description: 平台消费者会话无效、撤销或过期 }
+        '404': { description: 商品不存在、未上架或不在当前账号的有效商户关系内 }
+  /api/v1/life/discovery/products/{productId}/trace-report:
+    get:
+      operationId: getPlatformConsumerDiscoveryProductTraceReport
+      summary: 查询平台消费者有权访问商品的当前有效已核验溯源报告
+      description: 仅返回状态为 VERIFIED 且尚未过期的版本化报告；缺少真实报告时返回 404，不生成或补写展示数据。
+      security: [{ LifeConsumerBearer: [] }]
+      parameters:
+        - { name: productId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200': { description: 报告版本、摘要、结构化证据、核验时间和有效期 }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { description: 平台消费者会话无效、撤销或过期 }
+        '404': { description: 商品或当前有效已核验报告不存在 }
   /api/v1/merchant-consumer/cart:
     get:
       operationId: getMerchantConsumerCart

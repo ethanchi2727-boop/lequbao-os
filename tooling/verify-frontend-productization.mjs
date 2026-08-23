@@ -19,7 +19,23 @@ function csvRows(source) {
 
 export function createFrontendMatrix(pageTreeSource) {
   const leaves = csvRows(pageTreeSource).filter((page) => page.is_leaf === 'true');
-  const designedPages = new Set(['PAGE-014', 'PAGE-175', 'PAGE-176', 'PAGE-177', 'PAGE-178']);
+  const designedPages = new Set([
+    'PAGE-014',
+    'PAGE-175',
+    'PAGE-176',
+    'PAGE-177',
+    'PAGE-178',
+    'PAGE-198',
+    'PAGE-200',
+    'PAGE-201',
+    'PAGE-203',
+    'PAGE-204',
+    'PAGE-207',
+    'PAGE-209',
+    'PAGE-210',
+    'PAGE-211',
+    'PAGE-213',
+  ]);
   return {
     schemaVersion: 1,
     definition: ['contracted', 'connected', 'designed', 'interactive', 'accepted'],

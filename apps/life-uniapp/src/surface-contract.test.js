@@ -3,10 +3,34 @@ import { lifeSurfaceContract, lifeSurfaceState } from './surface-contract.js';
 
 describe('乐趣生活 UniApp surface contract', () => {
   it('binds every frozen top-level tab to authoritative V6 endpoints', () => {
-    expect(Object.keys(lifeSurfaceContract)).toEqual(['life', 'mall', 'community', 'cart', 'me']);
+    expect(Object.keys(lifeSurfaceContract)).toEqual([
+      'life',
+      'mall',
+      'community',
+      'cart',
+      'me',
+      'page198',
+      'page200',
+      'page201',
+      'page203',
+      'page204',
+      'page207',
+      'page209',
+      'page210',
+      'page211',
+      'page213',
+    ]);
     expect(lifeSurfaceContract.cart.write).toContain('/api/v1/life/cart/items');
     expect(lifeSurfaceContract.cart.write).toContain('/api/v1/life/checkouts/quote');
     expect(lifeSurfaceContract.me.read).toContain('/api/v1/life/orders');
+    expect(lifeSurfaceContract.page201.write).toContain('/api/v1/life/cart/items');
+    expect(lifeSurfaceContract.page204.read).toContain('/api/v1/life/discovery/stores');
+    expect(lifeSurfaceContract.page209.read).toContain(
+      '/api/v1/life/discovery/products/{productId}',
+    );
+    expect(lifeSurfaceContract.page211.read).toContain(
+      '/api/v1/life/discovery/products/{productId}/trace-report',
+    );
   });
 
   it.each([

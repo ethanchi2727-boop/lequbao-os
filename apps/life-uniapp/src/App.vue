@@ -1,5 +1,14 @@
 <script>
-export default { onLaunch() {} };
+import { frozenLifePageRoute } from './services/life-discovery.js';
+
+export default {
+  onLaunch() {
+    // #ifdef H5
+    const target = frozenLifePageRoute(globalThis.location?.pathname ?? '');
+    if (target) setTimeout(() => uni.reLaunch({ url: target }), 0);
+    // #endif
+  },
+};
 </script>
 
 <style>

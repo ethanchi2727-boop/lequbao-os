@@ -52,6 +52,9 @@ async function addToCart(product) {
     uni.showToast({ title: '加入失败，请重试', icon: 'none' });
   }
 }
+function openProduct(product) {
+  uni.navigateTo({ url: `/pages/page-209/index?productId=${encodeURIComponent(product.id)}` });
+}
 onShow(load);
 </script>
 <template>
@@ -63,6 +66,9 @@ onShow(load);
     ><view class="chips"
       ><text class="chip">家庭采购</text><text class="chip">产地直达</text
       ><text class="chip">本地好物</text><text class="chip">会员严选</text></view
+    ><view class="mall-leaves"
+      ><button @click="uni.navigateTo({ url: '/pages/page-207/index' })">商城精选</button
+      ><button @click="uni.navigateTo({ url: '/pages/page-213/index' })">活动会场</button></view
     ><view class="section search-box"
       ><input
         v-model="query"
@@ -129,6 +135,8 @@ onShow(load);
           >
             加入购物车
           </button></view
+        ><button class="sheet-detail" @click="openProduct(selectedProduct)">
+          查看完整详情与规格</button
         ><button class="sheet-close" @click="selectedProduct = null">关闭详情</button></view
       ></view
     ></LifeSurface
@@ -139,6 +147,20 @@ onShow(load);
   display: flex;
   align-items: center;
   gap: 14rpx;
+}
+.mall-leaves {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14rpx;
+  margin-top: 24rpx;
+}
+.mall-leaves button {
+  margin: 0;
+  color: #9b3f20;
+  background: #fff0eb;
+  border-radius: 20rpx;
+  font-size: 21rpx;
+  font-weight: 900;
 }
 .search-box input {
   height: 74rpx;
@@ -239,5 +261,15 @@ onShow(load);
   background: #f1f5f3;
   border-radius: 999rpx;
   font-size: 22rpx;
+}
+.sheet-detail {
+  margin-top: 18rpx;
+  color: #fff;
+  background: #076c50;
+  border-radius: 999rpx;
+  font-size: 22rpx;
+}
+.sheet-action + .sheet-close {
+  margin-top: 12rpx;
 }
 </style>

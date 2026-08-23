@@ -60,6 +60,11 @@ onShow(load);
     title="把新鲜和附近，装进生活篮子"
     detail="当日达 · 来源可查 · 售后有入口"
     ><image class="banner" src="/static/life-banner.webp" mode="aspectFill" />
+    <view class="leaf-actions">
+      <button @click="uni.navigateTo({ url: '/pages/page-198/index' })">城市与推荐</button>
+      <button @click="uni.navigateTo({ url: '/pages/page-200/index' })">全部分类</button>
+      <button @click="uni.navigateTo({ url: '/pages/page-203/index' })">综合搜索</button>
+    </view>
     <view class="grid"
       ><view
         v-for="item in [
@@ -140,6 +145,21 @@ onShow(load);
   height: 300rpx;
   margin-bottom: 26rpx;
   border-radius: 30rpx;
+}
+.leaf-actions {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12rpx;
+  margin-bottom: 24rpx;
+}
+.leaf-actions button {
+  margin: 0;
+  padding: 0 12rpx;
+  color: #076c50;
+  background: #e8f7f0;
+  border-radius: 18rpx;
+  font-size: 20rpx;
+  font-weight: 800;
 }
 .grid {
   display: grid;

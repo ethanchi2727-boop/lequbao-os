@@ -55,6 +55,36 @@ function fixture(active = true) {
             sale_price_cents: '3990',
             market_price_cents: '4590',
             available_quantity: '12',
+            version: 7,
+            updated_at: new Date('2026-08-23T00:00:00.000Z'),
+          },
+        ],
+        rowCount: 1,
+      };
+    if (sql.startsWith('SELECT variant.id'))
+      return {
+        rows: [
+          {
+            id: 'af000000-0000-4000-8000-000000000005',
+            sku_code: 'FRUIT-STD',
+            title: '标准份',
+            sale_price_cents: '3990',
+            available_quantity: '12',
+          },
+        ],
+        rowCount: 1,
+      };
+    if (sql.startsWith('SELECT id,report_version'))
+      return {
+        rows: [
+          {
+            id: 'af000000-0000-4000-8000-000000000006',
+            report_version: 3,
+            title: '本批次溯源报告',
+            summary: '供应商与冷链记录已核验',
+            evidence: [{ kind: 'COLD_CHAIN', status: 'VERIFIED' }],
+            verified_at: new Date('2026-08-22T00:00:00.000Z'),
+            expires_at: null,
           },
         ],
         rowCount: 1,
@@ -113,6 +143,35 @@ describe('platform linked-merchant discovery', () => {
       null,
       'PHYSICAL',
       30,
+    ]);
+  });
+
+  it('loads one linked product with all live variants without trusting a tenant input', async () => {
+    const { service } = fixture();
+    await expect(
+      service.getProduct!(identity, 'af000000-0000-4000-8000-000000000004'),
+    ).resolves.toEqual(
+      expect.objectContaining({
+        merchantTenantId: tenantId,
+        storeName: '真实附近门店',
+        version: 7,
+        variants: [
+          expect.objectContaining({ title: '标准份', availableQuantity: 12, available: true }),
+        ],
+      }),
+    );
+  });
+
+  it('returns only the current verified trace report for a linked live product', async () => {
+    const { service, query } = fixture();
+    await expect(
+      service.getTraceReport!(identity, 'af000000-0000-4000-8000-000000000004'),
+    ).resolves.toEqual(
+      expect.objectContaining({ reportVersion: 3, merchantTenantId: tenantId, expiresAt: null }),
+    );
+    expect(query).toHaveBeenCalledWith(expect.stringContaining("status='VERIFIED'"), [
+      tenantId,
+      'af000000-0000-4000-8000-000000000004',
     ]);
   });
 });

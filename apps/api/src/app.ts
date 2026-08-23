@@ -246,6 +246,7 @@ import {
 } from './platform-aftercare-service.js';
 import {
   PlatformDiscoveryAuthenticationError,
+  PlatformDiscoveryNotFoundError,
   type PlatformDiscoveryService,
 } from './platform-discovery-service.js';
 import {
@@ -2481,6 +2482,46 @@ export async function buildApp(options: AppOptions = {}): Promise<FastifyInstanc
       throw error;
     }
   });
+
+  app.get<{ Params: { productId: string } }>(
+    '/api/v1/life/discovery/products/:productId',
+    async (request, reply) => {
+      if (!options.platformDiscovery?.getProduct)
+        return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+      const identity = lifeConsumerIdentity(options, request.headers.authorization, reply);
+      if (!identity) return;
+      try {
+        return await options.platformDiscovery.getProduct(identity, request.params.productId);
+      } catch (error) {
+        if (error instanceof ZodError) return reply.code(400).send({ code: 'INVALID_REQUEST' });
+        if (error instanceof PlatformDiscoveryAuthenticationError)
+          return reply.code(401).send({ code: 'INVALID_LIFE_CONSUMER_SESSION' });
+        if (error instanceof PlatformDiscoveryNotFoundError)
+          return reply.code(404).send({ code: 'PRODUCT_NOT_FOUND' });
+        throw error;
+      }
+    },
+  );
+
+  app.get<{ Params: { productId: string } }>(
+    '/api/v1/life/discovery/products/:productId/trace-report',
+    async (request, reply) => {
+      if (!options.platformDiscovery?.getTraceReport)
+        return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+      const identity = lifeConsumerIdentity(options, request.headers.authorization, reply);
+      if (!identity) return;
+      try {
+        return await options.platformDiscovery.getTraceReport(identity, request.params.productId);
+      } catch (error) {
+        if (error instanceof ZodError) return reply.code(400).send({ code: 'INVALID_REQUEST' });
+        if (error instanceof PlatformDiscoveryAuthenticationError)
+          return reply.code(401).send({ code: 'INVALID_LIFE_CONSUMER_SESSION' });
+        if (error instanceof PlatformDiscoveryNotFoundError)
+          return reply.code(404).send({ code: 'TRACE_REPORT_NOT_FOUND' });
+        throw error;
+      }
+    },
+  );
 
   app.get('/api/v1/life/addresses', async (request, reply) => {
     if (!options.platformAddresses) return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });

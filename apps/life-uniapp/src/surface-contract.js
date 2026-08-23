@@ -39,6 +39,36 @@ export const lifeSurfaceContract = Object.freeze({
       '/api/v1/life/invoice-profiles/{profileId}',
     ],
   }),
+  page198: Object.freeze({ read: ['/api/v1/life/discovery/stores'] }),
+  page200: Object.freeze({ read: [] }),
+  page201: Object.freeze({
+    read: ['/api/v1/life/discovery/products'],
+    write: ['/api/v1/life/cart/items'],
+  }),
+  page203: Object.freeze({ read: [] }),
+  page204: Object.freeze({
+    read: ['/api/v1/life/discovery/products', '/api/v1/life/discovery/stores'],
+    write: ['/api/v1/life/cart/items'],
+  }),
+  page207: Object.freeze({
+    read: ['/api/v1/life/discovery/products'],
+    write: ['/api/v1/life/cart/items'],
+  }),
+  page209: Object.freeze({
+    read: ['/api/v1/life/discovery/products/{productId}'],
+    write: ['/api/v1/life/cart/items'],
+  }),
+  page210: Object.freeze({
+    read: ['/api/v1/life/discovery/products/{productId}'],
+    write: ['/api/v1/life/cart/items'],
+  }),
+  page211: Object.freeze({
+    read: ['/api/v1/life/discovery/products/{productId}/trace-report'],
+  }),
+  page213: Object.freeze({
+    read: ['/api/v1/life/discovery/products'],
+    write: ['/api/v1/life/cart/items'],
+  }),
 });
 
 export function lifeSurfaceState({ loading = false, error, records } = {}) {

@@ -1,4 +1,5 @@
 import type pg from 'pg';
+import { UuidSchema } from '@lequ/contracts';
 import { z } from 'zod';
 import type { LifeConsumerSessionIdentity } from './life-consumer-session-identity.js';
 
@@ -18,9 +19,12 @@ const ProductQuerySchema = z.object({
 export interface PlatformDiscoveryService {
   listStores(identity: LifeConsumerSessionIdentity, query: unknown): Promise<unknown[]>;
   listProducts(identity: LifeConsumerSessionIdentity, query: unknown): Promise<unknown[]>;
+  getProduct?(identity: LifeConsumerSessionIdentity, productId: string): Promise<unknown>;
+  getTraceReport?(identity: LifeConsumerSessionIdentity, productId: string): Promise<unknown>;
 }
 
 export class PlatformDiscoveryAuthenticationError extends Error {}
+export class PlatformDiscoveryNotFoundError extends Error {}
 
 function distanceKm(leftLat: number, leftLng: number, rightLat: number, rightLng: number) {
   const radians = (value: number) => (value * Math.PI) / 180;
@@ -63,6 +67,71 @@ export function createPlatformDiscoveryService(
       client.release();
       throw error;
     }
+  }
+
+  async function loadProduct(client: pg.PoolClient, merchantTenantId: string, productId: string) {
+    const product = await client.query<{
+      id: string;
+      store_id: string;
+      store_name: string;
+      product_type: string;
+      title: string;
+      sale_price_cents: string | number;
+      market_price_cents: string | number | null;
+      version: number;
+      updated_at: Date | string;
+    }>(
+      `SELECT product.id,product.store_id,store.store_name,product.product_type,product.title,
+              product.sale_price_cents,product.market_price_cents,product.version,product.updated_at
+         FROM products product
+         JOIN stores store ON store.tenant_id=product.tenant_id AND store.id=product.store_id
+        WHERE product.tenant_id=$1 AND product.id=$2
+          AND product.status='ON_SALE' AND store.status='ACTIVE'`,
+      [merchantTenantId, productId],
+    );
+    const current = product.rows[0];
+    if (!current) return null;
+    const variants = await client.query<{
+      id: string;
+      sku_code: string;
+      title: string;
+      sale_price_cents: string | number;
+      available_quantity: string | number;
+    }>(
+      `SELECT variant.id,variant.sku_code,variant.title,variant.sale_price_cents,
+              GREATEST(COALESCE(balance.on_hand,0)-COALESCE(balance.reserved,0),0)
+                AS available_quantity
+         FROM product_variants variant
+         LEFT JOIN inventory_balances balance
+           ON balance.tenant_id=variant.tenant_id AND balance.variant_id=variant.id
+        WHERE variant.tenant_id=$1 AND variant.product_id=$2 AND variant.status='ACTIVE'
+        ORDER BY variant.created_at,variant.id`,
+      [merchantTenantId, productId],
+    );
+    return {
+      id: current.id,
+      merchantTenantId,
+      storeId: current.store_id,
+      storeName: current.store_name,
+      productType: current.product_type,
+      title: current.title,
+      salePriceCents: Number(current.sale_price_cents),
+      marketPriceCents:
+        current.market_price_cents === null ? null : Number(current.market_price_cents),
+      version: current.version,
+      updatedAt:
+        current.updated_at instanceof Date
+          ? current.updated_at.toISOString()
+          : String(current.updated_at),
+      variants: variants.rows.map((variant) => ({
+        id: variant.id,
+        skuCode: variant.sku_code,
+        title: variant.title,
+        salePriceCents: Number(variant.sale_price_cents),
+        availableQuantity: Number(variant.available_quantity),
+        available: Number(variant.available_quantity) > 0,
+      })),
+    };
   }
 
   return {
@@ -215,6 +284,79 @@ export function createPlatformDiscoveryService(
         }
         await client.query('COMMIT');
         return products.slice(0, query.limit);
+      } catch (error) {
+        await client?.query('ROLLBACK');
+        throw error;
+      } finally {
+        client?.release();
+      }
+    },
+
+    async getProduct(identity, rawProductId) {
+      const productId = UuidSchema.parse(rawProductId);
+      let client: pg.PoolClient | undefined;
+      try {
+        const opened = await open(identity);
+        client = opened.client;
+        for (const merchantTenantId of opened.tenantIds) {
+          await client.query("SELECT set_config('app.tenant_id',$1,true)", [merchantTenantId]);
+          const product = await loadProduct(client, merchantTenantId, productId);
+          if (product) {
+            await client.query('COMMIT');
+            return product;
+          }
+        }
+        throw new PlatformDiscoveryNotFoundError();
+      } catch (error) {
+        await client?.query('ROLLBACK');
+        throw error;
+      } finally {
+        client?.release();
+      }
+    },
+
+    async getTraceReport(identity, rawProductId) {
+      const productId = UuidSchema.parse(rawProductId);
+      let client: pg.PoolClient | undefined;
+      try {
+        const opened = await open(identity);
+        client = opened.client;
+        for (const merchantTenantId of opened.tenantIds) {
+          await client.query("SELECT set_config('app.tenant_id',$1,true)", [merchantTenantId]);
+          const product = await loadProduct(client, merchantTenantId, productId);
+          if (!product) continue;
+          const report = await client.query<{
+            id: string;
+            report_version: number;
+            title: string;
+            summary: string;
+            evidence: unknown;
+            verified_at: Date | string;
+            expires_at: Date | string | null;
+          }>(
+            `SELECT id,report_version,title,summary,evidence,verified_at,expires_at
+               FROM product_trace_reports
+              WHERE tenant_id=$1 AND product_id=$2 AND status='VERIFIED'
+                AND (expires_at IS NULL OR expires_at>now())
+              ORDER BY report_version DESC,id DESC LIMIT 1`,
+            [merchantTenantId, productId],
+          );
+          const current = report.rows[0];
+          if (!current) throw new PlatformDiscoveryNotFoundError();
+          await client.query('COMMIT');
+          return {
+            id: current.id,
+            productId,
+            merchantTenantId,
+            reportVersion: current.report_version,
+            title: current.title,
+            summary: current.summary,
+            evidence: current.evidence,
+            verifiedAt: new Date(current.verified_at).toISOString(),
+            expiresAt: current.expires_at ? new Date(current.expires_at).toISOString() : null,
+          };
+        }
+        throw new PlatformDiscoveryNotFoundError();
       } catch (error) {
         await client?.query('ROLLBACK');
         throw error;

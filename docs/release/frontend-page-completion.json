@@ -1494,8 +1494,8 @@
       "route": "/life/page-198",
       "contracted": true,
       "connected": true,
-      "designed": false,
-      "interactive": false,
+      "designed": true,
+      "interactive": true,
       "accepted": false
     },
     {
@@ -1505,8 +1505,8 @@
       "route": "/life/page-200",
       "contracted": true,
       "connected": true,
-      "designed": false,
-      "interactive": false,
+      "designed": true,
+      "interactive": true,
       "accepted": false
     },
     {
@@ -1516,8 +1516,8 @@
       "route": "/life/page-201",
       "contracted": true,
       "connected": true,
-      "designed": false,
-      "interactive": false,
+      "designed": true,
+      "interactive": true,
       "accepted": false
     },
     {
@@ -1527,8 +1527,8 @@
       "route": "/life/page-203",
       "contracted": true,
       "connected": true,
-      "designed": false,
-      "interactive": false,
+      "designed": true,
+      "interactive": true,
       "accepted": false
     },
     {
@@ -1538,8 +1538,8 @@
       "route": "/life/page-204",
       "contracted": true,
       "connected": true,
-      "designed": false,
-      "interactive": false,
+      "designed": true,
+      "interactive": true,
       "accepted": false
     },
     {
@@ -1549,8 +1549,8 @@
       "route": "/life/page-207",
       "contracted": true,
       "connected": true,
-      "designed": false,
-      "interactive": false,
+      "designed": true,
+      "interactive": true,
       "accepted": false
     },
     {
@@ -1560,8 +1560,8 @@
       "route": "/life/page-209",
       "contracted": true,
       "connected": true,
-      "designed": false,
-      "interactive": false,
+      "designed": true,
+      "interactive": true,
       "accepted": false
     },
     {
@@ -1571,8 +1571,8 @@
       "route": "/life/page-210",
       "contracted": true,
       "connected": true,
-      "designed": false,
-      "interactive": false,
+      "designed": true,
+      "interactive": true,
       "accepted": false
     },
     {
@@ -1582,8 +1582,8 @@
       "route": "/life/page-211",
       "contracted": true,
       "connected": true,
-      "designed": false,
-      "interactive": false,
+      "designed": true,
+      "interactive": true,
       "accepted": false
     },
     {
@@ -1593,8 +1593,8 @@
       "route": "/life/page-213",
       "contracted": true,
       "connected": true,
-      "designed": false,
-      "interactive": false,
+      "designed": true,
+      "interactive": true,
       "accepted": false
     },
     {
