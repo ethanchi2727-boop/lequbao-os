@@ -2,6 +2,7 @@ import { readFile } from 'node:fs/promises';
 import { describe, expect, it } from 'vitest';
 import {
   controlledJsonEvidenceContracts,
+  requiredDatabaseFixtureFiles,
   validateControlledJsonEvidence,
 } from './controlled-evidence-contracts.mjs';
 
@@ -280,7 +281,37 @@ describe('controlled JSON evidence contracts', () => {
     ).toEqual(
       expect.arrayContaining([
         'restore-report.json error must equal null for PASS',
-        'restore-report.json databaseFixturesPassed must contain all 22 fixtures',
+        `restore-report.json databaseFixturesPassed must equal the exact ${requiredDatabaseFixtureFiles.length}-file fixture set`,
+      ]),
+    );
+  });
+
+  it('recomputes restore objectives and requires the current fixture set', () => {
+    const failures = validateControlledJsonEvidence('restore-report.json', {
+      result: 'PASS',
+      schemaVersion: 1,
+      backupFile: 'lequ-20260819T010000Z.dump.age',
+      failureTime: '2026-08-19T01:01:00.000Z',
+      backupCompletedAt: '2026-08-19T01:00:00.000Z',
+      restoreStartedAt: '2026-08-19T01:02:00.000Z',
+      restoreCompletedAt: '2026-08-19T01:03:00.000Z',
+      rpoSeconds: 1,
+      rtoSeconds: 1,
+      rpoThresholdSeconds: 300,
+      rtoThresholdSeconds: 3600,
+      encryptedSha256: 'a'.repeat(64),
+      financialSnapshotSha256: 'b'.repeat(64),
+      encryptedSha256Verified: true,
+      financialSnapshotMatch: true,
+      privacyReplayTasksEnqueued: 1,
+      databaseFixturesPassed: requiredDatabaseFixtureFiles.slice(1),
+      error: null,
+    });
+    expect(failures).toEqual(
+      expect.arrayContaining([
+        `restore-report.json databaseFixturesPassed must equal the exact ${requiredDatabaseFixtureFiles.length}-file fixture set`,
+        'restore-report.json rpoSeconds does not reconcile with the evidence timeline',
+        'restore-report.json rtoSeconds does not reconcile with the evidence timeline',
       ]),
     );
   });

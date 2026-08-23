@@ -1,4 +1,4 @@
-import { readFile } from 'node:fs/promises';
+import { readdir, readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { parseCanonicalUtcTimestamp } from './canonical-time.mjs';
 
@@ -17,6 +17,13 @@ const candidateImageDigest = (pathName, target) =>
   field(pathName, 'string', {
     pattern: `^ghcr\\.io/[a-z0-9][a-z0-9-]{0,38}/lequbao-v6-${target}@sha256:[a-f0-9]{64}$`,
   });
+
+export const requiredDatabaseFixtureFiles = Object.freeze(
+  (await readdir(new URL('../database/tests/', import.meta.url), { withFileTypes: true }))
+    .filter((entry) => entry.isFile() && entry.name.endsWith('.sql'))
+    .map((entry) => entry.name)
+    .sort(),
+);
 
 export const controlledJsonEvidenceContracts = {
   'rls-denials.json': [pass, field('attempts', 'array')],
@@ -713,10 +720,17 @@ function validateRestoreReport(value) {
   const failures = [];
   if (value.error !== null) failures.push(`${artifact} error must equal null for PASS`);
   const fixtures = Array.isArray(value.databaseFixturesPassed) ? value.databaseFixturesPassed : [];
-  if (fixtures.length < 22)
-    failures.push(`${artifact} databaseFixturesPassed must contain all 22 fixtures`);
+  if (
+    !fixtures.every((fixture) => typeof fixture === 'string') ||
+    JSON.stringify([...fixtures].sort()) !== JSON.stringify(requiredDatabaseFixtureFiles)
+  )
+    failures.push(
+      `${artifact} databaseFixturesPassed must equal the exact ${requiredDatabaseFixtureFiles.length}-file fixture set`,
+    );
   if (new Set(fixtures).size !== fixtures.length)
     failures.push(`${artifact} databaseFixturesPassed must not contain duplicates`);
+  if (!Number.isSafeInteger(value.privacyReplayTasksEnqueued))
+    failures.push(`${artifact} privacyReplayTasksEnqueued must be an integer`);
   const times = ['backupCompletedAt', 'failureTime', 'restoreStartedAt', 'restoreCompletedAt'].map(
     (fieldName) => Date.parse(value[fieldName]),
   );
@@ -725,6 +739,20 @@ function validateRestoreReport(value) {
     !(times[0] <= times[1] && times[1] <= times[2] && times[2] <= times[3])
   )
     failures.push(`${artifact} backup, failure and restore timestamps are out of order`);
+  if (times.every(Number.isFinite)) {
+    const calculatedRpoSeconds = (times[1] - times[0]) / 1000;
+    const calculatedRtoSeconds = (times[3] - times[1]) / 1000;
+    if (
+      Number.isFinite(value.rpoSeconds) &&
+      Math.abs(value.rpoSeconds - calculatedRpoSeconds) > 0.01
+    )
+      failures.push(`${artifact} rpoSeconds does not reconcile with the evidence timeline`);
+    if (
+      Number.isFinite(value.rtoSeconds) &&
+      Math.abs(value.rtoSeconds - calculatedRtoSeconds) > 0.01
+    )
+      failures.push(`${artifact} rtoSeconds does not reconcile with the evidence timeline`);
+  }
   return failures;
 }
 

@@ -4,7 +4,10 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import { captureControlledEvidenceArtifact } from './capture-controlled-evidence.mjs';
-import { controlledJsonEvidenceContracts } from './controlled-evidence-contracts.mjs';
+import {
+  controlledJsonEvidenceContracts,
+  requiredDatabaseFixtureFiles,
+} from './controlled-evidence-contracts.mjs';
 import { verifyControlledResults } from './controlled-results.mjs';
 import { prepareControlledEvidenceWorkspace } from './prepare-controlled-evidence.mjs';
 
@@ -309,7 +312,7 @@ function semanticFixture(artifact, binding) {
       backupFile: 'lequ-20260819T010000Z.dump.age',
       encryptedSha256: 'd'.repeat(64),
       financialSnapshotSha256: 'e'.repeat(64),
-      databaseFixturesPassed: Array.from({ length: 22 }, (_, index) => `fixture-${index}.sql`),
+      databaseFixturesPassed: requiredDatabaseFixtureFiles,
       error: null,
     },
     'physical-wal-evidence.json': {
