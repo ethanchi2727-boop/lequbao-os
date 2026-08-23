@@ -361,7 +361,13 @@ function semanticFixture(artifact, binding) {
       })),
     },
     'monitoring-snapshot.json': {
-      alerts: [{ alertId: 'expected-load-alert', status: 'EXPECTED' }],
+      alerts: [
+        {
+          alertId: 'expected-load-alert',
+          status: 'EXPECTED',
+          observedAt: '2026-08-19T01:00:00.000Z',
+        },
+      ],
       saturation: { cpuMaxPercent: 70, memoryMaxPercent: 75, databaseConnectionMaxPercent: 60 },
       backlog: { outboxDeadDelta: 0, unacknowledgedMessageCount: 0 },
     },

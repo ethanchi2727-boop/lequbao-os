@@ -370,6 +370,38 @@ describe('controlled JSON evidence contracts', () => {
     );
   });
 
+  it('freezes monitoring saturation and chronology with unique alerts', () => {
+    const failures = validateControlledJsonEvidence('monitoring-snapshot.json', {
+      releaseCommit: 'a'.repeat(40),
+      deploymentId: 'controlled-deployment-1',
+      windowStartedAt: '2026-08-19T01:02:00.000Z',
+      windowCompletedAt: '2026-08-19T01:01:00.000Z',
+      capturedAt: '2026-08-19T01:00:00.000Z',
+      alerts: [
+        { alertId: 'load-alert', status: 'EXPECTED', observedAt: '2026-08-19T01:00:00.000Z' },
+        { alertId: 'load-alert', status: 'OPEN', observedAt: 'not-a-time' },
+      ],
+      saturation: {
+        cpuMaxPercent: 86,
+        memoryMaxPercent: 90,
+        databaseConnectionMaxPercent: 81,
+      },
+      backlog: { outboxDeadDelta: 0, unacknowledgedMessageCount: 0 },
+      stopReleaseConditions: [],
+    });
+    expect(failures).toEqual(
+      expect.arrayContaining([
+        'monitoring-snapshot.json saturation.cpuMaxPercent must be within 0..85',
+        'monitoring-snapshot.json saturation.memoryMaxPercent must be within 0..85',
+        'monitoring-snapshot.json saturation.databaseConnectionMaxPercent must be within 0..80',
+        'monitoring-snapshot.json alert IDs must be unique',
+        'monitoring-snapshot.json alerts[1].status must be EXPECTED or RESOLVED',
+        'monitoring-snapshot.json alerts[1].observedAt must be a non-future ISO date-time',
+        'monitoring-snapshot.json monitoring window and capture timestamps are out of order',
+      ]),
+    );
+  });
+
   it('rejects non-canonical backup artifact names', () => {
     expect(
       validateControlledJsonEvidence('backup.manifest.json', {

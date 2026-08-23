@@ -205,6 +205,10 @@ export const controlledJsonEvidenceContracts = {
     field('dataStores', 'array'),
   ],
   'monitoring-snapshot.json': [
+    commit,
+    deployment,
+    timestamp('windowStartedAt'),
+    timestamp('windowCompletedAt'),
     timestamp('capturedAt'),
     field('alerts', 'array'),
     field('saturation', 'object'),
@@ -1507,15 +1511,31 @@ function validateDeploymentTopology(value) {
 function validateMonitoringSnapshot(value) {
   const artifact = 'monitoring-snapshot.json';
   const failures = [];
-  for (const fieldName of ['cpuMaxPercent', 'memoryMaxPercent', 'databaseConnectionMaxPercent']) {
+  const saturationLimits = {
+    cpuMaxPercent: 85,
+    memoryMaxPercent: 85,
+    databaseConnectionMaxPercent: 80,
+  };
+  if (
+    JSON.stringify(Object.keys(value.saturation ?? {}).sort()) !==
+    JSON.stringify(Object.keys(saturationLimits).sort())
+  )
+    failures.push(`${artifact} saturation fields are invalid`);
+  for (const [fieldName, limit] of Object.entries(saturationLimits)) {
     const metric = value.saturation?.[fieldName];
-    if (!Number.isFinite(metric) || metric < 0 || metric > 100)
-      failures.push(`${artifact} saturation.${fieldName} must be within 0..100`);
+    if (!Number.isFinite(metric) || metric < 0 || metric > limit)
+      failures.push(`${artifact} saturation.${fieldName} must be within 0..${limit}`);
   }
+  if (
+    JSON.stringify(Object.keys(value.backlog ?? {}).sort()) !==
+    JSON.stringify(['outboxDeadDelta', 'unacknowledgedMessageCount'])
+  )
+    failures.push(`${artifact} backlog fields are invalid`);
   if (value.backlog?.outboxDeadDelta !== 0)
     failures.push(`${artifact} backlog.outboxDeadDelta must equal 0`);
   if (value.backlog?.unacknowledgedMessageCount !== 0)
     failures.push(`${artifact} backlog.unacknowledgedMessageCount must equal 0`);
+  const alertIds = new Set();
   for (const [index, alert] of (Array.isArray(value.alerts) ? value.alerts : []).entries()) {
     const prefix = `${artifact} alerts[${index}]`;
     if (!alert || Array.isArray(alert) || typeof alert !== 'object') {
@@ -1524,9 +1544,21 @@ function validateMonitoringSnapshot(value) {
     }
     if (typeof alert.alertId !== 'string' || !alert.alertId.trim())
       failures.push(`${prefix}.alertId must not be empty`);
+    else if (alertIds.has(alert.alertId)) failures.push(`${artifact} alert IDs must be unique`);
+    else alertIds.add(alert.alertId);
     if (!['EXPECTED', 'RESOLVED'].includes(alert.status))
       failures.push(`${prefix}.status must be EXPECTED or RESOLVED`);
+    if (!validDateTime(alert.observedAt))
+      failures.push(`${prefix}.observedAt must be a non-future ISO date-time`);
   }
+  const timeline = [value.windowStartedAt, value.windowCompletedAt, value.capturedAt].map(
+    Date.parse,
+  );
+  if (
+    timeline.every(Number.isFinite) &&
+    !(timeline[0] <= timeline[1] && timeline[1] <= timeline[2])
+  )
+    failures.push(`${artifact} monitoring window and capture timestamps are out of order`);
   return failures;
 }
 

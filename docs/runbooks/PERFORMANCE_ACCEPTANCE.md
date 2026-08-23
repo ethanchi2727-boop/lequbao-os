@@ -36,6 +36,8 @@ The controlled Stage 49 preflight calls this same configuration validator as soo
 
 Run `pnpm performance:gate` from the repository root. Preserve the command exit code, generated JSON and deployment/monitoring snapshots in the release evidence store.
 
+The separate `monitoring-snapshot.json` must bind the same release commit and deployment ID, declare a canonical UTC `windowStartedAt`, `windowCompletedAt` and later `capturedAt`, and cover the performance report's complete start/end interval. PASS requires CPU and memory maxima at or below 85%, database-connection use at or below 80%, zero dead-Outbox delta, zero unacknowledged messages, unique alert IDs with observed timestamps and no open stop-release condition.
+
 ## Automatic pass criteria
 
 - Core read P95 is at most 500 ms.

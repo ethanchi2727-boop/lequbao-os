@@ -24,6 +24,7 @@ export const controlledSuiteCrossEvidenceRules = {
   PERFORMANCE_CORE_AND_MESSAGES: [
     'performance report images equal the protected candidate manifest',
     'deployment topology API, Worker and Web images equal the protected candidate manifest',
+    'monitoring window covers the complete performance run',
   ],
   WECHAT_RELEASE_AND_ROLLBACK: [
     'reviewed consumer and merchant versions equal their official build artifacts',
@@ -107,6 +108,7 @@ export function validateControlledSuiteDocuments(suiteCode, documents) {
     const report = get('performance-report.json');
     const topology = get('deployment-topology.json');
     const manifest = get('candidate-image-digests.json');
+    const monitoring = get('monitoring-snapshot.json');
     if (report && topology && manifest) {
       if (!same(report.images, manifest.images))
         failures.push('performance report images do not match the candidate manifest');
@@ -119,6 +121,17 @@ export function validateControlledSuiteDocuments(suiteCode, documents) {
       };
       if (!same(deployed, manifest.images))
         failures.push('deployment topology images do not match the candidate manifest');
+    }
+    if (report && monitoring) {
+      const reportStart = Date.parse(report.startedAt);
+      const reportEnd = Date.parse(report.completedAt);
+      const monitoringStart = Date.parse(monitoring.windowStartedAt);
+      const monitoringEnd = Date.parse(monitoring.windowCompletedAt);
+      if (
+        [reportStart, reportEnd, monitoringStart, monitoringEnd].every(Number.isFinite) &&
+        !(monitoringStart <= reportStart && monitoringEnd >= reportEnd)
+      )
+        failures.push('monitoring window does not cover the complete performance run');
     }
   } else if (suiteCode === 'WECHAT_RELEASE_AND_ROLLBACK') {
     const consumer = get('consumer-build.json');

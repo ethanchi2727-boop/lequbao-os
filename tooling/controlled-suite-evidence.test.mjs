@@ -117,10 +117,20 @@ describe('controlled suite cross-evidence contracts', () => {
   it('binds performance topology, WeChat rollback and alert acknowledgement across files', () => {
     const images = { api: digest('api'), worker: digest('worker'), web: digest('web') };
     const workflowRunId = '12345';
+    const monitoring = {
+      windowStartedAt: '2026-08-19T00:59:00.000Z',
+      windowCompletedAt: '2026-08-19T01:02:00.000Z',
+    };
     expect(
       validateControlledSuiteDocuments('PERFORMANCE_CORE_AND_MESSAGES', {
-        'performance-report.json': { images, workflowRunId },
+        'performance-report.json': {
+          images,
+          workflowRunId,
+          startedAt: '2026-08-19T01:00:00.000Z',
+          completedAt: '2026-08-19T01:01:00.000Z',
+        },
         'candidate-image-digests.json': { images, workflowRunId },
+        'monitoring-snapshot.json': monitoring,
         'deployment-topology.json': {
           services: {
             api: { image: images.api },
@@ -132,8 +142,14 @@ describe('controlled suite cross-evidence contracts', () => {
     ).toEqual([]);
     expect(
       validateControlledSuiteDocuments('PERFORMANCE_CORE_AND_MESSAGES', {
-        'performance-report.json': { images, workflowRunId: '12346' },
+        'performance-report.json': {
+          images,
+          workflowRunId: '12346',
+          startedAt: '2026-08-19T01:00:00.000Z',
+          completedAt: '2026-08-19T01:01:00.000Z',
+        },
         'candidate-image-digests.json': { images, workflowRunId },
+        'monitoring-snapshot.json': monitoring,
         'deployment-topology.json': {
           services: {
             api: { image: images.api },
@@ -143,6 +159,28 @@ describe('controlled suite cross-evidence contracts', () => {
         },
       }),
     ).toContain('performance report workflow run does not match the candidate manifest');
+    expect(
+      validateControlledSuiteDocuments('PERFORMANCE_CORE_AND_MESSAGES', {
+        'performance-report.json': {
+          images,
+          workflowRunId,
+          startedAt: '2026-08-19T01:00:00.000Z',
+          completedAt: '2026-08-19T01:01:00.000Z',
+        },
+        'candidate-image-digests.json': { images, workflowRunId },
+        'monitoring-snapshot.json': {
+          windowStartedAt: '2026-08-19T01:00:30.000Z',
+          windowCompletedAt: '2026-08-19T01:00:45.000Z',
+        },
+        'deployment-topology.json': {
+          services: {
+            api: { image: images.api },
+            worker: { image: images.worker },
+            web: { image: images.web },
+          },
+        },
+      }),
+    ).toContain('monitoring window does not cover the complete performance run');
     expect(
       validateControlledSuiteDocuments('WECHAT_RELEASE_AND_ROLLBACK', {
         'consumer-build.json': { version: 'consumer-1' },
