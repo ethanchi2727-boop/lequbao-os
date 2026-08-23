@@ -99,18 +99,22 @@ try {
               ...(body ? { body: JSON.stringify(body) } : {}),
               signal: AbortSignal.timeout(15000),
             });
-            statuses.push(response.status);
             const responseBody = await readBoundedPerformanceResponse(response);
-            const payload = scenario.proveMessagePersistence
-              ? JSON.parse(responseBody.toString('utf8'))
-              : undefined;
+            const successfulResponse = response.status >= 200 && response.status < 300;
+            let payload;
+            if (scenario.proveMessagePersistence && successfulResponse) {
+              const mediaType = response.headers.get('content-type')?.split(';')[0].trim();
+              if (mediaType?.toLowerCase() !== 'application/json')
+                throw new Error('message persistence response must be application/json');
+              payload = JSON.parse(responseBody.toString('utf8'));
+            }
             if (
               scenario.proveMessagePersistence &&
-              response.status >= 200 &&
-              response.status < 300 &&
+              successfulResponse &&
               typeof payload?.id === 'string'
             )
               expectedMessageIds.push(payload.id);
+            statuses.push(response.status);
           } catch {
             statuses.push(0);
           }
