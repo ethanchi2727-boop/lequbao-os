@@ -1402,6 +1402,7 @@ describe('controlled JSON evidence contracts', () => {
             contenderRef: 'same',
             orderRefHash: 'a'.repeat(64),
             quantity: 0,
+            customerEmail: 'forbidden@example.test',
           },
           {
             contenderRef: 'same',
@@ -1415,6 +1416,7 @@ describe('controlled JSON evidence contracts', () => {
     ).toEqual(
       expect.arrayContaining([
         'order-results.json successfulOrders[0].quantity must be a positive integer',
+        'order-results.json successfulOrders[0] fields are invalid',
         'order-results.json successful contender references must be unique',
         'order-results.json successful order references must be unique',
         'order-results.json contender cannot both succeed and fail',

@@ -2431,6 +2431,8 @@ function validateOcrProvenance(value) {
 function validateConcurrencyInput(value) {
   const artifact = 'concurrency-input.json';
   const failures = [];
+  if (!hasExactKeys(value, ['contenders', 'requestedQuantity', 'stock']))
+    failures.push(`${artifact} fields are invalid`);
   const contenders = Array.isArray(value.contenders) ? value.contenders : [];
   let requested = 0;
   const refs = new Set();
@@ -2440,8 +2442,10 @@ function validateConcurrencyInput(value) {
       failures.push(`${prefix} must be an object`);
       continue;
     }
-    if (typeof contender.contenderRef !== 'string' || !contender.contenderRef.trim())
-      failures.push(`${prefix}.contenderRef must not be empty`);
+    if (!hasExactKeys(contender, ['contenderRef', 'quantity']))
+      failures.push(`${prefix} fields are invalid`);
+    if (!opaqueReference.test(contender.contenderRef ?? ''))
+      failures.push(`${prefix}.contenderRef must be opaque`);
     else if (refs.has(contender.contenderRef))
       failures.push(`${artifact} contenderRefs must be unique`);
     else refs.add(contender.contenderRef);
@@ -2459,6 +2463,8 @@ function validateConcurrencyInput(value) {
 function validateOrderResults(value) {
   const artifact = 'order-results.json';
   const failures = [];
+  if (!hasExactKeys(value, ['failedContenders', 'successfulOrders', 'successfulQuantity']))
+    failures.push(`${artifact} fields are invalid`);
   const successful = Array.isArray(value.successfulOrders) ? value.successfulOrders : [];
   const failed = Array.isArray(value.failedContenders) ? value.failedContenders : [];
   const quantity = successful.reduce(
@@ -2474,6 +2480,10 @@ function validateOrderResults(value) {
       failures.push(`${artifact} successfulOrders[${index}] must identify its contender`);
       continue;
     }
+    if (!hasExactKeys(order, ['contenderRef', 'orderRefHash', 'quantity']))
+      failures.push(`${artifact} successfulOrders[${index}] fields are invalid`);
+    if (!opaqueReference.test(order.contenderRef))
+      failures.push(`${artifact} successfulOrders[${index}].contenderRef must be opaque`);
     if (contenderRefs.has(order.contenderRef))
       failures.push(`${artifact} successful contender references must be unique`);
     else contenderRefs.add(order.contenderRef);
@@ -2488,8 +2498,12 @@ function validateOrderResults(value) {
   for (const [index, contender] of failed.entries()) {
     if (!contender || typeof contender !== 'object')
       failures.push(`${artifact} failedContenders[${index}] must be an object`);
-    else if (contender.partialFactCount !== 0)
-      failures.push(`${artifact} failedContenders[${index}].partialFactCount must equal 0`);
+    else {
+      if (!hasExactKeys(contender, ['contenderRef', 'partialFactCount']))
+        failures.push(`${artifact} failedContenders[${index}] fields are invalid`);
+      if (contender.partialFactCount !== 0)
+        failures.push(`${artifact} failedContenders[${index}].partialFactCount must equal 0`);
+    }
     if (typeof contender?.contenderRef !== 'string' || !contender.contenderRef.trim())
       failures.push(`${artifact} failedContenders[${index}].contenderRef must not be empty`);
     else if (contenderRefs.has(contender.contenderRef))
@@ -2502,6 +2516,8 @@ function validateOrderResults(value) {
 function validateInventoryLedger(value) {
   const artifact = 'inventory-ledger.json';
   const failures = [];
+  if (!hasExactKeys(value, ['closingStock', 'entries', 'openingStock', 'soldQuantity']))
+    failures.push(`${artifact} fields are invalid`);
   let sold = 0;
   const orderRefs = new Set();
   for (const [index, entry] of (Array.isArray(value.entries) ? value.entries : []).entries()) {
@@ -2510,6 +2526,8 @@ function validateInventoryLedger(value) {
       failures.push(`${prefix} must be an object`);
       continue;
     }
+    if (!hasExactKeys(entry, ['orderRefHash', 'quantity', 'type']))
+      failures.push(`${prefix} fields are invalid`);
     if (entry.type !== 'SOLD') failures.push(`${prefix}.type must equal "SOLD"`);
     if (!Number.isInteger(entry.quantity) || entry.quantity < 1)
       failures.push(`${prefix}.quantity must be a positive integer`);
