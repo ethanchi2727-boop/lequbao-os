@@ -1303,6 +1303,7 @@ describe('controlled JSON evidence contracts', () => {
             exposedFieldCount: 0,
             mutationCount: 0,
             auditRefHash: 'a'.repeat(64),
+            rawQuery: 'forbidden',
           },
           {
             operation: 'cross-tenant-read',
@@ -1320,6 +1321,7 @@ describe('controlled JSON evidence contracts', () => {
         'rls-denials.json attempt operations must be unique',
         'rls-denials.json audit references must be unique',
         'rls-denials.json attempts[0] must use different actor and target tenants',
+        'rls-denials.json attempts[0] fields are invalid',
         'rls-denials.json attempts must include cross-tenant-write',
       ]),
     );
@@ -1341,6 +1343,7 @@ describe('controlled JSON evidence contracts', () => {
             observedTenantRefHash: 'b'.repeat(64),
             resetVerified: true,
             sequence: 2,
+            rawTenantId: 'forbidden',
           },
           {
             connectionRefHash: 'c'.repeat(64),
@@ -1354,6 +1357,7 @@ describe('controlled JSON evidence contracts', () => {
     ).toEqual(
       expect.arrayContaining([
         'tenant-context.json transactions[0].sequence must equal 1',
+        'tenant-context.json transactions[0] fields are invalid',
         'tenant-context.json transactions[1].expectedTenantRefHash must alternate between transactions',
         'tenant-context.json transactions must alternate at least two tenants',
         'tenant-context.json transactions must reuse one pooled connection',

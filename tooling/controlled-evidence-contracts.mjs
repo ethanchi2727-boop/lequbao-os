@@ -2150,6 +2150,7 @@ function validateOncallAcknowledgement(value) {
 function validateRlsDenials(value) {
   const artifact = 'rls-denials.json';
   const failures = [];
+  if (!hasExactKeys(value, ['attempts', 'result'])) failures.push(`${artifact} fields are invalid`);
   const operations = new Set();
   const auditRefs = new Set();
   for (const [index, attempt] of (Array.isArray(value.attempts) ? value.attempts : []).entries()) {
@@ -2158,6 +2159,18 @@ function validateRlsDenials(value) {
       failures.push(`${prefix} must be an object`);
       continue;
     }
+    if (
+      !hasExactKeys(attempt, [
+        'actorTenantRefHash',
+        'auditRefHash',
+        'denied',
+        'exposedFieldCount',
+        'mutationCount',
+        'operation',
+        'targetTenantRefHash',
+      ])
+    )
+      failures.push(`${prefix} fields are invalid`);
     if (!['cross-tenant-read', 'cross-tenant-write'].includes(attempt.operation))
       failures.push(`${prefix}.operation is not approved`);
     else if (operations.has(attempt.operation))
@@ -2189,6 +2202,18 @@ function validateRlsDenials(value) {
 function validateTenantContext(value) {
   const artifact = 'tenant-context.json';
   const failures = [];
+  if (!hasExactKeys(value, ['mismatchAttempt', 'mismatchRejected', 'result', 'transactions']))
+    failures.push(`${artifact} fields are invalid`);
+  if (
+    !hasExactKeys(value.mismatchAttempt, [
+      'auditRefHash',
+      'connectionTenantRefHash',
+      'eventTenantRefHash',
+      'rejected',
+      'rejectedAt',
+    ])
+  )
+    failures.push(`${artifact} mismatchAttempt fields are invalid`);
   const expectedTenants = new Set();
   const connections = new Set();
   let previousTenant;
@@ -2201,6 +2226,16 @@ function validateTenantContext(value) {
       failures.push(`${prefix} must be an object`);
       continue;
     }
+    if (
+      !hasExactKeys(transaction, [
+        'connectionRefHash',
+        'expectedTenantRefHash',
+        'observedTenantRefHash',
+        'resetVerified',
+        'sequence',
+      ])
+    )
+      failures.push(`${prefix} fields are invalid`);
     if (!validSha256(transaction.connectionRefHash))
       failures.push(`${prefix}.connectionRefHash has invalid format`);
     else connections.add(transaction.connectionRefHash);
@@ -2234,6 +2269,17 @@ function validateTenantContext(value) {
 function validateInboxDeduplication(value) {
   const artifact = 'inbox-deduplication.json';
   const failures = [];
+  if (
+    !hasExactKeys(value, [
+      'businessResultCount',
+      'businessResults',
+      'deliveries',
+      'deliveryAttempts',
+      'eventRefHash',
+      'result',
+    ])
+  )
+    failures.push(`${artifact} fields are invalid`);
   const deliveries = Array.isArray(value.deliveries) ? value.deliveries : [];
   const results = Array.isArray(value.businessResults) ? value.businessResults : [];
   const attempts = new Set();
@@ -2243,6 +2289,13 @@ function validateInboxDeduplication(value) {
   if (results.length !== value.businessResultCount)
     failures.push(`${artifact} businessResults must reconcile with businessResultCount`);
   for (const [index, delivery] of deliveries.entries()) {
+    if (
+      delivery &&
+      typeof delivery === 'object' &&
+      !Array.isArray(delivery) &&
+      !hasExactKeys(delivery, ['attempt', 'eventRefHash'])
+    )
+      failures.push(`${artifact} deliveries[${index}] fields are invalid`);
     if (!delivery || typeof delivery !== 'object' || delivery.eventRefHash !== value.eventRefHash)
       failures.push(`${artifact} deliveries[${index}] must reference the same event hash`);
     if (!Number.isSafeInteger(delivery?.attempt))
@@ -2256,6 +2309,13 @@ function validateInboxDeduplication(value) {
     }
   }
   for (const [index, result] of results.entries()) {
+    if (
+      result &&
+      typeof result === 'object' &&
+      !Array.isArray(result) &&
+      !hasExactKeys(result, ['resultRefHash'])
+    )
+      failures.push(`${artifact} businessResults[${index}] fields are invalid`);
     if (!result || typeof result !== 'object' || !validSha256(result.resultRefHash))
       failures.push(`${artifact} businessResults[${index}].resultRefHash has invalid format`);
     else if (resultRefs.has(result.resultRefHash))
