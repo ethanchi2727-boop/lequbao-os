@@ -7,6 +7,7 @@ import { captureControlledEvidenceArtifact } from './capture-controlled-evidence
 import {
   controlledJsonEvidenceContracts,
   requiredDatabaseFixtureFiles,
+  requiredDatabaseMigrationVersions,
 } from './controlled-evidence-contracts.mjs';
 import { verifyControlledResults } from './controlled-results.mjs';
 import { prepareControlledEvidenceWorkspace } from './prepare-controlled-evidence.mjs';
@@ -84,6 +85,7 @@ function semanticFixture(artifact, binding) {
     deadlocks: 0,
     estimatedLiveRows: 1,
     tableCount: 164,
+    migrationVersions: requiredDatabaseMigrationVersions,
     messageBacklog: { activeCount: 0, deadCount: 0, oldestActiveSeconds: 0 },
   };
   const performanceScenarios = [

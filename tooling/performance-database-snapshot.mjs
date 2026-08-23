@@ -1,5 +1,5 @@
 export async function capturePerformanceDatabaseSnapshot(database) {
-  const [databaseStats, tableStats, outbox] = await Promise.all([
+  const [databaseStats, tableStats, outbox, migrations] = await Promise.all([
     database.query(
       `SELECT current_database() AS database_name,pg_database_size(current_database())::bigint AS size_bytes,
               numbackends,xact_commit,xact_rollback,blks_read,blks_hit,temp_files,temp_bytes,deadlocks
@@ -18,9 +18,15 @@ export async function capturePerformanceDatabaseSnapshot(database) {
                 AS oldest_active_seconds
          FROM outbox_events`,
     ),
+    database.query(`SELECT version FROM schema_migrations ORDER BY version`),
   ]);
-  if (databaseStats.rows.length !== 1 || tableStats.rows.length !== 1 || outbox.rows.length !== 1)
-    throw new Error('performance database snapshot queries must each return exactly one row');
+  if (
+    databaseStats.rows.length !== 1 ||
+    tableStats.rows.length !== 1 ||
+    outbox.rows.length !== 1 ||
+    migrations.rows.length === 0
+  )
+    throw new Error('performance database snapshot requires all aggregate rows and migrations');
   const row = databaseStats.rows[0];
   if (typeof row.database_name !== 'string' || !row.database_name.trim())
     throw new Error('performance database snapshot is missing the database name');
@@ -36,6 +42,13 @@ export async function capturePerformanceDatabaseSnapshot(database) {
       throw new Error(`performance database snapshot ${fieldName} must be non-negative`);
     return parsed;
   };
+  const migrationVersions = migrations.rows.map((migration, index) => {
+    if (typeof migration.version !== 'string' || !migration.version.trim())
+      throw new Error(`performance database snapshot migrationVersions[${index}] is invalid`);
+    return migration.version;
+  });
+  if (new Set(migrationVersions).size !== migrationVersions.length)
+    throw new Error('performance database snapshot migration versions must be unique');
   return {
     databaseName: row.database_name,
     sizeBytes: integer('sizeBytes', row.size_bytes),
@@ -49,6 +62,7 @@ export async function capturePerformanceDatabaseSnapshot(database) {
     deadlocks: integer('deadlocks', row.deadlocks),
     estimatedLiveRows: integer('estimatedLiveRows', tableStats.rows[0].estimated_live_rows),
     tableCount: integer('tableCount', tableStats.rows[0].table_count),
+    migrationVersions,
     messageBacklog: {
       activeCount: integer('messageBacklog.activeCount', outbox.rows[0].active_count),
       deadCount: integer('messageBacklog.deadCount', outbox.rows[0].dead_count),

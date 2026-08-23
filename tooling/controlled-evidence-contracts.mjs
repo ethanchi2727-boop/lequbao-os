@@ -28,6 +28,23 @@ export const requiredDatabaseFixtureFiles = Object.freeze(
     .sort(),
 );
 
+const migrationDirectory = new URL('../database/migrations/', import.meta.url);
+const migrationSqlFiles = (await readdir(migrationDirectory, { withFileTypes: true }))
+  .filter((entry) => entry.isFile() && entry.name.endsWith('.sql'))
+  .map((entry) => new URL(entry.name, migrationDirectory));
+const migrationSources = await Promise.all(
+  [new URL('../database/schema.sql', import.meta.url), ...migrationSqlFiles].map((file) =>
+    readFile(file, 'utf8'),
+  ),
+);
+const migrationVersions = new Set();
+for (const source of migrationSources) {
+  const pattern =
+    /INSERT\s+INTO\s+schema_migrations\s*\(\s*version\s*,\s*checksum\s*\)\s*VALUES\s*\(\s*'([^']+)'/giu;
+  for (const match of source.matchAll(pattern)) migrationVersions.add(match[1]);
+}
+export const requiredDatabaseMigrationVersions = Object.freeze([...migrationVersions].sort());
+
 export const controlledJsonEvidenceContracts = {
   'rls-denials.json': [pass, field('attempts', 'array')],
   'tenant-context.json': [pass, yes('mismatchRejected'), field('transactions', 'array')],
@@ -1116,8 +1133,13 @@ function validatePerformanceSnapshot(artifact, pathName, snapshot, failures) {
   ])
     if (!Number.isSafeInteger(snapshot[fieldName]) || snapshot[fieldName] < 0)
       failures.push(`${artifact} ${pathName}.${fieldName} must be a non-negative integer`);
-  if (snapshot.tableCount < 164)
-    failures.push(`${artifact} ${pathName}.tableCount must include the 164-table candidate schema`);
+  if (snapshot.tableCount !== 164)
+    failures.push(`${artifact} ${pathName}.tableCount must equal the 164-table candidate schema`);
+  if (
+    !Array.isArray(snapshot.migrationVersions) ||
+    JSON.stringify(snapshot.migrationVersions) !== JSON.stringify(requiredDatabaseMigrationVersions)
+  )
+    failures.push(`${artifact} ${pathName}.migrationVersions must match the candidate schema`);
   const backlog = snapshot.messageBacklog;
   for (const fieldName of ['activeCount', 'deadCount'])
     if (!Number.isSafeInteger(backlog?.[fieldName]) || backlog[fieldName] < 0)

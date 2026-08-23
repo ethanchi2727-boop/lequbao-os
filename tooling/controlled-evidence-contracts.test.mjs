@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   controlledJsonEvidenceContracts,
   requiredDatabaseFixtureFiles,
+  requiredDatabaseMigrationVersions,
   validateControlledJsonEvidence,
 } from './controlled-evidence-contracts.mjs';
 
@@ -575,7 +576,13 @@ describe('controlled JSON evidence contracts', () => {
         missingMessageIds: [],
         duplicateAcknowledgedMessageIds: [],
       },
-      database: { before: {}, after: {} },
+      database: {
+        before: {
+          tableCount: 164,
+          migrationVersions: [...requiredDatabaseMigrationVersions].reverse(),
+        },
+        after: {},
+      },
     });
     expect(failures).toEqual(
       expect.arrayContaining([
@@ -586,6 +593,7 @@ describe('controlled JSON evidence contracts', () => {
         'performance-report.json scenarios[0] percentiles must be ordered p50 <= p95 <= p99',
         'performance-report.json persistence expectedMessageIds must be a non-negative integer',
         'performance-report.json persistence persistedMessageIds must be a non-negative integer',
+        'performance-report.json database.before.migrationVersions must match the candidate schema',
       ]),
     );
   });
