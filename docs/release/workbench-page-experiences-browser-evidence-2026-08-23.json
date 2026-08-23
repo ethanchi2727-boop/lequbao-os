@@ -102,11 +102,21 @@
     { "page": "page-137", "layout": "current-plan-snapshot", "panels": 4 },
     { "page": "page-138", "layout": "ai-service-usage", "panels": 4 },
     { "page": "page-140", "layout": "employees-roles", "panels": 4 },
-    { "page": "page-141", "layout": "tenant-audit-log", "panels": 4 }
+    { "page": "page-141", "layout": "tenant-audit-log", "panels": 4 },
+    { "page": "page-143", "layout": "data-export-deletion", "panels": 4 },
+    { "page": "page-145", "layout": "subscription-cancellation", "panels": 4 },
+    { "page": "page-148", "layout": "platform-merchant-directory", "panels": 4 },
+    { "page": "page-149", "layout": "platform-exception-center", "panels": 4 },
+    { "page": "page-151", "layout": "entitlement-configuration", "panels": 4 },
+    { "page": "page-152", "layout": "subscription-revenue-settlement", "panels": 4 },
+    { "page": "page-154", "layout": "permanent-revenue-rights-ledger", "panels": 4 },
+    { "page": "page-155", "layout": "distribution-rule-versions", "panels": 4 },
+    { "page": "page-156", "layout": "direct-cost-catalog", "panels": 4 },
+    { "page": "page-157", "layout": "monthly-close-batches", "panels": 4 }
   ],
   "sharedObservations": {
     "desktopHorizontalOverflowCount": 0,
-    "distinctLayoutCount": 99,
+    "distinctLayoutCount": 109,
     "demoModeLabel": "演示结构",
     "productionModeLabel": "权威数据模式",
     "productionDemoPanelCount": 0,
@@ -211,6 +221,17 @@
     "page138UsesTokenTerminology": true,
     "page138MobileDocumentScrollWidth": 320,
     "page138MobileActionMinimumHeight": 44
+  },
+  "privacyAndSettlementObservation": {
+    "desktopPageCount": 10,
+    "desktopOverflowCount": 0,
+    "guardrailMissingCount": 0,
+    "page143AuthorityMode": true,
+    "page143ProtectedEmpty": true,
+    "page143DemoPanelCount": 0,
+    "page143ContainsObjectStorageUrl": false,
+    "page152MobileDocumentScrollWidth": 320,
+    "page152MobileActionMinimumHeight": 44
   },
   "boundaries": [
     "This is local browser evidence, not controlled or production acceptance.",

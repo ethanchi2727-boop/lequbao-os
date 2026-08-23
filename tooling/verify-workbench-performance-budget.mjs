@@ -27,6 +27,7 @@ const routeExperienceGroups = Object.freeze([
   'page-experiences-service.mjs',
   'page-experiences-engagement.mjs',
   'page-experiences-controls.mjs',
+  'page-experiences-governance.mjs',
 ]);
 
 export const workbenchPerformanceBudgets = Object.freeze({
