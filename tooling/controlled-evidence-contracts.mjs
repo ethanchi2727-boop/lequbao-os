@@ -830,6 +830,7 @@ function validateLegalRelease(value) {
   const requiredSurfaces = new Set(allowedSurfaces);
   const observedSurfaces = new Set();
   const publicationReceipts = new Set();
+  const surfacedDocumentIds = new Set();
   for (const [index, surface] of (Array.isArray(value.surfaceMatrix)
     ? value.surfaceMatrix
     : []
@@ -855,6 +856,7 @@ function validateLegalRelease(value) {
       for (const documentId of surface.documentIds)
         if (!documentIds.has(documentId))
           failures.push(`${prefix}.documentIds contains an undeclared document`);
+        else surfacedDocumentIds.add(documentId);
     }
     if (!validSha256(surface.publicationReceiptHash))
       failures.push(`${prefix}.publicationReceiptHash has invalid format`);
@@ -886,6 +888,9 @@ function validateLegalRelease(value) {
   }
   for (const surface of requiredSurfaces)
     failures.push(`${artifact} surfaceMatrix must include ${surface}`);
+  for (const documentId of documentIds)
+    if (!surfacedDocumentIds.has(documentId))
+      failures.push(`${artifact} document ${documentId} is absent from every product surface`);
   failures.push(
     ...validateApprovalSet(artifact, approvals, ['product owner', 'legal compliance reviewer']),
   );

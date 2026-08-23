@@ -345,6 +345,15 @@ describe('controlled JSON evidence contracts', () => {
             })(),
             effectiveAt: '2026-08-19T00:59:00.000Z',
           },
+          {
+            documentId: 'terms-of-service',
+            version: 'v1',
+            ownerRef: 'org:legal-owner',
+            approvalReceipt: 'legal-receipt',
+            sha256: 'c'.repeat(64),
+            publishedUrl: 'https://legal.example.test/terms',
+            effectiveAt: '2026-08-19T01:00:00.000Z',
+          },
         ],
         surfaceMatrix: [
           {
@@ -405,6 +414,7 @@ describe('controlled JSON evidence contracts', () => {
         'legal-document-release.json surface publication receipts must be unique',
         'legal-document-release.json surfaceMatrix[2].surface is not approved',
         'legal-document-release.json surfaceMatrix must include lequ-life-miniapp',
+        'legal-document-release.json document terms-of-service is absent from every product surface',
       ]),
     );
   });
