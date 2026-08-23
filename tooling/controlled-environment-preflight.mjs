@@ -99,6 +99,16 @@ function isForbiddenLocalHostname(hostname) {
   return firstMappedHextet === 0 || (firstMappedHextet >= 0x7f00 && firstMappedHextet <= 0x7fff);
 }
 
+function isUnspecifiedProxyAddress(address) {
+  if (address === '0.0.0.0') return true;
+  if (isIP(address) !== 6) return false;
+  try {
+    return new URL(`http://[${address}]`).hostname.replace(/^\[|\]$/gu, '') === '::';
+  } catch {
+    return false;
+  }
+}
+
 function invalidValue(environment, name) {
   const rawValue = environment[name];
   if (rawValue !== rawValue.trim()) return 'surrounding-whitespace';
@@ -115,7 +125,7 @@ function invalidValue(environment, name) {
       const [address, rawPrefix, ...extra] = entry.trim().split('/');
       const version = isIP(address ?? '');
       const prefix = rawPrefix === undefined ? undefined : Number(rawPrefix);
-      const unspecified = address === '0.0.0.0' || address === '::';
+      const unspecified = isUnspecifiedProxyAddress(address ?? '');
       return (
         extra.length > 0 ||
         version === 0 ||

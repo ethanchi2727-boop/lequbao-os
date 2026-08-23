@@ -91,6 +91,9 @@ describe('API runtime configuration', () => {
       { TRUSTED_PROXY_CIDRS: '::/0' },
       { TRUSTED_PROXY_CIDRS: '0.0.0.0' },
       { TRUSTED_PROXY_CIDRS: '::' },
+      { TRUSTED_PROXY_CIDRS: '0::0' },
+      { TRUSTED_PROXY_CIDRS: '0:0:0:0:0:0:0:0' },
+      { TRUSTED_PROXY_CIDRS: '0000:0000:0000:0000:0000:0000:0000:0000' },
     ])
       expect(() =>
         validateApiRuntimeConfiguration({

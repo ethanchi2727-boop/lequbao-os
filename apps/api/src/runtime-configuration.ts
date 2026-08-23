@@ -74,6 +74,16 @@ function isForbiddenLocalHostname(hostname: string) {
   return firstMappedHextet === 0 || (firstMappedHextet >= 0x7f00 && firstMappedHextet <= 0x7fff);
 }
 
+function isUnspecifiedProxyAddress(address: string) {
+  if (address === '0.0.0.0') return true;
+  if (isIP(address) !== 6) return false;
+  try {
+    return new URL(`http://[${address}]`).hostname.replace(/^\[|\]$/gu, '') === '::';
+  } catch {
+    return false;
+  }
+}
+
 const productionUrls = [
   'OBJECT_STORE_GATEWAY_URL',
   ...launchGroups.flatMap((group) => group.filter((name) => name.endsWith('_URL'))),
@@ -128,7 +138,7 @@ function validateProductionValues(environment: RuntimeEnvironment) {
     const [address, rawPrefix, ...extra] = entry.split('/');
     const version = isIP(address ?? '');
     const prefix = rawPrefix === undefined ? undefined : Number(rawPrefix);
-    const unspecified = address === '0.0.0.0' || address === '::';
+    const unspecified = isUnspecifiedProxyAddress(address ?? '');
     if (
       !entry ||
       extra.length > 0 ||

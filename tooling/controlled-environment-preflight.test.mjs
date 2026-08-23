@@ -124,7 +124,15 @@ describe('controlled environment preflight', () => {
       reason: 'embedded-credentials',
     });
 
-    for (const trustedProxy of ['0.0.0.0/0', '::/0', '0.0.0.0', '::']) {
+    for (const trustedProxy of [
+      '0.0.0.0/0',
+      '::/0',
+      '0.0.0.0',
+      '::',
+      '0::0',
+      '0:0:0:0:0:0:0:0',
+      '0000:0000:0000:0000:0000:0000:0000:0000',
+    ]) {
       const blanketProxy = completeEnvironment();
       blanketProxy.TRUSTED_PROXY_CIDRS = trustedProxy;
       expect(inspectControlledEnvironment(blanketProxy).invalid).toContainEqual({
