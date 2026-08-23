@@ -1739,6 +1739,7 @@ function validateRlsDenials(value) {
   const artifact = 'rls-denials.json';
   const failures = [];
   const operations = new Set();
+  const auditRefs = new Set();
   for (const [index, attempt] of (Array.isArray(value.attempts) ? value.attempts : []).entries()) {
     const prefix = `${artifact} attempts[${index}]`;
     if (!attempt || Array.isArray(attempt) || typeof attempt !== 'object') {
@@ -1747,12 +1748,17 @@ function validateRlsDenials(value) {
     }
     if (!['cross-tenant-read', 'cross-tenant-write'].includes(attempt.operation))
       failures.push(`${prefix}.operation is not approved`);
+    else if (operations.has(attempt.operation))
+      failures.push(`${artifact} attempt operations must be unique`);
     else operations.add(attempt.operation);
     if (attempt.denied !== true) failures.push(`${prefix}.denied must equal true`);
     if (attempt.exposedFieldCount !== 0) failures.push(`${prefix}.exposedFieldCount must equal 0`);
     if (attempt.mutationCount !== 0) failures.push(`${prefix}.mutationCount must equal 0`);
     if (!validSha256(attempt.auditRefHash))
       failures.push(`${prefix}.auditRefHash has invalid format`);
+    else if (auditRefs.has(attempt.auditRefHash))
+      failures.push(`${artifact} audit references must be unique`);
+    else auditRefs.add(attempt.auditRefHash);
   }
   for (const operation of ['cross-tenant-read', 'cross-tenant-write'])
     if (!operations.has(operation)) failures.push(`${artifact} attempts must include ${operation}`);
@@ -1763,6 +1769,8 @@ function validateTenantContext(value) {
   const artifact = 'tenant-context.json';
   const failures = [];
   const expectedTenants = new Set();
+  const connections = new Set();
+  let previousTenant;
   for (const [index, transaction] of (Array.isArray(value.transactions)
     ? value.transactions
     : []
@@ -1774,16 +1782,26 @@ function validateTenantContext(value) {
     }
     if (!validSha256(transaction.connectionRefHash))
       failures.push(`${prefix}.connectionRefHash has invalid format`);
+    else connections.add(transaction.connectionRefHash);
     if (!validSha256(transaction.expectedTenantRefHash))
       failures.push(`${prefix}.expectedTenantRefHash has invalid format`);
-    else expectedTenants.add(transaction.expectedTenantRefHash);
+    else {
+      expectedTenants.add(transaction.expectedTenantRefHash);
+      if (transaction.expectedTenantRefHash === previousTenant)
+        failures.push(`${prefix}.expectedTenantRefHash must alternate between transactions`);
+      previousTenant = transaction.expectedTenantRefHash;
+    }
     if (transaction.observedTenantRefHash !== transaction.expectedTenantRefHash)
       failures.push(`${prefix}.observedTenantRefHash must equal expectedTenantRefHash`);
     if (transaction.resetVerified !== true)
       failures.push(`${prefix}.resetVerified must equal true`);
+    if (!Number.isSafeInteger(transaction.sequence) || transaction.sequence !== index + 1)
+      failures.push(`${prefix}.sequence must equal ${index + 1}`);
   }
   if (expectedTenants.size < 2)
     failures.push(`${artifact} transactions must alternate at least two tenants`);
+  if (connections.size > 1)
+    failures.push(`${artifact} transactions must reuse one pooled connection`);
   return failures;
 }
 
@@ -1792,6 +1810,8 @@ function validateInboxDeduplication(value) {
   const failures = [];
   const deliveries = Array.isArray(value.deliveries) ? value.deliveries : [];
   const results = Array.isArray(value.businessResults) ? value.businessResults : [];
+  const attempts = new Set();
+  const resultRefs = new Set();
   if (deliveries.length !== value.deliveryAttempts)
     failures.push(`${artifact} deliveries must reconcile with deliveryAttempts`);
   if (results.length !== value.businessResultCount)
@@ -1799,10 +1819,23 @@ function validateInboxDeduplication(value) {
   for (const [index, delivery] of deliveries.entries()) {
     if (!delivery || typeof delivery !== 'object' || delivery.eventRefHash !== value.eventRefHash)
       failures.push(`${artifact} deliveries[${index}] must reference the same event hash`);
+    if (!Number.isSafeInteger(delivery?.attempt))
+      failures.push(`${artifact} deliveries[${index}].attempt must be an integer`);
+    else {
+      if (attempts.has(delivery.attempt))
+        failures.push(`${artifact} delivery attempts must be unique`);
+      attempts.add(delivery.attempt);
+      if (delivery.attempt !== index + 1)
+        failures.push(`${artifact} deliveries[${index}].attempt must equal ${index + 1}`);
+    }
   }
-  for (const [index, result] of results.entries())
+  for (const [index, result] of results.entries()) {
     if (!result || typeof result !== 'object' || !validSha256(result.resultRefHash))
       failures.push(`${artifact} businessResults[${index}].resultRefHash has invalid format`);
+    else if (resultRefs.has(result.resultRefHash))
+      failures.push(`${artifact} business result references must be unique`);
+    else resultRefs.add(result.resultRefHash);
+  }
   return failures;
 }
 

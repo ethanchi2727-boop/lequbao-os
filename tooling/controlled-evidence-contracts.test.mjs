@@ -1043,6 +1043,80 @@ describe('controlled JSON evidence contracts', () => {
       ]),
     );
     expect(
+      validateControlledJsonEvidence('rls-denials.json', {
+        result: 'PASS',
+        attempts: [
+          {
+            operation: 'cross-tenant-read',
+            denied: true,
+            exposedFieldCount: 0,
+            mutationCount: 0,
+            auditRefHash: 'a'.repeat(64),
+          },
+          {
+            operation: 'cross-tenant-read',
+            denied: true,
+            exposedFieldCount: 0,
+            mutationCount: 0,
+            auditRefHash: 'a'.repeat(64),
+          },
+        ],
+      }),
+    ).toEqual(
+      expect.arrayContaining([
+        'rls-denials.json attempt operations must be unique',
+        'rls-denials.json audit references must be unique',
+        'rls-denials.json attempts must include cross-tenant-write',
+      ]),
+    );
+    expect(
+      validateControlledJsonEvidence('tenant-context.json', {
+        result: 'PASS',
+        mismatchRejected: true,
+        transactions: [
+          {
+            connectionRefHash: 'a'.repeat(64),
+            expectedTenantRefHash: 'b'.repeat(64),
+            observedTenantRefHash: 'b'.repeat(64),
+            resetVerified: true,
+            sequence: 2,
+          },
+          {
+            connectionRefHash: 'c'.repeat(64),
+            expectedTenantRefHash: 'b'.repeat(64),
+            observedTenantRefHash: 'b'.repeat(64),
+            resetVerified: true,
+            sequence: 2,
+          },
+        ],
+      }),
+    ).toEqual(
+      expect.arrayContaining([
+        'tenant-context.json transactions[0].sequence must equal 1',
+        'tenant-context.json transactions[1].expectedTenantRefHash must alternate between transactions',
+        'tenant-context.json transactions must alternate at least two tenants',
+        'tenant-context.json transactions must reuse one pooled connection',
+      ]),
+    );
+    expect(
+      validateControlledJsonEvidence('inbox-deduplication.json', {
+        result: 'PASS',
+        eventRefHash: 'd'.repeat(64),
+        deliveryAttempts: 2,
+        businessResultCount: 1,
+        deliveries: [
+          { eventRefHash: 'd'.repeat(64), attempt: 2 },
+          { eventRefHash: 'd'.repeat(64), attempt: 2 },
+        ],
+        businessResults: [{ resultRefHash: 'e'.repeat(64) }],
+      }),
+    ).toEqual(
+      expect.arrayContaining([
+        'inbox-deduplication.json deliveries[0].attempt must equal 1',
+        'inbox-deduplication.json delivery attempts must be unique',
+      ]),
+    );
+    expect(
       validateControlledJsonEvidence('concurrency-input.json', {
         stock: 3,
         requestedQuantity: 3,
