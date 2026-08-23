@@ -214,7 +214,9 @@ function semanticFixture(artifact, binding) {
     },
     'refund-unknown-recovery.json': {
       refundRefHash: 'd'.repeat(64),
+      orderRefHash: 'e'.repeat(64),
       merchantAccountRef: 'f'.repeat(64),
+      refundAmountFen: 100,
       idempotencyKeyHash: 'e'.repeat(64),
       providerQuery: {
         performed: true,

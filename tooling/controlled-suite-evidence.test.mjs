@@ -73,7 +73,11 @@ describe('controlled suite cross-evidence contracts', () => {
           platformMerchantAccountRef: 'merchant-hash',
           amountFen: 100,
         },
-        'refund-unknown-recovery.json': { merchantAccountRef: 'merchant-hash' },
+        'refund-unknown-recovery.json': {
+          orderRefHash: 'order-hash',
+          merchantAccountRef: 'merchant-hash',
+          refundAmountFen: 100,
+        },
       }),
     ).toEqual([]);
     expect(
@@ -152,7 +156,9 @@ describe('controlled suite cross-evidence contracts', () => {
           reconciledAt: '2026-08-19T00:59:00.000Z',
         },
         'refund-unknown-recovery.json': {
+          orderRefHash: 'order-four',
           merchantAccountRef: 'one',
+          refundAmountFen: 101,
           observedUnknownAt: '2026-08-19T00:58:00.000Z',
         },
       }),
@@ -161,6 +167,8 @@ describe('controlled suite cross-evidence contracts', () => {
         'merchant account references do not reconcile across payment evidence',
         'payment amounts do not reconcile across request callback and account evidence',
         'order references do not reconcile across payment evidence',
+        'refund recovery order does not match the payment order',
+        'refund recovery amount exceeds the paid amount',
         'payment request, callback and reconciliation timestamps are out of order',
         'refund UNKNOWN recovery precedes the applied payment callback',
       ]),

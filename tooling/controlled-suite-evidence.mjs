@@ -20,6 +20,7 @@ export const controlledSuiteCrossEvidenceRules = {
     'request, callback, reconciliation and refund use the same merchant account reference',
     'request, callback and reconciliation use the same amount',
     'request, callback and reconciliation use the same order reference in chronological order',
+    'refund recovery uses the same order and does not exceed the paid amount',
     'refund UNKNOWN recovery begins after the payment callback is applied',
   ],
   PLUGIN_NETWORK_SANDBOX: [
@@ -145,6 +146,10 @@ export function validateControlledSuiteDocuments(suiteCode, documents) {
         request.orderRefHash !== reconciliation.orderRefHash
       )
         failures.push('order references do not reconcile across payment evidence');
+      if (refund.orderRefHash !== request.orderRefHash)
+        failures.push('refund recovery order does not match the payment order');
+      if (refund.refundAmountFen > callback.amountFen)
+        failures.push('refund recovery amount exceeds the paid amount');
       const timeline = [
         request.requestedAt,
         callback.receivedAt,

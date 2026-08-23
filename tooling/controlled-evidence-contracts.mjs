@@ -161,7 +161,9 @@ export const controlledJsonEvidenceContracts = {
   'refund-unknown-recovery.json': [
     field('initialState', 'string', { equals: 'UNKNOWN' }),
     sha256('refundRefHash'),
+    sha256('orderRefHash'),
     sha256('merchantAccountRef'),
+    field('refundAmountFen', 'number', { minimum: 1 }),
     sha256('idempotencyKeyHash'),
     field('providerQuery', 'object'),
     sha256('providerQuery.idempotencyKeyHash'),
@@ -1589,8 +1591,10 @@ function validateRefundUnknownRecovery(value) {
       'initialState',
       'merchantAccountRef',
       'observedUnknownAt',
+      'orderRefHash',
       'providerQuery',
       'queryBeforeRetry',
+      'refundAmountFen',
       'refundRefHash',
     ])
   )

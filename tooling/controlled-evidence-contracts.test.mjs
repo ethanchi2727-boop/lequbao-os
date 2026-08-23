@@ -899,7 +899,9 @@ describe('controlled JSON evidence contracts', () => {
       validateControlledJsonEvidence('refund-unknown-recovery.json', {
         initialState: 'UNKNOWN',
         refundRefHash: 'a'.repeat(64),
+        orderRefHash: 'd'.repeat(64),
         merchantAccountRef: 'a'.repeat(64),
+        refundAmountFen: 1,
         idempotencyKeyHash: 'b'.repeat(64),
         providerQuery: {
           performed: false,
