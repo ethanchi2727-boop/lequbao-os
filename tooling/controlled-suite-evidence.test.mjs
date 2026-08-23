@@ -11,6 +11,7 @@ describe('controlled suite cross-evidence contracts', () => {
     expect(Object.keys(controlledSuiteCrossEvidenceRules).sort()).toEqual([
       'BACKUP_RESTORE_PRIVACY',
       'COMMERCE_CONCURRENCY',
+      'GREENFIELD_CUTOVER_GUARD',
       'IDENTITY_SECRETS_PRIVACY_ONCALL',
       'INTAKE_OBJECT_PIPELINE',
       'PAYMENT_PROVIDER_SANDBOX',
@@ -110,6 +111,33 @@ describe('controlled suite cross-evidence contracts', () => {
       expect.arrayContaining([
         'merchant account references do not reconcile across payment evidence',
         'payment amounts do not reconcile across request callback and account evidence',
+      ]),
+    );
+    expect(
+      validateControlledSuiteDocuments('GREENFIELD_CUTOVER_GUARD', {
+        'legacy-production-inventory.json': {
+          generatedAt: '2026-08-19T01:01:00.000Z',
+          sources: [
+            {
+              id: 'production-v5',
+              declaredEnvironment: 'production',
+              locationSha256: 'a'.repeat(64),
+              outcome: 'DATA_PRESENT_REVIEW_REQUIRED',
+              nonEmptyTableCount: 1,
+              rowCount: 10,
+            },
+          ],
+        },
+        'greenfield-waiver.json': {
+          reviewedAt: '2026-08-19T01:00:00.000Z',
+          coverage: { databasePaths: [{ scopeRef: 'b'.repeat(64) }] },
+        },
+      }),
+    ).toEqual(
+      expect.arrayContaining([
+        'inventory source production-v5 is absent from waiver coverage',
+        'production inventory source production-v5 is not empty',
+        'greenfield waiver review precedes legacy inventory generation',
       ]),
     );
   });

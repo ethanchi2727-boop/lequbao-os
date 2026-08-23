@@ -268,8 +268,8 @@ function semanticFixture(artifact, binding) {
             category,
             [
               {
-                scopeRef: `${category}-scope`,
-                ownerRef: `${category}-owner`,
+                scopeRef: category === 'databasePaths' ? 'a'.repeat(64) : `${category}-scope`,
+                ownerRef: `org:${category}-owner`,
                 inspectionMethod: 'accountable inventory',
                 inspectedAt: '2026-08-19T01:00:00.000Z',
                 productionRecordCount: 0,

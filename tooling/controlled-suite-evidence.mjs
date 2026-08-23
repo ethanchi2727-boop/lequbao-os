@@ -21,6 +21,10 @@ export const controlledSuiteCrossEvidenceRules = {
     'restore report references the exact encrypted backup manifest file',
     'restore report repeats the exact encrypted artifact and financial snapshot hashes',
   ],
+  GREENFIELD_CUTOVER_GUARD: [
+    'the waiver database-path coverage includes every inventoried V5 source location',
+    'production inventory sources contain zero rows and the waiver review follows inventory',
+  ],
   PERFORMANCE_CORE_AND_MESSAGES: [
     'performance report images equal the protected candidate manifest',
     'deployment topology API, Worker and Web images equal the protected candidate manifest',
@@ -107,6 +111,31 @@ export function validateControlledSuiteDocuments(suiteCode, documents) {
       failures.push('restore report references a different encrypted backup hash');
     if (backup && restore && backup.financialSnapshotSha256 !== restore.financialSnapshotSha256)
       failures.push('restore report references a different financial snapshot hash');
+  } else if (suiteCode === 'GREENFIELD_CUTOVER_GUARD') {
+    const inventory = get('legacy-production-inventory.json');
+    const waiver = get('greenfield-waiver.json');
+    if (inventory && waiver) {
+      const coveredLocations = new Set(
+        (waiver.coverage?.databasePaths ?? []).map((record) => record?.scopeRef),
+      );
+      for (const source of inventory.sources ?? [])
+        if (!coveredLocations.has(source?.locationSha256))
+          failures.push(
+            `inventory source ${source?.id ?? 'unknown'} is absent from waiver coverage`,
+          );
+      for (const source of inventory.sources ?? [])
+        if (
+          source?.declaredEnvironment === 'production' &&
+          (source.outcome !== 'EMPTY_REVIEW_REQUIRED' ||
+            source.nonEmptyTableCount !== 0 ||
+            source.rowCount !== 0)
+        )
+          failures.push(`production inventory source ${source?.id ?? 'unknown'} is not empty`);
+      const generatedAt = Date.parse(inventory.generatedAt);
+      const reviewedAt = Date.parse(waiver.reviewedAt);
+      if (Number.isFinite(generatedAt) && Number.isFinite(reviewedAt) && reviewedAt < generatedAt)
+        failures.push('greenfield waiver review precedes legacy inventory generation');
+    }
   } else if (suiteCode === 'PERFORMANCE_CORE_AND_MESSAGES') {
     const report = get('performance-report.json');
     const topology = get('deployment-topology.json');

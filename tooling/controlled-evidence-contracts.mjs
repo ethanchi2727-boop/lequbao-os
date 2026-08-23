@@ -509,6 +509,8 @@ function validateApprovalSet(artifact, approvals, requiredRoles) {
 function validateLegacyInventory(value) {
   const artifact = 'legacy-production-inventory.json';
   const failures = [];
+  const sourceIds = new Set();
+  const locations = new Set();
   for (const [index, source] of (Array.isArray(value.sources) ? value.sources : []).entries()) {
     const prefix = `${artifact} sources[${index}]`;
     if (!source || Array.isArray(source) || typeof source !== 'object') {
@@ -516,6 +518,9 @@ function validateLegacyInventory(value) {
       continue;
     }
     if (source.kind !== 'sqlite') failures.push(`${prefix}.kind must equal "sqlite"`);
+    if (!opaqueReference.test(source.id ?? '')) failures.push(`${prefix}.id must be opaque`);
+    else if (sourceIds.has(source.id)) failures.push(`${artifact} source IDs must be unique`);
+    else sourceIds.add(source.id);
     if (
       !['development', 'test', 'controlled-preproduction', 'production'].includes(
         source.declaredEnvironment,
@@ -524,12 +529,22 @@ function validateLegacyInventory(value) {
       failures.push(`${prefix}.declaredEnvironment must be reviewed and non-unknown`);
     if (!validSha256(source.locationSha256))
       failures.push(`${prefix}.locationSha256 has invalid format`);
+    else if (locations.has(source.locationSha256))
+      failures.push(`${artifact} source locations must be unique`);
+    else locations.add(source.locationSha256);
     if (!validSha256(source.fileSha256)) failures.push(`${prefix}.fileSha256 has invalid format`);
     if (!['EMPTY_REVIEW_REQUIRED', 'DATA_PRESENT_REVIEW_REQUIRED'].includes(source.outcome))
       failures.push(`${prefix}.outcome contains a stop-release or unknown result`);
     for (const fieldName of ['bytes', 'tableCount', 'nonEmptyTableCount', 'rowCount'])
       if (!Number.isInteger(source[fieldName]) || source[fieldName] < 0)
         failures.push(`${prefix}.${fieldName} must be a non-negative integer`);
+    if (source.nonEmptyTableCount > source.tableCount)
+      failures.push(`${prefix}.nonEmptyTableCount must not exceed tableCount`);
+    const empty = source.nonEmptyTableCount === 0 && source.rowCount === 0;
+    if (source.outcome === 'EMPTY_REVIEW_REQUIRED' && !empty)
+      failures.push(`${prefix}.EMPTY_REVIEW_REQUIRED conflicts with non-empty counts`);
+    if (source.outcome === 'DATA_PRESENT_REVIEW_REQUIRED' && empty)
+      failures.push(`${prefix}.DATA_PRESENT_REVIEW_REQUIRED conflicts with zero counts`);
   }
   return failures;
 }
@@ -558,6 +573,8 @@ function validateGreenfieldWaiver(value) {
   const artifact = 'greenfield-waiver.json';
   const failures = [];
   const domains = value.domainZeroCounts ?? {};
+  const environments = new Set();
+  const inspectionTimes = [];
   for (const [index, environment] of (Array.isArray(value.environments)
     ? value.environments
     : []
@@ -569,17 +586,23 @@ function validateGreenfieldWaiver(value) {
     }
     if (typeof environment.environment !== 'string' || !environment.environment.trim())
       failures.push(`${prefix}.environment must not be empty`);
-    if (typeof environment.ownerRef !== 'string' || !environment.ownerRef.trim())
-      failures.push(`${prefix}.ownerRef must not be empty`);
+    else if (environments.has(environment.environment))
+      failures.push(`${artifact} environments must be unique`);
+    else environments.add(environment.environment);
+    if (!opaqueSubject.test(environment.ownerRef ?? ''))
+      failures.push(`${prefix}.ownerRef must be an approved opaque subject`);
     if (environment.decision !== 'ZERO_PRODUCTION_DATA')
       failures.push(`${prefix}.decision must equal "ZERO_PRODUCTION_DATA"`);
   }
+  if (!environments.has('production'))
+    failures.push(`${artifact} environments must include production`);
   if (JSON.stringify(Object.keys(domains).sort()) !== JSON.stringify([...greenfieldDomains].sort()))
     failures.push(`${artifact} domainZeroCounts must cover the exact production business domains`);
   for (const domain of greenfieldDomains)
     if (domains[domain] !== 0) failures.push(`${artifact} domainZeroCounts.${domain} must equal 0`);
   for (const category of greenfieldCoverage) {
     const records = value.coverage?.[category];
+    const scopeRefs = new Set();
     if (!Array.isArray(records) || records.length === 0) {
       failures.push(`${artifact} coverage.${category} must contain inspection evidence`);
       continue;
@@ -590,11 +613,18 @@ function validateGreenfieldWaiver(value) {
         failures.push(`${prefix} must be an object`);
         continue;
       }
-      for (const fieldName of ['scopeRef', 'ownerRef', 'inspectionMethod'])
-        if (typeof record[fieldName] !== 'string' || !record[fieldName].trim())
-          failures.push(`${prefix}.${fieldName} must not be empty`);
+      if (!opaqueReference.test(record.scopeRef ?? ''))
+        failures.push(`${prefix}.scopeRef must be opaque`);
+      else if (scopeRefs.has(record.scopeRef))
+        failures.push(`${artifact} coverage.${category} scopeRefs must be unique`);
+      else scopeRefs.add(record.scopeRef);
+      if (!opaqueSubject.test(record.ownerRef ?? ''))
+        failures.push(`${prefix}.ownerRef must be an approved opaque subject`);
+      if (typeof record.inspectionMethod !== 'string' || !record.inspectionMethod.trim())
+        failures.push(`${prefix}.inspectionMethod must not be empty`);
       if (!validDateTime(record.inspectedAt))
         failures.push(`${prefix}.inspectedAt must be a non-future ISO date-time`);
+      else inspectionTimes.push(Date.parse(record.inspectedAt));
       if (record.productionRecordCount !== 0)
         failures.push(`${prefix}.productionRecordCount must equal 0`);
     }
@@ -607,6 +637,15 @@ function validateGreenfieldWaiver(value) {
       'migration owner',
     ]),
   );
+  const approvalTimes = (Array.isArray(value.approvals) ? value.approvals : [])
+    .map((approval) => Date.parse(approval?.approvedAt))
+    .filter(Number.isFinite);
+  const reviewedAt = Date.parse(value.reviewedAt);
+  if (
+    Number.isFinite(reviewedAt) &&
+    [...inspectionTimes, ...approvalTimes].some((timestamp) => timestamp > reviewedAt)
+  )
+    failures.push(`${artifact} reviewedAt must follow inspections and approvals`);
   return failures;
 }
 
