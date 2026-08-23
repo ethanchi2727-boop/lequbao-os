@@ -104,6 +104,12 @@ describe('controlled evidence capture', () => {
       }),
     ).rejects.toThrow('canonical millisecond UTC timestamp');
     await expect(
+      captureControlledEvidenceArtifact({
+        ...input,
+        capturedAt: '2026-08-19T11:59:00.000Z',
+      }),
+    ).rejects.toThrow('capturedAt predates the evidence workspace');
+    await expect(
       captureControlledEvidenceArtifact({ ...input, planSource: `${planSource}\n` }),
     ).rejects.toThrow('plan hash does not match');
   });

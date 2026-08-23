@@ -668,6 +668,17 @@ describe('controlled launch results', () => {
     );
   });
 
+  it('rejects evidence captured after the controlled result was generated', async () => {
+    const { results, resultsFile } = await fixture();
+    results.generatedAt = '2026-08-19T00:59:30.000Z';
+    await writeFile(resultsFile, JSON.stringify(results));
+    await expect(
+      verifyControlledResults({ plan, planSource, resultsFile, releaseCommit }),
+    ).resolves.toContain(
+      'POSTGRES capture receipt is later than result generation for postgres/fixture.log',
+    );
+  });
+
   it('rejects a missing or semantically forged capture receipt even with a matching receipt hash', async () => {
     const missing = await fixture();
     const receiptFile = path.join(

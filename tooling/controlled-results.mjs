@@ -250,6 +250,14 @@ export async function verifyControlledResults({ plan, planSource, resultsFile, r
           failures.push(`${result.code} ${reason} for ${expectedRelative}`);
         if (receipt.sha256 && receipt.sha256 !== item.captureReceiptSha256)
           failures.push(`${result.code} capture receipt hash mismatch for ${expectedRelative}`);
+        if (
+          receipt.capturedAt !== undefined &&
+          generatedAt !== undefined &&
+          receipt.capturedAt > generatedAt
+        )
+          failures.push(
+            `${result.code} capture receipt is later than result generation for ${expectedRelative}`,
+          );
       } catch {
         failures.push(`${result.code} evidence file is missing: ${expectedRelative}`);
       }

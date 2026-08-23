@@ -74,7 +74,10 @@ export async function inspectCaptureReceipt({
     const capturedAt = parseCanonicalUtcTimestamp(receipt?.capturedAt);
     if (capturedAt === undefined || capturedAt > Date.now() + 5 * 60_000)
       failures.push('capture receipt capturedAt is invalid or in the future');
-    return { failures, sha256: inspection.sha256 };
+    const contextCreatedAt = parseCanonicalUtcTimestamp(context?.createdAt);
+    if (capturedAt !== undefined && contextCreatedAt !== undefined && capturedAt < contextCreatedAt)
+      failures.push('capture receipt capturedAt predates the evidence workspace');
+    return { failures, sha256: inspection.sha256, capturedAt };
   } catch {
     return { failures: ['capture receipt is missing'] };
   }
