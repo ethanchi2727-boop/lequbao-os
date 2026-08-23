@@ -134,7 +134,6 @@ function semanticFixture(artifact, binding) {
       businessResults: [{ resultRefHash: 'e'.repeat(64) }],
     },
     'upload-response.json': { objectRefHash: '1'.repeat(64) },
-    'object-metadata.json': { objectRefHash: '1'.repeat(64) },
     'object-metadata.json': {
       objectRefHash: '1'.repeat(64),
       retention: {
