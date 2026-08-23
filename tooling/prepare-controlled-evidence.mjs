@@ -2,7 +2,7 @@ import { createHash } from 'node:crypto';
 import { execFile as execFileCallback } from 'node:child_process';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
-import { promisify } from 'node:util';
+import { isDeepStrictEqual, promisify } from 'node:util';
 import { fileURLToPath } from 'node:url';
 import {
   controlledJsonEvidenceContracts,
@@ -21,7 +21,14 @@ function argument(name) {
   return process.argv.find((value) => value.startsWith(prefix))?.slice(prefix.length);
 }
 
-function validateInputs({ plan, evidenceRoot, releaseCommit, deploymentId, environment }) {
+function validateInputs({
+  plan,
+  planSource,
+  evidenceRoot,
+  releaseCommit,
+  deploymentId,
+  environment,
+}) {
   if (!path.isAbsolute(evidenceRoot)) throw new Error('evidenceRoot must be absolute');
   if (!/^[a-f0-9]{40}$/u.test(releaseCommit))
     throw new Error('releaseCommit must be an exact lowercase 40-character SHA');
@@ -30,19 +37,42 @@ function validateInputs({ plan, evidenceRoot, releaseCommit, deploymentId, envir
   if (!opaqueLabel.test(environment ?? '')) throw new Error('environment must be an opaque label');
   if (plan?.version !== 1 || !Array.isArray(plan.suites) || plan.suites.length === 0)
     throw new Error('controlled acceptance plan is invalid');
+  let parsedPlan;
+  try {
+    parsedPlan = JSON.parse(planSource);
+  } catch {
+    throw new Error('controlled acceptance plan source is invalid JSON');
+  }
+  if (!isDeepStrictEqual(parsedPlan, plan))
+    throw new Error('controlled acceptance plan source does not match the plan object');
   const codes = new Set();
+  const directories = new Set();
   for (const suite of plan.suites) {
     if (!/^[A-Z0-9_]+$/u.test(suite.code ?? '') || codes.has(suite.code))
       throw new Error(`invalid or duplicated suite code: ${suite.code ?? ''}`);
     codes.add(suite.code);
-    if (!safeDirectory.test(suite.evidenceDirectory ?? ''))
+    if (
+      !safeDirectory.test(suite.evidenceDirectory ?? '') ||
+      directories.has(suite.evidenceDirectory)
+    )
       throw new Error(`${suite.code} has an unsafe evidence directory`);
+    directories.add(suite.evidenceDirectory);
     if (
       !Array.isArray(suite.requiredEvidence) ||
       suite.requiredEvidence.length === 0 ||
-      suite.requiredEvidence.some((file) => !safeFile.test(file))
+      suite.requiredEvidence.some((file) => !safeFile.test(file)) ||
+      new Set(suite.requiredEvidence).size !== suite.requiredEvidence.length
     )
       throw new Error(`${suite.code} has unsafe or missing evidence files`);
+    if (
+      ![suite.environmentGate, suite.executorRole, suite.runbook].every(
+        (value) => typeof value === 'string' && value.trim(),
+      ) ||
+      !Array.isArray(suite.passCriteria) ||
+      suite.passCriteria.length === 0 ||
+      suite.passCriteria.some((criterion) => typeof criterion !== 'string' || !criterion.trim())
+    )
+      throw new Error(`${suite.code} has incomplete execution metadata`);
   }
 }
 
@@ -142,7 +172,7 @@ export async function prepareControlledEvidenceWorkspace({
   environment,
   createdAt = new Date().toISOString(),
 }) {
-  validateInputs({ plan, evidenceRoot, releaseCommit, deploymentId, environment });
+  validateInputs({ plan, planSource, evidenceRoot, releaseCommit, deploymentId, environment });
   if (parseCanonicalUtcTimestamp(createdAt) === undefined)
     throw new Error('createdAt must be a canonical millisecond UTC timestamp');
 

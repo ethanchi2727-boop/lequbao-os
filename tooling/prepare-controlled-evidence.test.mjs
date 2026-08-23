@@ -98,6 +98,49 @@ describe('controlled evidence workspace preparation', () => {
           ...plan,
           suites: [{ ...plan.suites[0], requiredEvidence: ['../escape.log'] }],
         },
+        planSource: `${JSON.stringify(
+          {
+            ...plan,
+            suites: [{ ...plan.suites[0], requiredEvidence: ['../escape.log'] }],
+          },
+          null,
+          2,
+        )}\n`,
+      }),
+    ).rejects.toThrow('unsafe or missing evidence files');
+    await expect(
+      prepareControlledEvidenceWorkspace({
+        ...input,
+        evidenceRoot: freshRoot('plan-source'),
+        planSource: `${JSON.stringify({ ...plan, version: 2 }, null, 2)}\n`,
+      }),
+    ).rejects.toThrow('plan source does not match the plan object');
+    await expect(
+      prepareControlledEvidenceWorkspace({
+        ...input,
+        evidenceRoot: freshRoot('duplicate-evidence'),
+        plan: {
+          ...plan,
+          suites: [
+            {
+              ...plan.suites[0],
+              requiredEvidence: ['clean-schema.log', 'clean-schema.log'],
+            },
+          ],
+        },
+        planSource: `${JSON.stringify(
+          {
+            ...plan,
+            suites: [
+              {
+                ...plan.suites[0],
+                requiredEvidence: ['clean-schema.log', 'clean-schema.log'],
+              },
+            ],
+          },
+          null,
+          2,
+        )}\n`,
       }),
     ).rejects.toThrow('unsafe or missing evidence files');
     await expect(
