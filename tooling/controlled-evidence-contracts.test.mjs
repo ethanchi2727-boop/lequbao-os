@@ -252,6 +252,7 @@ describe('controlled JSON evidence contracts', () => {
             decision: 'APPROVED',
             receiptId: 'receipt with spaces',
             approvedAt: '2026-08-19T00:58:00.000Z',
+            email: 'forbidden@example.test',
           },
         ],
         independentReview: {
@@ -292,6 +293,7 @@ describe('controlled JSON evidence contracts', () => {
             decision: 'APPROVED',
             receiptId: 'business-1',
             approvedAt: '2026-08-19T00:58:00.000Z',
+            email: 'forbidden@example.test',
           },
           {
             subjectId: 'org:business-2',
@@ -320,6 +322,7 @@ describe('controlled JSON evidence contracts', () => {
       expect.arrayContaining([
         'financial-policy-approvals.json decisions must contain the exact frozen decision fields',
         'financial-policy-approvals.json approval roles must be unique',
+        'financial-policy-approvals.json approvals[0] fields are invalid',
         'financial-policy-approvals.json decisionVersion must be opaque',
         'financial-policy-approvals.json independentReview.receiptId must be an opaque reference',
         'financial-policy-approvals.json effectiveAt must not precede independent review',
@@ -344,6 +347,7 @@ describe('controlled JSON evidence contracts', () => {
               return url.href;
             })(),
             effectiveAt: '2026-08-19T00:59:00.000Z',
+            legalEntityName: 'forbidden',
           },
           {
             documentId: 'terms-of-service',
@@ -405,6 +409,7 @@ describe('controlled JSON evidence contracts', () => {
     ).toEqual(
       expect.arrayContaining([
         'legal-document-release.json documents[0].ownerRef must be an approved opaque subject',
+        'legal-document-release.json documents[0] fields are invalid',
         'legal-document-release.json documents[0].approvalReceipt must match the legal compliance approval',
         'legal-document-release.json documents[0].publishedUrl must be a public credential-free HTTPS URL',
         'legal-document-release.json documents[0].effectiveAt must not precede approval',

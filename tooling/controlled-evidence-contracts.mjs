@@ -559,6 +559,8 @@ function validateApprovalSet(artifact, approvals, requiredRoles) {
       failures.push(`${prefix} must be an object`);
       continue;
     }
+    if (!hasExactKeys(approval, ['approvedAt', 'decision', 'receiptId', 'role', 'subjectId']))
+      failures.push(`${prefix} fields are invalid`);
     if (!opaqueSubject.test(approval.subjectId ?? ''))
       failures.push(`${prefix}.subjectId must be an approved opaque subject`);
     else if (subjects.has(approval.subjectId))
@@ -645,6 +647,18 @@ const greenfieldCoverage = [
 function validateGreenfieldWaiver(value) {
   const artifact = 'greenfield-waiver.json';
   const failures = [];
+  if (
+    !hasExactKeys(value, [
+      'approvals',
+      'coverage',
+      'domainZeroCounts',
+      'environments',
+      'releaseCommit',
+      'result',
+      'reviewedAt',
+    ])
+  )
+    failures.push(`${artifact} fields are invalid`);
   const domains = value.domainZeroCounts ?? {};
   const environments = new Set();
   const inspectionTimes = [];
@@ -657,6 +671,8 @@ function validateGreenfieldWaiver(value) {
       failures.push(`${prefix} must be an object`);
       continue;
     }
+    if (!hasExactKeys(environment, ['decision', 'environment', 'ownerRef']))
+      failures.push(`${prefix} fields are invalid`);
     if (typeof environment.environment !== 'string' || !environment.environment.trim())
       failures.push(`${prefix}.environment must not be empty`);
     else if (environments.has(environment.environment))
@@ -686,6 +702,16 @@ function validateGreenfieldWaiver(value) {
         failures.push(`${prefix} must be an object`);
         continue;
       }
+      if (
+        !hasExactKeys(record, [
+          'inspectedAt',
+          'inspectionMethod',
+          'ownerRef',
+          'productionRecordCount',
+          'scopeRef',
+        ])
+      )
+        failures.push(`${prefix} fields are invalid`);
       if (!opaqueReference.test(record.scopeRef ?? ''))
         failures.push(`${prefix}.scopeRef must be opaque`);
       else if (scopeRefs.has(record.scopeRef))
@@ -725,6 +751,19 @@ function validateGreenfieldWaiver(value) {
 function validateFinancialApprovals(value) {
   const artifact = 'financial-policy-approvals.json';
   const failures = [];
+  if (
+    !hasExactKeys(value, [
+      'approvals',
+      'decisionVersion',
+      'decisions',
+      'deploymentId',
+      'effectiveAt',
+      'independentReview',
+      'releaseCommit',
+      'unresolvedItems',
+    ])
+  )
+    failures.push(`${artifact} fields are invalid`);
   const approvals = Array.isArray(value.approvals) ? value.approvals : [];
   const requiredDecisions = [
     'paymentResponsibilityResolved',
@@ -744,6 +783,8 @@ function validateFinancialApprovals(value) {
       failures.push(`${artifact} decisions.${decision} must equal true`);
   failures.push(...validateApprovalSet(artifact, approvals, ['business owner', 'finance owner']));
   const review = value.independentReview;
+  if (!hasExactKeys(review, ['decision', 'receiptId', 'reviewedAt', 'subjectId']))
+    failures.push(`${artifact} independentReview fields are invalid`);
   if (review?.decision !== 'APPROVED')
     failures.push(`${artifact} independentReview.decision must equal "APPROVED"`);
   if (!opaqueSubject.test(review?.subjectId ?? ''))
@@ -783,6 +824,18 @@ function validateFinancialApprovals(value) {
 function validateLegalRelease(value) {
   const artifact = 'legal-document-release.json';
   const failures = [];
+  if (
+    !hasExactKeys(value, [
+      'approvals',
+      'deploymentId',
+      'documents',
+      'releaseCommit',
+      'result',
+      'surfaceMatrix',
+      'unresolvedItems',
+    ])
+  )
+    failures.push(`${artifact} fields are invalid`);
   const documentIds = new Set();
   const approvals = Array.isArray(value.approvals) ? value.approvals : [];
   const legalApprovalReceipt = approvals.find(
@@ -800,6 +853,18 @@ function validateLegalRelease(value) {
       failures.push(`${prefix} must be an object`);
       continue;
     }
+    if (
+      !hasExactKeys(document, [
+        'approvalReceipt',
+        'documentId',
+        'effectiveAt',
+        'ownerRef',
+        'publishedUrl',
+        'sha256',
+        'version',
+      ])
+    )
+      failures.push(`${prefix} fields are invalid`);
     for (const fieldName of ['documentId', 'version', 'ownerRef', 'approvalReceipt'])
       if (typeof document[fieldName] !== 'string' || !document[fieldName].trim())
         failures.push(`${prefix}.${fieldName} must not be empty`);
@@ -850,6 +915,18 @@ function validateLegalRelease(value) {
       failures.push(`${prefix} must be an object`);
       continue;
     }
+    if (
+      !hasExactKeys(surface, [
+        'accountPrivacyInstructionsVerified',
+        'documentIds',
+        'failures',
+        'publicationReceiptHash',
+        'publicationVerified',
+        'surface',
+        'verifiedAt',
+      ])
+    )
+      failures.push(`${prefix} fields are invalid`);
     if (!allowedSurfaces.includes(surface.surface))
       failures.push(`${prefix}.surface is not approved`);
     else if (observedSurfaces.has(surface.surface))
