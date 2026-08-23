@@ -6,7 +6,7 @@ describe('performance evidence boundary', () => {
     const gate = await readFile('tooling/performance-gate.mjs', 'utf8');
     const snapshot = await readFile('tooling/performance-database-snapshot.mjs', 'utf8');
     expect(gate).not.toContain('baseOrigin:');
-    expect(gate).not.toContain('environment: config.environment');
+    expect(gate).toContain('environment: config.environment');
     expect(gate).not.toContain('runId,\n  environment');
     expect(gate).toContain("redirect: 'error'");
     expect(gate).toContain('readBoundedPerformanceResponse(response)');

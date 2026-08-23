@@ -269,6 +269,7 @@ export const controlledJsonEvidenceContracts = {
   'performance-report.json': [
     pass,
     field('schemaVersion', 'number', { equals: 1 }),
+    field('environment', 'string', { equals: 'controlled-preproduction' }),
     commit,
     field('workflowRunId', 'string', { pattern: '^[1-9][0-9]{0,19}$' }),
     field('images', 'object'),
@@ -1420,6 +1421,7 @@ function validatePerformanceReport(value) {
       'concurrency',
       'database',
       'durationSeconds',
+      'environment',
       'failure',
       'images',
       'persistence',

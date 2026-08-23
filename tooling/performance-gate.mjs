@@ -56,6 +56,7 @@ const startedAt = new Date();
 const started = performance.now();
 const report = {
   schemaVersion: 1,
+  environment: config.environment,
   releaseCommit: config.releaseCommit,
   workflowRunId: config.workflowRunId,
   images: config.images,

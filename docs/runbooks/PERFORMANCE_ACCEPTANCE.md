@@ -21,7 +21,7 @@ Set these only in the controlled runner's secret/environment store:
 - `PERFORMANCE_WRITE_BEARER_TOKEN`: runtime-only identity with only the selected bounded-write permission.
 - Alternatively, `PERFORMANCE_BEARER_TOKEN` may supply all three only when one identity is valid for every selected endpoint; do not broaden permissions merely to use this shortcut.
 - `PERFORMANCE_DATABASE_URL`: read-only evidence connection; never committed or copied into the report.
-- `PERFORMANCE_ENVIRONMENT`: exactly `controlled-preproduction` or `staging`.
+- `PERFORMANCE_ENVIRONMENT`: `controlled-preproduction` for formal PASS evidence. `staging` is accepted only for harness rehearsal and its report cannot satisfy the controlled evidence contract.
 - `PERFORMANCE_CONVERSATION_PATH`: canonical `/api/.../messages` path for the prepared conversation, with no dot-segment, query or fragment.
 - `PERFORMANCE_CONVERSATION_BODY_JSON`: nonsensitive body fields such as `{"messageType":"TEXT"}`. The harness supplies a unique content marker.
 - `PERFORMANCE_WRITE_PATH` and `PERFORMANCE_WRITE_BODY_JSON`: canonical `/api/...` path for the bounded core-write fixture, with no dot-segment, query or fragment, and its nonsensitive valid request body.

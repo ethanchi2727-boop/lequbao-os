@@ -623,6 +623,7 @@ describe('controlled JSON evidence contracts', () => {
     const failures = validateControlledJsonEvidence('performance-report.json', {
       result: 'PASS',
       schemaVersion: 1,
+      environment: 'controlled-preproduction',
       releaseCommit: 'a'.repeat(40),
       workflowRunId: '12345',
       images: {
