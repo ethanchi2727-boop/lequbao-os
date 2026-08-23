@@ -122,11 +122,21 @@
     { "page": "page-167", "layout": "job-failure-queue", "panels": 4 },
     { "page": "page-169", "layout": "temporary-support-access", "panels": 4 },
     { "page": "page-170", "layout": "global-security-audit", "panels": 4 },
-    { "page": "page-173", "layout": "mobile-today-tasks", "panels": 4 }
+    { "page": "page-173", "layout": "mobile-today-tasks", "panels": 4 },
+    { "page": "page-180", "layout": "mobile-delivery-progress", "panels": 4 },
+    { "page": "page-181", "layout": "mobile-merchant-confirmation-assist", "panels": 4 },
+    { "page": "page-183", "layout": "mobile-revenue-overview", "panels": 4 },
+    { "page": "page-184", "layout": "mobile-merchant-revenue", "panels": 4 },
+    { "page": "page-185", "layout": "mobile-cost-detail", "panels": 4 },
+    { "page": "page-187", "layout": "mobile-handoff-queue", "panels": 4 },
+    { "page": "page-188", "layout": "mobile-human-conversation", "panels": 4 },
+    { "page": "page-189", "layout": "mobile-customer-summary", "panels": 4 },
+    { "page": "page-191", "layout": "mobile-scan-redemption", "panels": 4 },
+    { "page": "page-193", "layout": "mobile-internal-notifications", "panels": 4 }
   ],
   "sharedObservations": {
     "desktopHorizontalOverflowCount": 0,
-    "distinctLayoutCount": 119,
+    "distinctLayoutCount": 129,
     "demoModeLabel": "演示结构",
     "productionModeLabel": "权威数据模式",
     "productionDemoPanelCount": 0,
@@ -252,6 +262,16 @@
     "page166ContainsProviderSecret": false,
     "page173MobileDocumentScrollWidth": 320,
     "page173MobileActionMinimumHeight": 44
+  },
+  "mobileWorkObservation": {
+    "mobilePageCount": 10,
+    "mobileOverflowCount": 0,
+    "guardrailMissingCount": 0,
+    "mobileDocumentScrollWidth": 320,
+    "mobileActionMinimumHeight": 44,
+    "page191AuthorityMode": true,
+    "page191ProtectedEmpty": true,
+    "page191CameraCapturePresent": false
   },
   "boundaries": [
     "This is local browser evidence, not controlled or production acceptance.",

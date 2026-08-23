@@ -31,6 +31,7 @@ for (const file of [
   'page-experiences-controls.mjs',
   'page-experiences-governance.mjs',
   'page-experiences-risk.mjs',
+  'page-experiences-mobile.mjs',
 ]) {
   await copyFile(new URL(`./src/${file}`, import.meta.url), new URL(file, output));
 }
