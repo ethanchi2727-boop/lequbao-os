@@ -19,24 +19,43 @@ export async function capturePerformanceDatabaseSnapshot(database) {
          FROM outbox_events`,
     ),
   ]);
-  const row = databaseStats.rows[0] ?? {};
+  if (databaseStats.rows.length !== 1 || tableStats.rows.length !== 1 || outbox.rows.length !== 1)
+    throw new Error('performance database snapshot queries must each return exactly one row');
+  const row = databaseStats.rows[0];
+  if (typeof row.database_name !== 'string' || !row.database_name.trim())
+    throw new Error('performance database snapshot is missing the database name');
+  const integer = (fieldName, value) => {
+    const parsed = Number(value);
+    if (!Number.isSafeInteger(parsed) || parsed < 0)
+      throw new Error(`performance database snapshot ${fieldName} must be a non-negative integer`);
+    return parsed;
+  };
+  const decimal = (fieldName, value) => {
+    const parsed = Number(value);
+    if (!Number.isFinite(parsed) || parsed < 0)
+      throw new Error(`performance database snapshot ${fieldName} must be non-negative`);
+    return parsed;
+  };
   return {
     databaseName: row.database_name,
-    sizeBytes: Number(row.size_bytes ?? 0),
-    connections: Number(row.numbackends ?? 0),
-    committedTransactions: Number(row.xact_commit ?? 0),
-    rolledBackTransactions: Number(row.xact_rollback ?? 0),
-    blocksRead: Number(row.blks_read ?? 0),
-    blocksHit: Number(row.blks_hit ?? 0),
-    tempFiles: Number(row.temp_files ?? 0),
-    tempBytes: Number(row.temp_bytes ?? 0),
-    deadlocks: Number(row.deadlocks ?? 0),
-    estimatedLiveRows: Number(tableStats.rows[0]?.estimated_live_rows ?? 0),
-    tableCount: Number(tableStats.rows[0]?.table_count ?? 0),
+    sizeBytes: integer('sizeBytes', row.size_bytes),
+    connections: integer('connections', row.numbackends),
+    committedTransactions: integer('committedTransactions', row.xact_commit),
+    rolledBackTransactions: integer('rolledBackTransactions', row.xact_rollback),
+    blocksRead: integer('blocksRead', row.blks_read),
+    blocksHit: integer('blocksHit', row.blks_hit),
+    tempFiles: integer('tempFiles', row.temp_files),
+    tempBytes: integer('tempBytes', row.temp_bytes),
+    deadlocks: integer('deadlocks', row.deadlocks),
+    estimatedLiveRows: integer('estimatedLiveRows', tableStats.rows[0].estimated_live_rows),
+    tableCount: integer('tableCount', tableStats.rows[0].table_count),
     messageBacklog: {
-      activeCount: Number(outbox.rows[0]?.active_count ?? 0),
-      deadCount: Number(outbox.rows[0]?.dead_count ?? 0),
-      oldestActiveSeconds: Number(outbox.rows[0]?.oldest_active_seconds ?? 0),
+      activeCount: integer('messageBacklog.activeCount', outbox.rows[0].active_count),
+      deadCount: integer('messageBacklog.deadCount', outbox.rows[0].dead_count),
+      oldestActiveSeconds: decimal(
+        'messageBacklog.oldestActiveSeconds',
+        outbox.rows[0].oldest_active_seconds,
+      ),
     },
   };
 }

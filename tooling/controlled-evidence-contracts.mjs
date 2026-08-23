@@ -860,6 +860,8 @@ function validatePerformanceSnapshot(artifact, pathName, snapshot, failures) {
     failures.push(`${artifact} ${pathName} must be an object`);
     return;
   }
+  if (typeof snapshot.databaseName !== 'string' || !snapshot.databaseName.trim())
+    failures.push(`${artifact} ${pathName}.databaseName must not be empty`);
   for (const fieldName of [
     'sizeBytes',
     'connections',
@@ -873,14 +875,20 @@ function validatePerformanceSnapshot(artifact, pathName, snapshot, failures) {
     'estimatedLiveRows',
     'tableCount',
   ])
-    if (!Number.isFinite(snapshot[fieldName]) || snapshot[fieldName] < 0)
-      failures.push(`${artifact} ${pathName}.${fieldName} must be non-negative`);
+    if (!Number.isSafeInteger(snapshot[fieldName]) || snapshot[fieldName] < 0)
+      failures.push(`${artifact} ${pathName}.${fieldName} must be a non-negative integer`);
   if (snapshot.tableCount < 164)
     failures.push(`${artifact} ${pathName}.tableCount must include the 164-table candidate schema`);
   const backlog = snapshot.messageBacklog;
-  for (const fieldName of ['activeCount', 'deadCount', 'oldestActiveSeconds'])
-    if (!Number.isFinite(backlog?.[fieldName]) || backlog[fieldName] < 0)
-      failures.push(`${artifact} ${pathName}.messageBacklog.${fieldName} must be non-negative`);
+  for (const fieldName of ['activeCount', 'deadCount'])
+    if (!Number.isSafeInteger(backlog?.[fieldName]) || backlog[fieldName] < 0)
+      failures.push(
+        `${artifact} ${pathName}.messageBacklog.${fieldName} must be a non-negative integer`,
+      );
+  if (!Number.isFinite(backlog?.oldestActiveSeconds) || backlog.oldestActiveSeconds < 0)
+    failures.push(
+      `${artifact} ${pathName}.messageBacklog.oldestActiveSeconds must be non-negative`,
+    );
 }
 
 function validateCandidateImageOwner(artifact, images) {

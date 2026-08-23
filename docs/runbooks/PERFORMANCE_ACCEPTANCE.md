@@ -46,6 +46,6 @@ Run `pnpm performance:gate` from the repository root. Preserve the command exit 
 - P50, P95 and P99 are non-negative and ordered; concurrency is an integer from 1 to 200.
 - Every acknowledged customer-message ID is unique and exists in PostgreSQL after the run.
 - No new dead Outbox event appears during the run.
-- The report contains P50/P95/P99, errors, duration, concurrency, request count, database size/live-row estimate, transaction/block/temp/deadlock counters and Outbox backlog before and after.
+- The report contains P50/P95/P99, errors, duration, concurrency, request count, database name, size/live-row estimate, transaction/block/temp/deadlock counters and Outbox backlog before and after. Each aggregate query must return exactly one row; missing or imprecise counters fail instead of becoming zero.
 
 Any missing or repeated response ID, persistence mismatch, threshold breach, new dead event, unreachable database or missing report is a failed gate. The launch verifier parses the generated report rather than trusting its `PASS` label: it requires exactly `core-read`, `customer-message-write` and `core-write`, reconciles requests/successes/errors, enforces the frozen per-scenario threshold and one-percent error ceiling, requires every acknowledged message ID to be unique and persist, and compares the before/after Outbox and complete 164-table database snapshots. Do not rerun with lower load to replace a failure; retain the failed artifact, investigate, deploy a new candidate and create a separate report.
