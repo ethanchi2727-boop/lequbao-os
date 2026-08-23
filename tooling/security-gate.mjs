@@ -11,14 +11,12 @@ const listed = spawnSync('git', ['ls-files', '--cached', '--others', '--exclude-
   encoding: 'utf8',
 });
 if (listed.status !== 0) throw new Error('git file inventory unavailable');
-const files = listed.stdout
-  .split('\0')
-  .filter(Boolean)
-  .filter(
-    (file) =>
-      !/(?:^|\/)(?:node_modules|dist|coverage)(?:\/|$)/u.test(file) &&
-      /\.(?:[cm]?[jt]sx?|json|ya?ml|md|sql|env|toml|ini|properties|sh|ps1)$/iu.test(file),
-  );
+const repositoryFiles = listed.stdout.split('\0').filter(Boolean);
+const files = repositoryFiles.filter(
+  (file) =>
+    !/(?:^|\/)(?:node_modules|dist|coverage)(?:\/|$)/u.test(file) &&
+    /\.(?:[cm]?[jt]sx?|json|ya?ml|md|sql|env|toml|ini|properties|sh|ps1)$/iu.test(file),
+);
 const patterns = [
   ['PRIVATE_KEY', /-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----/u],
   ['GITHUB_TOKEN', /gh[pousr]_[A-Za-z0-9]{30,}/u],
@@ -46,21 +44,19 @@ const recorded = sbom.metadata?.properties?.find(
 )?.value;
 if (recorded !== lockHash) failures.push('SBOM_LOCK_HASH_MISMATCH');
 if (!Array.isArray(sbom.components) || sbom.components.length < 1) failures.push('SBOM_EMPTY');
-const packageFiles = [
-    'package.json',
-    'apps/api/package.json',
-    'apps/consumer-miniapp/package.json',
-    'apps/merchant-miniapp/package.json',
-    'apps/workbench-web/package.json',
-    'apps/worker/package.json',
-    'packages/contracts/package.json',
-  ],
+const packageFiles = repositoryFiles
+    .filter((file) =>
+      /^(?:package\.json|apps\/[^/]+\/package\.json|packages\/[^/]+\/package\.json)$/u.test(file),
+    )
+    .sort(),
   installFiles = [
-    'README.md',
-    '.devcontainer/bootstrap.sh',
-    '.github/workflows/ci.yml',
-    'deploy/Dockerfile',
-  ],
+    ...new Set([
+      'README.md',
+      '.devcontainer/bootstrap.sh',
+      'deploy/Dockerfile',
+      ...repositoryFiles.filter((file) => /^\.github\/workflows\/[^/]+\.ya?ml$/iu.test(file)),
+    ]),
+  ].sort(),
   packageManifests = Object.fromEntries(
     await Promise.all(
       packageFiles.map(async (file) => [file, JSON.parse(await readFile(file, 'utf8'))]),
