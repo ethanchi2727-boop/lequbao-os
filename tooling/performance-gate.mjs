@@ -76,6 +76,7 @@ let failed = false;
 let stage = 'database-before';
 let before;
 const expectedMessages = [];
+const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu;
 try {
   before = await capturePerformanceDatabaseSnapshot(database);
   report.database.before = before;
@@ -118,12 +119,10 @@ try {
               if (mediaType?.toLowerCase() !== 'application/json')
                 throw new Error('message persistence response must be application/json');
               payload = JSON.parse(responseBody.toString('utf8'));
+              if (!uuidPattern.test(payload?.id ?? ''))
+                throw new Error('message persistence response id must be a UUID');
             }
-            if (
-              scenario.proveMessagePersistence &&
-              successfulResponse &&
-              typeof payload?.id === 'string'
-            )
+            if (scenario.proveMessagePersistence && successfulResponse)
               expectedMessages.push({ id: payload.id, content: probeContent });
             statuses.push(response.status);
           } catch {
