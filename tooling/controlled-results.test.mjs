@@ -548,7 +548,7 @@ function semanticFixture(artifact, binding) {
           documentId: 'privacy-policy',
           version: 'v1',
           ownerRef: 'org:legal-owner',
-          approvalReceipt: 'legal-receipt',
+          approvalReceipt: 'legal-receipt-1',
           sha256: 'c'.repeat(64),
           publishedUrl: 'https://example.test/privacy',
           effectiveAt: '2026-08-19T01:00:00.000Z',

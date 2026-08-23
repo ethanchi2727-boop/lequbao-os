@@ -226,6 +226,75 @@ describe('controlled JSON evidence contracts', () => {
         expect.stringContaining('independentReview.subjectId must be an approved opaque subject'),
       ]),
     );
+    expect(
+      validateControlledJsonEvidence('legal-document-release.json', {
+        result: 'PASS',
+        releaseCommit: 'a'.repeat(40),
+        deploymentId: 'deployment-1',
+        documents: [
+          {
+            documentId: 'privacy-policy',
+            version: 'v1',
+            ownerRef: 'owner@example.test',
+            approvalReceipt: 'unrelated-receipt',
+            sha256: 'b'.repeat(64),
+            publishedUrl: 'https://user:secret@localhost/privacy?token=secret',
+            effectiveAt: '2026-08-19T00:59:00.000Z',
+          },
+        ],
+        surfaceMatrix: [
+          {
+            surface: 'lequbao-web',
+            documentIds: ['privacy-policy', 'privacy-policy'],
+            publicationVerified: true,
+            accountPrivacyInstructionsVerified: true,
+            failures: [],
+          },
+          {
+            surface: 'lequbao-web',
+            documentIds: ['privacy-policy'],
+            publicationVerified: true,
+            accountPrivacyInstructionsVerified: true,
+            failures: [],
+          },
+          {
+            surface: 'unknown-client',
+            documentIds: ['privacy-policy'],
+            publicationVerified: true,
+            accountPrivacyInstructionsVerified: true,
+            failures: [],
+          },
+        ],
+        approvals: [
+          {
+            subjectId: 'org:product-owner',
+            role: 'product owner',
+            decision: 'APPROVED',
+            receiptId: 'product-receipt',
+            approvedAt: '2026-08-19T01:00:00.000Z',
+          },
+          {
+            subjectId: 'org:legal-reviewer',
+            role: 'legal compliance reviewer',
+            decision: 'APPROVED',
+            receiptId: 'legal-receipt',
+            approvedAt: '2026-08-19T01:00:00.000Z',
+          },
+        ],
+        unresolvedItems: [],
+      }),
+    ).toEqual(
+      expect.arrayContaining([
+        'legal-document-release.json documents[0].ownerRef must be an approved opaque subject',
+        'legal-document-release.json documents[0].approvalReceipt must match the legal compliance approval',
+        'legal-document-release.json documents[0].publishedUrl must be a public credential-free HTTPS URL',
+        'legal-document-release.json documents[0].effectiveAt must not precede approval',
+        'legal-document-release.json surfaceMatrix[0].documentIds must be unique',
+        'legal-document-release.json surfaces must be unique',
+        'legal-document-release.json surfaceMatrix[2].surface is not approved',
+        'legal-document-release.json surfaceMatrix must include lequ-life-miniapp',
+      ]),
+    );
   });
 
   it('rejects hollow performance and disaster-recovery PASS evidence', () => {

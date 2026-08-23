@@ -656,6 +656,13 @@ function validateLegalRelease(value) {
   const artifact = 'legal-document-release.json';
   const failures = [];
   const documentIds = new Set();
+  const approvals = Array.isArray(value.approvals) ? value.approvals : [];
+  const legalApprovalReceipt = approvals.find(
+    (approval) => approval?.role === 'legal compliance reviewer',
+  )?.receiptId;
+  const approvalTimes = approvals
+    .map((approval) => Date.parse(approval?.approvedAt))
+    .filter(Number.isFinite);
   for (const [index, document] of (Array.isArray(value.documents)
     ? value.documents
     : []
@@ -668,6 +675,12 @@ function validateLegalRelease(value) {
     for (const fieldName of ['documentId', 'version', 'ownerRef', 'approvalReceipt'])
       if (typeof document[fieldName] !== 'string' || !document[fieldName].trim())
         failures.push(`${prefix}.${fieldName} must not be empty`);
+    if (!opaqueSubject.test(document.ownerRef ?? ''))
+      failures.push(`${prefix}.ownerRef must be an approved opaque subject`);
+    if (!opaqueReference.test(document.approvalReceipt ?? ''))
+      failures.push(`${prefix}.approvalReceipt must be an opaque reference`);
+    if (legalApprovalReceipt && document.approvalReceipt !== legalApprovalReceipt)
+      failures.push(`${prefix}.approvalReceipt must match the legal compliance approval`);
     if (typeof document.documentId === 'string') {
       if (documentIds.has(document.documentId))
         failures.push(`${artifact} documentIds must be unique`);
@@ -676,14 +689,28 @@ function validateLegalRelease(value) {
     if (!validSha256(document.sha256)) failures.push(`${prefix}.sha256 has invalid format`);
     try {
       const url = new URL(document.publishedUrl);
-      if (url.protocol !== 'https:') throw new Error('not HTTPS');
+      const hostname = url.hostname.toLowerCase();
+      if (
+        url.protocol !== 'https:' ||
+        url.username ||
+        url.password ||
+        url.search ||
+        url.hash ||
+        ['localhost', '0.0.0.0', '::', '::1'].includes(hostname) ||
+        /^127(?:\.[0-9]{1,3}){3}$/u.test(hostname)
+      )
+        throw new Error('not a public credential-free HTTPS URL');
     } catch {
-      failures.push(`${prefix}.publishedUrl must be HTTPS`);
+      failures.push(`${prefix}.publishedUrl must be a public credential-free HTTPS URL`);
     }
     if (!validDateTime(document.effectiveAt))
       failures.push(`${prefix}.effectiveAt must be a non-future ISO date-time`);
+    else if (approvalTimes.length && Date.parse(document.effectiveAt) < Math.max(...approvalTimes))
+      failures.push(`${prefix}.effectiveAt must not precede approval`);
   }
-  const requiredSurfaces = new Set(['lequbao-web', 'lequ-life-miniapp', 'merchant-miniapp']);
+  const allowedSurfaces = ['lequbao-web', 'lequ-life-miniapp', 'merchant-miniapp'];
+  const requiredSurfaces = new Set(allowedSurfaces);
+  const observedSurfaces = new Set();
   for (const [index, surface] of (Array.isArray(value.surfaceMatrix)
     ? value.surfaceMatrix
     : []
@@ -693,13 +720,23 @@ function validateLegalRelease(value) {
       failures.push(`${prefix} must be an object`);
       continue;
     }
-    requiredSurfaces.delete(surface.surface);
+    if (!allowedSurfaces.includes(surface.surface))
+      failures.push(`${prefix}.surface is not approved`);
+    else if (observedSurfaces.has(surface.surface))
+      failures.push(`${artifact} surfaces must be unique`);
+    else {
+      observedSurfaces.add(surface.surface);
+      requiredSurfaces.delete(surface.surface);
+    }
     if (!Array.isArray(surface.documentIds) || surface.documentIds.length === 0)
       failures.push(`${prefix}.documentIds must contain evidence`);
-    else
+    else {
+      if (new Set(surface.documentIds).size !== surface.documentIds.length)
+        failures.push(`${prefix}.documentIds must be unique`);
       for (const documentId of surface.documentIds)
         if (!documentIds.has(documentId))
           failures.push(`${prefix}.documentIds contains an undeclared document`);
+    }
     if (surface.publicationVerified !== true)
       failures.push(`${prefix}.publicationVerified must equal true`);
     if (surface.accountPrivacyInstructionsVerified !== true)
@@ -710,10 +747,7 @@ function validateLegalRelease(value) {
   for (const surface of requiredSurfaces)
     failures.push(`${artifact} surfaceMatrix must include ${surface}`);
   failures.push(
-    ...validateApprovalSet(artifact, value.approvals, [
-      'product owner',
-      'legal compliance reviewer',
-    ]),
+    ...validateApprovalSet(artifact, approvals, ['product owner', 'legal compliance reviewer']),
   );
   return failures;
 }
