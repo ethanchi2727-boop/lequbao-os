@@ -28,7 +28,10 @@ function completeEnvironment() {
     else if (name === 'CONTROLLED_RESULTS_FILE') environment[name] = path.resolve('results.json');
     else if (name === 'PERFORMANCE_ENVIRONMENT') environment[name] = 'controlled-preproduction';
     else if (name === 'PERFORMANCE_REPORT_PATH')
-      environment[name] = path.join(tmpdir(), 'lequ-controlled-performance-report.json');
+      environment[name] = path.join(
+        tmpdir(),
+        `lequ-controlled-performance-report-${process.pid}.json`,
+      );
     else if (name === 'TRUSTED_PROXY_CIDRS') environment[name] = '10.0.0.0/8';
     else if (name === 'WORKER_TENANT_ID')
       environment[name] = '11111111-1111-4111-8111-111111111111';

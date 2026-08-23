@@ -1,3 +1,4 @@
+import { existsSync, realpathSync, statSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -125,8 +126,13 @@ export function validatePerformanceConfig(env) {
   const reportPath = path.resolve(env.PERFORMANCE_REPORT_PATH);
   if (path.extname(reportPath).toLowerCase() !== '.json')
     throw new Error('PERFORMANCE_REPORT_PATH must end in .json');
-  if (inside(repositoryRoot, reportPath))
+  const reportParent = path.dirname(reportPath);
+  if (!existsSync(reportParent) || !statSync(reportParent).isDirectory())
+    throw new Error('PERFORMANCE_REPORT_PATH parent must be an existing directory');
+  const physicalReportPath = path.join(realpathSync(reportParent), path.basename(reportPath));
+  if (inside(repositoryRoot, physicalReportPath))
     throw new Error('PERFORMANCE_REPORT_PATH must be outside the source tree');
+  if (existsSync(reportPath)) throw new Error('PERFORMANCE_REPORT_PATH must be a new file');
   const imageBinding = parseImageBinding(env);
   return {
     base,
@@ -139,7 +145,7 @@ export function validatePerformanceConfig(env) {
     environment,
     concurrency,
     requests,
-    reportPath,
+    reportPath: physicalReportPath,
     ...imageBinding,
     conversationPath: apiPath('PERFORMANCE_CONVERSATION_PATH'),
     conversationBody: parseObject(
