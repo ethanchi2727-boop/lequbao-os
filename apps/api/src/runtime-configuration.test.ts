@@ -87,6 +87,10 @@ describe('API runtime configuration', () => {
       { PLATFORM_ADDRESS_ENCRYPTION_KEY: 'not-32-byte-base64' },
       { PLATFORM_ADDRESS_ENCRYPTION_KEY: `${launch.PLATFORM_ADDRESS_ENCRYPTION_KEY}!` },
       { TRUSTED_PROXY_CIDRS: 'not-a-cidr' },
+      { TRUSTED_PROXY_CIDRS: '0.0.0.0/0' },
+      { TRUSTED_PROXY_CIDRS: '::/0' },
+      { TRUSTED_PROXY_CIDRS: '0.0.0.0' },
+      { TRUSTED_PROXY_CIDRS: '::' },
     ])
       expect(() =>
         validateApiRuntimeConfiguration({

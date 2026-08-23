@@ -123,6 +123,15 @@ describe('controlled environment preflight', () => {
       name: 'IDENTITY_PROVIDER_GATEWAY_URL',
       reason: 'embedded-credentials',
     });
+
+    for (const trustedProxy of ['0.0.0.0/0', '::/0', '0.0.0.0', '::']) {
+      const blanketProxy = completeEnvironment();
+      blanketProxy.TRUSTED_PROXY_CIDRS = trustedProxy;
+      expect(inspectControlledEnvironment(blanketProxy).invalid).toContainEqual({
+        name: 'TRUSTED_PROXY_CIDRS',
+        reason: 'invalid-ip-or-cidr',
+      });
+    }
   });
 
   it('accepts a complete non-loopback controlled profile', () => {

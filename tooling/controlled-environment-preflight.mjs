@@ -115,9 +115,12 @@ function invalidValue(environment, name) {
       const [address, rawPrefix, ...extra] = entry.trim().split('/');
       const version = isIP(address ?? '');
       const prefix = rawPrefix === undefined ? undefined : Number(rawPrefix);
+      const unspecified = address === '0.0.0.0' || address === '::';
       return (
         extra.length > 0 ||
         version === 0 ||
+        unspecified ||
+        prefix === 0 ||
         (prefix !== undefined &&
           (!Number.isInteger(prefix) || prefix < 0 || prefix > (version === 4 ? 32 : 128)))
       );
