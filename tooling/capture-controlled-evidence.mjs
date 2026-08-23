@@ -34,6 +34,8 @@ export async function captureControlledEvidenceArtifact({
 }) {
   if (!path.isAbsolute(evidenceRoot)) throw new Error('evidenceRoot must be absolute');
   if (!path.isAbsolute(source)) throw new Error('source must be absolute');
+  if (typeof artifact !== 'string' || path.basename(artifact) !== artifact || !artifact.trim())
+    throw new Error('artifact must be a single non-empty file name');
   const suite = plan.suites?.find((item) => item.code === suiteCode);
   if (!suite) throw new Error(`suite is not declared by the plan: ${suiteCode}`);
   if (!suite.requiredEvidence.includes(artifact))

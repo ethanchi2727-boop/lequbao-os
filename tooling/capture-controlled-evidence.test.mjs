@@ -117,6 +117,22 @@ describe('controlled evidence capture', () => {
     ).rejects.toThrow('plan hash does not match');
   });
 
+  it('rejects a declared artifact name that can escape its suite directory', async () => {
+    const source = path.join(sourceRoot, 'escaped.log');
+    await writeFile(source, 'Evidence that must stay in its declared suite directory.\n');
+    await expect(
+      captureControlledEvidenceArtifact({
+        plan,
+        planSource,
+        evidenceRoot,
+        suiteCode: 'POSTGRES_RLS_FINANCE',
+        artifact: '../escaped.log',
+        source,
+      }),
+    ).rejects.toThrow('artifact must be a single non-empty file name');
+    await expect(readFile(path.join(evidenceRoot, 'escaped.log'))).rejects.toThrow();
+  });
+
   it('rejects a source located inside the evidence workspace', async () => {
     const source = path.join(evidenceRoot, 'source.log');
     await writeFile(source, 'Externally captured but misplaced evidence content.\n');
