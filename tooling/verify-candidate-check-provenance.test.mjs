@@ -58,7 +58,9 @@ function run(overrides = {}) {
 
 function githubFetch(checks, workflowRun = run()) {
   return async (url) =>
-    url.includes('/check-runs') ? response({ check_runs: checks }) : response(workflowRun);
+    url.includes('/check-runs')
+      ? response({ total_count: checks.length, check_runs: checks })
+      : response(workflowRun);
 }
 
 describe('candidate check provenance', () => {
@@ -119,5 +121,35 @@ describe('candidate check provenance', () => {
         ),
       }),
     ).rejects.toThrow(/code-quality/u);
+  });
+
+  it('fails closed when GitHub returns a malformed or truncated check-run page', async () => {
+    const directories = await roots();
+    const checks = requiredCandidateChecks.map((name) => check(name));
+    const malformedFetch = async (url) =>
+      url.includes('/check-runs') ? response({ check_runs: checks }) : response(run());
+    await expect(
+      verifyCandidateCheckProvenance({
+        candidate,
+        repository,
+        token: 'test-token',
+        ...directories,
+        fetchImpl: malformedFetch,
+      }),
+    ).rejects.toThrow(/response is invalid/u);
+
+    const truncatedFetch = async (url) =>
+      url.includes('/check-runs')
+        ? response({ total_count: checks.length + 1, check_runs: checks })
+        : response(run());
+    await expect(
+      verifyCandidateCheckProvenance({
+        candidate,
+        repository,
+        token: 'test-token',
+        ...directories,
+        fetchImpl: truncatedFetch,
+      }),
+    ).rejects.toThrow(/response is incomplete/u);
   });
 });
