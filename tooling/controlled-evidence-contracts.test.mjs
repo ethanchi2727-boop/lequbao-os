@@ -901,10 +901,12 @@ describe('controlled JSON evidence contracts', () => {
         officialToolVersion: 'latest',
         buildSha256: 'b'.repeat(64),
         builtAt: '2026-08-19T01:00:00.000Z',
+        appId: 'forbidden',
       }),
     ).toEqual(
       expect.arrayContaining([
         'consumer-build.json version must be opaque',
+        'consumer-build.json fields are invalid',
         'consumer-build.json officialToolVersion must be a dotted numeric version',
       ]),
     );
@@ -920,13 +922,18 @@ describe('controlled JSON evidence contracts', () => {
         reviewReceiptHash: 'b'.repeat(64),
         publishedAt: '2026-08-19T01:00:00.000Z',
         publicationReceiptHash: 'a'.repeat(64),
-        pilotScope: { percentage: 0.5, scopeRefs: ['duplicate', 'duplicate'] },
+        pilotScope: {
+          percentage: 0.5,
+          scopeRefs: ['duplicate', 'duplicate'],
+          rawStoreIds: ['forbidden'],
+        },
       }),
     ).toEqual(
       expect.arrayContaining([
         'review-publish.json publishedVersion must equal the approved reviewVersion',
         'review-publish.json pilotScope.percentage must be within 1..100',
         'review-publish.json pilotScope.scopeRefs must be unique',
+        'review-publish.json pilotScope fields are invalid',
         'review-publish.json publishedAt must not precede reviewedAt',
       ]),
     );
@@ -955,6 +962,7 @@ describe('controlled JSON evidence contracts', () => {
             deviceRefHash: 'a'.repeat(64),
             officialClientVersion: 'latest',
             result: 'PASS',
+            serialNumber: 'forbidden',
           },
           {
             platform: 'Android',
@@ -983,6 +991,7 @@ describe('controlled JSON evidence contracts', () => {
       expect.arrayContaining([
         'device-matrix.json scenarios[0].deviceRefs must be unique',
         'device-matrix.json devices[0].officialClientVersion must be a dotted numeric version',
+        'device-matrix.json devices[0] fields are invalid',
         'device-matrix.json scenarios[0].deviceRefs must include Android',
         'device-matrix.json scenarios[1].version must not be empty',
         'device-matrix.json scenarios[1].deviceRefs contains an unknown device reference',

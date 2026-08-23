@@ -1402,6 +1402,24 @@ function validateMerchantReconciliation(value) {
 function validateReviewPublish(value) {
   const artifact = 'review-publish.json';
   const failures = [];
+  if (
+    !hasExactKeys(value, [
+      'consumerVersion',
+      'merchantVersion',
+      'pilotScope',
+      'publicationReceiptHash',
+      'publishedAt',
+      'publishedVersion',
+      'result',
+      'reviewReceiptHash',
+      'reviewResult',
+      'reviewVersion',
+      'reviewedAt',
+    ])
+  )
+    failures.push(`${artifact} fields are invalid`);
+  if (!hasExactKeys(value.pilotScope, ['percentage', 'scopeRefs']))
+    failures.push(`${artifact} pilotScope fields are invalid`);
   if (value.reviewVersion !== value.publishedVersion)
     failures.push(`${artifact} publishedVersion must equal the approved reviewVersion`);
   const percentage = value.pilotScope?.percentage;
@@ -1428,6 +1446,18 @@ function validateReviewPublish(value) {
 
 function validateWechatBuild(artifact, value) {
   const failures = [];
+  if (
+    !hasExactKeys(value, [
+      'buildSha256',
+      'builtAt',
+      'officialTool',
+      'officialToolVersion',
+      'releaseCommit',
+      'result',
+      'version',
+    ])
+  )
+    failures.push(`${artifact} fields are invalid`);
   if (!opaqueReference.test(value.version ?? ''))
     failures.push(`${artifact} version must be opaque`);
   if (!/^[0-9]+(?:\.[0-9]+){1,3}$/u.test(value.officialToolVersion ?? ''))
@@ -1460,6 +1490,19 @@ function validateWechatCallback(value) {
 function validateWechatRollback(value) {
   const artifact = 'rollback.json';
   const failures = [];
+  if (
+    !hasExactKeys(value, [
+      'authorizationVerified',
+      'fromVersion',
+      'result',
+      'rollbackReceiptHash',
+      'serverStateVerified',
+      'toBuildSha256',
+      'toVersion',
+      'verifiedAt',
+    ])
+  )
+    failures.push(`${artifact} fields are invalid`);
   if (value.toVersion === value.fromVersion)
     failures.push(`${artifact} must create a different safe release version`);
   return failures;
@@ -1468,6 +1511,8 @@ function validateWechatRollback(value) {
 function validateDeviceMatrix(value) {
   const artifact = 'device-matrix.json';
   const failures = [];
+  if (!hasExactKeys(value, ['devices', 'failures', 'result', 'scenarios', 'verifiedAt']))
+    failures.push(`${artifact} fields are invalid`);
   const devices = Array.isArray(value.devices) ? value.devices : [];
   const platforms = new Set();
   const devicePlatforms = new Map();
@@ -1477,6 +1522,8 @@ function validateDeviceMatrix(value) {
       failures.push(`${prefix} must be an object`);
       continue;
     }
+    if (!hasExactKeys(device, ['deviceRefHash', 'officialClientVersion', 'platform', 'result']))
+      failures.push(`${prefix} fields are invalid`);
     if (!['iOS', 'Android'].includes(device.platform))
       failures.push(`${prefix}.platform must be iOS or Android`);
     else platforms.add(device.platform);
@@ -1499,6 +1546,8 @@ function validateDeviceMatrix(value) {
       failures.push(`${prefix} must be an object`);
       continue;
     }
+    if (!hasExactKeys(scenario, ['deviceRefs', 'package', 'result', 'version']))
+      failures.push(`${prefix} fields are invalid`);
     if (!['consumer', 'merchant-template'].includes(scenario.package))
       failures.push(`${prefix}.package is not approved`);
     else if (packages.has(scenario.package))
