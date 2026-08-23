@@ -62,11 +62,21 @@
     { "page": "page-075", "layout": "knowledge-initialization", "panels": 4 },
     { "page": "page-076", "layout": "customer-service-launch-test", "panels": 4 },
     { "page": "page-079", "layout": "daily-operations-home", "panels": 4 },
-    { "page": "page-081", "layout": "merchant-data-conversation", "panels": 4 }
+    { "page": "page-081", "layout": "merchant-data-conversation", "panels": 4 },
+    { "page": "page-082", "layout": "ai-organized-record", "panels": 4 },
+    { "page": "page-083", "layout": "pending-data-changes", "panels": 4 },
+    { "page": "page-084", "layout": "data-publication-impact", "panels": 4 },
+    { "page": "page-086", "layout": "product-catalog-management", "panels": 4 },
+    { "page": "page-087", "layout": "group-buy-management", "panels": 4 },
+    { "page": "page-088", "layout": "campaign-release-confirmation", "panels": 4 },
+    { "page": "page-090", "layout": "order-operations-list", "panels": 4 },
+    { "page": "page-091", "layout": "order-lifecycle-detail", "panels": 4 },
+    { "page": "page-092", "layout": "aftersale-history", "panels": 4 },
+    { "page": "page-093", "layout": "partial-refund-detail", "panels": 4 }
   ],
   "sharedObservations": {
     "desktopHorizontalOverflowCount": 0,
-    "distinctLayoutCount": 59,
+    "distinctLayoutCount": 69,
     "demoModeLabel": "演示结构",
     "productionModeLabel": "权威数据模式",
     "productionDemoPanelCount": 0,
@@ -127,6 +137,17 @@
     "page069ContainsGuaranteedRanking": false,
     "page079MobileDocumentScrollWidth": 320,
     "page079MobileActionMinimumHeight": 44
+  },
+  "commerceAndOrdersObservation": {
+    "desktopPageCount": 10,
+    "desktopOverflowCount": 0,
+    "guardrailMissingCount": 0,
+    "page093AuthorityMode": true,
+    "page093ProtectedEmpty": true,
+    "page093DemoPanelCount": 0,
+    "page093ContainsPaymentCredential": false,
+    "page090MobileDocumentScrollWidth": 320,
+    "page090MobileActionMinimumHeight": 44
   },
   "boundaries": [
     "This is local browser evidence, not controlled or production acceptance.",

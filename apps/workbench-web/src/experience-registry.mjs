@@ -88,6 +88,21 @@ const experienceGroups = [
     ]),
     load: () => import('./page-experiences-operations.mjs'),
   },
+  {
+    pages: new Set([
+      'page-082',
+      'page-083',
+      'page-084',
+      'page-086',
+      'page-087',
+      'page-088',
+      'page-090',
+      'page-091',
+      'page-092',
+      'page-093',
+    ]),
+    load: () => import('./page-experiences-commerce.mjs'),
+  },
 ];
 
 export async function loadWorkbenchPageExperience(page) {
@@ -102,6 +117,7 @@ export async function loadWorkbenchPageExperience(page) {
     module.workbenchDeliveryExperienceById?.get(page) ??
     module.workbenchMiniappExperienceById?.get(page) ??
     module.workbenchOperationsExperienceById?.get(page) ??
+    module.workbenchCommerceExperienceById?.get(page) ??
     null
   );
 }
