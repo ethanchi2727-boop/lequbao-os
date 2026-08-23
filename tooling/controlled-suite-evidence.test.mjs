@@ -418,12 +418,18 @@ describe('controlled suite cross-evidence contracts', () => {
           financialSnapshotSha256: 'd'.repeat(64),
           backupCompletedAt: '2026-08-19T01:00:01.000Z',
         },
+        'physical-wal-evidence.json': {
+          backupSetRefHash: 'e'.repeat(64),
+          timeline: [{ event: 'BACKUP_SELECTED', at: '2026-08-19T00:59:59.000Z' }],
+        },
       }),
     ).toEqual(
       expect.arrayContaining([
         'restore report references a different encrypted backup hash',
         'restore report references a different financial snapshot hash',
         'restore report uses a different backup completion timestamp',
+        'physical WAL recovery references a different backup hash',
+        'physical WAL recovery selected the backup before it completed',
       ]),
     );
   });

@@ -29,6 +29,7 @@ export const controlledSuiteCrossEvidenceRules = {
     'restore report references the exact encrypted backup manifest file',
     'restore report repeats the exact encrypted artifact and financial snapshot hashes',
     'restore report uses the exact backup completion timestamp from the manifest',
+    'physical WAL recovery references the exact encrypted backup and starts after completion',
   ],
   GREENFIELD_CUTOVER_GUARD: [
     'the waiver database-path coverage includes every inventoried V5 source location',
@@ -175,6 +176,7 @@ export function validateControlledSuiteDocuments(suiteCode, documents) {
   } else if (suiteCode === 'BACKUP_RESTORE_PRIVACY') {
     const backup = get('backup.manifest.json');
     const restore = get('restore-report.json');
+    const physical = get('physical-wal-evidence.json');
     if (backup && restore && backup.backupFile !== restore.backupFile)
       failures.push('restore report references a different backup file');
     if (backup && restore && backup.encryptedSha256 !== restore.encryptedSha256)
@@ -183,6 +185,20 @@ export function validateControlledSuiteDocuments(suiteCode, documents) {
       failures.push('restore report references a different financial snapshot hash');
     if (backup && restore && backup.backupCompletedAt !== restore.backupCompletedAt)
       failures.push('restore report uses a different backup completion timestamp');
+    if (backup && physical && backup.encryptedSha256 !== physical.backupSetRefHash)
+      failures.push('physical WAL recovery references a different backup hash');
+    if (backup && physical) {
+      const backupCompletedAt = Date.parse(backup.backupCompletedAt);
+      const backupSelectedAt = Date.parse(
+        (physical.timeline ?? []).find((event) => event?.event === 'BACKUP_SELECTED')?.at,
+      );
+      if (
+        Number.isFinite(backupCompletedAt) &&
+        Number.isFinite(backupSelectedAt) &&
+        backupSelectedAt < backupCompletedAt
+      )
+        failures.push('physical WAL recovery selected the backup before it completed');
+    }
   } else if (suiteCode === 'GREENFIELD_CUTOVER_GUARD') {
     const inventory = get('legacy-production-inventory.json');
     const waiver = get('greenfield-waiver.json');
