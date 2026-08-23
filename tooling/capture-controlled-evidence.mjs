@@ -9,6 +9,7 @@ import { inspectControlledEvidenceFile } from './controlled-evidence.mjs';
 import { inspectControlledJsonEvidence } from './controlled-evidence-contracts.mjs';
 import { captureReceiptPath, inspectCaptureReceipt } from './controlled-capture-receipt.mjs';
 import { assertCandidateCheckout } from './prepare-controlled-evidence.mjs';
+import { parseCanonicalUtcTimestamp } from './canonical-time.mjs';
 
 const execFile = promisify(execFileCallback);
 
@@ -46,8 +47,8 @@ export async function captureControlledEvidenceArtifact({
     throw new Error('controlled workspace plan hash does not match the current plan');
   if (!/^[a-f0-9]{40}$/u.test(context.releaseCommit ?? ''))
     throw new Error('controlled workspace release commit is invalid');
-  if (!Number.isFinite(Date.parse(capturedAt)))
-    throw new Error('capturedAt must be an ISO timestamp');
+  if (parseCanonicalUtcTimestamp(capturedAt) === undefined)
+    throw new Error('capturedAt must be a canonical millisecond UTC timestamp');
 
   const destinationDirectory = path.join(evidenceRoot, suite.evidenceDirectory);
   const destination = path.join(destinationDirectory, artifact);

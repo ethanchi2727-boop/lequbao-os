@@ -107,6 +107,13 @@ describe('controlled evidence workspace preparation', () => {
         releaseCommit: 'not-a-commit',
       }),
     ).rejects.toThrow('exact lowercase 40-character SHA');
+    await expect(
+      prepareControlledEvidenceWorkspace({
+        ...input,
+        evidenceRoot: freshRoot('timestamp'),
+        createdAt: '2026-08-19T20:00:00.000+08:00',
+      }),
+    ).rejects.toThrow('canonical millisecond UTC timestamp');
   });
 
   it('requires the exact clean candidate checkout', () => {

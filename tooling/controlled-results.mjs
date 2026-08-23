@@ -5,15 +5,7 @@ import { inspectControlledEvidenceFile } from './controlled-evidence.mjs';
 import { inspectControlledJsonEvidence } from './controlled-evidence-contracts.mjs';
 import { inspectControlledSuiteEvidence } from './controlled-suite-evidence.mjs';
 import { inspectCaptureReceipt } from './controlled-capture-receipt.mjs';
-
-const safeTime = (value) => {
-  if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/u.test(value))
-    return undefined;
-  const milliseconds = Date.parse(value);
-  return Number.isFinite(milliseconds) && new Date(milliseconds).toISOString() === value
-    ? milliseconds
-    : undefined;
-};
+import { parseCanonicalUtcTimestamp } from './canonical-time.mjs';
 
 const unexpectedKeys = (value, allowed) =>
   Object.keys(value ?? {}).filter((key) => !allowed.includes(key));
@@ -67,7 +59,7 @@ export async function verifyControlledResults({ plan, planSource, resultsFile, r
       !context.environment)
   )
     failures.push('controlled execution context is not bound to the candidate and current plan');
-  const generatedAt = safeTime(results.generatedAt);
+  const generatedAt = parseCanonicalUtcTimestamp(results.generatedAt);
   if (generatedAt === undefined || generatedAt > Date.now() + 5 * 60_000)
     failures.push('controlled results generatedAt is invalid or in the future');
   if (!Array.isArray(results.suites)) return [...failures, 'controlled results suites are missing'];
@@ -122,9 +114,9 @@ export async function verifyControlledResults({ plan, planSource, resultsFile, r
       result.reviewedByRole === result.executedByRole
     )
       failures.push(`${result.code} requires an independent reviewer role`);
-    const startedAt = safeTime(result.startedAt);
-    const completedAt = safeTime(result.completedAt);
-    const reviewedAt = safeTime(result.reviewedAt);
+    const startedAt = parseCanonicalUtcTimestamp(result.startedAt);
+    const completedAt = parseCanonicalUtcTimestamp(result.completedAt);
+    const reviewedAt = parseCanonicalUtcTimestamp(result.reviewedAt);
     if (startedAt === undefined || completedAt === undefined || completedAt < startedAt)
       failures.push(`${result.code} has invalid execution timestamps`);
     else {

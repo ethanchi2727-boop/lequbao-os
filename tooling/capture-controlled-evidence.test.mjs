@@ -98,6 +98,12 @@ describe('controlled evidence capture', () => {
     ).rejects.toThrow('artifact is not declared');
     await writeFile(source, 'PostgreSQL fixture execution completed successfully.\n');
     await expect(
+      captureControlledEvidenceArtifact({
+        ...input,
+        capturedAt: '2026-08-19T09:00:00.000+08:00',
+      }),
+    ).rejects.toThrow('canonical millisecond UTC timestamp');
+    await expect(
       captureControlledEvidenceArtifact({ ...input, planSource: `${planSource}\n` }),
     ).rejects.toThrow('plan hash does not match');
   });

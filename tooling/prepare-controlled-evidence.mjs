@@ -9,6 +9,7 @@ import {
   controlledJsonEvidenceReviewRules,
 } from './controlled-evidence-contracts.mjs';
 import { controlledSuiteCrossEvidenceRules } from './controlled-suite-evidence.mjs';
+import { parseCanonicalUtcTimestamp } from './canonical-time.mjs';
 
 const execFile = promisify(execFileCallback);
 const opaqueLabel = /^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$/u;
@@ -142,8 +143,8 @@ export async function prepareControlledEvidenceWorkspace({
   createdAt = new Date().toISOString(),
 }) {
   validateInputs({ plan, evidenceRoot, releaseCommit, deploymentId, environment });
-  if (!Number.isFinite(Date.parse(createdAt)))
-    throw new Error('createdAt must be an ISO timestamp');
+  if (parseCanonicalUtcTimestamp(createdAt) === undefined)
+    throw new Error('createdAt must be a canonical millisecond UTC timestamp');
 
   await mkdir(path.dirname(evidenceRoot), { recursive: true });
   await mkdir(evidenceRoot);

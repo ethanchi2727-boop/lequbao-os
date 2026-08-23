@@ -1,6 +1,7 @@
 import { readFile, realpath } from 'node:fs/promises';
 import path from 'node:path';
 import { inspectControlledEvidenceFile } from './controlled-evidence.mjs';
+import { parseCanonicalUtcTimestamp } from './canonical-time.mjs';
 
 const receiptFields = [
   'version',
@@ -70,8 +71,8 @@ export async function inspectCaptureReceipt({
     };
     for (const [field, value] of Object.entries(expected))
       if (receipt?.[field] !== value) failures.push(`capture receipt ${field} does not match`);
-    const capturedAt = Date.parse(receipt?.capturedAt);
-    if (!Number.isFinite(capturedAt) || capturedAt > Date.now() + 5 * 60_000)
+    const capturedAt = parseCanonicalUtcTimestamp(receipt?.capturedAt);
+    if (capturedAt === undefined || capturedAt > Date.now() + 5 * 60_000)
       failures.push('capture receipt capturedAt is invalid or in the future');
     return { failures, sha256: inspection.sha256 };
   } catch {
