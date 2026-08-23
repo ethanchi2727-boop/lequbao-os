@@ -1,0 +1,38 @@
+{
+  "recordedAt": "2026-08-24T01:14:57+08:00",
+  "verifiedCommit": "edb69e9a828fd1282262df1623b9966f34897111",
+  "status": "CONTROLLED",
+  "stageRange": [281, 300],
+  "localGate": {
+    "command": "pnpm check",
+    "outcome": "PASS",
+    "testFilesPassed": 148,
+    "testsPassed": 850,
+    "implementedOpenApiPaths": 201,
+    "securityTextFiles": 673,
+    "sbomComponents": 760,
+    "productionPackageVersions": 364,
+    "artifactManifest": "e97167272359b79e"
+  },
+  "controlledMapping": {
+    "stages": 20,
+    "suites": 11,
+    "releaseControls": 9,
+    "requiredArtifacts": 47,
+    "targetedTestFilesPassed": 3,
+    "targetedTestsPassed": 22
+  },
+  "configuration": {
+    "uniqueRequiredNames": 57,
+    "configured": 0,
+    "missing": 57,
+    "invalidConfiguredValues": 0
+  },
+  "claims": {
+    "controlledSuitesExecuted": false,
+    "externalEvidenceCaptured": false,
+    "independentReviewCompleted": false,
+    "launchGatePassed": false,
+    "githubPushCompleted": false
+  }
+}
