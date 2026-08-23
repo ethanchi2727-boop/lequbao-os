@@ -81,7 +81,7 @@ function invalidValue(environment, name) {
   const rawValue = environment[name];
   if (rawValue !== rawValue.trim()) return 'surrounding-whitespace';
   const value = rawValue;
-  if (/replace-with|example-secret|changeme/iu.test(value)) return 'placeholder';
+  if (/replace-with|placeholder|example-secret|changeme/iu.test(value)) return 'placeholder';
   const minimumSecretBytes =
     /(?:JWT_SECRET|SIGNING_SECRET|CALLBACK_SECRET|VERIFICATION_TOKEN_SECRET)$/u.test(name)
       ? 32
