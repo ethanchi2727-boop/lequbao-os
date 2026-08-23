@@ -207,6 +207,36 @@ describe('controlled suite cross-evidence contracts', () => {
         'oncall-acknowledgement.json': { alerts: ['P1-1'] },
       }),
     ).toContain('on-call acknowledgement does not cover the delivered alert identifiers');
+    expect(
+      validateControlledSuiteDocuments('IDENTITY_SECRETS_PRIVACY_ONCALL', {
+        'alert-delivery.json': {
+          alerts: [{ alertId: 'alert-1' }],
+          recipients: [{ recipientRefHash: 'a'.repeat(64) }],
+          deliveryResults: [
+            {
+              alertId: 'alert-1',
+              recipientRefHash: 'a'.repeat(64),
+              deliveredAt: '2026-08-19T01:02:00.000Z',
+            },
+          ],
+        },
+        'oncall-acknowledgement.json': {
+          alerts: [{ alertId: 'alert-1' }],
+          acknowledgements: [
+            {
+              alertId: 'alert-1',
+              acknowledgedByRefHash: 'b'.repeat(64),
+              acknowledgedAt: '2026-08-19T01:01:00.000Z',
+            },
+          ],
+        },
+      }),
+    ).toEqual(
+      expect.arrayContaining([
+        'on-call acknowledgement recipient differs for alert-1',
+        'on-call acknowledgement precedes delivery for alert-1',
+      ]),
+    );
   });
 
   it('rejects a restore report bound to different backup bytes or financial facts', () => {

@@ -663,8 +663,9 @@ describe('controlled JSON evidence contracts', () => {
     ).toEqual(
       expect.arrayContaining([
         'alert-delivery.json alerts[0] must be an object',
-        'alert-delivery.json alerts must include P1',
-        expect.stringContaining('recipientRefHash'),
+        'alert-delivery.json alerts must include AUTH_ANOMALY',
+        'alert-delivery.json recipients[0] must be an object',
+        'alert-delivery.json recipients must include primary-on-call',
         'alert-delivery.json deliveryResults[0] must be an object',
       ]),
     );

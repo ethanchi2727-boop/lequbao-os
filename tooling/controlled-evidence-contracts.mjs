@@ -1,6 +1,7 @@
 import { readdir, readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { parseCanonicalUtcTimestamp } from './canonical-time.mjs';
+import { requiredAlertCodes, requiredAlertPolicy } from './operations-alert-policy.mjs';
 
 const field = (pathName, type, options = {}) => ({ path: pathName, type, ...options });
 const pass = field('result', 'string', { equals: 'PASS' });
@@ -1263,35 +1264,66 @@ function validatePrivacyExportDelete(value) {
   return failures;
 }
 
-function validateAlertDelivery(value) {
-  const artifact = 'alert-delivery.json';
-  const failures = [];
-  const alerts = Array.isArray(value.alerts) ? value.alerts : [];
+function validateRequiredAlertSet(artifact, alerts, failures) {
   const alertIds = new Set();
-  const severities = new Set();
+  const alertCodes = new Set();
+  const byId = new Map();
   for (const [index, alert] of alerts.entries()) {
     const prefix = `${artifact} alerts[${index}]`;
     if (!alert || Array.isArray(alert) || typeof alert !== 'object') {
       failures.push(`${prefix} must be an object`);
       continue;
     }
-    if (typeof alert.alertId !== 'string' || !alert.alertId.trim())
-      failures.push(`${prefix}.alertId must not be empty`);
-    else alertIds.add(alert.alertId);
-    if (!['P0', 'P1'].includes(alert.severity))
-      failures.push(`${prefix}.severity must be P0 or P1`);
-    else severities.add(alert.severity);
+    if (!opaqueReference.test(alert.alertId ?? ''))
+      failures.push(`${prefix}.alertId must be an opaque reference`);
+    else if (alertIds.has(alert.alertId)) failures.push(`${artifact} alert IDs must be unique`);
+    else {
+      alertIds.add(alert.alertId);
+      byId.set(alert.alertId, alert);
+    }
+    const policy = requiredAlertPolicy[alert.code];
+    if (!policy) failures.push(`${prefix}.code is not a required alert`);
+    else if (alertCodes.has(alert.code)) failures.push(`${artifact} alert codes must be unique`);
+    else {
+      alertCodes.add(alert.code);
+      if (alert.severity !== policy[0])
+        failures.push(`${prefix}.severity does not match the required alert policy`);
+    }
     if (!validDateTime(alert.triggeredAt))
       failures.push(`${prefix}.triggeredAt must be a non-future ISO date-time`);
   }
-  for (const severity of ['P0', 'P1'])
-    if (!severities.has(severity)) failures.push(`${artifact} alerts must include ${severity}`);
+  for (const code of requiredAlertCodes)
+    if (!alertCodes.has(code)) failures.push(`${artifact} alerts must include ${code}`);
+  return byId;
+}
+
+function validateAlertDelivery(value) {
+  const artifact = 'alert-delivery.json';
+  const failures = [];
+  const alerts = Array.isArray(value.alerts) ? value.alerts : [];
+  const alertsById = validateRequiredAlertSet(artifact, alerts, failures);
+  const recipients = new Set();
+  let primaryRecipient = false;
   for (const [index, recipient] of (Array.isArray(value.recipients)
     ? value.recipients
     : []
-  ).entries())
-    if (!recipient || typeof recipient !== 'object' || !validSha256(recipient.recipientRefHash))
+  ).entries()) {
+    if (!recipient || Array.isArray(recipient) || typeof recipient !== 'object') {
+      failures.push(`${artifact} recipients[${index}] must be an object`);
+      continue;
+    }
+    if (!validSha256(recipient.recipientRefHash))
       failures.push(`${artifact} recipients[${index}].recipientRefHash has invalid format`);
+    else if (recipients.has(recipient.recipientRefHash))
+      failures.push(`${artifact} recipient references must be unique`);
+    else recipients.add(recipient.recipientRefHash);
+    if (!['primary-on-call', 'secondary-on-call'].includes(recipient.role))
+      failures.push(`${artifact} recipients[${index}].role is invalid`);
+    else if (recipient.role === 'primary-on-call') primaryRecipient = true;
+    if (!['pager', 'sms', 'voice', 'email'].includes(recipient.channel))
+      failures.push(`${artifact} recipients[${index}].channel is invalid`);
+  }
+  if (!primaryRecipient) failures.push(`${artifact} recipients must include primary-on-call`);
   const delivered = new Set();
   for (const [index, delivery] of (Array.isArray(value.deliveryResults)
     ? value.deliveryResults
@@ -1302,15 +1334,26 @@ function validateAlertDelivery(value) {
       failures.push(`${prefix} must be an object`);
       continue;
     }
-    if (!alertIds.has(delivery.alertId)) failures.push(`${prefix}.alertId is undeclared`);
+    const alert = alertsById.get(delivery.alertId);
+    if (!alert) failures.push(`${prefix}.alertId is undeclared`);
+    else if (delivered.has(delivery.alertId))
+      failures.push(`${artifact} must contain one delivery result per alert`);
     else delivered.add(delivery.alertId);
     if (delivery.delivered !== true) failures.push(`${prefix}.delivered must equal true`);
     if (!validDateTime(delivery.deliveredAt))
       failures.push(`${prefix}.deliveredAt must be a non-future ISO date-time`);
     if (!validSha256(delivery.channelRefHash))
       failures.push(`${prefix}.channelRefHash has invalid format`);
+    if (!recipients.has(delivery.recipientRefHash))
+      failures.push(`${prefix}.recipientRefHash is undeclared`);
+    if (!Number.isSafeInteger(delivery.attemptCount) || delivery.attemptCount < 1)
+      failures.push(`${prefix}.attemptCount must be a positive integer`);
+    const triggeredAt = Date.parse(alert?.triggeredAt);
+    const deliveredAt = Date.parse(delivery.deliveredAt);
+    if (Number.isFinite(triggeredAt) && Number.isFinite(deliveredAt) && deliveredAt < triggeredAt)
+      failures.push(`${prefix}.deliveredAt must not precede alert trigger`);
   }
-  for (const alertId of alertIds)
+  for (const alertId of alertsById.keys())
     if (!delivered.has(alertId)) failures.push(`${artifact} has no delivery result for ${alertId}`);
   return failures;
 }
@@ -1319,7 +1362,7 @@ function validateOncallAcknowledgement(value) {
   const artifact = 'oncall-acknowledgement.json';
   const failures = [];
   const alerts = Array.isArray(value.alerts) ? value.alerts : [];
-  const alertIds = new Set(alerts.map((alert) => alert?.alertId).filter(Boolean));
+  const alertsById = validateRequiredAlertSet(artifact, alerts, failures);
   const acknowledged = new Set();
   for (const [index, acknowledgement] of (Array.isArray(value.acknowledgements)
     ? value.acknowledgements
@@ -1330,19 +1373,29 @@ function validateOncallAcknowledgement(value) {
       failures.push(`${prefix} must be an object`);
       continue;
     }
-    if (!alertIds.has(acknowledgement.alertId)) failures.push(`${prefix}.alertId is undeclared`);
+    const alert = alertsById.get(acknowledgement.alertId);
+    if (!alert) failures.push(`${prefix}.alertId is undeclared`);
+    else if (acknowledged.has(acknowledgement.alertId))
+      failures.push(`${artifact} must contain one acknowledgement per alert`);
     else acknowledged.add(acknowledgement.alertId);
     if (acknowledgement.acknowledged !== true)
       failures.push(`${prefix}.acknowledged must equal true`);
     if (!validDateTime(acknowledgement.acknowledgedAt))
       failures.push(`${prefix}.acknowledgedAt must be a non-future ISO date-time`);
+    if (acknowledgement.escalationOutcome !== 'ACKNOWLEDGED')
+      failures.push(`${prefix}.escalationOutcome must equal ACKNOWLEDGED`);
+    if (!validSha256(acknowledgement.acknowledgedByRefHash))
+      failures.push(`${prefix}.acknowledgedByRefHash has invalid format`);
+    const triggeredAt = Date.parse(alert?.triggeredAt);
+    const acknowledgedAt = Date.parse(acknowledgement.acknowledgedAt);
     if (
-      typeof acknowledgement.escalationOutcome !== 'string' ||
-      !acknowledgement.escalationOutcome.trim()
+      Number.isFinite(triggeredAt) &&
+      Number.isFinite(acknowledgedAt) &&
+      acknowledgedAt < triggeredAt
     )
-      failures.push(`${prefix}.escalationOutcome must not be empty`);
+      failures.push(`${prefix}.acknowledgedAt must not precede alert trigger`);
   }
-  for (const alertId of alertIds)
+  for (const alertId of alertsById.keys())
     if (!acknowledged.has(alertId))
       failures.push(`${artifact} has no acknowledgement for ${alertId}`);
   return failures;

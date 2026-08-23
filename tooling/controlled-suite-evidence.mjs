@@ -33,6 +33,7 @@ export const controlledSuiteCrossEvidenceRules = {
   ],
   IDENTITY_SECRETS_PRIVACY_ONCALL: [
     'on-call acknowledgement covers the exact alert identifiers retained by alert delivery',
+    'each acknowledgement is made by the recipient of that alert after delivery',
   ],
 };
 
@@ -155,6 +156,24 @@ export function validateControlledSuiteDocuments(suiteCode, documents) {
     const acknowledgement = get('oncall-acknowledgement.json');
     if (delivery && acknowledgement && !same(delivery.alerts, acknowledgement.alerts))
       failures.push('on-call acknowledgement does not cover the delivered alert identifiers');
+    if (delivery && acknowledgement) {
+      const delivered = new Map(
+        (delivery.deliveryResults ?? []).map((item) => [item.alertId, item]),
+      );
+      for (const item of acknowledgement.acknowledgements ?? []) {
+        const result = delivered.get(item.alertId);
+        if (result && item.acknowledgedByRefHash !== result.recipientRefHash)
+          failures.push(`on-call acknowledgement recipient differs for ${item.alertId}`);
+        const deliveredAt = Date.parse(result?.deliveredAt);
+        const acknowledgedAt = Date.parse(item.acknowledgedAt);
+        if (
+          Number.isFinite(deliveredAt) &&
+          Number.isFinite(acknowledgedAt) &&
+          acknowledgedAt < deliveredAt
+        )
+          failures.push(`on-call acknowledgement precedes delivery for ${item.alertId}`);
+      }
+    }
   }
   return failures;
 }

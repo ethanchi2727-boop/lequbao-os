@@ -10,6 +10,7 @@ import {
 } from './controlled-evidence-contracts.mjs';
 import { verifyControlledResults } from './controlled-results.mjs';
 import { prepareControlledEvidenceWorkspace } from './prepare-controlled-evidence.mjs';
+import { requiredAlertPolicy } from './operations-alert-policy.mjs';
 
 const releaseCommit = 'a'.repeat(40);
 const plan = {
@@ -100,8 +101,9 @@ function semanticFixture(artifact, binding) {
     errorRate: 0,
     thresholdP95Ms,
   }));
-  const alertRecords = ['P0', 'P1'].map((severity, index) => ({
-    alertId: `${severity}-controlled-${index}`,
+  const alertRecords = Object.entries(requiredAlertPolicy).map(([code, [severity]], index) => ({
+    alertId: `controlled-alert-${index + 1}`,
+    code,
     severity,
     triggeredAt: '2026-08-19T01:00:00.000Z',
   }));
@@ -474,12 +476,14 @@ function semanticFixture(artifact, binding) {
     },
     'alert-delivery.json': {
       alerts: alertRecords,
-      recipients: [{ recipientRefHash: 'a'.repeat(64) }],
+      recipients: [{ recipientRefHash: 'a'.repeat(64), role: 'primary-on-call', channel: 'pager' }],
       deliveryResults: alertRecords.map((alert) => ({
         alertId: alert.alertId,
         delivered: true,
-        deliveredAt: '2026-08-19T01:00:00.000Z',
+        deliveredAt: '2026-08-19T01:01:00.000Z',
         channelRefHash: 'b'.repeat(64),
+        recipientRefHash: 'a'.repeat(64),
+        attemptCount: 1,
       })),
     },
     'oncall-acknowledgement.json': {
@@ -487,8 +491,9 @@ function semanticFixture(artifact, binding) {
       acknowledgements: alertRecords.map((alert) => ({
         alertId: alert.alertId,
         acknowledged: true,
-        acknowledgedAt: '2026-08-19T01:00:00.000Z',
+        acknowledgedAt: '2026-08-19T01:02:00.000Z',
         escalationOutcome: 'ACKNOWLEDGED',
+        acknowledgedByRefHash: 'a'.repeat(64),
       })),
     },
     'legal-document-release.json': {
