@@ -23,6 +23,7 @@ describe('乐趣生活 UniApp 架构', () => {
       tracePage,
       eventPage,
       journeyPage,
+      servicePage,
     ] = await Promise.all(
       [
         'services/life-session.js',
@@ -39,6 +40,7 @@ describe('乐趣生活 UniApp 架构', () => {
         'pages/page-211/index.vue',
         'pages/page-213/index.vue',
         'components/LifeJourneyPage.vue',
+        'components/LifeServicePage.vue',
       ].map((file) => readFile(new URL(file, import.meta.url), 'utf8')),
     );
     expect(session).toContain("VITE_LEQU_DEVELOPMENT_MOCKS === '1'");
@@ -67,8 +69,15 @@ describe('乐趣生活 UniApp 架构', () => {
     expect(journeyPage).toContain('/api/v1/life/payment-intents');
     expect(journeyPage).toContain('/refunds');
     expect(journeyPage).toContain('最终结果以服务端确认');
+    expect(servicePage).toContain('/api/v1/life/verification-entitlements');
+    expect(servicePage).toContain('/api/v1/life/invoice-profiles');
+    expect(servicePage).toContain("props.pageId === '246' ? '/aftercare' : ''");
+    expect(servicePage).toContain('UNUSED_GROUP_BUY_REFUND');
+    expect(servicePage).toContain('store.latitude === null');
+    expect(servicePage).toContain('平台令牌不能替代某一商户的消费者令牌');
+    expect(servicePage).not.toContain("lifeSession.request('/api/v1/customer-service");
     expect(
-      `${lifePage}${mallPage}${cartPage}${mePage}${cityPage}${categoryPage}${searchPage}${selectedPage}${detailPage}${variantPage}${tracePage}${eventPage}${journeyPage}`,
+      `${lifePage}${mallPage}${cartPage}${mePage}${cityPage}${categoryPage}${searchPage}${selectedPage}${detailPage}${variantPage}${tracePage}${eventPage}${journeyPage}${servicePage}`,
     ).not.toMatch(/\/api\/v1\/consumer\/(?:cart|orders|products|storefront)/u);
   });
 });

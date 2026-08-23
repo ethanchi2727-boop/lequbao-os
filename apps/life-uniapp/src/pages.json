@@ -28,7 +28,21 @@
     { "path": "pages/page-237/index", "style": { "navigationBarTitleText": "订单列表" } },
     { "path": "pages/page-238/index", "style": { "navigationBarTitleText": "订单详情" } },
     { "path": "pages/page-239/index", "style": { "navigationBarTitleText": "售后记录" } },
-    { "path": "pages/page-240/index", "style": { "navigationBarTitleText": "退款详情" } }
+    { "path": "pages/page-240/index", "style": { "navigationBarTitleText": "退款详情" } },
+    { "path": "pages/page-219/index", "style": { "navigationBarTitleText": "门店地图" } },
+    { "path": "pages/page-242/index", "style": { "navigationBarTitleText": "待使用券" } },
+    { "path": "pages/page-243/index", "style": { "navigationBarTitleText": "核销结果" } },
+    { "path": "pages/page-245/index", "style": { "navigationBarTitleText": "申请售后" } },
+    { "path": "pages/page-246/index", "style": { "navigationBarTitleText": "售后详情" } },
+    { "path": "pages/page-248/index", "style": { "navigationBarTitleText": "地址管理" } },
+    { "path": "pages/page-250/index", "style": { "navigationBarTitleText": "发票与抬头" } },
+    { "path": "pages/page-252/index", "style": { "navigationBarTitleText": "奖励明细" } },
+    { "path": "pages/page-254/index", "style": { "navigationBarTitleText": "隐私与授权" } },
+    { "path": "pages/page-255/index", "style": { "navigationBarTitleText": "订阅消息" } },
+    { "path": "pages/page-258/index", "style": { "navigationBarTitleText": "小满生活助手" } },
+    { "path": "pages/page-259/index", "style": { "navigationBarTitleText": "订单与售后工具" } },
+    { "path": "pages/page-262/index", "style": { "navigationBarTitleText": "乐趣生活客服" } },
+    { "path": "pages/page-264/index", "style": { "navigationBarTitleText": "我的工单" } }
   ],
   "tabBar": {
     "color": "#84908a",

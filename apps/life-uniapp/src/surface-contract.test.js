@@ -33,6 +33,20 @@ describe('乐趣生活 UniApp surface contract', () => {
       'page238',
       'page239',
       'page240',
+      'page219',
+      'page242',
+      'page243',
+      'page245',
+      'page246',
+      'page248',
+      'page250',
+      'page252',
+      'page254',
+      'page255',
+      'page258',
+      'page259',
+      'page262',
+      'page264',
     ]);
     expect(lifeSurfaceContract.cart.write).toContain('/api/v1/life/cart/items');
     expect(lifeSurfaceContract.cart.write).toContain('/api/v1/life/checkouts/quote');
@@ -49,6 +63,13 @@ describe('乐趣生活 UniApp surface contract', () => {
     expect(lifeSurfaceContract.page218.read).toContain('/api/v1/life/discovery/stores');
     expect(lifeSurfaceContract.page231.write).toContain('/api/v1/life/payment-intents');
     expect(lifeSurfaceContract.page238.write).toContain('/api/v1/life/orders/{orderId}/refunds');
+    expect(lifeSurfaceContract.page242.read).toContain('/api/v1/life/verification-entitlements');
+    expect(lifeSurfaceContract.page248.write).toContain('/api/v1/life/addresses/{addressId}');
+    expect(lifeSurfaceContract.page250.write).toContain(
+      '/api/v1/life/invoice-profiles/{profileId}',
+    );
+    expect(lifeSurfaceContract.page254.blockedBy).toBe('MERCHANT_CONSUMER_SESSION_REQUIRED');
+    expect(lifeSurfaceContract.page262.read).toEqual([]);
   });
 
   it.each([

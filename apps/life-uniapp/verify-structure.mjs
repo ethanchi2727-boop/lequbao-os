@@ -28,7 +28,21 @@ for (const pageId of [
   '238',
   '239',
   '240',
+  '219',
+  '242',
+  '243',
+  '245',
+  '246',
+  '248',
+  '250',
+  '252',
+  '254',
+  '255',
+  '258',
+  '259',
+  '262',
+  '264',
 ])
   if (!pages.pages.some((page) => page.path === `pages/page-${pageId}/index`))
     throw new Error(`乐趣生活缺少 PAGE-${pageId} 独立页面`);
-console.log('乐趣生活 UniApp 结构通过：共享 5 个一级栏目和 24 个独立叶子页。');
+console.log('乐趣生活 UniApp 结构通过：共享 5 个一级栏目和 38 个独立叶子页。');

@@ -76,10 +76,10 @@ export function readInstalledProductionLicenseReport(environment = process.env) 
     ? [npmExecutable, 'licenses', 'list', '--prod', '--json']
     : ['licenses', 'list', '--prod', '--json'];
   const result = spawnSync(command, args, { encoding: 'utf8', maxBuffer: 16 * 1024 * 1024 });
-  if (result.status !== 0)
-    throw new Error(
-      `production license inventory failed${result.stderr?.trim() ? `: ${result.stderr.trim()}` : ''}`,
-    );
+  if (result.status !== 0) {
+    const diagnostic = result.stderr?.trim() || result.stdout?.trim() || result.error?.message;
+    throw new Error(`production license inventory failed${diagnostic ? `: ${diagnostic}` : ''}`);
+  }
   try {
     return JSON.parse(result.stdout);
   } catch {

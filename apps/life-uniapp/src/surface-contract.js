@@ -105,6 +105,31 @@ export const lifeSurfaceContract = Object.freeze({
   }),
   page239: Object.freeze({ read: ['/api/v1/life/orders/{orderId}/aftercare'] }),
   page240: Object.freeze({ read: ['/api/v1/life/orders/{orderId}/aftercare'] }),
+  page219: Object.freeze({ read: ['/api/v1/life/discovery/stores'] }),
+  page242: Object.freeze({ read: ['/api/v1/life/verification-entitlements'] }),
+  page243: Object.freeze({
+    read: ['/api/v1/life/orders/{orderId}/verification-entitlements'],
+  }),
+  page245: Object.freeze({
+    read: ['/api/v1/life/orders/{orderId}'],
+    write: ['/api/v1/life/orders/{orderId}/refunds'],
+  }),
+  page246: Object.freeze({ read: ['/api/v1/life/orders/{orderId}/aftercare'] }),
+  page248: Object.freeze({
+    read: ['/api/v1/life/addresses'],
+    write: ['/api/v1/life/addresses', '/api/v1/life/addresses/{addressId}'],
+  }),
+  page250: Object.freeze({
+    read: ['/api/v1/life/invoice-profiles'],
+    write: ['/api/v1/life/invoice-profiles', '/api/v1/life/invoice-profiles/{profileId}'],
+  }),
+  page252: Object.freeze({ read: ['/api/v1/life/rewards'] }),
+  page254: Object.freeze({ read: [], blockedBy: 'MERCHANT_CONSUMER_SESSION_REQUIRED' }),
+  page255: Object.freeze({ read: [], blockedBy: 'MERCHANT_CONSUMER_SESSION_REQUIRED' }),
+  page258: Object.freeze({ read: [], blockedBy: 'MERCHANT_CONSUMER_SESSION_REQUIRED' }),
+  page259: Object.freeze({ read: ['/api/v1/life/orders'] }),
+  page262: Object.freeze({ read: [], blockedBy: 'MERCHANT_CONSUMER_SESSION_REQUIRED' }),
+  page264: Object.freeze({ read: [], blockedBy: 'MERCHANT_CONSUMER_SESSION_REQUIRED' }),
 });
 
 export function lifeSurfaceState({ loading = false, error, records } = {}) {
