@@ -25,7 +25,7 @@ Set these only in the controlled runner's secret/environment store:
 - `PERFORMANCE_CONVERSATION_PATH`: canonical `/api/.../messages` path for the prepared conversation, with no dot-segment, query or fragment.
 - `PERFORMANCE_CONVERSATION_BODY_JSON`: nonsensitive body fields such as `{"messageType":"TEXT"}`. The harness supplies a unique content marker.
 - `PERFORMANCE_WRITE_PATH` and `PERFORMANCE_WRITE_BODY_JSON`: canonical `/api/...` path for the bounded core-write fixture, with no dot-segment, query or fragment, and its nonsensitive valid request body.
-- `PERFORMANCE_REPORT_PATH`: a new `.json` artifact path outside the source tree when practical.
+- `PERFORMANCE_REPORT_PATH`: a new absolute `.json` artifact path outside the source tree.
 - `RELEASE_COMMIT`: the exact 40-character candidate SHA.
 - `PERFORMANCE_CANDIDATE_IMAGE_MANIFEST_JSON`: unmodified JSON from the protected publisher's digest manifest; its positive numeric `workflowRunId` is retained in the performance report and cross-checked during evidence assembly.
 - `PERFORMANCE_DEPLOYED_IMAGES_JSON`: deployment-platform snapshot containing exactly the running `api`, `worker` and `web` digest references. They must be the `lequbao-v6-api`, `lequbao-v6-worker` and `lequbao-v6-web` packages under one GHCR owner, and each must exactly equal the candidate manifest; tags and image labels are rejected as substitutes.

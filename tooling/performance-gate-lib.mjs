@@ -1,4 +1,11 @@
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const repositoryRoot = path.resolve(fileURLToPath(new URL('..', import.meta.url)));
+const inside = (root, target) => {
+  const relative = path.relative(root, target);
+  return relative === '' || (!relative.startsWith('..') && !path.isAbsolute(relative));
+};
 
 const required = [
   'PERFORMANCE_BASE_URL',
@@ -118,6 +125,8 @@ export function validatePerformanceConfig(env) {
   const reportPath = path.resolve(env.PERFORMANCE_REPORT_PATH);
   if (path.extname(reportPath).toLowerCase() !== '.json')
     throw new Error('PERFORMANCE_REPORT_PATH must end in .json');
+  if (inside(repositoryRoot, reportPath))
+    throw new Error('PERFORMANCE_REPORT_PATH must be outside the source tree');
   const imageBinding = parseImageBinding(env);
   return {
     base,
