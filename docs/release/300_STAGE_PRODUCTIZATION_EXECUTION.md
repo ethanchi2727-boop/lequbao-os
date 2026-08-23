@@ -32,11 +32,11 @@
 | 224–231  |       8 | 商家端品牌、门店、商品、团购和购物车体验     | DONE                     |
 | 232–239  |       8 | 商家端结算、支付、订单、售后和券包体验       | DONE                     |
 | 240–247  |       8 | 商家端券码、客服、会员、售后和隐私体验       | DONE                     |
-| 248–267  |      20 | API、Worker、契约、权限和跨端集成            | PENDING                  |
+| 248–267  |      20 | 契约、权限、安全边界和跨端完成矩阵集成       | DONE                     |
 | 268–280  |      13 | 无障碍、性能、安全、依赖与构建门禁           | PENDING                  |
 | 281–290  |      10 | 受控环境、真实身份、微信真机与交易验收       | CONTROLLED               |
 | 291–300  |      10 | 发布审计、回滚、证据包、CI 和上线决策        | CONTROLLED               |
-| **合计** | **300** |                                              | **247 DONE / 53 未完成** |
+| **合计** | **300** |                                              | **267 DONE / 33 未完成** |
 
 ## 已完成阶段
 
@@ -289,7 +289,27 @@
 |  245 | PAGE-304 售后申请：实现范围、原因、材料和金额重算                                      | `merchant-aftersale-application` 专属体验、单测与契约构建 |
 |  246 | PAGE-305 售后进度：实现快照、时间线、审批和资金结果                                    | `merchant-aftersale-progress` 专属体验、单测与契约构建    |
 |  247 | PAGE-307 隐私与客户档案：实现事实、来源、授权和撤回                                    | `merchant-privacy-profile` 专属体验、单测与契约构建       |
+|  248 | 汇总商家端 24 个体验模型并建立可执行闭环验证入口                                       | `experience:closure` 24 页计数检查                        |
+|  249 | 验证商家端所需 PAGE 集合完整且无缺页                                                   | required-page-set 检查通过                                |
+|  250 | 验证 24 个 PAGE ID 唯一，拒绝重复覆盖                                                  | page-id-unique 检查通过                                   |
+|  251 | 验证 24 个专属 layout 唯一，拒绝通用模板冒充                                           | layout-unique 检查通过                                    |
+|  252 | 对齐中央完成矩阵中的 24 个商家叶子页                                                   | completion-count 检查通过                                 |
+|  253 | 验证商家页全部具有 contracted 与 connected 权威链路                                    | contract-connected 检查通过                               |
+|  254 | 将 24 个商家页设计完成事实写入官方 writer 输入并重建矩阵                               | designed-recorded 与 `frontend:check`                     |
+|  255 | 将 24 个商家页交互完成事实写入官方 writer 输入并重建矩阵                               | interactive-recorded 与矩阵回归测试                       |
+|  256 | 保持 197 页 accepted 全部为 false，不冒充视觉或真机验收                                | acceptance-controlled 检查通过                            |
+|  257 | 验证每个商家体验都有四项页面事实结构                                                   | four-fact-architecture 检查通过                           |
+|  258 | 验证每个商家体验都有两条可执行跨页动作                                                 | dual-actions 检查通过                                     |
+|  259 | 验证全部动作目标都属于冻结商家契约路由                                                 | action-targets-contracted 检查通过                        |
+|  260 | 验证全部页面具有显式强约束安全边界                                                     | guardrails-explicit 检查通过                              |
+|  261 | 固化结算必须按服务端购物车版本重新报价                                                 | checkout-server-reprice 检查通过                          |
+|  262 | 固化微信客户端回调不得合成支付成功                                                     | payment-server-truth 检查通过                             |
+|  263 | 固化处理中或未知退款不得重复申请                                                       | refund-no-duplicate 检查通过                              |
+|  264 | 固化券码短时签名、范围绑定与防重放边界                                                 | voucher-short-lived 检查通过                              |
+|  265 | 固化 AI 身份披露以及人工接管后停止自动回复                                             | AI identity 与 handoff 两项检查通过                       |
+|  266 | 固化隐私撤回后不得继续推断或静默恢复授权                                               | privacy-withdrawal-durable 检查通过                       |
+|  267 | 把跨端闭环门接入根 `check`，并通过 ESLint、V6 契约和定向回归                           | 20 检查、2 文件 4 测试、307 节点契约通过                  |
 
 ## 当前继续点
 
-下一阶段从 248 开始进入 API、Worker、契约、权限与跨端集成。商家小程序 24 个叶子页均已补齐独立信息架构、动作和安全边界；微信开发者工具、真机、支付与生产验收仍属于受控环境，不冒充已通过。
+下一阶段从 268 开始执行无障碍、性能、安全、依赖与构建门禁。商家小程序 24 个叶子页均已进入中央 designed/interactive 完成矩阵，但 197 页 accepted 仍全部为 false；微信开发者工具、真机、真实身份支付与生产验收仍属于受控环境，不冒充已通过。

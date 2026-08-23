@@ -1,0 +1,30 @@
+{
+  "recordedAt": "2026-08-23",
+  "productionOrControlledAcceptance": false,
+  "scope": "merchant mini-program experience registry, frontend completion matrix and root quality gate",
+  "result": {
+    "crossSurfaceChecksPassed": 20,
+    "merchantPages": 24,
+    "frontendLeafRecords": 197,
+    "designedInteractivePages": 67,
+    "acceptedPages": 0,
+    "contractSourceTables": 73,
+    "contractTargetTables": 164,
+    "contractNodes": 307,
+    "contractLeaves": 197,
+    "eslintPassed": true,
+    "focusedTestFilesPassed": 2,
+    "focusedTestsPassed": 4
+  },
+  "commands": [
+    "npm.cmd run experience:closure",
+    "npm.cmd run frontend:check",
+    "npm.cmd run contracts:check",
+    "npm.cmd run lint",
+    "npm.cmd exec -- vitest run tooling/verify-cross-surface-experience-closure.test.mjs tooling/verify-frontend-productization.test.mjs"
+  ],
+  "boundaries": [
+    "The completion matrix records designed and interactive merchant pages, but accepted remains false for every page.",
+    "Real WeChat DevTools, device, identity, payment, provider, PostgreSQL and production acceptance were not run."
+  ]
+}

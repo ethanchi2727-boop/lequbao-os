@@ -1912,8 +1912,8 @@
       "route": "/merchant/page-267",
       "contracted": true,
       "connected": true,
-      "designed": false,
-      "interactive": false,
+      "designed": true,
+      "interactive": true,
       "accepted": false
     },
     {
@@ -1923,8 +1923,8 @@
       "route": "/merchant/page-269",
       "contracted": true,
       "connected": true,
-      "designed": false,
-      "interactive": false,
+      "designed": true,
+      "interactive": true,
       "accepted": false
     },
     {
@@ -1934,8 +1934,8 @@
       "route": "/merchant/page-270",
       "contracted": true,
       "connected": true,
-      "designed": false,
-      "interactive": false,
+      "designed": true,
+      "interactive": true,
       "accepted": false
     },
     {
@@ -1945,8 +1945,8 @@
       "route": "/merchant/page-273",
       "contracted": true,
       "connected": true,
-      "designed": false,
-      "interactive": false,
+      "designed": true,
+      "interactive": true,
       "accepted": false
     },
     {
@@ -1956,8 +1956,8 @@
       "route": "/merchant/page-274",
       "contracted": true,
       "connected": true,
-      "designed": false,
-      "interactive": false,
+      "designed": true,
+      "interactive": true,
       "accepted": false
     },
     {
@@ -1967,8 +1967,8 @@
       "route": "/merchant/page-276",
       "contracted": true,
       "connected": true,
-      "designed": false,
-      "interactive": false,
+      "designed": true,
+      "interactive": true,
       "accepted": false
     },
     {
@@ -1978,8 +1978,8 @@
       "route": "/merchant/page-277",
       "contracted": true,
       "connected": true,
-      "designed": false,
-      "interactive": false,
+      "designed": true,
+      "interactive": true,
       "accepted": false
     },
     {
@@ -1989,8 +1989,8 @@
       "route": "/merchant/page-280",
       "contracted": true,
       "connected": true,
-      "designed": false,
-      "interactive": false,
+      "designed": true,
+      "interactive": true,
       "accepted": false
     },
     {
@@ -2000,8 +2000,8 @@
       "route": "/merchant/page-282",
       "contracted": true,
       "connected": true,
-      "designed": false,
-      "interactive": false,
+      "designed": true,
+      "interactive": true,
       "accepted": false
     },
     {
@@ -2011,8 +2011,8 @@
       "route": "/merchant/page-284",
       "contracted": true,
       "connected": true,
-      "designed": false,
-      "interactive": false,
+      "designed": true,
+      "interactive": true,
       "accepted": false
     },
     {
@@ -2022,8 +2022,8 @@
       "route": "/merchant/page-285",
       "contracted": true,
       "connected": true,
-      "designed": false,
-      "interactive": false,
+      "designed": true,
+      "interactive": true,
       "accepted": false
     },
     {
@@ -2033,8 +2033,8 @@
       "route": "/merchant/page-288",
       "contracted": true,
       "connected": true,
-      "designed": false,
-      "interactive": false,
+      "designed": true,
+      "interactive": true,
       "accepted": false
     },
     {
@@ -2044,8 +2044,8 @@
       "route": "/merchant/page-289",
       "contracted": true,
       "connected": true,
-      "designed": false,
-      "interactive": false,
+      "designed": true,
+      "interactive": true,
       "accepted": false
     },
     {
@@ -2055,8 +2055,8 @@
       "route": "/merchant/page-290",
       "contracted": true,
       "connected": true,
-      "designed": false,
-      "interactive": false,
+      "designed": true,
+      "interactive": true,
       "accepted": false
     },
     {
@@ -2066,8 +2066,8 @@
       "route": "/merchant/page-291",
       "contracted": true,
       "connected": true,
-      "designed": false,
-      "interactive": false,
+      "designed": true,
+      "interactive": true,
       "accepted": false
     },
     {
@@ -2077,8 +2077,8 @@
       "route": "/merchant/page-293",
       "contracted": true,
       "connected": true,
-      "designed": false,
-      "interactive": false,
+      "designed": true,
+      "interactive": true,
       "accepted": false
     },
     {
@@ -2088,8 +2088,8 @@
       "route": "/merchant/page-294",
       "contracted": true,
       "connected": true,
-      "designed": false,
-      "interactive": false,
+      "designed": true,
+      "interactive": true,
       "accepted": false
     },
     {
@@ -2099,8 +2099,8 @@
       "route": "/merchant/page-297",
       "contracted": true,
       "connected": true,
-      "designed": false,
-      "interactive": false,
+      "designed": true,
+      "interactive": true,
       "accepted": false
     },
     {
@@ -2110,8 +2110,8 @@
       "route": "/merchant/page-298",
       "contracted": true,
       "connected": true,
-      "designed": false,
-      "interactive": false,
+      "designed": true,
+      "interactive": true,
       "accepted": false
     },
     {
@@ -2121,8 +2121,8 @@
       "route": "/merchant/page-299",
       "contracted": true,
       "connected": true,
-      "designed": false,
-      "interactive": false,
+      "designed": true,
+      "interactive": true,
       "accepted": false
     },
     {
@@ -2132,8 +2132,8 @@
       "route": "/merchant/page-302",
       "contracted": true,
       "connected": true,
-      "designed": false,
-      "interactive": false,
+      "designed": true,
+      "interactive": true,
       "accepted": false
     },
     {
@@ -2143,8 +2143,8 @@
       "route": "/merchant/page-304",
       "contracted": true,
       "connected": true,
-      "designed": false,
-      "interactive": false,
+      "designed": true,
+      "interactive": true,
       "accepted": false
     },
     {
@@ -2154,8 +2154,8 @@
       "route": "/merchant/page-305",
       "contracted": true,
       "connected": true,
-      "designed": false,
-      "interactive": false,
+      "designed": true,
+      "interactive": true,
       "accepted": false
     },
     {
@@ -2165,8 +2165,8 @@
       "route": "/merchant/page-307",
       "contracted": true,
       "connected": true,
-      "designed": false,
-      "interactive": false,
+      "designed": true,
+      "interactive": true,
       "accepted": false
     }
   ]
