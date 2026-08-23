@@ -1,0 +1,34 @@
+{
+  "recordedAt": "2026-08-23",
+  "surface": "apps/workbench-web life experience routes",
+  "productionOrControlledAcceptance": false,
+  "pages": [
+    { "page": "page-198", "layout": "city-recommendations" },
+    { "page": "page-200", "layout": "primary-categories" },
+    { "page": "page-201", "layout": "category-products" },
+    { "page": "page-203", "layout": "unified-search" },
+    { "page": "page-204", "layout": "search-results" },
+    { "page": "page-207", "layout": "mall-curation" },
+    { "page": "page-209", "layout": "consumer-product-detail" },
+    { "page": "page-210", "layout": "sku-selection" },
+    { "page": "page-211", "layout": "traceability-report" },
+    { "page": "page-213", "layout": "campaign-venue" }
+  ],
+  "verification": {
+    "unitTestFilesPassed": 28,
+    "unitTestsPassed": 232,
+    "typecheckPassed": true,
+    "productionBuildPassed": true,
+    "httpDeepLinkCount": 10,
+    "httpDeepLinkStatus": 200,
+    "httpDeepLinkServedLifeHtml": true,
+    "inAppBrowserAcceptance": "BLOCKED",
+    "inAppBrowserError": "ERR_BLOCKED_BY_CLIENT when response is life.html",
+    "chromeAcceptance": "UNAVAILABLE"
+  },
+  "boundaries": [
+    "The ten routes are productized and verified by unit, type, build and HTTP deep-link checks.",
+    "Visual browser layout acceptance is not claimed because the only available browser blocks life.html responses.",
+    "No real consumer session, order, payment, location, merchant, provider or production environment was used."
+  ]
+}

@@ -79,12 +79,17 @@ const server = createServer(async (request, response) => {
   }
 
   const requested = decodeURIComponent(url.pathname);
+  const isLifeRoute = requested.startsWith('/life/');
   const candidate = normalize(join(root, requested));
-  let file = candidate.startsWith(root) ? candidate : join(root, 'index.html');
+  let file = isLifeRoute
+    ? join(root, 'life.html')
+    : candidate.startsWith(root)
+      ? candidate
+      : join(root, 'index.html');
   try {
     if ((await stat(file)).isDirectory()) file = join(file, 'index.html');
   } catch {
-    file = join(root, 'index.html');
+    file = isLifeRoute ? join(root, 'life.html') : join(root, 'index.html');
   }
   if (file.endsWith('index.html')) {
     const html = (await readFile(file, 'utf8')).replace(

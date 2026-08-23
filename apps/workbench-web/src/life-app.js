@@ -1,10 +1,11 @@
 import { createLifeApi, LifeApiError } from './life-api.js';
+import { loadLifePageExperience } from './life-experience-registry.mjs';
 
 const root = document.querySelector('#life-app');
 const params = new URLSearchParams(location.search);
 const demoMode = params.get('demo') === '1';
-const api = createLifeApi({ token: sessionStorage.getItem('lequlife.consumer-session') });
-
+const consumerToken = sessionStorage.getItem('lequlife.consumer-session');
+const api = createLifeApi({ token: consumerToken });
 const categories = [
   ['果蔬', '新鲜果蔬'],
   ['肉蛋', '肉禽蛋水产'],
@@ -164,6 +165,19 @@ function innerHeader(title, detail) {
   return `<header class="inner-head"><button type="button" data-back aria-label="返回">${icon('back')}</button><div><h1>${safe(title)}</h1><small>${safe(detail)}</small></div><a href="/life/cart${demoMode ? '?demo=1' : ''}" data-route aria-label="购物车">${icon('cart')}</a></header>`;
 }
 
+function lifeExperiencePage(experience) {
+  if (experience.requiresSession && !demoMode && !consumerToken) {
+    root.innerHTML = shell(
+      stateCard('locked', '登录后继续', '此页面包含个人交易或服务数据，需要先建立消费者会话。'),
+    );
+    return;
+  }
+  const suffix = demoMode ? '?demo=1' : '';
+  root.innerHTML = shell(
+    `${innerHeader(experience.title, experience.kicker)}<section class="life-experience life-${safe(experience.layout)}" data-page-id="${safe(experience.page)}" data-life-experience="${safe(experience.layout)}"><header><small>${safe(experience.kicker)}</small><h1>${safe(experience.title)}</h1><p>${safe(experience.description)}</p><em>${demoMode ? '结构演示' : '服务端权威模式'}</em></header><div class="life-experience-panels">${experience.panels.map(([title, detail]) => `<article><b>${safe(title)}</b><p>${safe(detail)}</p></article>`).join('')}</div><aside><strong>消费与数据边界</strong><p>${safe(experience.guardrail)}</p></aside><footer>${experience.actions.map(([label, page], index) => `<a class="${index === 0 ? 'primary' : ''}" href="/life/${safe(page)}${suffix}" data-route>${safe(label)}</a>`).join('')}</footer></section>`,
+  );
+}
+
 function categoriesPage() {
   if (requiresPreview('life')) return;
   const selected = Math.max(
@@ -265,6 +279,15 @@ function mePage() {
 }
 
 async function render() {
+  if (/^\/life\/page-\d+$/u.test(location.pathname)) {
+    const page = location.pathname.match(/page-\d+$/u)?.[0];
+    const experience = await loadLifePageExperience(page);
+    if (experience) return lifeExperiencePage(experience);
+    root.innerHTML = shell(
+      stateCard('empty', '页面仍在准备', '该乐趣生活叶子页尚未接入专属体验。'),
+    );
+    return;
+  }
   if (location.pathname === '/life/categories') return categoriesPage();
   if (location.pathname.startsWith('/life/product/')) return productPage();
   const active = currentTab();

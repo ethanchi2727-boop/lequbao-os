@@ -12,6 +12,8 @@ for (const file of [
   'app.js',
   'life-app.js',
   'life-api.js',
+  'life-experience-registry.mjs',
+  'life-experiences-discovery.mjs',
   'state.mjs',
   'api-client.js',
   'live-page-registry.mjs',
