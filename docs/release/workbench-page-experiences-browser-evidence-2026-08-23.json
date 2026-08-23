@@ -132,11 +132,12 @@
     { "page": "page-188", "layout": "mobile-human-conversation", "panels": 4 },
     { "page": "page-189", "layout": "mobile-customer-summary", "panels": 4 },
     { "page": "page-191", "layout": "mobile-scan-redemption", "panels": 4 },
-    { "page": "page-193", "layout": "mobile-internal-notifications", "panels": 4 }
+    { "page": "page-193", "layout": "mobile-internal-notifications", "panels": 4 },
+    { "page": "page-195", "layout": "mobile-identity-permissions", "panels": 4 }
   ],
   "sharedObservations": {
     "desktopHorizontalOverflowCount": 0,
-    "distinctLayoutCount": 129,
+    "distinctLayoutCount": 130,
     "demoModeLabel": "演示结构",
     "productionModeLabel": "权威数据模式",
     "productionDemoPanelCount": 0,
@@ -272,6 +273,18 @@
     "page191AuthorityMode": true,
     "page191ProtectedEmpty": true,
     "page191CameraCapturePresent": false
+  },
+  "mobileIntakeHardeningObservation": {
+    "page175MessageMaxLength": 2000,
+    "page175RemainingTextAnnounced": true,
+    "page176AcceptedMimeTypeCount": 9,
+    "page176FileMaximumBytes": 20971520,
+    "page176SameFileRetryReset": true,
+    "page177ProductionRecordingDisabled": true,
+    "page178ConfirmationImpactAssociated": true,
+    "page178ConsentRequired": true,
+    "page195MobileDocumentScrollWidth": 320,
+    "page195MobileActionMinimumHeight": 44
   },
   "boundaries": [
     "This is local browser evidence, not controlled or production acceptance.",

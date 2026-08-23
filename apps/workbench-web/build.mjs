@@ -17,6 +17,7 @@ for (const file of [
   'live-page-registry.mjs',
   'page-contracts.mjs',
   'production-ui-policy.mjs',
+  'intake-input-policy.mjs',
   'experience-registry.mjs',
   'page-experiences.mjs',
   'page-experiences-intake.mjs',
@@ -32,6 +33,7 @@ for (const file of [
   'page-experiences-governance.mjs',
   'page-experiences-risk.mjs',
   'page-experiences-mobile.mjs',
+  'page-experiences-identity.mjs',
 ]) {
   await copyFile(new URL(`./src/${file}`, import.meta.url), new URL(file, output));
 }

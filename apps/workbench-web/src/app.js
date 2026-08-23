@@ -18,6 +18,12 @@ import { ApiError, createMerchantIntakeApi, createWorkbenchApi } from './api-cli
 import { resolveLivePageRequest } from './live-page-registry.mjs';
 import { loadWorkbenchPageExperience } from './experience-registry.mjs';
 import {
+  INTAKE_FILE_TYPES,
+  MAX_INTAKE_MESSAGE_LENGTH,
+  intakeMessageRemaining,
+  validateIntakeFile,
+} from './intake-input-policy.mjs';
+import {
   resolveIntakeMutationMode,
   resolveIntakeProjection,
   resolveWorkbenchShell,
@@ -519,7 +525,7 @@ function composer() {
   const demoTools = demoMode
     ? `<button type="button">${icon('network')} 联网</button><button type="button">${icon('skill')} 技能</button><button type="button">${icon('plugin')} 插件</button>`
     : '';
-  return `<form class="composer" data-form="message"><textarea aria-label="补充资料" placeholder="继续说、拍照或把资料直接丢进来…">${escapeHtml(draftMessage)}</textarea><input id="intake-file" type="file" accept="image/jpeg,image/png,image/webp,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,audio/mpeg,audio/wav,audio/mp4,audio/amr" hidden/><div class="tools"><button type="button" data-action="choose-file" aria-label="添加">${icon('plus')}</button><button type="button" data-action="choose-file">${icon('file')} 文件</button>${demoTools}<button type="button" data-route="page-177">${icon('mic')}<span class="tool-label"> 语音</span></button><button class="send" type="submit" aria-label="发送">${icon('send')}</button></div><small role="status" aria-live="polite" aria-atomic="true">${demoMode ? '演示模式 · 支持内容、图片、PDF、语音与相关链接' : '生产模式 · 原材料将安全上传并进入识别队列'}</small></form>`;
+  return `<form class="composer" data-form="message"><textarea aria-label="补充资料" aria-describedby="intake-message-limit" maxlength="${MAX_INTAKE_MESSAGE_LENGTH}" placeholder="继续说、拍照或把资料直接丢进来…">${escapeHtml(draftMessage)}</textarea><span class="sr-only" id="intake-message-limit" aria-live="polite">还可输入 ${intakeMessageRemaining(draftMessage)} 字</span><input id="intake-file" type="file" accept="${INTAKE_FILE_TYPES.join(',')}" hidden/><div class="tools"><button type="button" data-action="choose-file" aria-label="添加">${icon('plus')}</button><button type="button" data-action="choose-file">${icon('file')} 文件</button>${demoTools}<button type="button" data-route="page-177">${icon('mic')}<span class="tool-label"> 语音</span></button><button class="send" type="submit" aria-label="发送">${icon('send')}</button></div><small role="status" aria-live="polite" aria-atomic="true">${demoMode ? '演示模式 · 支持内容、图片、PDF、语音与相关链接' : '生产模式 · 原材料将安全上传并进入识别队列'}</small></form>`;
 }
 
 function conversation() {
@@ -609,7 +615,7 @@ function mobileSheet() {
       )
       .join(
         '',
-      )}<article class="impact"><b>${icon('warning')}</b><span><strong>确认会影响对外展示</strong><small>主体、公开电话和发布范围确认后才会进入交付。</small></span></article><label class="check"><input type="checkbox" data-action="consent"/> 我已核对主体、联系方式和发布影响</label><button class="primary" data-action="confirm" disabled>确认并进入交付</button></section>`;
+      )}<article class="impact" id="confirmation-impact"><b>${icon('warning')}</b><span><strong>确认会影响对外展示</strong><small>主体、公开电话和发布范围确认后才会进入交付。</small></span></article><label class="check"><input type="checkbox" data-action="consent" required aria-describedby="confirmation-impact"/> 我已核对主体、联系方式和发布影响</label><button class="primary" data-action="confirm" aria-describedby="confirmation-impact" disabled>确认并进入交付</button></section>`;
   }
   return '';
 }
@@ -780,6 +786,7 @@ app.addEventListener('change', (event) => {
   if (event.target instanceof HTMLInputElement && event.target.id === 'intake-file') {
     const file = event.target.files?.[0];
     if (file) void uploadLiveFile(file);
+    event.target.value = '';
   }
 });
 app.addEventListener('submit', (event) => {
@@ -824,6 +831,8 @@ addEventListener('keydown', (event) => {
 app.addEventListener('input', (event) => {
   if (event.target instanceof HTMLTextAreaElement && event.target.closest('.composer')) {
     draftMessage = event.target.value;
+    const limit = document.querySelector('#intake-message-limit');
+    if (limit) limit.textContent = `还可输入 ${intakeMessageRemaining(draftMessage)} 字`;
     return;
   }
   if (event.target instanceof HTMLInputElement && event.target.dataset.action === 'page-search') {
@@ -1047,6 +1056,14 @@ async function submitMessage(textarea) {
 
 async function uploadLiveFile(file) {
   const item = document.querySelector('.upload-item');
+  const validation = validateIntakeFile(file);
+  if (!validation.ok) {
+    if (item)
+      item.innerHTML = `<span>${escapeHtml(file.name)}</span><progress value="0" max="100">0%</progress><b>${escapeHtml(validation.reason)}</b>`;
+    const status = document.querySelector('.composer > small');
+    if (status) status.textContent = validation.reason;
+    return;
+  }
   if (item)
     item.innerHTML = `<span>${escapeHtml(file.name)}</span><progress value="25" max="100">25%</progress><b>校验中</b>`;
   try {

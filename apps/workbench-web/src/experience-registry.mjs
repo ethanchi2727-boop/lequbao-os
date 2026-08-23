@@ -193,6 +193,7 @@ const experienceGroups = [
     ]),
     load: () => import('./page-experiences-mobile.mjs'),
   },
+  { pages: new Set(['page-195']), load: () => import('./page-experiences-identity.mjs') },
 ];
 
 export async function loadWorkbenchPageExperience(page) {
@@ -214,6 +215,7 @@ export async function loadWorkbenchPageExperience(page) {
     module.workbenchGovernanceExperienceById?.get(page) ??
     module.workbenchRiskExperienceById?.get(page) ??
     module.workbenchMobileExperienceById?.get(page) ??
+    module.workbenchIdentityExperienceById?.get(page) ??
     null
   );
 }

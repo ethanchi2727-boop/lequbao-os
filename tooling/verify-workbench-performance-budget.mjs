@@ -30,6 +30,7 @@ const routeExperienceGroups = Object.freeze([
   'page-experiences-governance.mjs',
   'page-experiences-risk.mjs',
   'page-experiences-mobile.mjs',
+  'page-experiences-identity.mjs',
 ]);
 
 export const workbenchPerformanceBudgets = Object.freeze({

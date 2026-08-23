@@ -69,6 +69,9 @@ describe('乐趣宝专属页面按需加载', () => {
     await expect(loadWorkbenchPageExperience('page-193')).resolves.toMatchObject({
       layout: 'mobile-internal-notifications',
     });
-    await expect(loadWorkbenchPageExperience('page-195')).resolves.toBeNull();
+    await expect(loadWorkbenchPageExperience('page-195')).resolves.toMatchObject({
+      layout: 'mobile-identity-permissions',
+    });
+    await expect(loadWorkbenchPageExperience('page-198')).resolves.toBeNull();
   });
 });
