@@ -30,7 +30,12 @@ describe('GitHub Actions supply-chain policy', () => {
   });
 
   it('allows local actions and rejects a changed approved SHA', () => {
-    expect(inspectGitHubActionPins({ workflow: 'steps:\n  - uses: ./local-action\n' })).toEqual([]);
+    expect(
+      inspectGitHubActionPins({ workflow: 'steps:\n  - uses: ./actions/local-action\n' }),
+    ).toEqual([]);
+    expect(
+      inspectGitHubActionPins({ workflow: 'steps:\n  - uses: ./actions/../outside\n' }),
+    ).toEqual([expect.stringContaining('local action path is unsafe')]);
     expect(
       inspectGitHubActionPins({
         workflow: `steps:\n  - uses: actions/checkout@${'b'.repeat(40)}\n`,

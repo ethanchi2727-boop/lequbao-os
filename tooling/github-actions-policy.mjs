@@ -13,7 +13,17 @@ export function inspectGitHubActionPins(workflows) {
   for (const [file, source] of Object.entries(workflows)) {
     for (const match of source.matchAll(/\buses:\s*([^\s#]+)/gu)) {
       const reference = match[1];
-      if (reference.startsWith('./')) continue;
+      if (reference.startsWith('./')) {
+        const segments = reference.slice(2).split('/');
+        if (
+          segments.some(
+            (segment) =>
+              !segment || ['.', '..'].includes(segment) || !/^[A-Za-z0-9_.-]+$/u.test(segment),
+          )
+        )
+          failures.push(`${file}: local action path is unsafe: ${reference}`);
+        continue;
+      }
       const separator = reference.lastIndexOf('@');
       if (separator < 1) {
         failures.push(`${file}: action reference has no immutable revision: ${reference}`);
