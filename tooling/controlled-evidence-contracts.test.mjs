@@ -1204,13 +1204,17 @@ describe('controlled JSON evidence contracts', () => {
           shortLived: true,
           issuedAt: '2026-08-19T00:00:00.000Z',
           expiresAt: '2026-08-19T02:00:00.000Z',
+          userEmail: 'forbidden@example.test',
         },
       ],
+      rawToken: 'forbidden',
       failures: [],
     });
     expect(failures).toEqual(
       expect.arrayContaining([
         'identity-session-redacted.json revocation.latencySeconds does not reconcile with timestamps',
+        'identity-session-redacted.json fields are invalid',
+        'identity-session-redacted.json sessions[0] fields are invalid',
         'identity-session-redacted.json mfa.downgradeRejectedAt must not precede challengedAt',
         'identity-session-redacted.json sessions[0] lifetime must be within 1..3600 seconds',
         'identity-session-redacted.json revoked session must be present in sampled sessions',

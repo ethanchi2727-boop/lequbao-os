@@ -1533,6 +1533,29 @@ function validateDeviceMatrix(value) {
 function validateIdentitySessionEvidence(value) {
   const artifact = 'identity-session-redacted.json';
   const failures = [];
+  if (!hasExactKeys(value, ['failures', 'mfa', 'result', 'revocation', 'sessions']))
+    failures.push(`${artifact} fields are invalid`);
+  if (
+    !hasExactKeys(value.revocation, [
+      'latencySeconds',
+      'rejectedAt',
+      'revocationReceiptHash',
+      'revokedAt',
+      'revokedSessionRejected',
+      'sessionRefHash',
+    ])
+  )
+    failures.push(`${artifact} revocation fields are invalid`);
+  if (
+    !hasExactKeys(value.mfa, [
+      'challengeRefHash',
+      'challengedAt',
+      'downgradeRejected',
+      'downgradeRejectedAt',
+      'highRiskRequired',
+    ])
+  )
+    failures.push(`${artifact} mfa fields are invalid`);
   if (value.revocation?.revokedSessionRejected !== true)
     failures.push(`${artifact} revocation.revokedSessionRejected must equal true`);
   if (
@@ -1579,6 +1602,17 @@ function validateIdentitySessionEvidence(value) {
       failures.push(`${prefix} must be an object`);
       continue;
     }
+    if (
+      !hasExactKeys(session, [
+        'expiresAt',
+        'issuedAt',
+        'sessionRefHash',
+        'shortLived',
+        'tenantRefHash',
+        'tenantScopeVerified',
+      ])
+    )
+      failures.push(`${prefix} fields are invalid`);
     if (!validSha256(session.sessionRefHash))
       failures.push(`${prefix}.sessionRefHash has invalid format`);
     else if (sessionRefs.has(session.sessionRefHash))
