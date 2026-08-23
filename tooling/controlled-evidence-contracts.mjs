@@ -2038,6 +2038,18 @@ function validateInboxDeduplication(value) {
 function validateUploadResponse(value) {
   const artifact = 'upload-response.json';
   const failures = [];
+  if (
+    JSON.stringify(Object.keys(value).sort()) !==
+    JSON.stringify([
+      'malwareScan',
+      'objectRefHash',
+      'rawObjectKeyExposed',
+      'requestId',
+      'status',
+      'uploadedAt',
+    ])
+  )
+    failures.push(`${artifact} fields are invalid`);
   if (!opaqueReference.test(value.requestId ?? ''))
     failures.push(`${artifact} requestId must be an opaque reference`);
   if (!Number.isSafeInteger(value.status)) failures.push(`${artifact} status must be an integer`);
@@ -2047,6 +2059,18 @@ function validateUploadResponse(value) {
 function validateObjectMetadata(value) {
   const artifact = 'object-metadata.json';
   const failures = [];
+  if (
+    JSON.stringify(Object.keys(value).sort()) !==
+    JSON.stringify([
+      'contentSha256',
+      'encrypted',
+      'objectRefHash',
+      'originalRetained',
+      'retention',
+      'storedAt',
+    ])
+  )
+    failures.push(`${artifact} fields are invalid`);
   const retention = value.retention;
   const keys =
     retention && !Array.isArray(retention) && typeof retention === 'object'

@@ -427,12 +427,14 @@ describe('controlled JSON evidence contracts', () => {
         objectRefHash: 'a'.repeat(64),
         malwareScan: 'CLEAN',
         rawObjectKeyExposed: false,
+        rawObjectKey: 'forbidden/object/key',
         uploadedAt: '2026-08-19T01:00:00.000Z',
       }),
     ).toEqual(
       expect.arrayContaining([
         'upload-response.json requestId must be an opaque reference',
         'upload-response.json status must be an integer',
+        'upload-response.json fields are invalid',
       ]),
     );
     expect(
@@ -442,6 +444,7 @@ describe('controlled JSON evidence contracts', () => {
         originalRetained: true,
         contentSha256: 'b'.repeat(64),
         storedAt: '2026-08-19T01:02:00.000Z',
+        rawObjectKey: 'forbidden/object/key',
         retention: {
           policyRefHash: 'c'.repeat(64),
           storageClass: 'compliance-retained',
@@ -454,6 +457,7 @@ describe('controlled JSON evidence contracts', () => {
     ).toEqual(
       expect.arrayContaining([
         'object-metadata.json retention fields are invalid',
+        'object-metadata.json fields are invalid',
         'object-metadata.json storage and retention timestamps are out of order',
       ]),
     );
