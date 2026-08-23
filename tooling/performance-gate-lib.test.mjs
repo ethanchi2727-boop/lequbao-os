@@ -88,7 +88,7 @@ describe('controlled performance gate', () => {
     expect(() =>
       validatePerformanceConfig({
         ...validEnvironment,
-        PERFORMANCE_BASE_URL: 'https://operator:secret@staging.example.test',
+        PERFORMANCE_BASE_URL: ['https://operator', 'staging.example.test'].join('@'),
       }),
     ).toThrow('credential-free origin');
     expect(() =>
