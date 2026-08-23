@@ -106,6 +106,17 @@ export function inspectControlledEnvironmentNames(inventory, configuredNames) {
       if (configured[right].has(name))
         throw new Error(`${name} appears in both ${left} and ${right}`);
   }
+  const expected = {
+    secrets: new Set(Object.values(inventory.stages).flatMap((stage) => stage.secrets)),
+    variables: new Set(Object.values(inventory.stages).flatMap((stage) => stage.variables)),
+    externalFiles: new Set(Object.values(inventory.stages).flatMap((stage) => stage.externalFiles)),
+  };
+  const unexpected = Object.fromEntries(
+    Object.entries(configured).map(([kind, names]) => [
+      kind,
+      [...names].filter((name) => !expected[kind].has(name)).sort(),
+    ]),
+  );
   const stages = Object.fromEntries(
     Object.entries(inventory.stages).map(([stage, requirements]) => {
       const missing = {
@@ -150,9 +161,11 @@ export function inspectControlledEnvironmentNames(inventory, configuredNames) {
   return {
     valuePolicy: 'names-only',
     stages,
-    ready: Object.values(stages).every(
-      (stage) => stage.configured === stage.required && stage.misclassified.length === 0,
-    ),
+    unexpected,
+    ready:
+      Object.values(stages).every(
+        (stage) => stage.configured === stage.required && stage.misclassified.length === 0,
+      ) && Object.values(unexpected).every((names) => names.length === 0),
   };
 }
 

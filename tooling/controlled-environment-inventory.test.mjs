@@ -91,6 +91,27 @@ describe('controlled environment names-only inventory', () => {
     ).toThrow(/appears in both secrets and variables/u);
   });
 
+  it('fails exact inventory readiness when undeclared names are configured', async () => {
+    const result = await inventory();
+    const configured = {
+      secrets: [...new Set(Object.values(result.stages).flatMap((stage) => stage.secrets))],
+      variables: [...new Set(Object.values(result.stages).flatMap((stage) => stage.variables))],
+      externalFiles: [
+        ...new Set(Object.values(result.stages).flatMap((stage) => stage.externalFiles)),
+      ],
+    };
+    expect(inspectControlledEnvironmentNames(result, configured)).toMatchObject({
+      ready: true,
+      unexpected: { secrets: [], variables: [], externalFiles: [] },
+    });
+
+    configured.secrets.push('UNDECLARED_SECRET');
+    expect(inspectControlledEnvironmentNames(result, configured)).toMatchObject({
+      ready: false,
+      unexpected: { secrets: ['UNDECLARED_SECRET'] },
+    });
+  });
+
   it('rejects renamed workflow sources and malformed name inventories', () => {
     expect(() =>
       buildControlledEnvironmentInventory(
