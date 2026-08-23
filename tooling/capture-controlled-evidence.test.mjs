@@ -175,6 +175,7 @@ describe('controlled evidence capture', () => {
       source,
       `${JSON.stringify({
         result: 'PASS',
+        verifiedAt: '2026-08-19T12:01:00.000Z',
         attempts: ['cross-tenant-read', 'cross-tenant-write'].map((operation, index) => ({
           operation,
           actorTenantRefHash: 'a'.repeat(64),

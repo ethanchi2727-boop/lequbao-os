@@ -66,7 +66,7 @@ export const requiredFinancialSnapshotMetrics = Object.freeze([
 ]);
 
 export const controlledJsonEvidenceContracts = {
-  'rls-denials.json': [pass, field('attempts', 'array')],
+  'rls-denials.json': [pass, timestamp('verifiedAt'), field('attempts', 'array')],
   'tenant-context.json': [
     pass,
     yes('mismatchRejected'),
@@ -83,6 +83,7 @@ export const controlledJsonEvidenceContracts = {
     sha256('eventRefHash'),
     field('deliveryAttempts', 'number', { minimum: 2 }),
     field('businessResultCount', 'number', { equals: 1 }),
+    timestamp('verifiedAt'),
     field('deliveries', 'array'),
     field('businessResults', 'array'),
   ],
@@ -2593,7 +2594,8 @@ function validateOncallAcknowledgement(value, binding) {
 function validateRlsDenials(value) {
   const artifact = 'rls-denials.json';
   const failures = [];
-  if (!hasExactKeys(value, ['attempts', 'result'])) failures.push(`${artifact} fields are invalid`);
+  if (!hasExactKeys(value, ['attempts', 'result', 'verifiedAt']))
+    failures.push(`${artifact} fields are invalid`);
   const operations = new Set();
   const auditRefs = new Set();
   for (const [index, attempt] of (Array.isArray(value.attempts) ? value.attempts : []).entries()) {
@@ -2720,6 +2722,7 @@ function validateInboxDeduplication(value) {
       'deliveryAttempts',
       'eventRefHash',
       'result',
+      'verifiedAt',
     ])
   )
     failures.push(`${artifact} fields are invalid`);
