@@ -74,7 +74,7 @@ try {
     ($manifest | ConvertTo-Json -Depth 20),
     [Text.UTF8Encoding]::new($false)
   )
-  Move-Item -LiteralPath $manifestTemp -Destination $manifestPath
+  [IO.File]::Move($manifestTemp, $manifestPath)
   $published = $true
   Write-Output $encrypted
 }

@@ -21,6 +21,7 @@ foreach ($tool in @('age', 'createdb', 'dropdb', 'pg_restore', 'psql')) {
 $repositoryRoot = [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..\..'))
 $backup = [System.IO.Path]::GetFullPath($EncryptedBackup)
 $reportFile = [System.IO.Path]::GetFullPath($ReportPath)
+$reportTemp = "$reportFile.$([guid]::NewGuid().ToString('N')).tmp"
 $manifestPath = "$backup.manifest.json"
 if (-not (Test-Path -LiteralPath $backup)) { throw 'backup missing' }
 if (-not (Test-Path -LiteralPath $manifestPath)) { throw 'backup manifest missing' }
@@ -197,11 +198,17 @@ finally {
   }
   $reportDirectory = Split-Path -Parent $reportFile
   if ($reportDirectory) { New-Item -ItemType Directory -Force -Path $reportDirectory | Out-Null }
-  [IO.File]::WriteAllText(
-    $reportFile,
-    ($report | ConvertTo-Json -Depth 20),
-    [Text.UTF8Encoding]::new($false)
-  )
+  try {
+    [IO.File]::WriteAllText(
+      $reportTemp,
+      ($report | ConvertTo-Json -Depth 20),
+      [Text.UTF8Encoding]::new($false)
+    )
+    [IO.File]::Move($reportTemp, $reportFile)
+  }
+  finally {
+    if (Test-Path -LiteralPath $reportTemp) { Remove-Item -LiteralPath $reportTemp -Force }
+  }
 }
 
 if ($failure) { throw "restore verification failed; see report: $reportFile" }

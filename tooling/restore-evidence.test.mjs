@@ -16,6 +16,7 @@ describe('backup and restore evidence boundary', () => {
     expect(backup).toContain('if (-not $published)');
     expect(backup).not.toContain('$plain = Join-Path $resolved');
     expect(backup).toContain('[Text.UTF8Encoding]::new($false)');
+    expect(backup).toContain('[IO.File]::Move($manifestTemp, $manifestPath)');
     for (const metric of [
       'orders_payable_cents',
       'verified_payment_cents',
@@ -51,5 +52,7 @@ describe('backup and restore evidence boundary', () => {
     expect(restore).toContain("yyyy-MM-dd'T'HH:mm:ss.fff'Z'");
     expect(restore).not.toContain("ToString('o')");
     expect(restore).toContain('[Text.UTF8Encoding]::new($false)');
+    expect(restore).toContain('[IO.File]::Move($reportTemp, $reportFile)');
+    expect(restore).not.toContain('[IO.File]::WriteAllText(\n    $reportFile');
   });
 });
