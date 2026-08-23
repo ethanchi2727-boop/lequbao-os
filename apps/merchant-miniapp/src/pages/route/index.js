@@ -1,5 +1,8 @@
 const contracts = require('../../generated/page-contracts.js');
+const commerceExperiences = require('../../generated/merchant-experiences-commerce.json');
 const { merchantApi } = require('../../lib/api.js');
+
+const merchantExperiences = new Map(commerceExperiences.map((item) => [item.id, item]));
 
 const liveProductRoutes = new Set(['/merchant/page-274', '/merchant/page-277']);
 
@@ -28,6 +31,7 @@ Page({
     liveKind: null,
     query: {},
     inputText: '',
+    experience: null,
   },
   onLoad(query) {
     const route = decodeURIComponent(query.route || '/merchant/page-267').split('?')[0];
@@ -37,6 +41,7 @@ Page({
       contract: { ...contract, domainsText: contract.domains.join(' · ') },
       demoMode,
       query,
+      experience: merchantExperiences.get(contract.id) || null,
       state: demoMode ? '默认' : '加载中',
     });
     wx.setNavigationBarTitle({ title: contract.title });
@@ -471,6 +476,11 @@ Page({
     wx.navigateTo({
       url: `/pages/route/index?route=${encodeURIComponent(event.currentTarget.dataset.route)}&orderId=${encodeURIComponent(event.currentTarget.dataset.orderId || this.data.liveData.id)}`,
     });
+  },
+  openExperienceAction(event) {
+    const route = event.currentTarget.dataset.route;
+    if (!route) return;
+    wx.navigateTo({ url: `/pages/route/index?route=${encodeURIComponent(route)}` });
   },
   async startPayment() {
     const order = this.data.liveData;

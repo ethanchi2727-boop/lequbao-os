@@ -1,0 +1,98 @@
+[
+  {
+    "id": "PAGE-267",
+    "layout": "merchant-brand-home",
+    "eyebrow": "本店首页",
+    "summary": "展示当前商家品牌、门店、在售商品、团购和服务承诺。",
+    "facts": ["品牌与门店身份", "营业与服务状态", "商品团购入口", "售后与客服保障"],
+    "actions": [
+      { "label": "查看门店信息", "route": "/merchant/page-269" },
+      { "label": "浏览本店商品", "route": "/merchant/page-273" }
+    ],
+    "guardrail": "必须只展示当前商家会话绑定的品牌、门店和在售内容。"
+  },
+  {
+    "id": "PAGE-269",
+    "layout": "merchant-store-profile",
+    "eyebrow": "门店资料",
+    "summary": "展示门店身份、地址区域、营业时间、服务方式和更新时间。",
+    "facts": ["门店主体与状态", "区域与服务范围", "营业时间", "资料更新时间"],
+    "actions": [
+      { "label": "切换门店", "route": "/merchant/page-270" },
+      { "label": "返回本店首页", "route": "/merchant/page-267" }
+    ],
+    "guardrail": "门店资料必须来自当前登录令牌绑定的真实门店。"
+  },
+  {
+    "id": "PAGE-270",
+    "layout": "merchant-store-switcher",
+    "eyebrow": "门店切换",
+    "summary": "在当前商家允许范围内切换门店并轮换消费者会话。",
+    "facts": ["当前门店", "可访问门店", "会话到期时间", "切换结果"],
+    "actions": [
+      { "label": "查看当前门店", "route": "/merchant/page-269" },
+      { "label": "返回本店首页", "route": "/merchant/page-267" }
+    ],
+    "guardrail": "切换必须撤销旧门店会话，且不能延长原会话到期时间。"
+  },
+  {
+    "id": "PAGE-273",
+    "layout": "merchant-product-list",
+    "eyebrow": "本店商品",
+    "summary": "按服务端在售状态浏览商品、规格、价格、库存和履约方式。",
+    "facts": ["商品筛选与状态", "规格与实时价格", "库存可用性", "配送或到店方式"],
+    "actions": [
+      { "label": "查看商品详情", "route": "/merchant/page-274" },
+      { "label": "查看购物车", "route": "/merchant/page-280" }
+    ],
+    "guardrail": "下架、无库存或不属于当前门店的商品不得进入购买链路。"
+  },
+  {
+    "id": "PAGE-274",
+    "layout": "merchant-product-detail",
+    "eyebrow": "商品详情",
+    "summary": "展示商品事实、可售规格、价格、履约、退售后和加入购物车。",
+    "facts": ["商品与来源", "规格价格库存", "履约规则", "售后与保障"],
+    "actions": [
+      { "label": "加入购物车", "route": "/merchant/page-280" },
+      { "label": "返回商品列表", "route": "/merchant/page-273" }
+    ],
+    "guardrail": "客户端展示不得替代服务端重定价和库存校验。"
+  },
+  {
+    "id": "PAGE-276",
+    "layout": "merchant-groupbuy-list",
+    "eyebrow": "到店团购",
+    "summary": "浏览本门店可售团购、使用时段、预约要求和剩余库存。",
+    "facts": ["团购筛选", "到手价与库存", "使用时段", "预约与核销规则"],
+    "actions": [
+      { "label": "查看团购详情", "route": "/merchant/page-277" },
+      { "label": "查看我的券", "route": "/merchant/page-293" }
+    ],
+    "guardrail": "团购适用门店、时段和不可用日期必须在购买前展示。"
+  },
+  {
+    "id": "PAGE-277",
+    "layout": "merchant-groupbuy-detail",
+    "eyebrow": "团购详情",
+    "summary": "展示团购包含项、价格、有效期、预约、核销和退款规则。",
+    "facts": ["套餐包含项", "价格与库存", "有效期和预约", "核销退款规则"],
+    "actions": [
+      { "label": "加入购物车", "route": "/merchant/page-280" },
+      { "label": "返回团购列表", "route": "/merchant/page-276" }
+    ],
+    "guardrail": "核销凭证不得预生成，规则快照必须随订单保存。"
+  },
+  {
+    "id": "PAGE-280",
+    "layout": "merchant-cart",
+    "eyebrow": "本店购物车",
+    "summary": "管理当前商家与门店范围内的商品数量、库存变化和结算分组。",
+    "facts": ["购物车商品", "数量与库存", "门店履约分组", "重定价与版本"],
+    "actions": [
+      { "label": "确认订单", "route": "/merchant/page-282" },
+      { "label": "继续选购", "route": "/merchant/page-273" }
+    ],
+    "guardrail": "购物车必须同时校验商家会话、平台账户和客户映射。"
+  }
+]

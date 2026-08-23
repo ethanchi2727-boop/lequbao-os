@@ -1,0 +1,28 @@
+{
+  "recordedAt": "2026-08-23",
+  "surface": "apps/merchant-miniapp merchant experience routes",
+  "productionOrControlledAcceptance": false,
+  "pages": [
+    { "page": "page-267", "layout": "merchant-brand-home" },
+    { "page": "page-269", "layout": "merchant-store-profile" },
+    { "page": "page-270", "layout": "merchant-store-switcher" },
+    { "page": "page-273", "layout": "merchant-product-list" },
+    { "page": "page-274", "layout": "merchant-product-detail" },
+    { "page": "page-276", "layout": "merchant-groupbuy-list" },
+    { "page": "page-277", "layout": "merchant-groupbuy-detail" },
+    { "page": "page-280", "layout": "merchant-cart" }
+  ],
+  "verification": {
+    "unitTestFilesPassed": 2,
+    "unitTestsPassed": 12,
+    "miniappContractLeafCount": 24,
+    "typecheckPassed": true,
+    "productionBuildPassed": true,
+    "wechatDevtoolsAcceptance": "NOT RUN",
+    "wechatDeviceAcceptance": "CONTROLLED"
+  },
+  "boundaries": [
+    "The eight routes have distinct information architecture, actions and guardrails wired into the existing authoritative route renderer.",
+    "No real merchant session, WeChat DevTools, device, payment provider or production environment was used."
+  ]
+}

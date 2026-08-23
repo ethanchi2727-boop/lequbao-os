@@ -160,3 +160,57 @@
   font-size: 38rpx;
   font-weight: 900;
 }
+.experience-panel {
+  gap: 18rpx;
+}
+.experience-context {
+  display: flex;
+  flex-direction: column;
+  gap: 14rpx;
+  margin: 22rpx 0;
+  padding: 24rpx;
+  border-radius: 22rpx;
+  background: #ffffff;
+  color: #52605a;
+  font-size: 23rpx;
+  line-height: 1.6;
+}
+.experience-eyebrow {
+  color: #0d8b62;
+  font-size: 22rpx;
+  font-weight: 800;
+}
+.experience-summary,
+.experience-guardrail {
+  color: #52605a;
+  font-size: 23rpx;
+  line-height: 1.65;
+}
+.experience-fact {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  padding: 18rpx;
+  border-radius: 16rpx;
+  background: #f5f7f6;
+  color: #17201c;
+}
+.experience-fact text:first-child {
+  color: #0d8b62;
+  font-weight: 900;
+}
+.experience-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16rpx;
+}
+.experience-actions button {
+  margin: 0;
+  background: #e3f5ed;
+  color: #0d8b62;
+}
+.experience-guardrail {
+  padding: 18rpx;
+  border-radius: 16rpx;
+  background: #fff9ec;
+}
