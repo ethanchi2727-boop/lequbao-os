@@ -25,7 +25,7 @@ const suiteFields = [
 
 const opaqueLabel = /^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$/u;
 
-function assertDecision(decision, suite, generatedAt) {
+function assertDecision(decision, suite, generatedAt, workspaceCreatedAt) {
   if (!decision || Array.isArray(decision) || typeof decision !== 'object')
     throw new Error(`${suite.code} decision must be an object`);
   const extra = Object.keys(decision).filter((key) => !suiteFields.includes(key));
@@ -54,6 +54,7 @@ function assertDecision(decision, suite, generatedAt) {
     startedAt === undefined ||
     completedAt === undefined ||
     reviewedAt === undefined ||
+    startedAt < workspaceCreatedAt ||
     completedAt < startedAt ||
     reviewedAt < completedAt ||
     startedAt > Date.now() + 5 * 60_000 ||
@@ -190,7 +191,7 @@ export async function assembleControlledResults({
   for (const suite of plan.suites) {
     const decision = byCode.get(suite.code);
     if (!decision) throw new Error(`decision suite is missing: ${suite.code}`);
-    assertDecision(decision, suite, generatedMilliseconds);
+    assertDecision(decision, suite, generatedMilliseconds, contextCreatedAt);
     const evidence = [];
     for (const file of suite.requiredEvidence)
       evidence.push(

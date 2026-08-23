@@ -24,6 +24,7 @@ const plan = {
 const planSource = `${JSON.stringify(plan, null, 2)}\n`;
 const rlsDenialsEvidence = {
   result: 'PASS',
+  verifiedAt: '2026-08-19T01:00:00.000Z',
   attempts: ['cross-tenant-read', 'cross-tenant-write'].map((operation, index) => ({
     operation,
     actorTenantRefHash: 'a'.repeat(64),
@@ -200,6 +201,19 @@ describe('controlled result assembly', () => {
           version: 1,
           releaseCommit: 'f'.repeat(40),
           suites: [{ ...decision, startedAt: '2026-08-19T09:00:00.000+08:00' }],
+        },
+        evidenceRoot: root,
+        generatedAt: '2026-08-19T01:07:00.000Z',
+      }),
+    ).rejects.toThrow(/chronology is invalid/u);
+    await expect(
+      assembleControlledResults({
+        plan,
+        planSource,
+        decisions: {
+          version: 1,
+          releaseCommit: 'f'.repeat(40),
+          suites: [{ ...decision, startedAt: '2026-08-19T00:58:00.000Z' }],
         },
         evidenceRoot: root,
         generatedAt: '2026-08-19T01:07:00.000Z',
