@@ -103,6 +103,20 @@ describe('controlled performance gate', () => {
     expect(() =>
       validatePerformanceConfig({
         ...validEnvironment,
+        PERFORMANCE_DATABASE_URL:
+          'postgres://user@database.example.test/lequ?sslmode=require&sslmode=disable',
+      }),
+    ).toThrow('must require TLS');
+    expect(() =>
+      validatePerformanceConfig({
+        ...validEnvironment,
+        PERFORMANCE_DATABASE_URL:
+          'postgres://user@database.example.test/lequ?sslmode=require#ambiguous',
+      }),
+    ).toThrow('must not contain a fragment');
+    expect(() =>
+      validatePerformanceConfig({
+        ...validEnvironment,
         PERFORMANCE_DATABASE_URL: 'postgres://user@database.example.test/lequ',
       }),
     ).toThrow('must require TLS');

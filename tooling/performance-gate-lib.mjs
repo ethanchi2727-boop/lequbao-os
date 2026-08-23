@@ -113,9 +113,11 @@ export function validatePerformanceConfig(env) {
   }
   if (!['postgres:', 'postgresql:'].includes(databaseUrl.protocol) || !databaseUrl.hostname)
     throw new Error('PERFORMANCE_DATABASE_URL must be a PostgreSQL URL');
+  if (databaseUrl.hash) throw new Error('PERFORMANCE_DATABASE_URL must not contain a fragment');
   if (isForbiddenLocalHostname(databaseUrl.hostname))
     throw new Error('PERFORMANCE_DATABASE_URL must not use a local host');
-  if (!['require', 'verify-full'].includes(databaseUrl.searchParams.get('sslmode') ?? ''))
+  const sslModes = databaseUrl.searchParams.getAll('sslmode');
+  if (sslModes.length !== 1 || !['require', 'verify-full'].includes(sslModes[0]))
     throw new Error('PERFORMANCE_DATABASE_URL must require TLS');
   if (/prod(uction)?/iu.test(`${base.hostname} ${databaseUrl.hostname} ${databaseUrl.pathname}`))
     throw new Error('refusing a production-shaped performance target');
