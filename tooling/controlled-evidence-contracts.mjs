@@ -268,6 +268,7 @@ export const controlledJsonEvidenceContracts = {
   ],
   'external-deletion-samples.json': [
     pass,
+    sha256('restoredDatabaseRefHash'),
     field('targets', 'array'),
     field('samples', 'array'),
     empty('unresolvedTargets'),
@@ -1261,7 +1262,15 @@ function validatePhysicalWalEvidence(value) {
 function validateExternalDeletionSamples(value, binding) {
   const artifact = 'external-deletion-samples.json';
   const failures = [];
-  if (!hasExactKeys(value, ['result', 'samples', 'targets', 'unresolvedTargets']))
+  if (
+    !hasExactKeys(value, [
+      'restoredDatabaseRefHash',
+      'result',
+      'samples',
+      'targets',
+      'unresolvedTargets',
+    ])
+  )
     failures.push(`${artifact} fields are invalid`);
   const targetNames = ['object-store', 'search', 'vector', 'cache'];
   const requiredTargets = new Set(targetNames);

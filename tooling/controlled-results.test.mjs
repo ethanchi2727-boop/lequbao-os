@@ -390,6 +390,7 @@ function semanticFixture(artifact, binding) {
     },
     'external-deletion-samples.json': {
       result: 'PASS',
+      restoredDatabaseRefHash: 'f'.repeat(64),
       targets: ['object-store', 'search', 'vector', 'cache'].map((target) => ({
         target,
         receiptRef: `${target}-receipt`,

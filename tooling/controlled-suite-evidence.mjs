@@ -33,6 +33,7 @@ export const controlledSuiteCrossEvidenceRules = {
     'restore report uses the exact backup completion timestamp from the manifest',
     'physical WAL recovery references the exact encrypted backup and starts after completion',
     'external deletion replay evidence follows the restored database completion',
+    'external deletion replay references the exact restored database',
   ],
   GREENFIELD_CUTOVER_GUARD: [
     'the waiver database-path coverage includes every inventoried V5 source location',
@@ -215,6 +216,8 @@ export function validateControlledSuiteDocuments(suiteCode, documents) {
     }
     const externalDeletion = get('external-deletion-samples.json');
     if (restore && externalDeletion) {
+      if (externalDeletion.restoredDatabaseRefHash !== restore.targetDatabaseRefHash)
+        failures.push('external deletion replay references a different restored database');
       const restoreCompletedAt = Date.parse(restore.restoreCompletedAt);
       const deletionTimes = [
         ...(externalDeletion.targets ?? []).map((target) => Date.parse(target?.verifiedAt)),
