@@ -1646,6 +1646,17 @@ function validateIdentitySessionEvidence(value) {
 function validateSecretAccessAudit(value) {
   const artifact = 'secret-access-audit.json';
   const failures = [];
+  if (
+    !hasExactKeys(value, [
+      'accessEvents',
+      'leastPrivilegeVerified',
+      'plaintextFindings',
+      'result',
+      'rotationVerified',
+      'secretManager',
+    ])
+  )
+    failures.push(`${artifact} fields are invalid`);
   if (!/^[A-Za-z][A-Za-z0-9._:-]{2,63}$/u.test(value.secretManager ?? ''))
     failures.push(`${artifact} secretManager must be an opaque provider reference`);
   const actionsBySecret = new Map();
@@ -1662,6 +1673,18 @@ function validateSecretAccessAudit(value) {
       failures.push(`${prefix} must be an object`);
       continue;
     }
+    if (
+      !hasExactKeys(event, [
+        'action',
+        'allowed',
+        'auditEventRefHash',
+        'occurredAt',
+        'secretRefHash',
+        'secretVersionRefHash',
+        'subjectRef',
+      ])
+    )
+      failures.push(`${prefix} fields are invalid`);
     if (!validSha256(event.secretRefHash))
       failures.push(`${prefix}.secretRefHash has invalid format`);
     if (!validSha256(event.secretVersionRefHash))

@@ -1097,6 +1097,7 @@ describe('controlled JSON evidence contracts', () => {
           allowed: true,
           auditEventRefHash: 'b'.repeat(64),
           occurredAt: '2026-08-19T01:00:00.000Z',
+          secretName: 'forbidden-secret-name',
         },
       ],
       leastPrivilegeVerified: true,
@@ -1107,6 +1108,7 @@ describe('controlled JSON evidence contracts', () => {
       expect.arrayContaining([
         'secret-access-audit.json secretManager must be an opaque provider reference',
         'secret-access-audit.json accessEvents[0].subjectRef must be an approved opaque subject',
+        'secret-access-audit.json accessEvents[0] fields are invalid',
         `secret-access-audit.json secret ${secretRefHash} must include ROTATE`,
         `secret-access-audit.json secret ${secretRefHash} must include DENIED_READ`,
       ]),
