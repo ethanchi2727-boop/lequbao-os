@@ -47,6 +47,7 @@ export const controlledSuiteCrossEvidenceRules = {
     'rollback starts from the published version and creates a different safe version',
   ],
   IDENTITY_SECRETS_PRIVACY_ONCALL: [
+    'privacy export delivery uses a sampled non-revoked identity session',
     'on-call acknowledgement covers the exact alert identifiers retained by alert delivery',
     'each acknowledgement is made by the recipient of that alert after delivery',
   ],
@@ -294,6 +295,8 @@ export function validateControlledSuiteDocuments(suiteCode, documents) {
         failures.push('device verification precedes publication');
     }
   } else if (suiteCode === 'IDENTITY_SECRETS_PRIVACY_ONCALL') {
+    const identity = get('identity-session-redacted.json');
+    const privacy = get('privacy-export-delete.json');
     const delivery = get('alert-delivery.json');
     const acknowledgement = get('oncall-acknowledgement.json');
     if (delivery && acknowledgement && !same(delivery.alerts, acknowledgement.alerts))
@@ -315,6 +318,16 @@ export function validateControlledSuiteDocuments(suiteCode, documents) {
         )
           failures.push(`on-call acknowledgement precedes delivery for ${item.alertId}`);
       }
+    }
+    if (identity && privacy) {
+      const exportSession = privacy.export?.sessionRefHash;
+      const sampledSessions = new Set(
+        (identity.sessions ?? []).map((session) => session?.sessionRefHash),
+      );
+      if (!sampledSessions.has(exportSession))
+        failures.push('privacy export session is absent from sampled identity sessions');
+      if (identity.revocation?.sessionRefHash === exportSession)
+        failures.push('privacy export was delivered to the revoked session');
     }
   }
   return failures;

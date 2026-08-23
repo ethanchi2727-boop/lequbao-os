@@ -364,6 +364,20 @@ describe('controlled suite cross-evidence contracts', () => {
         'on-call acknowledgement precedes delivery for alert-1',
       ]),
     );
+    expect(
+      validateControlledSuiteDocuments('IDENTITY_SECRETS_PRIVACY_ONCALL', {
+        'identity-session-redacted.json': {
+          revocation: { sessionRefHash: 'revoked-session' },
+          sessions: [{ sessionRefHash: 'other-session' }],
+        },
+        'privacy-export-delete.json': { export: { sessionRefHash: 'revoked-session' } },
+      }),
+    ).toEqual(
+      expect.arrayContaining([
+        'privacy export session is absent from sampled identity sessions',
+        'privacy export was delivered to the revoked session',
+      ]),
+    );
   });
 
   it('rejects a restore report bound to different backup bytes or financial facts', () => {

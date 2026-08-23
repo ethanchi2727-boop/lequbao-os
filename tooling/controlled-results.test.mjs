@@ -482,6 +482,14 @@ function semanticFixture(artifact, binding) {
           issuedAt: '2026-08-19T00:00:00.000Z',
           expiresAt: '2026-08-19T01:00:00.000Z',
         },
+        {
+          sessionRefHash: 'd'.repeat(64),
+          tenantRefHash: 'e'.repeat(64),
+          tenantScopeVerified: true,
+          shortLived: true,
+          issuedAt: '2026-08-19T00:00:00.000Z',
+          expiresAt: '2026-08-19T01:00:00.000Z',
+        },
       ],
     },
     'secret-access-audit.json': {
