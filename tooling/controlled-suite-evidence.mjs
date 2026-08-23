@@ -5,6 +5,7 @@ import { isDeepStrictEqual } from 'node:util';
 export const controlledSuiteCrossEvidenceRules = {
   INTAKE_OBJECT_PIPELINE: [
     'upload response and retained encrypted metadata reference the same redacted object',
+    'OCR provenance references that same object after upload and retained storage',
   ],
   COMMERCE_CONCURRENCY: [
     'opening stock equals the declared input stock',
@@ -51,8 +52,21 @@ export function validateControlledSuiteDocuments(suiteCode, documents) {
   if (suiteCode === 'INTAKE_OBJECT_PIPELINE') {
     const upload = get('upload-response.json');
     const metadata = get('object-metadata.json');
+    const ocr = get('ocr-provenance.json');
     if (upload && metadata && upload.objectRefHash !== metadata.objectRefHash)
       failures.push('upload response and object metadata references do not match');
+    if (upload && ocr && upload.objectRefHash !== ocr.objectRefHash)
+      failures.push('upload response and OCR provenance references do not match');
+    if (upload && metadata && ocr) {
+      const uploadedAt = Date.parse(upload.uploadedAt);
+      const storedAt = Date.parse(metadata.storedAt);
+      const processedAt = Date.parse(ocr.provenance?.processedAt);
+      if (
+        [uploadedAt, storedAt, processedAt].every(Number.isFinite) &&
+        !(uploadedAt <= storedAt && storedAt <= processedAt)
+      )
+        failures.push('upload, retained storage and OCR timestamps are out of order');
+    }
   } else if (suiteCode === 'COMMERCE_CONCURRENCY') {
     const input = get('concurrency-input.json');
     const orders = get('order-results.json');

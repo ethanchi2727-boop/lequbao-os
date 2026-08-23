@@ -27,6 +27,7 @@ describe('controlled suite cross-evidence contracts', () => {
       validateControlledSuiteDocuments('INTAKE_OBJECT_PIPELINE', {
         'upload-response.json': { objectRefHash: 'same-object' },
         'object-metadata.json': { objectRefHash: 'same-object' },
+        'ocr-provenance.json': { objectRefHash: 'same-object' },
       }),
     ).toEqual([]);
     expect(
@@ -92,10 +93,26 @@ describe('controlled suite cross-evidence contracts', () => {
     );
     expect(
       validateControlledSuiteDocuments('INTAKE_OBJECT_PIPELINE', {
-        'upload-response.json': { objectRefHash: 'one' },
-        'object-metadata.json': { objectRefHash: 'two' },
+        'upload-response.json': {
+          objectRefHash: 'one',
+          uploadedAt: '2026-08-19T01:02:00.000Z',
+        },
+        'object-metadata.json': {
+          objectRefHash: 'two',
+          storedAt: '2026-08-19T01:01:00.000Z',
+        },
+        'ocr-provenance.json': {
+          objectRefHash: 'three',
+          provenance: { processedAt: '2026-08-19T01:00:00.000Z' },
+        },
       }),
-    ).toContain('upload response and object metadata references do not match');
+    ).toEqual(
+      expect.arrayContaining([
+        'upload response and object metadata references do not match',
+        'upload response and OCR provenance references do not match',
+        'upload, retained storage and OCR timestamps are out of order',
+      ]),
+    );
     expect(
       validateControlledSuiteDocuments('PAYMENT_PROVIDER_SANDBOX', {
         'provider-request-redacted.json': { merchantAccountRef: 'one', serverOrderAmountFen: 100 },

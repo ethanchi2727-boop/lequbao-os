@@ -135,7 +135,18 @@ function semanticFixture(artifact, binding) {
     },
     'upload-response.json': { objectRefHash: '1'.repeat(64) },
     'object-metadata.json': { objectRefHash: '1'.repeat(64) },
+    'object-metadata.json': {
+      objectRefHash: '1'.repeat(64),
+      retention: {
+        policyRefHash: '2'.repeat(64),
+        storageClass: 'compliance-retained',
+        immutable: true,
+        appliedAt: '2026-08-19T01:00:00.000Z',
+        retainUntil: '2027-08-19T01:00:00.000Z',
+      },
+    },
     'ocr-provenance.json': {
+      objectRefHash: '1'.repeat(64),
       candidates: [{ field: 'merchant-name', sourceRegionHash: '2'.repeat(64), confidence: 0.99 }],
       provenance: {
         gatewayRef: 'controlled-ocr-gateway',

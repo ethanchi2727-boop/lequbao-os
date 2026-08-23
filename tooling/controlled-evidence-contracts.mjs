@@ -14,6 +14,8 @@ const commit = field('releaseCommit', 'string', {
 const deployment = field('deploymentId', 'string', { binding: 'deploymentId' });
 const sha256 = (pathName) => field(pathName, 'string', { pattern: '^[a-f0-9]{64}$' });
 const timestamp = (pathName) => field(pathName, 'string', { format: 'date-time' });
+const futureTimestamp = (pathName) =>
+  field(pathName, 'string', { format: 'date-time', allowFuture: true });
 const candidateImageDigest = (pathName, target) =>
   field(pathName, 'string', {
     pattern: `^ghcr\\.io/[a-z0-9][a-z0-9-]{0,38}/lequbao-v6-${target}@sha256:[a-f0-9]{64}$`,
@@ -43,15 +45,26 @@ export const controlledJsonEvidenceContracts = {
     sha256('objectRefHash'),
     field('malwareScan', 'string', { equals: 'CLEAN' }),
     field('rawObjectKeyExposed', 'boolean', { equals: false }),
+    timestamp('uploadedAt'),
   ],
   'object-metadata.json': [
     sha256('objectRefHash'),
     yes('encrypted'),
     yes('originalRetained'),
     sha256('contentSha256'),
+    timestamp('storedAt'),
     field('retention', 'object'),
+    sha256('retention.policyRefHash'),
+    field('retention.storageClass', 'string', { equals: 'compliance-retained' }),
+    yes('retention.immutable'),
+    timestamp('retention.appliedAt'),
+    futureTimestamp('retention.retainUntil'),
   ],
-  'ocr-provenance.json': [field('candidates', 'array'), field('provenance', 'object')],
+  'ocr-provenance.json': [
+    sha256('objectRefHash'),
+    field('candidates', 'array'),
+    field('provenance', 'object'),
+  ],
   'concurrency-input.json': [
     field('stock', 'number', { minimum: 0 }),
     field('requestedQuantity', 'number', { minimum: 1 }),
@@ -1765,6 +1778,39 @@ function validateInboxDeduplication(value) {
   return failures;
 }
 
+function validateUploadResponse(value) {
+  const artifact = 'upload-response.json';
+  const failures = [];
+  if (!opaqueReference.test(value.requestId ?? ''))
+    failures.push(`${artifact} requestId must be an opaque reference`);
+  if (!Number.isSafeInteger(value.status)) failures.push(`${artifact} status must be an integer`);
+  return failures;
+}
+
+function validateObjectMetadata(value) {
+  const artifact = 'object-metadata.json';
+  const failures = [];
+  const retention = value.retention;
+  const keys =
+    retention && !Array.isArray(retention) && typeof retention === 'object'
+      ? Object.keys(retention).sort()
+      : [];
+  if (
+    JSON.stringify(keys) !==
+    JSON.stringify(['appliedAt', 'immutable', 'policyRefHash', 'retainUntil', 'storageClass'])
+  )
+    failures.push(`${artifact} retention fields are invalid`);
+  const appliedAt = Date.parse(retention?.appliedAt);
+  const retainUntil = Date.parse(retention?.retainUntil);
+  const storedAt = Date.parse(value.storedAt);
+  if (
+    [storedAt, appliedAt, retainUntil].every(Number.isFinite) &&
+    !(storedAt <= appliedAt && appliedAt < retainUntil)
+  )
+    failures.push(`${artifact} storage and retention timestamps are out of order`);
+  return failures;
+}
+
 function validateOcrProvenance(value) {
   const artifact = 'ocr-provenance.json';
   const failures = [];
@@ -2048,6 +2094,8 @@ const controlledArtifactValidators = {
   'rls-denials.json': validateRlsDenials,
   'tenant-context.json': validateTenantContext,
   'inbox-deduplication.json': validateInboxDeduplication,
+  'upload-response.json': validateUploadResponse,
+  'object-metadata.json': validateObjectMetadata,
   'ocr-provenance.json': validateOcrProvenance,
   'concurrency-input.json': validateConcurrencyInput,
   'order-results.json': validateOrderResults,
@@ -2125,7 +2173,7 @@ export function validateControlledJsonEvidence(artifact, value, binding = {}) {
       const timestamp = parseCanonicalUtcTimestamp(candidate.value);
       if (timestamp === undefined)
         failures.push(`${artifact} ${rule.path} must be a canonical millisecond UTC timestamp`);
-      else if (timestamp > Date.now() + 5 * 60_000)
+      else if (!rule.allowFuture && timestamp > Date.now() + 5 * 60_000)
         failures.push(`${artifact} ${rule.path} must not be in the future`);
     }
     if (rule.type === 'object' && candidate.value && Object.keys(candidate.value).length === 0)

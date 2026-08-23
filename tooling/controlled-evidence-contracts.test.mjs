@@ -339,6 +339,46 @@ describe('controlled JSON evidence contracts', () => {
     );
   });
 
+  it('requires opaque upload identity and concrete retained-object metadata', () => {
+    expect(
+      validateControlledJsonEvidence('upload-response.json', {
+        status: 200.5,
+        requestId: 'request with spaces',
+        objectRefHash: 'a'.repeat(64),
+        malwareScan: 'CLEAN',
+        rawObjectKeyExposed: false,
+        uploadedAt: '2026-08-19T01:00:00.000Z',
+      }),
+    ).toEqual(
+      expect.arrayContaining([
+        'upload-response.json requestId must be an opaque reference',
+        'upload-response.json status must be an integer',
+      ]),
+    );
+    expect(
+      validateControlledJsonEvidence('object-metadata.json', {
+        objectRefHash: 'a'.repeat(64),
+        encrypted: true,
+        originalRetained: true,
+        contentSha256: 'b'.repeat(64),
+        storedAt: '2026-08-19T01:02:00.000Z',
+        retention: {
+          policyRefHash: 'c'.repeat(64),
+          storageClass: 'compliance-retained',
+          immutable: true,
+          appliedAt: '2026-08-19T01:01:00.000Z',
+          retainUntil: '2027-08-19T01:00:00.000Z',
+          undeclared: true,
+        },
+      }),
+    ).toEqual(
+      expect.arrayContaining([
+        'object-metadata.json retention fields are invalid',
+        'object-metadata.json storage and retention timestamps are out of order',
+      ]),
+    );
+  });
+
   it('rejects hollow performance and disaster-recovery PASS evidence', () => {
     expect(
       validateControlledJsonEvidence('performance-report.json', {
