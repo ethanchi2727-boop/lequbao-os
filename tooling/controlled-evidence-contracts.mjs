@@ -1438,6 +1438,18 @@ function validateWechatBuild(artifact, value) {
 function validateWechatCallback(value) {
   const artifact = 'callback-redacted.json';
   const failures = [];
+  if (
+    !hasExactKeys(value, [
+      'appliedBusinessTransitions',
+      'deliveryAttempts',
+      'publishedVersion',
+      'replayRejected',
+      'serverEventRef',
+      'signatureVerified',
+      'verifiedAt',
+    ])
+  )
+    failures.push(`${artifact} fields are invalid`);
   if (!opaqueReference.test(value.publishedVersion ?? ''))
     failures.push(`${artifact} publishedVersion must be opaque`);
   if (!Number.isSafeInteger(value.deliveryAttempts))

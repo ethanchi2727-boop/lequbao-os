@@ -881,6 +881,18 @@ describe('controlled JSON evidence contracts', () => {
 
   it('requires official WeChat build, bounded publication and real-device evidence', () => {
     expect(
+      validateControlledJsonEvidence('callback-redacted.json', {
+        signatureVerified: true,
+        replayRejected: true,
+        deliveryAttempts: 2,
+        serverEventRef: 'a'.repeat(64),
+        publishedVersion: 'pilot-1',
+        appliedBusinessTransitions: 1,
+        verifiedAt: '2026-08-19T01:00:00.000Z',
+        rawCallback: 'forbidden',
+      }),
+    ).toContain('callback-redacted.json fields are invalid');
+    expect(
       validateControlledJsonEvidence('consumer-build.json', {
         result: 'PASS',
         releaseCommit: 'a'.repeat(40),
