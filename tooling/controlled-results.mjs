@@ -163,7 +163,12 @@ export async function verifyControlledResults({ plan, planSource, resultsFile, r
     const startedAt = parseCanonicalUtcTimestamp(result.startedAt);
     const completedAt = parseCanonicalUtcTimestamp(result.completedAt);
     const reviewedAt = parseCanonicalUtcTimestamp(result.reviewedAt);
-    if (startedAt === undefined || completedAt === undefined || completedAt < startedAt)
+    if (
+      startedAt === undefined ||
+      completedAt === undefined ||
+      completedAt < startedAt ||
+      (contextCreatedAt !== undefined && startedAt < contextCreatedAt)
+    )
       failures.push(`${result.code} has invalid execution timestamps`);
     else {
       if (startedAt > Date.now() + 5 * 60_000 || completedAt > Date.now() + 5 * 60_000)
@@ -265,6 +270,15 @@ export async function verifyControlledResults({ plan, planSource, resultsFile, r
         )
           failures.push(
             `${result.code} capture receipt is later than result generation for ${expectedRelative}`,
+          );
+        if (
+          receipt.capturedAt !== undefined &&
+          startedAt !== undefined &&
+          completedAt !== undefined &&
+          (receipt.capturedAt < startedAt || receipt.capturedAt > completedAt)
+        )
+          failures.push(
+            `${result.code} capture receipt falls outside suite execution for ${expectedRelative}`,
           );
       } catch {
         failures.push(`${result.code} evidence file is missing: ${expectedRelative}`);

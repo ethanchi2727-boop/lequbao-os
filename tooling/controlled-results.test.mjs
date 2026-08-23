@@ -805,6 +805,21 @@ describe('controlled launch results', () => {
     );
   });
 
+  it('independently rejects captures outside the declared suite execution', async () => {
+    const { results, resultsFile } = await fixture();
+    results.suites[0].startedAt = '2026-08-19T01:01:00.000Z';
+    await writeFile(resultsFile, JSON.stringify(results));
+    const failures = await verifyControlledResults({
+      plan,
+      planSource,
+      resultsFile,
+      releaseCommit,
+    });
+    expect(failures).toContain(
+      'POSTGRES capture receipt falls outside suite execution for postgres/fixture.log',
+    );
+  });
+
   it('requires canonical millisecond UTC timestamps for results and review chronology', async () => {
     const { results, resultsFile } = await fixture();
     results.generatedAt = '2026-08-19T09:06:00.000+08:00';
