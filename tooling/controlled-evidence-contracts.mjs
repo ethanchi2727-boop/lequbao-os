@@ -568,6 +568,12 @@ const opaqueReference = /^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$/u;
 const validDateTime = (value) =>
   parseCanonicalUtcTimestamp(value) !== undefined &&
   parseCanonicalUtcTimestamp(value) <= Date.now() + 5 * 60_000;
+function validateFreshTimestamp(artifact, pathName, value, binding, failures) {
+  const timestamp = parseCanonicalUtcTimestamp(value);
+  const workspaceCreatedAt = parseCanonicalUtcTimestamp(binding?.createdAt);
+  if (timestamp !== undefined && workspaceCreatedAt !== undefined && timestamp < workspaceCreatedAt)
+    failures.push(`${artifact} ${pathName} predates the controlled evidence workspace`);
+}
 const hasExactKeys = (value, keys) =>
   value &&
   !Array.isArray(value) &&
@@ -1878,7 +1884,7 @@ function validateDeviceMatrix(value) {
   return failures;
 }
 
-function validateIdentitySessionEvidence(value) {
+function validateIdentitySessionEvidence(value, binding) {
   const artifact = 'identity-session-redacted.json';
   const failures = [];
   if (!hasExactKeys(value, ['failures', 'mfa', 'result', 'revocation', 'sessions']))
@@ -1923,6 +1929,13 @@ function validateIdentitySessionEvidence(value) {
   });
   if (revocationTimeline.every(Number.isFinite) && revocationTimeline[1] < revocationTimeline[0])
     failures.push(`${artifact} revocation.rejectedAt must not precede revokedAt`);
+  validateFreshTimestamp(
+    artifact,
+    'revocation.rejectedAt',
+    value.revocation?.rejectedAt,
+    binding,
+    failures,
+  );
   const calculatedRevocationSeconds = (revocationTimeline[1] - revocationTimeline[0]) / 1000;
   if (
     Number.isFinite(calculatedRevocationSeconds) &&
@@ -1943,6 +1956,13 @@ function validateIdentitySessionEvidence(value) {
   });
   if (mfaTimeline.every(Number.isFinite) && mfaTimeline[1] < mfaTimeline[0])
     failures.push(`${artifact} mfa.downgradeRejectedAt must not precede challengedAt`);
+  validateFreshTimestamp(
+    artifact,
+    'mfa.downgradeRejectedAt',
+    value.mfa?.downgradeRejectedAt,
+    binding,
+    failures,
+  );
   const sessionRefs = new Set();
   for (const [index, session] of (Array.isArray(value.sessions) ? value.sessions : []).entries()) {
     const prefix = `${artifact} sessions[${index}]`;
@@ -1991,7 +2011,7 @@ function validateIdentitySessionEvidence(value) {
   return failures;
 }
 
-function validateSecretAccessAudit(value) {
+function validateSecretAccessAudit(value, binding) {
   const artifact = 'secret-access-audit.json';
   const failures = [];
   if (
@@ -2066,6 +2086,13 @@ function validateSecretAccessAudit(value) {
     else auditRefs.add(event.auditEventRefHash);
     if (!validDateTime(event.occurredAt))
       failures.push(`${prefix}.occurredAt must be a non-future ISO date-time`);
+    validateFreshTimestamp(
+      artifact,
+      `${prefix.slice(artifact.length + 1)}.occurredAt`,
+      event.occurredAt,
+      binding,
+      failures,
+    );
   }
   for (const [secretRefHash, actions] of actionsBySecret) {
     for (const action of ['READ', 'ROTATE', 'DENIED_READ'])
@@ -2095,7 +2122,7 @@ function validateSecretAccessAudit(value) {
   return failures;
 }
 
-function validateObjectRetention(value) {
+function validateObjectRetention(value, binding) {
   const artifact = 'object-retention.json';
   const failures = [];
   if (!hasExactKeys(value, ['objectsSampled', 'policy', 'result', 'violations']))
@@ -2207,11 +2234,18 @@ function validateObjectRetention(value) {
       Math.abs(timeline[1] - expectedRetentionUntil) > 1000
     )
       failures.push(`${prefix}.retentionUntil does not match policy.retentionDays`);
+    validateFreshTimestamp(
+      artifact,
+      `${prefix.slice(artifact.length + 1)}.verifiedAt`,
+      object.verifiedAt,
+      binding,
+      failures,
+    );
   }
   return failures;
 }
 
-function validatePrivacyExportDelete(value) {
+function validatePrivacyExportDelete(value, binding) {
   const artifact = 'privacy-export-delete.json';
   const failures = [];
   if (!hasExactKeys(value, ['deletion', 'export', 'result', 'targets', 'unresolvedTargets']))
@@ -2289,6 +2323,13 @@ function validatePrivacyExportDelete(value) {
     !(deletionTimeline[0] <= deletionTimeline[1] && deletionTimeline[1] <= deletionTimeline[2])
   )
     failures.push(`${artifact} deletion timestamps are out of order`);
+  validateFreshTimestamp(
+    artifact,
+    'deletion.completedAt',
+    value.deletion?.completedAt,
+    binding,
+    failures,
+  );
   const targetNames = ['database', 'object-store', 'search', 'vector', 'cache'];
   const requiredTargets = new Set(targetNames);
   const receiptHashes = new Set();
@@ -2324,6 +2365,13 @@ function validatePrivacyExportDelete(value) {
       )
     )
       failures.push(`${prefix} deletion and verification timestamps are out of order`);
+    validateFreshTimestamp(
+      artifact,
+      `${prefix.slice(artifact.length + 1)}.verifiedAt`,
+      target.verifiedAt,
+      binding,
+      failures,
+    );
   }
   for (const target of requiredTargets) failures.push(`${artifact} targets must include ${target}`);
   return failures;
@@ -2364,7 +2412,7 @@ function validateRequiredAlertSet(artifact, alerts, failures) {
   return byId;
 }
 
-function validateAlertDelivery(value) {
+function validateAlertDelivery(value, binding) {
   const artifact = 'alert-delivery.json';
   const failures = [];
   if (!hasExactKeys(value, ['alerts', 'deliveryResults', 'recipients', 'result']))
@@ -2424,6 +2472,13 @@ function validateAlertDelivery(value) {
     if (delivery.delivered !== true) failures.push(`${prefix}.delivered must equal true`);
     if (!validDateTime(delivery.deliveredAt))
       failures.push(`${prefix}.deliveredAt must be a non-future ISO date-time`);
+    validateFreshTimestamp(
+      artifact,
+      `${prefix.slice(artifact.length + 1)}.deliveredAt`,
+      delivery.deliveredAt,
+      binding,
+      failures,
+    );
     if (!validSha256(delivery.channelRefHash))
       failures.push(`${prefix}.channelRefHash has invalid format`);
     if (!recipients.has(delivery.recipientRefHash))
@@ -2440,7 +2495,7 @@ function validateAlertDelivery(value) {
   return failures;
 }
 
-function validateOncallAcknowledgement(value) {
+function validateOncallAcknowledgement(value, binding) {
   const artifact = 'oncall-acknowledgement.json';
   const failures = [];
   if (!hasExactKeys(value, ['acknowledgements', 'alerts', 'result', 'slaBreaches']))
@@ -2476,6 +2531,13 @@ function validateOncallAcknowledgement(value) {
       failures.push(`${prefix}.acknowledged must equal true`);
     if (!validDateTime(acknowledgement.acknowledgedAt))
       failures.push(`${prefix}.acknowledgedAt must be a non-future ISO date-time`);
+    validateFreshTimestamp(
+      artifact,
+      `${prefix.slice(artifact.length + 1)}.acknowledgedAt`,
+      acknowledgement.acknowledgedAt,
+      binding,
+      failures,
+    );
     if (acknowledgement.escalationOutcome !== 'ACKNOWLEDGED')
       failures.push(`${prefix}.escalationOutcome must equal ACKNOWLEDGED`);
     if (!validSha256(acknowledgement.acknowledgedByRefHash))
@@ -3255,7 +3317,7 @@ export function validateControlledJsonEvidence(artifact, value, binding = {}) {
     if (rule.type === 'object' && candidate.value && Object.keys(candidate.value).length === 0)
       failures.push(`${artifact} ${rule.path} must not be empty`);
   }
-  failures.push(...(controlledArtifactValidators[artifact]?.(value) ?? []));
+  failures.push(...(controlledArtifactValidators[artifact]?.(value, binding) ?? []));
   return failures;
 }
 
