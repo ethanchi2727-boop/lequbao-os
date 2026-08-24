@@ -52,7 +52,8 @@ const workbenchApi =
         token: sessionToken,
       });
 let liveSession = null;
-let livePageState = { request: null, data: null };
+const emptyLive = { request: null, data: null };
+let livePageState = emptyLive;
 const resultPanelStorageKey = 'lequbao.workbench-result-panel';
 let resultPanel = resultPanelFromStorage(sessionStorage.getItem(resultPanelStorageKey));
 let draftMessage = '';
@@ -67,6 +68,7 @@ const aiPages = new Set([
   'page-010',
   'page-011',
   'page-012',
+  'page-015',
 ]);
 const scrollPositions = new Map();
 let activeExperience = null;
@@ -713,7 +715,7 @@ function navigateTo(page) {
   history.pushState({}, '', `/bao/${page}${location.search}`);
   view = viewFor(page);
   activeExperience = null;
-  livePageState = { request: null, data: null };
+  livePageState = emptyLive;
   render();
   focusMainContent();
   restoreScrollPosition();
@@ -877,7 +879,7 @@ app.addEventListener('submit', (event) => {
 addEventListener('popstate', () => {
   view = viewFor(resolvePage(location.pathname));
   activeExperience = null;
-  livePageState = { request: null, data: null };
+  livePageState = emptyLive;
   render();
   focusMainContent();
   restoreScrollPosition(scrollPositions.get(location.href));
@@ -1100,7 +1102,7 @@ async function executeLiveCommand(commandId) {
       history.pushState({}, '', `/bao/page-004?conversationId=${encodeURIComponent(data.id)}`);
       view = viewFor('page-004');
       activeExperience = null;
-      livePageState = { request: null, data: null };
+      livePageState = emptyLive;
       render();
       focusMainContent();
       void bootstrapExperience(view.page);

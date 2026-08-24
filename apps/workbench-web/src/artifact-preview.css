@@ -1824,6 +1824,27 @@
   justify-content: space-between;
   gap: 18px;
 }
+.capture-types {
+  margin-bottom: 14px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+.capture-types span {
+  padding: 13px;
+  display: grid;
+  gap: 4px;
+  border: 1px solid #e1e4ed;
+  border-radius: 12px;
+  background: #fff;
+}
+.capture-types b {
+  font-size: 11px;
+}
+.capture-types small {
+  color: var(--muted);
+  font-size: 9px;
+}
 .source-list-tools label {
   width: min(460px, 100%);
   min-height: 42px;
@@ -2114,6 +2135,9 @@
   }
 }
 @media (max-width: 760px) {
+  .capture-types {
+    grid-template-columns: 1fr;
+  }
   .source-library-heading {
     min-height: auto;
     padding: 14px;

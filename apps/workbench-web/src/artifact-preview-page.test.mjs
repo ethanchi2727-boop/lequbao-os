@@ -257,6 +257,22 @@ describe('乐趣宝成果预览', () => {
     expect(html).not.toContain('objectKey');
   });
 
+  it('材料与语音页提供类型、扫描、转写和安全采集闭环', () => {
+    const html = renderConversationThread({
+      contract: { id: 'PAGE-015', title: '材料与语音' },
+      demoMode: true,
+      livePageState: { data: null },
+      view: { page: 'page-015', state: 'default' },
+      escapeHtml,
+    });
+    expect(html).toContain('data-experience="material-capture"');
+    expect(html).toContain('MP3 / WAV / M4A / AMR');
+    expect(html).toContain('店长补充说明.wav');
+    expect(html).toContain('选择文件并安全上传');
+    expect(html).toContain('PROCESSING');
+    expect(html).toContain('/bao/page-011?demo=1&sessionId=demo-intake-session');
+  });
+
   it('身份空间展示服务端会话范围和真实切换边界', () => {
     const html = renderConversationThread({
       contract: { id: 'PAGE-012', title: '身份与空间切换' },
