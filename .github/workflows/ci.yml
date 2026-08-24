@@ -283,7 +283,8 @@ jobs:
           done
           test "$(curl --silent --output /dev/null --write-out '%{http_code}' \
             --header 'Host: bao.lequ.com' http://127.0.0.1:8080/)" = 302
-          test "$(curl --silent --head --header 'Host: bao.lequ.com' http://127.0.0.1:8080/ \
+          test "$(curl --silent --dump-header - --output /dev/null \
+            --header 'Host: bao.lequ.com' http://127.0.0.1:8080/ \
             | tr -d '\r' | sed -n 's/^location: //Ip')" = '/life?demo=1'
           curl --fail --silent --header 'Host: bao.lequ.com' http://127.0.0.1:8080/life/ \
             | grep --quiet '<title>乐趣生活</title>'
