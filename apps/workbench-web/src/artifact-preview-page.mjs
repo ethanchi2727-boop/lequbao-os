@@ -24,6 +24,8 @@ export function renderConversationTopbar({ view, shell, escapeHtml, icon }) {
 }
 
 export function renderConversationThread({ contract, demoMode, livePageState, view, escapeHtml }) {
+  if (view.page === 'page-010')
+    return renderJobQueue({ contract, demoMode, livePageState, view, escapeHtml });
   if (view.page === 'page-009')
     return renderSessionInbox({ contract, demoMode, livePageState, view, escapeHtml });
   if (view.page === 'page-007')
@@ -124,18 +126,172 @@ export function renderConversationThread({ contract, demoMode, livePageState, vi
 }
 
 export function handlePageInput(target) {
-  if (!(target instanceof HTMLInputElement) || target.dataset.action !== 'conversation-search')
-    return false;
+  if (!(target instanceof HTMLInputElement)) return false;
+  const config = {
+    'conversation-search': ['[data-conversation-row]', '[data-conversation-count]', '会话'],
+    'task-search': ['[data-task-row]', '[data-task-count]', '任务'],
+  }[target.dataset.action];
+  if (!config) return false;
   const query = target.value.trim().toLocaleLowerCase('zh-CN');
   let visible = 0;
-  for (const row of document.querySelectorAll('[data-conversation-row]')) {
+  for (const row of document.querySelectorAll(config[0])) {
     const matches = !query || (row.dataset.search ?? '').includes(query);
     row.hidden = !matches;
     if (matches) visible += 1;
   }
-  const count = document.querySelector('[data-conversation-count]');
-  if (count) count.textContent = `${visible} 个会话`;
+  const count = document.querySelector(config[1]);
+  if (count) count.textContent = `${visible} 个${config[2]}`;
   return true;
+}
+
+function renderJobQueue({ contract, demoMode, livePageState, view, escapeHtml }) {
+  if (!demoMode && !livePageState.data && view.state !== 'empty')
+    return renderUnavailable(contract, view, escapeHtml);
+  const tasks = demoMode
+    ? [
+        {
+          id: 'task-running',
+          conversation_id: 'conversation-1',
+          mode: 'COMPLEX',
+          status: 'RUNNING',
+          plan_version: 2,
+          planned_steps: 8,
+          max_steps: 12,
+          actual_tool_calls: 5,
+          max_tool_calls: 24,
+          actual_cost_micros: 184000,
+          max_cost_micros: 800000,
+          retry_count: 0,
+          updated_at: '2026-08-25T00:18:00.000Z',
+          deadline_at: '2026-08-25T01:30:00.000Z',
+          result_summary_redacted: '正在核验门店经营事实并生成周报。',
+        },
+        {
+          id: 'task-approval',
+          conversation_id: 'conversation-2',
+          mode: 'COMPLEX',
+          status: 'WAITING_APPROVAL',
+          plan_version: 1,
+          planned_steps: 6,
+          max_steps: 12,
+          actual_tool_calls: 3,
+          max_tool_calls: 20,
+          actual_cost_micros: 126000,
+          max_cost_micros: 600000,
+          retry_count: 0,
+          updated_at: '2026-08-25T00:12:00.000Z',
+          deadline_at: '2026-08-25T02:00:00.000Z',
+          result_summary_redacted: '发布门店活动前等待人工确认影响范围。',
+        },
+        {
+          id: 'task-paused',
+          conversation_id: 'conversation-3',
+          mode: 'NORMAL',
+          status: 'PAUSED',
+          plan_version: 1,
+          planned_steps: 4,
+          max_steps: 8,
+          actual_tool_calls: 2,
+          max_tool_calls: 12,
+          actual_cost_micros: 52000,
+          max_cost_micros: 300000,
+          retry_count: 0,
+          updated_at: '2026-08-24T23:48:00.000Z',
+          deadline_at: '2026-08-25T03:00:00.000Z',
+          result_summary_redacted: '已保留完成步骤，等待操作者恢复。',
+        },
+        {
+          id: 'task-failed',
+          conversation_id: 'conversation-4',
+          mode: 'COMPLEX',
+          status: 'FAILED',
+          plan_version: 3,
+          planned_steps: 9,
+          max_steps: 12,
+          actual_tool_calls: 7,
+          max_tool_calls: 24,
+          actual_cost_micros: 318000,
+          max_cost_micros: 800000,
+          retry_count: 1,
+          unknown_result: false,
+          failure_code: 'UPSTREAM_TIMEOUT',
+          updated_at: '2026-08-24T23:31:00.000Z',
+          deadline_at: '2026-08-25T01:00:00.000Z',
+          result_summary_redacted: '上游读取超时，已完成步骤和证据保持不变。',
+        },
+        {
+          id: 'task-complete',
+          conversation_id: 'conversation-5',
+          mode: 'NORMAL',
+          status: 'SUCCEEDED',
+          plan_version: 2,
+          planned_steps: 5,
+          max_steps: 8,
+          actual_tool_calls: 4,
+          max_tool_calls: 12,
+          actual_cost_micros: 97000,
+          max_cost_micros: 300000,
+          retry_count: 0,
+          updated_at: '2026-08-24T22:54:00.000Z',
+          completed_at: '2026-08-24T22:54:00.000Z',
+          result_summary_redacted: '经营摘要与核验表已生成。',
+        },
+      ]
+    : list(livePageState.data);
+  const active = tasks.filter((task) =>
+    ['PLANNING', 'READY', 'RUNNING'].includes(read(task, 'status')),
+  ).length;
+  const waiting = tasks.filter((task) =>
+    ['PAUSED', 'WAITING_APPROVAL'].includes(read(task, 'status')),
+  ).length;
+  const failed = tasks.filter((task) => read(task, 'status') === 'FAILED').length;
+  const completed = tasks.filter((task) => read(task, 'status') === 'SUCCEEDED').length;
+  const selectedId = new URLSearchParams(globalThis.location?.search ?? '').get('taskId');
+  const selected = tasks.find((task) => String(read(task, 'id')) === selectedId);
+  return `<section class="job-queue-page" data-page-id="${contract.id}" data-experience="job-queue">
+    <header class="job-queue-heading"><div><small>${demoMode ? '演示队列 · 非真实任务' : '权威后台任务'}</small><h1>后台任务</h1><p>离开对话后继续查看运行、等待、失败与完成状态。</p></div><button data-route="page-003">＋ 新建 AI 任务</button></header>
+    <section class="job-summary"><span><i class="running"></i><small>运行中</small><b>${active}</b></span><span><i class="waiting"></i><small>等待处理</small><b>${waiting}</b></span><span><i class="failed"></i><small>可恢复失败</small><b>${failed}</b></span><span><i class="complete"></i><small>已完成</small><b>${completed}</b></span></section>
+    <nav class="job-filters" aria-label="后台任务状态筛选"><a class="active" href="/bao/page-010${demoMode ? '?demo=1' : ''}">全部任务</a><a href="/bao/page-010?${demoMode ? 'demo=1&' : ''}status=RUNNING">运行中</a><a href="/bao/page-010?${demoMode ? 'demo=1&' : ''}status=WAITING_APPROVAL">等待确认</a><a href="/bao/page-010?${demoMode ? 'demo=1&' : ''}status=FAILED">失败</a><a href="/bao/page-010?${demoMode ? 'demo=1&' : ''}status=SUCCEEDED">已完成</a></nav>
+    <div class="job-queue-layout"><main><div class="job-list-tools"><label><span>⌕</span><input type="search" data-action="task-search" placeholder="搜索任务编号、状态、模式或失败代码" autocomplete="off"/></label><span data-task-count>${tasks.length} 个任务</span></div><section class="job-list" aria-live="polite">${tasks.length ? tasks.map((task) => renderJobRow(task, demoMode, escapeHtml)).join('') : '<div class="job-list-empty"><strong>当前筛选下没有后台任务</strong><p>服务端没有返回当前身份创建的任务。</p></div>'}</section></main>${renderJobInspector(selected, demoMode, escapeHtml)}</div>
+  </section>`;
+}
+
+function renderJobRow(task, demoMode, escapeHtml) {
+  const id = String(read(task, 'id') ?? 'task');
+  const status = String(read(task, 'status') ?? 'UNKNOWN');
+  const mode = String(read(task, 'mode') ?? 'NORMAL');
+  const calls = Number(read(task, 'actual_tool_calls', 'actualToolCalls') ?? 0);
+  const maxCalls = Number(read(task, 'max_tool_calls', 'maxToolCalls') ?? 0);
+  const cost = Number(read(task, 'actual_cost_micros', 'actualCostMicros') ?? 0);
+  const maxCost = Number(read(task, 'max_cost_micros', 'maxCostMicros') ?? 0);
+  const failure = read(task, 'failure_code', 'failureCode');
+  const summary = text(
+    read(task, 'result_summary_redacted', 'resultSummaryRedacted'),
+    '尚无脱敏执行摘要。',
+  );
+  const search = [id, status, mode, failure].filter(Boolean).join(' ').toLocaleLowerCase('zh-CN');
+  return `<article data-task-row data-search="${escapeHtml(search)}"><header><div><span class="job-status status-${status.toLowerCase()}">${escapeHtml(status)}</span><small>${escapeHtml(mode)} · 计划 v${escapeHtml(read(task, 'plan_version', 'planVersion') ?? 1)}</small></div><time>心跳 ${escapeHtml(dateText(read(task, 'updated_at', 'updatedAt')))}</time></header><h2>${escapeHtml(summary)}</h2><p>${failure ? `失败代码 ${escapeHtml(failure)} · 已完成步骤和证据不会被改写。` : `截止 ${escapeHtml(dateText(read(task, 'deadline_at', 'deadlineAt')))}`}</p><div class="job-usage"><span><small>工具调用</small><b>${calls}/${maxCalls || '—'}</b></span><span><small>成本预算</small><b>${cost ? `${(cost / 1000000).toFixed(2)}` : '0.00'}/${maxCost ? (maxCost / 1000000).toFixed(2) : '—'}</b></span><span><small>重试次数</small><b>${escapeHtml(read(task, 'retry_count', 'retryCount') ?? 0)}</b></span></div><footer><code>${escapeHtml(id)}</code><a href="/bao/page-010?${demoMode ? 'demo=1&' : ''}taskId=${encodeURIComponent(id)}">查看与处理</a></footer></article>`;
+}
+
+function renderJobInspector(task, demoMode, escapeHtml) {
+  if (!task)
+    return `<aside class="job-inspector"><section><small>任务处理</small><h2>选择一个后台任务</h2><p>查看状态、预算、等待或失败原因，以及服务端允许的恢复动作。</p></section><section><small>安全边界</small><ul><li>列表仅返回当前租户和创建人的任务</li><li>未知外部结果不允许直接重试</li><li>高风险步骤恢复前仍需重新确认</li><li>取消不会伪装为撤回既有外部影响</li></ul></section></aside>`;
+  const id = String(read(task, 'id'));
+  const status = String(read(task, 'status'));
+  const retry = Number(read(task, 'retry_count', 'retryCount') ?? 0);
+  const unknown = Boolean(read(task, 'unknown_result', 'unknownResult'));
+  const actions =
+    status === 'PAUSED'
+      ? [['employee-agent-task-resume', '恢复任务']]
+      : ['READY', 'RUNNING'].includes(status)
+        ? [['employee-agent-task-pause', '暂停任务']]
+        : status === 'FAILED' && retry < 2 && !unknown
+          ? [['employee-agent-task-retry', '安全重试']]
+          : [];
+  if (!['SUCCEEDED', 'FAILED', 'CANCELLED'].includes(status))
+    actions.push(['employee-agent-task-cancel', '取消任务']);
+  const conversation = read(task, 'conversation_id', 'conversationId');
+  return `<aside class="job-inspector"><section><small>已选任务</small><h2>${escapeHtml(status)}</h2><code>${escapeHtml(id)}</code><p>${escapeHtml(text(read(task, 'result_summary_redacted', 'resultSummaryRedacted'), '尚无脱敏执行摘要。'))}</p></section><section><small>恢复资格</small><h2>${actions.length ? '服务端将再次裁决' : '当前没有可用动作'}</h2>${unknown ? '<p class="job-warning">外部结果未知，禁止直接重试。</p>' : ''}<div class="job-actions">${demoMode ? '<button disabled>演示模式不执行任务动作</button>' : actions.map(([command, label]) => `<div data-command-form="${command}"><button data-command="${command}">${label}</button></div>`).join('')}</div></section><nav><a href="/bao/page-007?${demoMode ? 'demo=1&' : ''}taskId=${encodeURIComponent(id)}">查看来源轨迹</a>${conversation ? `<a href="/bao/page-005?${demoMode ? 'demo=1&' : ''}conversationId=${encodeURIComponent(conversation)}">返回任务工作区</a>` : ''}</nav><p class="job-boundary">动作提交后由服务端按任务状态、重试次数、未知结果和高风险步骤重新校验。</p></aside>`;
 }
 
 function renderSessionInbox({ contract, demoMode, livePageState, view, escapeHtml }) {

@@ -74,7 +74,8 @@ describe('乐趣宝工作台无障碍应用壳', () => {
     expect(aiStartSource).toContain('data-action="share-ai-task"');
     expect(aiStartSource).toContain('id="ai-start-status"');
     expect(appSource).toContain('control instanceof HTMLTextAreaElement');
-    expect(appSource).toContain("'page-003': '/ai-start.css'");
+    expect(appSource).toContain("view.page === 'page-003'");
+    expect(appSource).toContain("'/ai-start.css'");
     expect(aiStartStyleSource).toContain('.ai-start-composer');
     expect(aiStartStyleSource).toContain('.ai-quick-start');
   });

@@ -58,15 +58,7 @@ let resultPanel = resultPanelFromStorage(sessionStorage.getItem(resultPanelStora
 let draftMessage = '';
 let aiStartPage = null;
 let aiConversationPage = null;
-const aiPages = new Set(['page-004', 'page-005', 'page-006', 'page-007', 'page-009']);
-const aiPageStyles = {
-  'page-003': '/ai-start.css',
-  'page-004': '/ai-conversation.css',
-  'page-005': '/ai-conversation.css',
-  'page-006': '/artifact-preview.css',
-  'page-007': '/artifact-preview.css',
-  'page-009': '/artifact-preview.css',
-};
+const aiPages = new Set(['page-004', 'page-005', 'page-006', 'page-007', 'page-009', 'page-010']);
 const scrollPositions = new Map();
 let activeExperience = null;
 let experienceLoadVersion = 0;
@@ -758,7 +750,14 @@ function setResultPanel(action, tab) {
 }
 
 function ensureAiPageStyle() {
-  const href = aiPageStyles[view.page];
+  const href =
+    view.page === 'page-003'
+      ? '/ai-start.css'
+      : aiPages.has(view.page)
+        ? view.page < 'page-006'
+          ? '/ai-conversation.css'
+          : '/artifact-preview.css'
+        : null;
   if (!href || document.querySelector(`link[href="${href}"]`)) return;
   const style = document.createElement('link');
   style.rel = 'stylesheet';

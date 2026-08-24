@@ -159,4 +159,45 @@ describe('乐趣宝成果预览', () => {
     expect(html).toContain('/bao/page-100?conversationId=live-1');
     expect(html).not.toContain('REFUND_DISPUTE');
   });
+
+  it('后台任务队列区分运行、等待、失败和完成状态', () => {
+    const html = renderConversationThread({
+      contract: { id: 'PAGE-010', title: '后台任务' },
+      demoMode: true,
+      livePageState: { data: null },
+      view: { page: 'page-010', state: 'default' },
+      escapeHtml,
+    });
+    expect(html).toContain('data-experience="job-queue"');
+    expect(html).toContain('data-action="task-search"');
+    expect(html).toContain('WAITING_APPROVAL');
+    expect(html).toContain('UPSTREAM_TIMEOUT');
+    expect(html).toContain('未知外部结果不允许直接重试');
+  });
+
+  it('后台任务生产态只展示服务端返回的当前用户任务', () => {
+    const html = renderConversationThread({
+      contract: { id: 'PAGE-010', title: '后台任务' },
+      demoMode: false,
+      livePageState: {
+        data: [
+          {
+            id: 'live-task-7',
+            conversation_id: 'live-conversation-3',
+            mode: 'COMPLEX',
+            status: 'FAILED',
+            retry_count: 1,
+            unknown_result: false,
+            failure_code: 'PROVIDER_TIMEOUT',
+            updated_at: '2026-08-25T00:00:00.000Z',
+          },
+        ],
+      },
+      view: { page: 'page-010', state: 'default' },
+      escapeHtml,
+    });
+    expect(html).toContain('live-task-7');
+    expect(html).toContain('PROVIDER_TIMEOUT');
+    expect(html).not.toContain('UPSTREAM_TIMEOUT');
+  });
 });
