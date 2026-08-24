@@ -16,4 +16,18 @@ describe('public preview stack', () => {
     expect(migration).toContain('0027_platform_consumer_identity_exchange');
     expect(migration).toContain('--file=/opt/lequ-database/development-seed.sql');
   });
+
+  it('smokes the PC intake write path through the combined preview topology', async () => {
+    const workflow = parseYaml(await read('.github/workflows/ci.yml'));
+    const commands = workflow.jobs['bao-preview-stack'].steps
+      .map((step) => step.run ?? '')
+      .join('\n');
+    const smoke = await read('tooling/preview-stack-smoke.mjs');
+
+    expect(commands).toContain('node tooling/preview-stack-smoke.mjs');
+    expect(smoke).toContain('/__development/login');
+    expect(smoke).toContain('/api/v1/merchant-intake/sessions');
+    expect(smoke).toContain('/messages');
+    expect(smoke).toContain("processingStatus, 'QUEUED'");
+  });
 });

@@ -159,6 +159,7 @@ for (const marker of [
   'docker compose -f compose.yaml up --detach --build',
   "--header 'Host: bao.lequ.com'",
   'http://127.0.0.1:8080/__development/login',
+  'node tooling/preview-stack-smoke.mjs',
   'test -f /tmp/lequ-worker-ready',
 ])
   if (!workflow.includes(marker))
