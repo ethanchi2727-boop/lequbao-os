@@ -889,7 +889,7 @@ function validateFinancialApprovals(value) {
   return failures;
 }
 
-function validateLegalRelease(value) {
+function validateLegalRelease(value, binding) {
   const artifact = 'legal-document-release.json';
   const failures = [];
   if (
@@ -1034,6 +1034,13 @@ function validateLegalRelease(value) {
       )
         failures.push(`${prefix}.verifiedAt must not precede document effectiveness`);
     }
+    validateFreshTimestamp(
+      artifact,
+      `${prefix.slice(artifact.length + 1)}.verifiedAt`,
+      surface.verifiedAt,
+      binding,
+      failures,
+    );
     if (surface.publicationVerified !== true)
       failures.push(`${prefix}.publicationVerified must equal true`);
     if (surface.accountPrivacyInstructionsVerified !== true)

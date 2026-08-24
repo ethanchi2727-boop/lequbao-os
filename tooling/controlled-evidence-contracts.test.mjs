@@ -258,15 +258,22 @@ describe('controlled JSON evidence contracts', () => {
       ]),
     );
     expect(
-      validateControlledJsonEvidence('legal-document-release.json', {
-        result: 'PASS',
-        releaseCommit: 'a'.repeat(40),
-        deploymentId: 'deployment-1',
-        documents: ['privacy'],
-        surfaceMatrix: ['consumer'],
-        approvals: ['approved'],
-        unresolvedItems: [],
-      }),
+      validateControlledJsonEvidence(
+        'legal-document-release.json',
+        {
+          result: 'PASS',
+          releaseCommit: 'a'.repeat(40),
+          deploymentId: 'deployment-1',
+          documents: ['privacy'],
+          surfaceMatrix: ['consumer'],
+          approvals: ['approved'],
+          unresolvedItems: [],
+        },
+        {
+          createdAt: '2026-08-19T00:59:30.000Z',
+          capturedAt: Date.parse('2026-08-19T01:00:30.000Z'),
+        },
+      ),
     ).toEqual(
       expect.arrayContaining([
         expect.stringContaining('documents[0] must be an object'),
@@ -366,83 +373,90 @@ describe('controlled JSON evidence contracts', () => {
       ]),
     );
     expect(
-      validateControlledJsonEvidence('legal-document-release.json', {
-        result: 'PASS',
-        releaseCommit: 'a'.repeat(40),
-        deploymentId: 'deployment-1',
-        documents: [
-          {
-            documentId: 'privacy-policy',
-            version: 'v1',
-            ownerRef: 'owner@example.test',
-            approvalReceipt: 'unrelated-receipt',
-            sha256: 'b'.repeat(64),
-            publishedUrl: (() => {
-              const url = new URL('https://localhost/privacy?unsafe=true');
-              url.username = 'test-user';
-              url.password = 'test-value';
-              return url.href;
-            })(),
-            effectiveAt: '2026-08-19T00:59:00.000Z',
-            legalEntityName: 'forbidden',
-          },
-          {
-            documentId: 'terms-of-service',
-            version: 'v1',
-            ownerRef: 'org:legal-owner',
-            approvalReceipt: 'legal-receipt',
-            sha256: 'c'.repeat(64),
-            publishedUrl: 'https://legal.example.test/terms',
-            effectiveAt: '2026-08-19T01:00:00.000Z',
-          },
-        ],
-        surfaceMatrix: [
-          {
-            surface: 'lequbao-web',
-            documentIds: ['privacy-policy', 'privacy-policy'],
-            publicationReceiptHash: 'd'.repeat(64),
-            verifiedAt: '2026-08-19T00:58:00.000Z',
-            publicationVerified: true,
-            accountPrivacyInstructionsVerified: true,
-            failures: [],
-          },
-          {
-            surface: 'lequbao-web',
-            documentIds: ['privacy-policy'],
-            publicationReceiptHash: 'd'.repeat(64),
-            verifiedAt: '2026-08-19T01:00:00.000Z',
-            publicationVerified: true,
-            accountPrivacyInstructionsVerified: true,
-            failures: [],
-          },
-          {
-            surface: 'unknown-client',
-            documentIds: ['privacy-policy'],
-            publicationReceiptHash: 'e'.repeat(64),
-            verifiedAt: '2026-08-19T01:00:00.000Z',
-            publicationVerified: true,
-            accountPrivacyInstructionsVerified: true,
-            failures: [],
-          },
-        ],
-        approvals: [
-          {
-            subjectId: 'org:product-owner',
-            role: 'product owner',
-            decision: 'APPROVED',
-            receiptId: 'product-receipt',
-            approvedAt: '2026-08-19T01:00:00.000Z',
-          },
-          {
-            subjectId: 'org:legal-reviewer',
-            role: 'legal compliance reviewer',
-            decision: 'APPROVED',
-            receiptId: 'legal-receipt',
-            approvedAt: '2026-08-19T01:00:00.000Z',
-          },
-        ],
-        unresolvedItems: [],
-      }),
+      validateControlledJsonEvidence(
+        'legal-document-release.json',
+        {
+          result: 'PASS',
+          releaseCommit: 'a'.repeat(40),
+          deploymentId: 'deployment-1',
+          documents: [
+            {
+              documentId: 'privacy-policy',
+              version: 'v1',
+              ownerRef: 'owner@example.test',
+              approvalReceipt: 'unrelated-receipt',
+              sha256: 'b'.repeat(64),
+              publishedUrl: (() => {
+                const url = new URL('https://localhost/privacy?unsafe=true');
+                url.username = 'test-user';
+                url.password = 'test-value';
+                return url.href;
+              })(),
+              effectiveAt: '2026-08-19T00:59:00.000Z',
+              legalEntityName: 'forbidden',
+            },
+            {
+              documentId: 'terms-of-service',
+              version: 'v1',
+              ownerRef: 'org:legal-owner',
+              approvalReceipt: 'legal-receipt',
+              sha256: 'c'.repeat(64),
+              publishedUrl: 'https://legal.example.test/terms',
+              effectiveAt: '2026-08-19T01:00:00.000Z',
+            },
+          ],
+          surfaceMatrix: [
+            {
+              surface: 'lequbao-web',
+              documentIds: ['privacy-policy', 'privacy-policy'],
+              publicationReceiptHash: 'd'.repeat(64),
+              verifiedAt: '2026-08-19T00:58:00.000Z',
+              publicationVerified: true,
+              accountPrivacyInstructionsVerified: true,
+              failures: [],
+            },
+            {
+              surface: 'lequbao-web',
+              documentIds: ['privacy-policy'],
+              publicationReceiptHash: 'd'.repeat(64),
+              verifiedAt: '2026-08-19T01:00:00.000Z',
+              publicationVerified: true,
+              accountPrivacyInstructionsVerified: true,
+              failures: [],
+            },
+            {
+              surface: 'unknown-client',
+              documentIds: ['privacy-policy'],
+              publicationReceiptHash: 'e'.repeat(64),
+              verifiedAt: '2026-08-19T01:00:00.000Z',
+              publicationVerified: true,
+              accountPrivacyInstructionsVerified: true,
+              failures: [],
+            },
+          ],
+          approvals: [
+            {
+              subjectId: 'org:product-owner',
+              role: 'product owner',
+              decision: 'APPROVED',
+              receiptId: 'product-receipt',
+              approvedAt: '2026-08-19T01:00:00.000Z',
+            },
+            {
+              subjectId: 'org:legal-reviewer',
+              role: 'legal compliance reviewer',
+              decision: 'APPROVED',
+              receiptId: 'legal-receipt',
+              approvedAt: '2026-08-19T01:00:00.000Z',
+            },
+          ],
+          unresolvedItems: [],
+        },
+        {
+          createdAt: '2026-08-19T00:59:30.000Z',
+          capturedAt: Date.parse('2026-08-19T01:00:30.000Z'),
+        },
+      ),
     ).toEqual(
       expect.arrayContaining([
         'legal-document-release.json documents[0].ownerRef must be an approved opaque subject',
@@ -452,6 +466,7 @@ describe('controlled JSON evidence contracts', () => {
         'legal-document-release.json documents[0].effectiveAt must not precede approval',
         'legal-document-release.json surfaceMatrix[0].documentIds must be unique',
         'legal-document-release.json surfaceMatrix[0].verifiedAt must not precede document effectiveness',
+        'legal-document-release.json surfaceMatrix[0].verifiedAt predates the controlled evidence workspace',
         'legal-document-release.json surfaces must be unique',
         'legal-document-release.json surface publication receipts must be unique',
         'legal-document-release.json surfaceMatrix[2].surface is not approved',
