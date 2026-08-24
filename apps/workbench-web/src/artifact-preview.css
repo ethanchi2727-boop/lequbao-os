@@ -1845,6 +1845,213 @@
   color: var(--muted);
   font-size: 9px;
 }
+.recognition-page {
+  min-height: calc(100vh - 64px);
+  color: var(--ink);
+  background: #f5f6fa;
+}
+.recognition-heading {
+  min-height: 98px;
+  padding: 18px 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  border-bottom: 1px solid var(--line);
+  background: #fff;
+}
+.recognition-heading h1,
+.recognition-heading p,
+.recognition-layout h2 {
+  margin: 4px 0 0;
+}
+.recognition-heading h1 {
+  font-size: 20px;
+}
+.recognition-heading small,
+.recognition-heading p,
+.recognition-layout small,
+.recognition-layout li {
+  color: var(--muted);
+}
+.recognition-heading a,
+.recognition-layout nav a {
+  min-height: 40px;
+  padding: 0 14px;
+  display: grid;
+  place-items: center;
+  border-radius: 9px;
+  color: #fff;
+  background: #5369d9;
+  font-size: 10px;
+}
+.recognition-summary {
+  padding: 18px 28px;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  border-bottom: 1px solid var(--line);
+}
+.recognition-summary > span {
+  padding: 15px;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 4px 10px;
+  border: 1px solid #e1e4ec;
+  border-radius: 13px;
+  background: #fff;
+}
+.recognition-summary small,
+.recognition-summary em {
+  color: var(--muted);
+  font-size: 9px;
+  font-style: normal;
+}
+.recognition-summary b {
+  grid-row: span 2;
+  font-size: 20px;
+}
+.recognition-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 330px;
+}
+.recognition-layout > main,
+.recognition-layout > aside {
+  padding: 24px;
+}
+.recognition-layout > main {
+  padding-left: clamp(24px, 5vw, 70px);
+}
+.recognition-layout > main > header {
+  margin-bottom: 14px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+}
+.recognition-layout h2 {
+  font-size: 15px;
+}
+.recognition-layout > main > header > span {
+  color: var(--muted);
+  font-size: 10px;
+}
+.recognition-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+.recognition-field {
+  min-width: 0;
+  padding: 17px;
+  border: 1px solid #e0e3ec;
+  border-radius: 14px;
+  background: #fff;
+}
+.recognition-field.status-conflict {
+  border-color: #efc7a0;
+  background: #fffaf4;
+}
+.recognition-field.status-confirmed,
+.recognition-field.status-corrected {
+  border-color: #bfe5d6;
+}
+.recognition-field header,
+.recognition-field header > div,
+.recognition-field footer {
+  display: flex;
+  align-items: center;
+}
+.recognition-field header,
+.recognition-field footer {
+  justify-content: space-between;
+  gap: 10px;
+}
+.recognition-field header > div {
+  min-width: 0;
+  gap: 7px;
+}
+.recognition-field header code {
+  min-width: 0;
+  overflow: hidden;
+  color: #657083;
+  font-size: 9px;
+  text-overflow: ellipsis;
+}
+.recognition-field header span,
+.recognition-field footer span {
+  padding: 4px 7px;
+  border-radius: 6px;
+  color: #5366ca;
+  background: #eef1ff;
+  font-size: 8px;
+}
+.recognition-field.status-conflict header span {
+  color: #aa641c;
+  background: #fff0dc;
+}
+.recognition-field header b {
+  color: #4858b9;
+  font-size: 17px;
+}
+.recognition-field h3 {
+  min-height: 42px;
+  margin: 17px 0;
+  overflow-wrap: anywhere;
+  font-size: 14px;
+}
+.recognition-field footer {
+  padding-top: 11px;
+  border-top: 1px solid #eceef3;
+}
+.recognition-field footer small {
+  min-width: 0;
+  overflow: hidden;
+  font-size: 9px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.recognition-layout > aside {
+  display: grid;
+  align-content: start;
+  gap: 13px;
+  border-left: 1px solid var(--line);
+  background: #fff;
+}
+.recognition-layout > aside > section {
+  padding: 17px;
+  border: 1px solid #e1e4ed;
+  border-radius: 13px;
+  background: #fbfcfe;
+}
+.recognition-layout aside ul {
+  margin: 12px 0 0;
+  padding-left: 18px;
+  font-size: 9px;
+  line-height: 1.9;
+}
+.recognition-tags {
+  margin-top: 10px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.recognition-tags span,
+.recognition-tags code {
+  padding: 5px 7px;
+  border-radius: 7px;
+  color: #596579;
+  background: #eef1f6;
+  font-size: 9px;
+}
+.recognition-layout nav {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+.recognition-layout nav a:last-child {
+  color: #5366ca;
+  background: #eef1ff;
+}
 .source-list-tools label {
   width: min(460px, 100%);
   min-height: 42px;
@@ -2126,6 +2333,13 @@
   color: #fff;
 }
 @media (max-width: 900px) {
+  .recognition-layout {
+    display: block;
+  }
+  .recognition-layout > aside {
+    border-top: 1px solid var(--line);
+    border-left: 0;
+  }
   .source-library-layout {
     display: block;
   }
@@ -2135,6 +2349,34 @@
   }
 }
 @media (max-width: 760px) {
+  .recognition-heading {
+    min-height: auto;
+    padding: 14px;
+  }
+  .recognition-heading h1 {
+    font-size: 17px;
+  }
+  .recognition-heading p {
+    display: none;
+  }
+  .recognition-heading a {
+    padding: 0 10px;
+  }
+  .recognition-summary {
+    padding: 14px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+  .recognition-layout > main,
+  .recognition-layout > aside {
+    padding: 14px;
+  }
+  .recognition-layout > aside {
+    padding-bottom: 100px;
+  }
+  .recognition-list {
+    grid-template-columns: 1fr;
+  }
   .capture-types {
     grid-template-columns: 1fr;
   }

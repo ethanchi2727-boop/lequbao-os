@@ -24,6 +24,8 @@ export function renderConversationTopbar({ view, shell, escapeHtml, icon }) {
 }
 
 export function renderConversationThread({ contract, demoMode, livePageState, view, escapeHtml }) {
+  if (view.page === 'page-016')
+    return renderRecognitionReview({ contract, demoMode, livePageState, view, escapeHtml });
   if (view.page === 'page-012')
     return renderIdentitySwitcher({ contract, demoMode, livePageState, view, escapeHtml });
   if (['page-011', 'page-015'].includes(view.page))
@@ -127,6 +129,99 @@ export function renderConversationThread({ contract, demoMode, livePageState, vi
       </aside>
     </div>
   </section>`;
+}
+
+function renderRecognitionReview({ contract, demoMode, livePageState, view, escapeHtml }) {
+  if (!demoMode && !livePageState.data) return renderUnavailable(contract, view, escapeHtml);
+  const session = demoMode
+    ? {
+        id: 'demo-intake-session',
+        status: 'WAITING_CONFIRMATION',
+        version: 4,
+        missingItems: ['merchant.publicContact'],
+        impactTargets: ['MINI_PROGRAM', 'GEO'],
+        assets: [
+          { id: 'asset-license', originalFilename: '营业执照.jpg' },
+          { id: 'asset-menu', originalFilename: '秋季菜单与价格.pdf' },
+          { id: 'asset-audio', originalFilename: '店长补充说明.wav' },
+        ],
+        fields: [
+          {
+            id: 'field-1',
+            fieldPath: 'merchant.legalName',
+            candidateValue: '南京拾味餐饮管理有限公司',
+            confidence: 0.99,
+            decisionStatus: 'PROPOSED',
+            sourceAssetId: 'asset-license',
+          },
+          {
+            id: 'field-2',
+            fieldPath: 'store.name',
+            candidateValue: '拾味小馆 · 新街口店',
+            confidence: 0.96,
+            decisionStatus: 'CONFIRMED',
+            sourceAssetId: 'asset-menu',
+          },
+          {
+            id: 'field-3',
+            fieldPath: 'store.address',
+            candidateValue: '秦淮区中山南路 18 号',
+            confidence: 0.74,
+            decisionStatus: 'CONFLICT',
+            sourceAssetId: 'asset-license',
+          },
+          {
+            id: 'field-4',
+            fieldPath: 'store.address',
+            candidateValue: '中山南路 18 号 2 楼',
+            confidence: 0.67,
+            decisionStatus: 'CONFLICT',
+            sourceAssetId: 'asset-audio',
+          },
+          {
+            id: 'field-5',
+            fieldPath: 'product.averagePrice',
+            candidateValue: 6800,
+            confidence: 0.88,
+            decisionStatus: 'PROPOSED',
+            sourceAssetId: 'asset-menu',
+          },
+        ],
+      }
+    : livePageState.data;
+  const fields = list(session.fields);
+  const assets = new Map(list(session.assets).map((asset) => [asset.id, asset]));
+  const confirmed = fields.filter((field) =>
+    ['CONFIRMED', 'CORRECTED'].includes(field.decisionStatus),
+  ).length;
+  const conflicts = fields.filter((field) => field.decisionStatus === 'CONFLICT').length;
+  const review = fields.filter((field) => field.decisionStatus === 'PROPOSED').length;
+  const sessionId = String(session.id ?? 'session');
+  return `<section class="recognition-page" data-page-id="${contract.id}" data-experience="recognition-review"><header class="recognition-heading"><div><small>${demoMode ? '演示识别 · 非真实业务数据' : '服务端字段候选'}</small><h1>识别结果</h1><p>逐字段核对候选值、置信度、冲突和原始材料。</p></div><a href="/bao/page-018?${demoMode ? 'demo=1&' : ''}sessionId=${encodeURIComponent(sessionId)}">进入确认变更</a></header><section class="recognition-summary"><span><small>候选字段</small><b>${fields.length}</b><em>当前版本 v${escapeHtml(session.version ?? 1)}</em></span><span><small>已确认</small><b>${confirmed}</b><em>含人工修正</em></span><span><small>待核对</small><b>${review}</b><em>不自动写入</em></span><span><small>冲突候选</small><b>${conflicts}</b><em>必须人工决定</em></span></section><div class="recognition-layout"><main><header><div><small>字段候选</small><h2>${escapeHtml(session.status ?? 'UNKNOWN')}</h2></div><span>${fields.length} 项结果</span></header><section class="recognition-list">${fields.length ? fields.map((field) => renderRecognitionField(field, assets.get(field.sourceAssetId), escapeHtml)).join('') : '<div class="source-list-empty"><strong>还没有可审查的候选</strong><p>材料通过扫描和识别后会在这里显示。</p></div>'}</section></main><aside><section><small>审查口径</small><h2>置信度不等于业务真实</h2><ul><li>≥ 90% 只代表可建议，高风险字段仍要确认</li><li>70–89% 需核对原始材料与标准化结果</li><li>&lt; 70% 或 CONFLICT 不能自动写入</li></ul></section><section><small>未补齐项</small><h2>${list(session.missingItems).length || '无'} 项</h2><div class="recognition-tags">${
+    list(session.missingItems)
+      .map((item) => `<code>${escapeHtml(item)}</code>`)
+      .join('') || '<span>当前没有服务端缺项</span>'
+  }</div></section><section><small>可能影响的发布目标</small><div class="recognition-tags">${
+    list(session.impactTargets)
+      .map((item) => `<span>${escapeHtml(item)}</span>`)
+      .join('') || '<span>尚未计算影响</span>'
+  }</div></section><nav><a href="/bao/page-017?${demoMode ? 'demo=1&' : ''}sessionId=${encodeURIComponent(sessionId)}">处理缺项追问</a><a href="/bao/page-019?${demoMode ? 'demo=1&' : ''}sessionId=${encodeURIComponent(sessionId)}">查看字段来源</a></nav></aside></div></section>`;
+}
+
+function renderRecognitionField(field, asset, escapeHtml) {
+  const confidence =
+    field.confidence === null || field.confidence === undefined
+      ? null
+      : Math.round(Number(field.confidence) * 100);
+  const tier =
+    confidence === null
+      ? '无法判断'
+      : confidence >= 90
+        ? '可建议'
+        : confidence >= 70
+          ? '需核对'
+          : '低信心';
+  return `<article class="recognition-field status-${String(field.decisionStatus).toLowerCase()}"><header><div><code>${escapeHtml(field.fieldPath ?? '未知字段')}</code><span>${escapeHtml(field.decisionStatus ?? 'PROPOSED')}</span></div><b>${confidence === null ? '—' : `${confidence}%`}</b></header><h3>${escapeHtml(text(field.candidateValue, '空候选'))}</h3><footer><span>${tier}</span><small>来源：${escapeHtml(asset?.originalFilename ?? String(field.sourceAssetId ?? '未知材料'))}</small></footer></article>`;
 }
 
 export async function switchWorkbenchTenant({ tenantId, token, deviceId, request = fetch }) {
