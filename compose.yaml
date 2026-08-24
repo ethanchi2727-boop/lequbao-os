@@ -20,7 +20,7 @@ services:
 
   migrate:
     image: postgres:15-bookworm@sha256:cf7f8fb958c63e62875e30645dc4819ff0243a923f3c709e752b99dedd40bfcd
-    restart: 'no'
+    restart: 'on-failure:5'
     environment:
       PGHOST: postgres
       PGDATABASE: lequ_v6

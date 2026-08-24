@@ -112,7 +112,11 @@ for (const marker of [
 ])
   if (!previewDatabaseMigration.includes(marker))
     failures.push(`Public preview incremental database marker missing: ${marker}`);
-for (const marker of ['migrate:', 'condition: service_completed_successfully'])
+for (const marker of [
+  'migrate:',
+  "restart: 'on-failure:5'",
+  'condition: service_completed_successfully',
+])
   if (!previewCompose.includes(marker))
     failures.push(`Public preview migration dependency missing: ${marker}`);
 for (const marker of [
