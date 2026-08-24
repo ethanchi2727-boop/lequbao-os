@@ -1,7 +1,11 @@
 export function resolveWorkbenchShell(demoMode) {
   if (demoMode)
     return {
-      recentServices: ['拾味小馆 · 交付中', '叶子花店 · 资料待确认', '七月永久收益月结'],
+      recentServices: [
+        { label: '拾味小馆 · 交付中', route: 'page-053' },
+        { label: '叶子花店 · 资料待确认', route: 'page-018' },
+        { label: '七月永久收益月结', route: 'page-037' },
+      ],
       identityInitial: '周',
       identityLabel: '周子涵',
       identityScope: '南京西路 · 仅授权范围',

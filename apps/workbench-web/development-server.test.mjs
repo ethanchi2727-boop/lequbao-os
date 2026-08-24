@@ -120,7 +120,7 @@ describe('Workbench development server', () => {
     expect((await fetch(`${development}/__development/login`)).status).toBe(404);
   });
 
-  it('binds the public preview to the configured host and separates life from employee entry', async () => {
+  it('binds the public preview to the configured host and prioritizes the PC employee entry', async () => {
     const lifeRoot = await surfaceFixture('life', '乐趣生活 UniApp');
     const baoMobileRoot = await surfaceFixture('bao-mobile', '乐趣宝移动端');
     const development = await listen(
@@ -135,7 +135,7 @@ describe('Workbench development server', () => {
     );
     const entry = await requestWithHost(development, '/', 'bao.lequ.com');
     expect(entry.status).toBe(302);
-    expect(entry.headers.location).toBe('/life?demo=1');
+    expect(entry.headers.location).toBe('/__development/login');
     expect(entry.headers['x-robots-tag']).toContain('noindex');
     expect(entry.headers['x-lequ-environment']).toBe('development-mock-preview');
 

@@ -135,7 +135,7 @@ export function createWorkbenchDevelopmentServer({
       }
       if (publicPreview && developmentMock && request.method === 'GET' && url.pathname === '/') {
         response.statusCode = 302;
-        response.setHeader('location', '/life?demo=1');
+        response.setHeader('location', '/__development/login');
         return response.end();
       }
       if (

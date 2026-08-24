@@ -147,7 +147,7 @@ function sidebar() {
   const routeSuffix = demoMode ? '?demo=1' : '';
   const pageSearch = `<div class="search-shell"><label class="search">${icon('search')}<input data-action="page-search" role="combobox" aria-label="搜索工作台页面" aria-controls="page-search-results" aria-expanded="false" aria-autocomplete="list" aria-haspopup="listbox" autocomplete="off" placeholder="搜索工作台页面"/><kbd>Ctrl K</kbd></label><div class="search-results" id="page-search-results" role="listbox" aria-label="页面搜索结果" hidden></div><div class="sr-only" id="page-search-announcement" aria-live="polite" aria-atomic="true"></div></div>`;
   const recent = shell.recentServices.length
-    ? `<section class="recent"><small>我的持续服务</small>${shell.recentServices.map((item) => `<a href="#">${escapeHtml(item)}</a>`).join('')}</section>`
+    ? `<section class="recent"><small>我的持续服务</small>${shell.recentServices.map((item) => `<a href="/bao/${item.route}${routeSuffix}">${escapeHtml(item.label)}</a>`).join('')}</section>`
     : '<section class="recent"><small>我的持续服务</small><span>从当前页面的权威结果进入相关服务</span></section>';
   return `<aside class="sidebar" aria-label="主导航">
     <a class="brand" href="/bao/page-014${routeSuffix}"><b>${icon('logo')}</b><span><strong>乐趣宝</strong><small>AI 经营工作台</small></span></a>
@@ -179,7 +179,7 @@ function topbar() {
     ? `<button data-action="open-results" aria-controls="workbench-results" aria-expanded="${resultPanel.open}">${icon('clock')} ${demoMode ? `后台任务 ${shell.backgroundTaskCount}` : '任务与成果'}</button>`
     : '';
   const demoActions = demoMode
-    ? `<button>快速执行</button>${resultAction}<button aria-label="分享">${icon('share')}</button>`
+    ? `<button data-route="page-003">快速执行</button>${resultAction}<button aria-label="分享">${icon('share')}</button>`
     : resultAction;
   return `<header class="topbar"><div class="mobile-title"><button data-action="back" aria-label="返回">${icon('back')}</button><strong>${escapeHtml(view.title)}</strong><small>${escapeHtml(shell.status)}</small></div><div class="crumb">乐趣宝 <b>›</b> <strong>${escapeHtml(view.title)}</strong></div><div class="top-actions"><span>${escapeHtml(shell.status)}</span>${demoActions}</div></header>`;
 }

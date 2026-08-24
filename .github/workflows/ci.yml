@@ -285,7 +285,7 @@ jobs:
             --header 'Host: bao.lequ.com' http://127.0.0.1:8080/)" = 302
           test "$(curl --silent --dump-header - --output /dev/null \
             --header 'Host: bao.lequ.com' http://127.0.0.1:8080/ \
-            | tr -d '\r' | sed -n 's/^location: //Ip')" = '/life?demo=1'
+            | tr -d '\r' | sed -n 's/^location: //Ip')" = '/__development/login'
           curl --fail --silent --header 'Host: bao.lequ.com' http://127.0.0.1:8080/life/ \
             | grep --quiet '<title>乐趣生活</title>'
           curl --fail --silent --header 'Host: bao.lequ.com' http://127.0.0.1:8080/bao-mobile/ \

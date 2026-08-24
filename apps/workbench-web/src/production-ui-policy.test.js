@@ -6,6 +6,14 @@ import {
 } from './production-ui-policy.mjs';
 
 describe('production UI policy', () => {
+  it('routes each demo recent service to an existing core workflow', () => {
+    expect(resolveWorkbenchShell(true).recentServices).toEqual([
+      { label: '拾味小馆 · 交付中', route: 'page-053' },
+      { label: '叶子花店 · 资料待确认', route: 'page-018' },
+      { label: '七月永久收益月结', route: 'page-037' },
+    ]);
+  });
+
   it('never projects sample people, merchants, tasks, or intake fields in production', () => {
     const shell = resolveWorkbenchShell(false);
     const intake = resolveIntakeProjection({ demoMode: false, session: null, demoFields: [['x']] });
