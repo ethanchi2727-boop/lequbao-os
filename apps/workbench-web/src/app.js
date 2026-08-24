@@ -178,9 +178,11 @@ function topbar() {
   const resultAction = intakePages.has(view.page)
     ? `<button data-action="open-results" aria-controls="workbench-results" aria-expanded="${resultPanel.open}">${icon('clock')} ${demoMode ? `后台任务 ${shell.backgroundTaskCount}` : '任务与成果'}</button>`
     : '';
-  const demoActions = demoMode
-    ? `<button data-route="page-003">快速执行</button>${resultAction}<button aria-label="分享">${icon('share')}</button>`
-    : resultAction;
+  const primaryDemoAction =
+    view.page === 'page-003'
+      ? '<button data-route="page-014">开始建档</button>'
+      : '<button data-route="page-003">快速执行</button>';
+  const demoActions = demoMode ? `${primaryDemoAction}${resultAction}` : resultAction;
   return `<header class="topbar"><div class="mobile-title"><button data-action="back" aria-label="返回">${icon('back')}</button><strong>${escapeHtml(view.title)}</strong><small>${escapeHtml(shell.status)}</small></div><div class="crumb">乐趣宝 <b>›</b> <strong>${escapeHtml(view.title)}</strong></div><div class="top-actions"><span>${escapeHtml(shell.status)}</span>${demoActions}</div></header>`;
 }
 
