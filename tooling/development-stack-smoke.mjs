@@ -37,6 +37,25 @@ assert.equal(context.body.roleCodes.length, 12);
 assert.ok(context.body.roleCodes.includes('MERCHANT_OWNER'));
 assert.ok(context.body.roleCodes.includes('PLATFORM_FINANCE'));
 
+const employeeHeaders = {
+  authorization: `Bearer ${accessToken}`,
+  'content-type': 'application/json',
+};
+const intake = await json('http://127.0.0.1:4173/api/v1/merchant-intake/sessions', {
+  method: 'POST',
+  headers: { ...employeeHeaders, 'idempotency-key': 'development-smoke-intake-v1' },
+  body: JSON.stringify({ channel: 'WEB' }),
+});
+assert.equal(intake.response.status, 201);
+assert.equal(intake.body.channel, 'WEB');
+assert.equal(intake.body.status, 'COLLECTING');
+assert.equal(intake.body.version, 1);
+const restoredIntake = await json(
+  `http://127.0.0.1:4173/api/v1/merchant-intake/sessions/${encodeURIComponent(intake.body.id)}`,
+  { headers: employeeHeaders },
+);
+assert.deepEqual(restoredIntake.body, intake.body);
+
 const lifeLogin = await json('http://127.0.0.1:4173/api/v1/life/auth/sessions/exchange', {
   method: 'POST',
   headers: { 'content-type': 'application/json', 'user-agent': 'lequ-development-smoke' },
@@ -87,4 +106,6 @@ const page = await fetch('http://127.0.0.1:4173/bao/page-014');
 assert.equal(page.ok, true, `Workbench page returned HTTP ${page.status}`);
 assert.match(await page.text(), /<div id="app"><\/div>/u);
 
-console.log('Development stack smoke passed with employee and Life consumer PostgreSQL identity.');
+console.log(
+  'Development stack smoke passed with employee intake and Life consumer PostgreSQL identity.',
+);
