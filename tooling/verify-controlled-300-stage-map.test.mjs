@@ -71,7 +71,7 @@ describe('controlled 300-stage execution map', () => {
   it('rejects non-integer artifact counts even when their total could look plausible', async () => {
     const { plan, mapping } = await loadFixtures(root);
     mapping.stages[0].expectedArtifactCount = 3.5;
-    mapping.stages[1].expectedArtifactCount = 3.5;
+    mapping.stages[1].expectedArtifactCount = Number.MAX_SAFE_INTEGER + 1;
 
     expect(validateControlled300StageMap(plan, mapping).failures).toEqual(
       expect.arrayContaining([

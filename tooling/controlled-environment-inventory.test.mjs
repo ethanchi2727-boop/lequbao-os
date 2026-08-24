@@ -211,7 +211,10 @@ describe('controlled environment names-only inventory', () => {
       }),
     ).rejects.toThrow('GitHub secrets name response is incomplete');
 
-    const malformed = [{ secrets: [] }, { total_count: 0, variables: [] }];
+    const malformed = [
+      { total_count: Number.MAX_SAFE_INTEGER + 1, secrets: [] },
+      { total_count: 0, variables: [] },
+    ];
     await expect(
       fetchGitHubEnvironmentNames({
         repository: 'owner/repository',

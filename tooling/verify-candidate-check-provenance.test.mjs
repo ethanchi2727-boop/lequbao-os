@@ -127,7 +127,9 @@ describe('candidate check provenance', () => {
     const directories = await roots();
     const checks = requiredCandidateChecks.map((name) => check(name));
     const malformedFetch = async (url) =>
-      url.includes('/check-runs') ? response({ check_runs: checks }) : response(run());
+      url.includes('/check-runs')
+        ? response({ total_count: Number.MAX_SAFE_INTEGER + 1, check_runs: checks })
+        : response(run());
     await expect(
       verifyCandidateCheckProvenance({
         candidate,
