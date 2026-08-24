@@ -143,6 +143,13 @@ const CREATE_WRITE_ROLES = [
 ];
 const CONFIRM_ROLES = ['MERCHANT_OWNER', 'PLATFORM_OPERATOR'];
 
+export function requiresRegionalIntakeAssignment(roleCodes: string[]): boolean {
+  return (
+    roleCodes.includes('REGIONAL_PROVIDER') &&
+    !roleCodes.some((role) => role !== 'REGIONAL_PROVIDER' && CREATE_WRITE_ROLES.includes(role))
+  );
+}
+
 async function reserve(
   client: pg.PoolClient,
   tenantId: string,
@@ -209,7 +216,7 @@ async function assertRegionalProjectAssignment(
   identity: SessionIdentity,
   options: { projectId?: string | null | undefined; sessionId?: string | undefined },
 ) {
-  if (!identity.roleCodes.includes('REGIONAL_PROVIDER')) return;
+  if (!requiresRegionalIntakeAssignment(identity.roleCodes)) return;
   const assignment = options.projectId
     ? await client.query(
         `SELECT 1 FROM delivery_project_assignments
