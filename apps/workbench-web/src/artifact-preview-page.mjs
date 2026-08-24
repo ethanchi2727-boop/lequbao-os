@@ -24,6 +24,8 @@ export function renderConversationTopbar({ view, shell, escapeHtml, icon }) {
 }
 
 export function renderConversationThread({ contract, demoMode, livePageState, view, escapeHtml }) {
+  if (view.page === 'page-011')
+    return renderSourceLibrary({ contract, demoMode, livePageState, view, escapeHtml });
   if (view.page === 'page-010')
     return renderJobQueue({ contract, demoMode, livePageState, view, escapeHtml });
   if (view.page === 'page-009')
@@ -128,8 +130,9 @@ export function renderConversationThread({ contract, demoMode, livePageState, vi
 export function handlePageInput(target) {
   if (!(target instanceof HTMLInputElement)) return false;
   const config = {
-    'conversation-search': ['[data-conversation-row]', '[data-conversation-count]', '会话'],
-    'task-search': ['[data-task-row]', '[data-task-count]', '任务'],
+    'conversation-search': ['[data-conversation-row]', '[data-conversation-count]', ' 个会话'],
+    'task-search': ['[data-task-row]', '[data-task-count]', ' 个任务'],
+    'material-search': ['[data-material-row]', '[data-material-count]', ' 份材料'],
   }[target.dataset.action];
   if (!config) return false;
   const query = target.value.trim().toLocaleLowerCase('zh-CN');
@@ -140,8 +143,123 @@ export function handlePageInput(target) {
     if (matches) visible += 1;
   }
   const count = document.querySelector(config[1]);
-  if (count) count.textContent = `${visible} 个${config[2]}`;
+  if (count) count.textContent = `${visible}${config[2]}`;
   return true;
+}
+
+function renderSourceLibrary({ contract, demoMode, livePageState, view, escapeHtml }) {
+  if (!demoMode && !livePageState.data && view.state !== 'empty')
+    return renderUnavailable(contract, view, escapeHtml);
+  const session = demoMode
+    ? {
+        id: 'demo-intake-session',
+        status: 'EXTRACTING',
+        channel: 'WEB',
+        fields: [
+          { sourceAssetId: 'asset-license' },
+          { sourceAssetId: 'asset-license' },
+          { sourceAssetId: 'asset-menu' },
+          { sourceAssetId: 'asset-audio' },
+        ],
+        assets: [
+          {
+            id: 'asset-license',
+            sourceChannel: 'WEB',
+            assetType: 'IMAGE',
+            originalFilename: '营业执照.jpg',
+            mimeType: 'image/jpeg',
+            sha256: 'a18f13bd864e2bb65cf71668c4f7bd6b1064d7fbf41f7238ca2fc9370d141a21',
+            securityStatus: 'SAFE',
+            processingStatus: 'SUCCEEDED',
+            errorCode: null,
+            createdBy: 'user-demo',
+            createdAt: '2026-08-25T00:12:00.000Z',
+          },
+          {
+            id: 'asset-menu',
+            sourceChannel: 'MOBILE_H5',
+            assetType: 'DOCUMENT',
+            originalFilename: '秋季菜单与价格.pdf',
+            mimeType: 'application/pdf',
+            sha256: 'b44c871ba4f763d5957692de701cd482b961d82e3877111a067372982531745a',
+            securityStatus: 'SAFE',
+            processingStatus: 'PROCESSING',
+            errorCode: null,
+            createdBy: 'user-demo',
+            createdAt: '2026-08-25T00:18:00.000Z',
+          },
+          {
+            id: 'asset-audio',
+            sourceChannel: 'WECOM',
+            assetType: 'AUDIO',
+            originalFilename: '店长补充说明.wav',
+            mimeType: 'audio/wav',
+            sha256: 'cf3361289a468f09e5018cd76a8dc00d5e9382e7d633ad7d0fa6e9da33f1d463',
+            securityStatus: 'SAFE',
+            processingStatus: 'SUCCEEDED',
+            errorCode: null,
+            createdBy: 'user-demo',
+            createdAt: '2026-08-25T00:21:00.000Z',
+          },
+          {
+            id: 'asset-rejected',
+            sourceChannel: 'WEB',
+            assetType: 'DOCUMENT',
+            originalFilename: '来源不明附件.docx',
+            mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            sha256: 'd78a49a51f169fec05039cba61cdad1bd01e24346121770f93a073f8206520ca',
+            securityStatus: 'REJECTED',
+            processingStatus: 'FAILED',
+            errorCode: 'MALWARE_DETECTED',
+            createdBy: 'user-demo',
+            createdAt: '2026-08-25T00:25:00.000Z',
+          },
+        ],
+      }
+    : livePageState.data;
+  const assets = list(session.assets);
+  const fields = list(session.fields);
+  const safe = assets.filter((asset) => asset.securityStatus === 'SAFE').length;
+  const processing = assets.filter(
+    (asset) =>
+      ['PENDING', 'QUEUED', 'PROCESSING'].includes(asset.securityStatus) ||
+      ['QUEUED', 'PROCESSING'].includes(asset.processingStatus),
+  ).length;
+  const rejected = assets.filter((asset) =>
+    ['REJECTED', 'FAILED'].includes(asset.securityStatus),
+  ).length;
+  return `<section class="source-library-page" data-page-id="${contract.id}" data-experience="source-library">
+    <header class="source-library-heading"><div><small>${demoMode ? '演示材料 · 非真实文件' : '权威建档材料'}</small><h1>材料与来源</h1><p>核对原始材料、安全状态、字段引用和处理边界。</p></div><button data-action="choose-file">＋ 添加材料</button></header>
+    <section class="source-summary"><span><small>材料总数</small><b>${assets.length}</b><em>当前会话</em></span><span><small>安全可用</small><b>${safe}</b><em>仍按用途授权</em></span><span><small>处理中</small><b>${processing}</b><em>不可提前使用</em></span><span><small>已隔离</small><b>${rejected}</b><em>禁止预览发送</em></span></section>
+    <div class="source-library-layout"><main><div class="source-list-tools"><label><span>⌕</span><input type="search" data-action="material-search" placeholder="搜索文件名、类型、状态或 SHA-256" autocomplete="off"/></label><span data-material-count>${assets.length} 份材料</span></div><section class="source-list" aria-live="polite">${assets.length ? assets.map((asset) => renderSourceAsset(asset, fields, escapeHtml)).join('') : '<div class="source-list-empty"><strong>当前会话还没有材料</strong><p>添加图片、PDF、Word 或语音后，材料会先进入安全扫描。</p></div>'}</section></main>${renderSourceInspector(session, assets, demoMode, escapeHtml)}</div>
+  </section>`;
+}
+
+function renderSourceAsset(asset, fields, escapeHtml) {
+  const id = String(asset.id ?? 'asset');
+  const filename = asset.originalFilename ?? `${asset.assetType ?? 'MATERIAL'} 材料`;
+  const security = String(asset.securityStatus ?? 'PENDING');
+  const processing = String(asset.processingStatus ?? 'QUEUED');
+  const references = fields.filter((field) => field.sourceAssetId === id).length;
+  const hash = String(asset.sha256 ?? '');
+  const search = [
+    filename,
+    asset.assetType,
+    asset.mimeType,
+    security,
+    processing,
+    hash,
+    asset.errorCode,
+  ]
+    .filter(Boolean)
+    .join(' ')
+    .toLocaleLowerCase('zh-CN');
+  return `<article data-material-row data-search="${escapeHtml(search)}"><div class="source-type type-${String(asset.assetType).toLowerCase()}">${escapeHtml(String(asset.assetType ?? 'FILE').slice(0, 3))}</div><div class="source-main"><header><div><strong>${escapeHtml(filename)}</strong><small>${escapeHtml(asset.sourceChannel ?? 'WEB')} · ${escapeHtml(asset.mimeType ?? '类型未知')}</small></div><time>${escapeHtml(dateText(asset.createdAt))}</time></header><div class="source-state"><span class="security-${security.toLowerCase()}">${escapeHtml(security)}</span><span>${escapeHtml(processing)}</span>${asset.errorCode ? `<span class="source-error">${escapeHtml(asset.errorCode)}</span>` : ''}</div><footer><code>SHA ${escapeHtml(hash.slice(0, 20))}</code><span>${references} 个字段引用</span></footer></div></article>`;
+}
+
+function renderSourceInspector(session, assets, demoMode, escapeHtml) {
+  const sessionId = String(session.id ?? 'session');
+  return `<aside class="source-inspector"><section><small>会话边界</small><h2>${escapeHtml(session.status ?? 'UNKNOWN')}</h2><p>当前列表只包含服务端按租户、角色和项目分配校验后返回的材料。</p><dl><div><dt>会话编号</dt><dd>${escapeHtml(sessionId)}</dd></div><div><dt>来源渠道</dt><dd>${escapeHtml(session.channel ?? '—')}</dd></div><div><dt>材料数量</dt><dd>${assets.length}</dd></div></dl></section><section class="source-upload composer"><small>安全上传</small><h2>添加原始材料</h2><p>支持图片、PDF、Word 和音频；文件先计算摘要，再申请限时上传并进入恶意文件扫描。</p><input id="intake-file" type="file" accept="image/jpeg,image/png,image/webp,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,audio/mpeg,audio/wav,audio/mp4,audio/amr" hidden/><button type="button" data-action="choose-file">选择文件并安全上传</button><div class="upload-item" aria-live="polite"></div><small role="status">${demoMode ? '演示模式不会上传文件' : '未通过扫描的材料不能被使用'}</small></section><section><small>补充文字</small><h2>保存为可追溯材料</h2>${demoMode ? '<textarea disabled placeholder="演示模式不写入业务系统"></textarea><button disabled>补充文字材料</button>' : `<div class="source-text-command" data-command-form="merchant-intake-message-add"><label>材料内容<textarea data-command-field="content" required maxlength="4000" placeholder="补充来源、口径或现场说明"></textarea></label><button type="button" data-command="merchant-intake-message-add">补充文字材料</button></div>`}</section><section><small>最小权限</small><ul><li>不向浏览器返回对象存储地址</li><li>扫描未通过时禁止预览和发送</li><li>原始哈希与字段来源保持可追溯</li><li>下载与复用需要独立授权能力</li></ul></section><nav><a href="/bao/page-019?${demoMode ? 'demo=1&' : ''}sessionId=${encodeURIComponent(sessionId)}">查看字段来源</a><a href="/bao/page-015?${demoMode ? 'demo=1&' : ''}sessionId=${encodeURIComponent(sessionId)}">进入材料采集</a></nav></aside>`;
 }
 
 function renderJobQueue({ contract, demoMode, livePageState, view, escapeHtml }) {

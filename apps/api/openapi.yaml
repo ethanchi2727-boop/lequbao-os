@@ -4823,6 +4823,38 @@ components:
           oneOf: [{ type: number, minimum: 0, maximum: 1 }, { type: 'null' }]
         decisionStatus: { type: string, enum: [PROPOSED, CONFIRMED, CORRECTED, REJECTED, CONFLICT] }
         sourceAssetId: { type: string, format: uuid }
+    MerchantIntakeSessionAsset:
+      type: object
+      additionalProperties: false
+      required:
+        [
+          id,
+          sourceChannel,
+          assetType,
+          originalFilename,
+          mimeType,
+          sha256,
+          securityStatus,
+          processingStatus,
+          errorCode,
+          createdBy,
+          createdAt,
+        ]
+      properties:
+        id: { type: string, format: uuid }
+        sourceChannel: { type: string, enum: [WEB, MOBILE_H5, WECOM] }
+        assetType: { type: string, enum: [IMAGE, DOCUMENT, AUDIO, TEXT] }
+        originalFilename:
+          oneOf: [{ type: string }, { type: 'null' }]
+        mimeType:
+          oneOf: [{ type: string }, { type: 'null' }]
+        sha256: { type: string, pattern: '^[a-fA-F0-9]{64}$' }
+        securityStatus: { type: string, enum: [PENDING, SAFE, REJECTED, FAILED] }
+        processingStatus: { type: string, enum: [QUEUED, PROCESSING, SUCCEEDED, FAILED] }
+        errorCode:
+          oneOf: [{ type: string }, { type: 'null' }]
+        createdBy: { type: string, format: uuid }
+        createdAt: { type: string, format: date-time }
     MerchantIntakeSession:
       type: object
       additionalProperties: false
@@ -4833,6 +4865,7 @@ components:
           deliveryProjectId,
           channel,
           status,
+          assets,
           fields,
           missingItems,
           impactTargets,
@@ -4866,6 +4899,9 @@ components:
         fields:
           type: array
           items: { $ref: '#/components/schemas/MerchantIntakeField' }
+        assets:
+          type: array
+          items: { $ref: '#/components/schemas/MerchantIntakeSessionAsset' }
         missingItems:
           type: array
           items: { type: string }

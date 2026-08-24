@@ -67,6 +67,19 @@ const FieldSchema = z.object({
   decisionStatus: z.enum(['PROPOSED', 'CONFIRMED', 'CORRECTED', 'REJECTED', 'CONFLICT']),
   sourceAssetId: UuidSchema,
 });
+const SessionAssetSchema = z.object({
+  id: UuidSchema,
+  sourceChannel: ChannelSchema,
+  assetType: z.enum(['IMAGE', 'DOCUMENT', 'AUDIO', 'TEXT']),
+  originalFilename: z.string().nullable(),
+  mimeType: z.string().nullable(),
+  sha256: z.string().regex(/^[a-f0-9]{64}$/i),
+  securityStatus: z.enum(['PENDING', 'SAFE', 'REJECTED', 'FAILED']),
+  processingStatus: z.enum(['QUEUED', 'PROCESSING', 'SUCCEEDED', 'FAILED']),
+  errorCode: z.string().nullable(),
+  createdBy: UuidSchema,
+  createdAt: z.string(),
+});
 const SessionResponseSchema = z.object({
   id: UuidSchema,
   merchantProfileId: UuidSchema.nullable(),
@@ -83,6 +96,7 @@ const SessionResponseSchema = z.object({
     'FAILED',
     'CANCELLED',
   ]),
+  assets: z.array(SessionAssetSchema),
   fields: z.array(FieldSchema),
   missingItems: z.array(z.string()),
   impactTargets: z.array(ImpactTargetSchema),
@@ -273,6 +287,25 @@ async function loadSession(
       WHERE tenant_id = $1 AND session_id = $2 ORDER BY created_at, id`,
     [tenantId, sessionId],
   );
+  const assets = await client.query<{
+    id: string;
+    source_channel: string;
+    asset_type: string;
+    original_filename: string | null;
+    mime_type: string | null;
+    sha256: string;
+    security_status: string;
+    processing_status: string;
+    error_code: string | null;
+    created_by: string;
+    created_at: Date;
+  }>(
+    `SELECT id, source_channel, asset_type, original_filename, mime_type, sha256,
+            security_status, processing_status, error_code, created_by, created_at
+       FROM merchant_intake_assets
+      WHERE tenant_id = $1 AND session_id = $2 ORDER BY created_at, id`,
+    [tenantId, sessionId],
+  );
   const row = session.rows[0];
   return SessionResponseSchema.parse({
     id: row.id,
@@ -280,6 +313,19 @@ async function loadSession(
     deliveryProjectId: row.delivery_project_id,
     channel: row.channel,
     status: row.status,
+    assets: assets.rows.map((asset) => ({
+      id: asset.id,
+      sourceChannel: asset.source_channel,
+      assetType: asset.asset_type,
+      originalFilename: asset.original_filename,
+      mimeType: asset.mime_type,
+      sha256: asset.sha256,
+      securityStatus: asset.security_status,
+      processingStatus: asset.processing_status,
+      errorCode: asset.error_code,
+      createdBy: asset.created_by,
+      createdAt: asset.created_at.toISOString(),
+    })),
     fields: fields.rows.map((field) => ({
       id: field.id,
       fieldPath: field.field_path,

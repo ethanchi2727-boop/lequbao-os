@@ -200,4 +200,56 @@ describe('乐趣宝成果预览', () => {
     expect(html).toContain('PROVIDER_TIMEOUT');
     expect(html).not.toContain('UPSTREAM_TIMEOUT');
   });
+
+  it('材料库展示扫描状态、哈希、字段引用与安全上传边界', () => {
+    const html = renderConversationThread({
+      contract: { id: 'PAGE-011', title: '材料与来源' },
+      demoMode: true,
+      livePageState: { data: null },
+      view: { page: 'page-011', state: 'default' },
+      escapeHtml,
+    });
+    expect(html).toContain('data-experience="source-library"');
+    expect(html).toContain('data-action="material-search"');
+    expect(html).toContain('营业执照.jpg');
+    expect(html).toContain('MALWARE_DETECTED');
+    expect(html).toContain('2 个字段引用');
+    expect(html).toContain('不向浏览器返回对象存储地址');
+  });
+
+  it('材料库生产态只展示服务端返回的脱敏元数据', () => {
+    const html = renderConversationThread({
+      contract: { id: 'PAGE-011', title: '材料与来源' },
+      demoMode: false,
+      livePageState: {
+        data: {
+          id: 'session-live',
+          status: 'EXTRACTING',
+          channel: 'WEB',
+          fields: [{ sourceAssetId: 'asset-live' }],
+          assets: [
+            {
+              id: 'asset-live',
+              sourceChannel: 'WEB',
+              assetType: 'DOCUMENT',
+              originalFilename: '合同.pdf',
+              mimeType: 'application/pdf',
+              sha256: 'e'.repeat(64),
+              securityStatus: 'SAFE',
+              processingStatus: 'SUCCEEDED',
+              errorCode: null,
+              createdAt: '2026-08-25T00:00:00.000Z',
+            },
+          ],
+        },
+      },
+      view: { page: 'page-011', state: 'default' },
+      escapeHtml,
+    });
+    expect(html).toContain('合同.pdf');
+    expect(html).toContain('1 个字段引用');
+    expect(html).toContain('data-command="merchant-intake-message-add"');
+    expect(html).not.toContain('object_key');
+    expect(html).not.toContain('objectKey');
+  });
 });

@@ -134,6 +134,21 @@ try {
   const extracted = await service.recordProcessingResult(processCommand);
   assert.deepEqual(await service.recordProcessingResult(processCommand), extracted);
   assert.equal(extracted.status, 'WAITING_CONFIRMATION');
+  assert.equal(extracted.assets.length, 1);
+  assert.deepEqual(extracted.assets[0], {
+    id: asset.assetId,
+    sourceChannel: 'WEB',
+    assetType: 'IMAGE',
+    originalFilename: null,
+    mimeType: 'image/jpeg',
+    sha256: sha('license-image'),
+    securityStatus: 'SAFE',
+    processingStatus: 'SUCCEEDED',
+    errorCode: null,
+    createdBy: ownerId,
+    createdAt: extracted.assets[0]?.createdAt,
+  });
+  assert.equal('objectKey' in extracted.assets[0]!, false);
   assert.equal(extracted.fields.length, 3);
   assert.ok(extracted.fields.every((field) => field.decisionStatus === 'PROPOSED'));
 
@@ -190,6 +205,8 @@ try {
     body: { assetId: unsafeAsset.id, securityStatus: 'REJECTED', errorCode: 'MALWARE_DETECTED' },
   });
   assert.equal(rejected.status, 'FAILED');
+  assert.equal(rejected.assets[0]?.securityStatus, 'REJECTED');
+  assert.equal(rejected.assets[0]?.errorCode, 'MALWARE_DETECTED');
   assert.equal(rejected.fields.length, 0);
 
   const conflictSession = await service.createSession({

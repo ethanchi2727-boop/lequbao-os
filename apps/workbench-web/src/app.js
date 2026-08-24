@@ -58,7 +58,15 @@ let resultPanel = resultPanelFromStorage(sessionStorage.getItem(resultPanelStora
 let draftMessage = '';
 let aiStartPage = null;
 let aiConversationPage = null;
-const aiPages = new Set(['page-004', 'page-005', 'page-006', 'page-007', 'page-009', 'page-010']);
+const aiPages = new Set([
+  'page-004',
+  'page-005',
+  'page-006',
+  'page-007',
+  'page-009',
+  'page-010',
+  'page-011',
+]);
 const scrollPositions = new Map();
 let activeExperience = null;
 let experienceLoadVersion = 0;
@@ -855,6 +863,7 @@ app.addEventListener('change', (event) => {
   }
   if (event.target instanceof HTMLInputElement && event.target.id === 'intake-file') {
     const file = event.target.files?.[0];
+    liveSession = livePageState.data ?? liveSession;
     if (file) void uploadLiveFile(file);
     event.target.value = '';
   }
