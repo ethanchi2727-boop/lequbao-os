@@ -62,6 +62,7 @@ const aiPageStyles = {
   'page-003': '/ai-start.css',
   'page-004': '/ai-conversation.css',
   'page-005': '/ai-conversation.css',
+  'page-006': '/artifact-preview.css',
 };
 const scrollPositions = new Map();
 let activeExperience = null;
@@ -189,7 +190,7 @@ function topbar() {
       escapeHtml,
       icon,
     });
-  if (['page-004', 'page-005'].includes(view.page) && aiConversationPage)
+  if (['page-004', 'page-005', 'page-006'].includes(view.page) && aiConversationPage)
     return aiConversationPage.renderConversationTopbar({ view, shell, escapeHtml, icon });
   const resultAction = intakePages.has(view.page)
     ? `<button data-action="open-results" aria-controls="workbench-results" aria-expanded="${resultPanel.open}">${icon('clock')} ${demoMode ? `后台任务 ${shell.backgroundTaskCount}` : '任务与成果'}</button>`
@@ -217,7 +218,7 @@ function genericWorkbenchPage() {
           icon,
         })
       : '<section class="ai-start" aria-busy="true"><div class="loading-skeleton" aria-hidden="true"><span></span><span></span><span></span></div></section>';
-  if (['page-004', 'page-005'].includes(view.page))
+  if (['page-004', 'page-005', 'page-006'].includes(view.page))
     return aiConversationPage
       ? aiConversationPage.renderConversationThread({
           contract,
@@ -722,8 +723,10 @@ async function bootstrapExperience(page) {
     loadWorkbenchPageExperience(page),
     page === 'page-003' ? import('./ai-start-page.mjs') : null,
   ]);
-  const conversationModule = ['page-004', 'page-005'].includes(page)
-    ? await import('./ai-conversation-page.mjs')
+  const conversationModule = ['page-004', 'page-005', 'page-006'].includes(page)
+    ? await import(
+        page === 'page-006' ? './artifact-preview-page.mjs' : './ai-conversation-page.mjs'
+      )
     : null;
   if (loadVersion !== experienceLoadVersion || view.page !== page) return;
   activeExperience = experience;
