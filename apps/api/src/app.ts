@@ -569,6 +569,7 @@ export async function buildApp(options: AppOptions = {}): Promise<FastifyInstanc
       roleCodes: identity.roleCodes,
       storeIds: identity.storeIds,
       sessionId: identity.sessionId,
+      authLevel: identity.authLevel ?? 'PASSWORD',
     };
   });
 

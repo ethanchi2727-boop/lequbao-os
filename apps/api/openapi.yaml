@@ -202,6 +202,9 @@ paths:
       responses:
         '200':
           description: 由签名且未撤销的服务端会话确定的当前上下文
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SessionIdentity' }
         '401': { description: 会话缺失、过期、撤销或账号已停用 }
   /api/v1/operational-home/today:
     get:

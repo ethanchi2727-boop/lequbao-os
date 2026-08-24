@@ -97,8 +97,8 @@
       "route": "/bao/page-012",
       "contracted": true,
       "connected": true,
-      "designed": false,
-      "interactive": false,
+      "designed": true,
+      "interactive": true,
       "accepted": false
     },
     {

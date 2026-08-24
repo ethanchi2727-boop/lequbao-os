@@ -79,6 +79,17 @@ export function createBaoSessionClient({
       throw error;
     }
   }
+  async function switchTenant(tenantId) {
+    const session = load();
+    if (!session?.accessToken) throw responseError({ statusCode: 401 });
+    const next = await raw({
+      url: apiUrl('/api/v1/auth/sessions/switch-tenant'),
+      method: 'POST',
+      data: { tenantId, deviceId: deviceId(storage) },
+      header: { Authorization: `Bearer ${session.accessToken}` },
+    });
+    return save(next);
+  }
   async function request(path, options = {}, retry = true) {
     const session = load();
     if (!session?.accessToken) throw responseError({ statusCode: 401 });
@@ -122,7 +133,7 @@ export function createBaoSessionClient({
       clear();
     }
   }
-  return { load, clear, exchange, refresh, request, loginWithWecom, logout };
+  return { load, clear, exchange, refresh, switchTenant, request, loginWithWecom, logout };
 }
 
 export const baoSession = createBaoSessionClient();

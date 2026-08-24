@@ -24,6 +24,8 @@ export function renderConversationTopbar({ view, shell, escapeHtml, icon }) {
 }
 
 export function renderConversationThread({ contract, demoMode, livePageState, view, escapeHtml }) {
+  if (view.page === 'page-012')
+    return renderIdentitySwitcher({ contract, demoMode, livePageState, view, escapeHtml });
   if (view.page === 'page-011')
     return renderSourceLibrary({ contract, demoMode, livePageState, view, escapeHtml });
   if (view.page === 'page-010')
@@ -126,6 +128,71 @@ export function renderConversationThread({ contract, demoMode, livePageState, vi
     </div>
   </section>`;
 }
+
+export async function switchWorkbenchTenant({ tenantId, token, deviceId, request = fetch }) {
+  const response = await request('/api/v1/auth/sessions/switch-tenant', {
+    method: 'POST',
+    headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json' },
+    body: JSON.stringify({ tenantId, deviceId }),
+  });
+  const body = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(body.code ?? `HTTP_${response.status}`);
+  if (typeof body.accessToken !== 'string' || !body.identity)
+    throw new Error('SESSION_RESPONSE_INVALID');
+  return body;
+}
+
+function renderIdentitySwitcher({ contract, demoMode, livePageState, view, escapeHtml }) {
+  if (!demoMode && !livePageState.data) return renderUnavailable(contract, view, escapeHtml);
+  const context = demoMode
+    ? {
+        tenantId: '00000000-0000-4000-8000-000000000101',
+        userId: '00000000-0000-4000-8000-000000000201',
+        roleCodes: ['MERCHANT_OWNER', 'STORE_MANAGER'],
+        storeIds: ['00000000-0000-4000-8000-000000000301'],
+        sessionId: 'demo-session-not-a-real-credential',
+        authLevel: 'MFA',
+      }
+    : livePageState.data;
+  const roles = list(context.roleCodes);
+  const stores = list(context.storeIds);
+  return `<section class="identity-page" data-page-id="${contract.id}" data-experience="identity-switcher">
+    <header class="identity-heading"><div><small>${demoMode ? '演示身份 · 非真实会话' : '服务端已确认'}</small><h1>身份与工作空间</h1><p>切换前核对当前租户、门店、角色和会话边界。</p></div><span>${escapeHtml(context.authLevel ?? 'PASSWORD')}</span></header>
+    <div class="identity-grid"><main><section class="identity-current"><div class="identity-avatar" aria-hidden="true">${escapeHtml(String(context.userId).slice(0, 2).toUpperCase())}</div><div><small>当前认证主体</small><h2>员工 ${escapeHtml(String(context.userId).slice(0, 8))}…</h2><p>会话 ${escapeHtml(String(context.sessionId).slice(0, 12))}… · ${escapeHtml(context.authLevel ?? 'PASSWORD')} 认证</p></div><b>在线</b></section>
+      <section class="identity-scope"><header><div><small>当前工作空间</small><h2>${escapeHtml(context.tenantId)}</h2></div><span>租户级边界</span></header><div class="identity-facts"><article><small>角色能力</small><strong>${roles.length} 项</strong><div>${roles.map((role) => `<span>${escapeHtml(role)}</span>`).join('')}</div></article><article><small>门店范围</small><strong>${stores.length || '租户级'}</strong><div>${stores.length ? stores.map((store) => `<code>${escapeHtml(String(store).slice(0, 8))}…</code>`).join('') : '<span>不限定单一门店</span>'}</div></article></div></section>
+      <section class="identity-boundary"><header><small>切换后会发生什么</small><h2>业务数据必须按新范围重新读取</h2></header><ol><li><b>1</b><span><strong>重新验证成员关系</strong><small>目标租户中没有有效角色时服务端会拒绝。</small></span></li><li><b>2</b><span><strong>签发全新会话</strong><small>不继承原空间的门店、角色或资源缓存。</small></span></li><li><b>3</b><span><strong>保留本地未发送草稿</strong><small>页面重载后只恢复本地内容，业务事实从新租户读取。</small></span></li></ol></section></main>
+      <aside><section><small>切换工作空间</small><h2>输入受信任的组织 ID</h2><p>请使用管理员或邀请链接提供的目标 ID。本页不枚举其他租户的成员关系。</p><form data-tenant-switch><label for="target-tenant">目标组织 ID</label><input id="target-tenant" name="tenantId" type="text" required pattern="[0-9a-fA-F-]{36}" placeholder="00000000-0000-4000-8000-000000000000" ${demoMode ? 'disabled' : ''}/><button ${demoMode ? 'disabled' : ''}>验证并切换</button><output aria-live="polite">${demoMode ? '演示模式不签发会话' : '切换会写入安全审计记录'}</output></form></section><section class="identity-guard"><small>最小权限边界</small><ul><li>不向页面展示访问或刷新凭证</li><li>不接受客户端自声明的用户和角色</li><li>切换失败时保留当前有效会话</li><li>新会话必须重新裁决所有资源范围</li></ul></section><a class="identity-return" href="/bao/page-003${demoMode ? '?demo=1' : ''}">返回新对话</a></aside></div>
+  </section>`;
+}
+
+if (typeof document !== 'undefined')
+  document.addEventListener('submit', async (event) => {
+    const form = event.target instanceof HTMLFormElement ? event.target : null;
+    if (!form?.matches('[data-tenant-switch]')) return;
+    event.preventDefault();
+    const output = form.querySelector('output');
+    const button = form.querySelector('button');
+    const tenantId = new FormData(form).get('tenantId');
+    const token = sessionStorage.getItem('lequbao.employee-session');
+    if (typeof tenantId !== 'string' || !token) return;
+    button.disabled = true;
+    output.textContent = '正在验证目标组织的成员关系…';
+    try {
+      let deviceId = sessionStorage.getItem('lequbao.employee-device');
+      if (!deviceId) {
+        deviceId = `workbench-${crypto.randomUUID()}`;
+        sessionStorage.setItem('lequbao.employee-device', deviceId);
+      }
+      const replacement = await switchWorkbenchTenant({ tenantId, token, deviceId });
+      sessionStorage.setItem('lequbao.employee-session', replacement.accessToken);
+      sessionStorage.setItem('lequbao.employee-session-record', JSON.stringify(replacement));
+      output.textContent = '切换成功，正在按新权限重新读取…';
+      location.reload();
+    } catch (error) {
+      output.textContent = `切换失败：${error instanceof Error ? error.message : 'REQUEST_FAILED'}；当前会话已保留。`;
+      button.disabled = false;
+    }
+  });
 
 export function handlePageInput(target) {
   if (!(target instanceof HTMLInputElement)) return false;

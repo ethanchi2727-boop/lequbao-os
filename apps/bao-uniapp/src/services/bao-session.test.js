@@ -65,6 +65,28 @@ describe('bao employee session client', () => {
     );
   });
 
+  it('switches tenant through a server-issued session and saves the whole replacement', async () => {
+    const storage = storageFixture({ 'lequ.bao.employee.session.v1': session() });
+    const replacement = {
+      ...session('employee-access-two'),
+      identity: { ...session().identity, tenantId: 'tenant-2', roleCodes: ['STORE_MANAGER'] },
+    };
+    const transport = {
+      request: vi.fn().mockResolvedValue({ statusCode: 200, data: replacement }),
+    };
+    const client = createBaoSessionClient({ transport, storage, apiBase: '' });
+    await expect(client.switchTenant('tenant-2')).resolves.toEqual(replacement);
+    expect(client.load()).toEqual(replacement);
+    expect(transport.request).toHaveBeenCalledWith(
+      expect.objectContaining({
+        url: '/api/v1/auth/sessions/switch-tenant',
+        method: 'POST',
+        data: expect.objectContaining({ tenantId: 'tenant-2' }),
+        header: { Authorization: 'Bearer employee-access-one' },
+      }),
+    );
+  });
+
   it('revokes the server session before local logout', async () => {
     const storage = storageFixture({ 'lequ.bao.employee.session.v1': session() });
     const transport = { request: vi.fn().mockResolvedValue({ statusCode: 204 }) };

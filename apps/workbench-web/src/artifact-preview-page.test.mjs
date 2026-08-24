@@ -1,5 +1,9 @@
-import { describe, expect, it } from 'vitest';
-import { renderConversationThread, renderConversationTopbar } from './artifact-preview-page.mjs';
+import { describe, expect, it, vi } from 'vitest';
+import {
+  renderConversationThread,
+  renderConversationTopbar,
+  switchWorkbenchTenant,
+} from './artifact-preview-page.mjs';
 
 const escapeHtml = (value) => String(value);
 const icon = (name) => `<i>${name}</i>`;
@@ -251,5 +255,64 @@ describe('乐趣宝成果预览', () => {
     expect(html).toContain('data-command="merchant-intake-message-add"');
     expect(html).not.toContain('object_key');
     expect(html).not.toContain('objectKey');
+  });
+
+  it('身份空间展示服务端会话范围和真实切换边界', () => {
+    const html = renderConversationThread({
+      contract: { id: 'PAGE-012', title: '身份与空间切换' },
+      demoMode: false,
+      livePageState: {
+        data: {
+          tenantId: 'tenant-live',
+          userId: 'user-live',
+          roleCodes: ['STORE_MANAGER'],
+          storeIds: ['store-live'],
+          sessionId: 'session-live',
+          authLevel: 'MFA',
+        },
+      },
+      view: { page: 'page-012', state: 'default' },
+      escapeHtml,
+    });
+    expect(html).toContain('data-experience="identity-switcher"');
+    expect(html).toContain('STORE_MANAGER');
+    expect(html).toContain('tenant-live');
+    expect(html).toContain('data-tenant-switch');
+    expect(html).not.toContain('accessToken');
+    expect(html).not.toContain('refreshToken');
+  });
+
+  it('工作台切换只提交目标租户和设备绑定', async () => {
+    const request = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ accessToken: 'new-access', identity: { tenantId: 'tenant-2' } }),
+    });
+    await expect(
+      switchWorkbenchTenant({
+        tenantId: 'tenant-2',
+        token: 'current-access',
+        deviceId: 'workbench-device-1',
+        request,
+      }),
+    ).resolves.toMatchObject({ accessToken: 'new-access' });
+    expect(request).toHaveBeenCalledWith(
+      '/api/v1/auth/sessions/switch-tenant',
+      expect.objectContaining({
+        method: 'POST',
+        headers: expect.objectContaining({ authorization: 'Bearer current-access' }),
+        body: JSON.stringify({ tenantId: 'tenant-2', deviceId: 'workbench-device-1' }),
+      }),
+    );
+  });
+
+  it('工作台不接受缺少有效新会话的切换响应', async () => {
+    await expect(
+      switchWorkbenchTenant({
+        tenantId: 'tenant-2',
+        token: 'current-access',
+        deviceId: 'workbench-device-1',
+        request: async () => ({ ok: true, json: async () => ({}) }),
+      }),
+    ).rejects.toThrow('SESSION_RESPONSE_INVALID');
   });
 });

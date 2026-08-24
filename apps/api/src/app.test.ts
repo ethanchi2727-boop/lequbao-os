@@ -81,6 +81,10 @@ describe('platform API shell', () => {
     expect(response.json()).toMatchObject({
       tenantId: financialIdentity.tenantId,
       userId: financialIdentity.userId,
+      roleCodes: financialIdentity.roleCodes,
+      storeIds: financialIdentity.storeIds,
+      sessionId: financialIdentity.sessionId,
+      authLevel: 'PASSWORD',
     });
   });
 

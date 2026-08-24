@@ -8,6 +8,7 @@ const session = ref(null);
 const context = ref(null);
 const busy = ref(false);
 const message = ref('');
+const targetTenantId = ref('');
 async function loadContext() {
   session.value = baoSession.load();
   if (!session.value) {
@@ -49,6 +50,24 @@ async function logout() {
     busy.value = false;
   }
 }
+async function switchTenant() {
+  if (!/^[0-9a-f-]{36}$/iu.test(targetTenantId.value)) {
+    message.value = '请输入邀请链接或管理员提供的组织 ID';
+    return;
+  }
+  busy.value = true;
+  message.value = '正在验证目标组织成员关系…';
+  try {
+    session.value = await baoSession.switchTenant(targetTenantId.value);
+    targetTenantId.value = '';
+    await loadContext();
+    message.value = '已按新组织权限重新加载';
+  } catch {
+    message.value = '切换失败，当前工作会话保持不变';
+  } finally {
+    busy.value = false;
+  }
+}
 </script>
 <template>
   <BaoSurface
@@ -74,6 +93,15 @@ async function logout() {
         </button>
         <text v-if="message" class="session-message">{{ message }}</text>
         ></view
+      ></view
+    ><view v-if="context" class="panel"
+      ><view class="panel-head"><text>切换工作空间</text><text>服务端重新授权</text></view
+      ><view class="tenant-switch"
+        ><text>输入管理员或邀请链接提供的组织 ID；本页不会枚举其他租户。</text
+        ><input v-model.trim="targetTenantId" type="text" placeholder="目标组织 ID" />
+        <button class="session-button" :loading="busy" @click="switchTenant">
+          验证并切换
+        </button></view
       ></view
     ><view class="panel"
       ><view class="panel-head"><text>安全与设置</text><text>审计记录</text></view
@@ -103,5 +131,20 @@ async function logout() {
   color: #737789;
   text-align: center;
   font-size: 21rpx;
+}
+.tenant-switch {
+  display: flex;
+  flex-direction: column;
+  gap: 20rpx;
+  color: #737789;
+  font-size: 22rpx;
+}
+.tenant-switch input {
+  height: 76rpx;
+  padding: 0 24rpx;
+  border: 2rpx solid #e2e4ed;
+  border-radius: 18rpx;
+  color: #202334;
+  background: #fff;
 }
 </style>
