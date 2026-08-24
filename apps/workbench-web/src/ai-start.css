@@ -1,0 +1,209 @@
+.ai-topbar .top-actions {
+  position: relative;
+}
+.ai-overflow-menu {
+  position: absolute;
+  z-index: 30;
+  top: 42px;
+  right: 0;
+  width: 156px;
+  padding: 7px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 16px 40px rgb(38 34 75 / 16%);
+}
+.ai-overflow-menu button {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  text-align: left;
+}
+.ai-overflow-menu button:hover {
+  background: #f3f1ff;
+}
+.ai-start {
+  min-height: calc(100vh - 64px);
+  padding: clamp(72px, 10vh, 116px) 32px 48px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: radial-gradient(circle at 50% 25%, rgb(104 87 238 / 8%), transparent 33%), #fafafe;
+}
+.ai-start-intro {
+  text-align: center;
+}
+.ai-start-intro h1 {
+  margin: 0;
+  font-size: 34px;
+  letter-spacing: -0.04em;
+}
+.ai-start-intro p {
+  margin: 12px 0 30px;
+  color: var(--muted);
+  font-size: 14px;
+}
+.ai-start-composer {
+  width: min(780px, 100%);
+  padding: 18px 18px 13px;
+  border: 1px solid #d8d7e4;
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: 0 12px 40px rgb(52 45 103 / 10%);
+}
+.ai-start-composer textarea {
+  width: 100%;
+  min-height: 96px;
+  resize: vertical;
+  border: 0;
+  outline: 0;
+  color: #202230;
+  background: transparent;
+  line-height: 1.65;
+}
+.ai-start-composer textarea::placeholder {
+  color: #8b8e9b;
+}
+.ai-capabilities {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding-top: 10px;
+  border-top: 1px solid #f0f0f4;
+}
+.ai-capabilities button {
+  min-height: 32px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: #555967;
+}
+.ai-capabilities button:hover,
+.ai-capabilities button[aria-pressed='true'] {
+  color: var(--purple);
+  background: #f0eeff;
+}
+.ai-capabilities .ai-send {
+  width: 38px;
+  height: 38px;
+  min-height: 38px;
+  margin-left: auto;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  border-radius: 11px;
+  background: linear-gradient(135deg, #7059ee, #4d73ec);
+  color: #fff;
+}
+.ai-capabilities .ai-send:disabled {
+  background: #d4d5dc;
+  color: #f6f6f8;
+  cursor: not-allowed;
+}
+.ai-start-status,
+.ai-quick-start,
+.ai-recent-conversations {
+  width: min(780px, 100%);
+}
+.ai-start-status {
+  min-height: 24px;
+  margin: 8px 0 12px;
+  color: var(--muted);
+  font-size: 11px;
+}
+.ai-quick-start {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+.ai-quick-start button,
+.ai-recent-conversations a {
+  border: 1px solid #e2e2eb;
+  background: rgb(255 255 255 / 84%);
+  text-align: left;
+}
+.ai-quick-start button {
+  min-height: 76px;
+  padding: 14px 16px;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 10px;
+  border-radius: 13px;
+}
+.ai-quick-start button:hover,
+.ai-recent-conversations a:hover {
+  border-color: #b8b0f2;
+  box-shadow: 0 8px 24px rgb(70 58 150 / 8%);
+}
+.ai-quick-start button > span {
+  grid-column: 2;
+  grid-row: 1 / 3;
+  color: var(--purple);
+  font-size: 22px;
+}
+.ai-quick-start strong,
+.ai-quick-start small,
+.ai-recent-conversations a strong,
+.ai-recent-conversations a small {
+  display: block;
+}
+.ai-quick-start small,
+.ai-start-note,
+.ai-recent-conversations h2,
+.ai-recent-conversations a small {
+  color: var(--muted);
+  font-size: 11px;
+}
+.ai-recent-conversations h2 {
+  margin: 16px 0 8px;
+  font-weight: 600;
+}
+.ai-recent-conversations {
+  display: grid;
+  gap: 7px;
+}
+.ai-recent-conversations a {
+  padding: 11px 13px;
+  border-radius: 10px;
+  color: inherit;
+  text-decoration: none;
+}
+.ai-recent-conversations a small {
+  margin-top: 3px;
+}
+.ai-start-note {
+  margin: 22px 0 0;
+  text-align: center;
+}
+@media (max-width: 760px) {
+  .ai-start {
+    min-height: calc(100vh - 64px);
+    padding: 46px 16px 100px;
+  }
+  .ai-start-intro h1 {
+    font-size: 28px;
+  }
+  .ai-start-intro p {
+    margin-bottom: 22px;
+  }
+  .ai-start-composer {
+    padding: 14px 14px 10px;
+    border-radius: 16px;
+  }
+  .ai-capabilities {
+    overflow-x: auto;
+  }
+  .ai-start .ai-capabilities button {
+    width: auto;
+    flex: 0 0 auto;
+    padding-inline: 8px;
+  }
+  .ai-quick-start {
+    grid-template-columns: 1fr;
+  }
+  .ai-quick-start button {
+    min-height: 68px;
+  }
+}

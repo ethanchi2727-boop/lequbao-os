@@ -56,6 +56,11 @@ let livePageState = { request: null, data: null };
 const resultPanelStorageKey = 'lequbao.workbench-result-panel';
 let resultPanel = resultPanelFromStorage(sessionStorage.getItem(resultPanelStorageKey));
 let draftMessage = '';
+let aiDraft = '';
+let aiMode = 'NORMAL';
+let aiFeedback = '';
+let aiMenuOpen = false;
+let aiStartPage = null;
 const scrollPositions = new Map();
 let activeExperience = null;
 let experienceLoadVersion = 0;
@@ -175,6 +180,15 @@ function sidebar() {
 
 function topbar() {
   const shell = resolveWorkbenchShell(demoMode);
+  if (view.page === 'page-003' && aiStartPage)
+    return aiStartPage.renderAiTopbar({
+      view,
+      shell,
+      aiMode,
+      aiMenuOpen,
+      escapeHtml,
+      icon,
+    });
   const resultAction = intakePages.has(view.page)
     ? `<button data-action="open-results" aria-controls="workbench-results" aria-expanded="${resultPanel.open}">${icon('clock')} ${demoMode ? `后台任务 ${shell.backgroundTaskCount}` : '任务与成果'}</button>`
     : '';
@@ -190,6 +204,20 @@ const intakePages = new Set(['page-014', 'page-175', 'page-176', 'page-177', 'pa
 function genericWorkbenchPage() {
   const contract = view.contract;
   if (!contract) return '';
+  if (view.page === 'page-003')
+    return aiStartPage
+      ? aiStartPage.renderAiConversationStart({
+          contract,
+          demoMode,
+          livePageState,
+          view,
+          aiDraft,
+          aiMode,
+          aiFeedback,
+          escapeHtml,
+          icon,
+        })
+      : '<section class="ai-start" aria-busy="true"><div class="loading-skeleton" aria-hidden="true"><span></span><span></span><span></span></div></section>';
   const experience = activeExperience?.page === view.page ? activeExperience : null;
   if (experience) return renderDedicatedExperience(experience, contract);
   const domains = contract.apiDomains.length ? contract.apiDomains : ['无外部数据'];
@@ -680,10 +708,14 @@ function navigateTo(page) {
 
 async function bootstrapExperience(page) {
   const loadVersion = ++experienceLoadVersion;
-  const experience = await loadWorkbenchPageExperience(page);
+  const [experience, aiModule] = await Promise.all([
+    loadWorkbenchPageExperience(page),
+    page === 'page-003' ? import('./ai-start-page.mjs') : null,
+  ]);
   if (loadVersion !== experienceLoadVersion || view.page !== page) return;
   activeExperience = experience;
-  if (experience) render();
+  if (aiModule) aiStartPage = aiModule;
+  if (experience || aiModule) render();
 }
 
 function captureScrollPosition() {
@@ -709,6 +741,13 @@ function setResultPanel(action, tab) {
 
 function render() {
   const restoreMainFocus = document.activeElement?.id === 'main-content';
+  if (view.page === 'page-003' && !document.querySelector('link[data-ai-start-style]')) {
+    const pageStyle = document.createElement('link');
+    pageStyle.rel = 'stylesheet';
+    pageStyle.href = '/ai-start.css';
+    pageStyle.dataset.aiStartStyle = '';
+    document.head.append(pageStyle);
+  }
   document.body.dataset.mobilePage = String(view.mobile);
   document.title = `乐趣宝 · ${view.title}`;
   const intake = intakePages.has(view.page);
@@ -732,6 +771,38 @@ app.addEventListener('click', (event) => {
   }
   if (target.dataset.action === 'back') {
     history.back();
+    return;
+  }
+  if (target.dataset.action === 'execution-mode') {
+    aiMode = aiMode === 'NORMAL' ? 'COMPLEX' : 'NORMAL';
+    aiFeedback = aiMode === 'COMPLEX' ? '已切换到深度执行。' : '已切换到普通执行。';
+    render();
+    document.querySelector('[data-action="execution-mode"]')?.focus();
+    return;
+  }
+  if (target.dataset.action === 'share-ai-task') {
+    void aiStartPage.shareAiTask(target).then((feedback) => {
+      if (feedback) aiFeedback = feedback;
+    });
+    return;
+  }
+  if (target.dataset.action === 'ai-menu') {
+    aiMenuOpen = !aiMenuOpen;
+    render();
+    document.querySelector('[data-action="ai-menu"]')?.focus();
+    return;
+  }
+  if (target.dataset.action === 'ai-capability') {
+    aiFeedback = aiStartPage.toggleAiCapability(target);
+    return;
+  }
+  if (target.dataset.action === 'start-demo-conversation') {
+    if (!aiDraft.trim()) {
+      document.querySelector('#ai-task-title')?.focus();
+      return;
+    }
+    aiFeedback = '演示会话已创建。';
+    navigateTo('page-004');
     return;
   }
   if (target.dataset.action === 'open-results') {
@@ -831,6 +902,18 @@ addEventListener('keydown', (event) => {
   }
 });
 app.addEventListener('input', (event) => {
+  if (
+    event.target instanceof HTMLTextAreaElement &&
+    event.target.dataset.commandField === 'title'
+  ) {
+    aiDraft = event.target.value;
+    event.target.removeAttribute('aria-invalid');
+    const error = document.querySelector('#ai-task-title-error');
+    if (error) error.textContent = '';
+    const send = document.querySelector('.ai-send');
+    if (send instanceof HTMLButtonElement) send.disabled = !aiDraft.trim();
+    return;
+  }
   if (event.target instanceof HTMLTextAreaElement && event.target.closest('.composer')) {
     draftMessage = event.target.value;
     const limit = document.querySelector('#intake-message-limit');
@@ -982,7 +1065,9 @@ async function executeLiveCommand(commandId) {
   for (const input of command.inputs ?? []) {
     const control = commandForm?.querySelector(`[data-command-field="${CSS.escape(input.name)}"]`);
     const rawValue =
-      control instanceof HTMLInputElement || control instanceof HTMLSelectElement
+      control instanceof HTMLInputElement ||
+      control instanceof HTMLSelectElement ||
+      control instanceof HTMLTextAreaElement
         ? control.value.trim()
         : '';
     const parsed = parseCommandInput(input, rawValue);
@@ -1000,6 +1085,18 @@ async function executeLiveCommand(commandId) {
   render();
   try {
     const data = await workbenchApi.post(command.path, { ...command.body, ...inputBody });
+    if (commandId === 'employee-agent-conversation-create' && typeof data?.id === 'string') {
+      aiDraft = '';
+      history.pushState({}, '', `/bao/page-004?conversationId=${encodeURIComponent(data.id)}`);
+      view = viewFor('page-004');
+      activeExperience = null;
+      livePageState = { request: null, data: null };
+      render();
+      focusMainContent();
+      void bootstrapExperience(view.page);
+      void bootstrapLivePage();
+      return;
+    }
     livePageState = { ...livePageState, data };
     view = { ...view, state: 'success' };
   } catch (error) {

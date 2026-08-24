@@ -3,6 +3,8 @@ import { describe, expect, it } from 'vitest';
 
 const appSource = await readFile(new URL('./app.js', import.meta.url), 'utf8');
 const styleSource = await readFile(new URL('./styles.css', import.meta.url), 'utf8');
+const aiStartStyleSource = await readFile(new URL('./ai-start.css', import.meta.url), 'utf8');
+const aiStartSource = await readFile(new URL('./ai-start-page.mjs', import.meta.url), 'utf8');
 
 describe('乐趣宝工作台无障碍应用壳', () => {
   it('提供键盘可见的跳转主内容入口和可聚焦主区域', () => {
@@ -62,5 +64,18 @@ describe('乐趣宝工作台无障碍应用壳', () => {
     expect(appSource).toContain('sessionStorage.setItem(resultPanelStorageKey');
     expect(appSource).toContain('scrollPositions.set(location.href, captureScrollPosition())');
     expect(appSource).toContain("document.querySelector('.chat')?.scrollTop");
+  });
+
+  it('提供可键盘操作且连接真实创建命令的 AI 新对话首页', () => {
+    expect(aiStartSource).toContain('data-experience="conversation-start"');
+    expect(aiStartSource).toContain('id="ai-task-title"');
+    expect(aiStartSource).toContain('data-command="employee-agent-conversation-create"');
+    expect(appSource).toContain('data-action="execution-mode"');
+    expect(aiStartSource).toContain('data-action="share-ai-task"');
+    expect(aiStartSource).toContain('id="ai-start-status"');
+    expect(appSource).toContain('control instanceof HTMLTextAreaElement');
+    expect(appSource).toContain("pageStyle.href = '/ai-start.css'");
+    expect(aiStartStyleSource).toContain('.ai-start-composer');
+    expect(aiStartStyleSource).toContain('.ai-quick-start');
   });
 });
