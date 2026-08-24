@@ -129,6 +129,314 @@
   margin: 8px 2px 0;
   text-align: center;
 }
+.complex-task {
+  min-height: calc(100vh - 64px);
+  background: #fff;
+}
+.complex-heading {
+  min-height: 76px;
+  padding: 13px 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--line);
+}
+.complex-heading h1,
+.complex-heading p {
+  margin: 3px 0 0;
+}
+.complex-heading h1 {
+  font-size: 17px;
+}
+.complex-heading small,
+.complex-heading p,
+.complex-heading span {
+  color: var(--muted);
+  font-size: 10px;
+}
+.complex-heading > span {
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: #eaf7f2;
+  color: var(--green);
+}
+.complex-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 330px;
+  min-height: calc(100vh - 140px);
+}
+.complex-main {
+  padding: 30px clamp(24px, 6vw, 72px) 36px;
+}
+.complex-request {
+  max-width: 66%;
+  margin-left: auto;
+  padding: 13px 17px;
+  border-radius: 16px 16px 4px 16px;
+  background: #e9efff;
+}
+.complex-request small,
+.complex-request p {
+  display: block;
+  margin: 0;
+}
+.complex-request small {
+  color: var(--muted);
+  font-size: 10px;
+}
+.complex-request p {
+  margin-top: 4px;
+  line-height: 1.55;
+}
+.complex-assistant {
+  margin: 28px 0 16px;
+  display: flex;
+  gap: 12px;
+}
+.complex-assistant > b {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 11px;
+  background: #2787ee;
+  color: #fff;
+}
+.complex-assistant strong,
+.complex-assistant p {
+  display: block;
+  margin: 0;
+}
+.complex-assistant em {
+  margin-left: 8px;
+  color: #12a876;
+  font-size: 10px;
+  font-style: normal;
+}
+.complex-assistant p {
+  margin-top: 8px;
+  line-height: 1.55;
+}
+.execution-trace,
+.task-result-preview,
+.complex-composer {
+  margin-left: 46px;
+}
+.execution-trace {
+  padding: 15px 18px;
+  border: 1px solid #dfe2e9;
+  border-radius: 14px;
+  background: #f7f8fa;
+}
+.execution-trace > header {
+  display: flex;
+  justify-content: space-between;
+}
+.execution-trace header small {
+  color: var(--muted);
+}
+.execution-trace ol {
+  margin: 12px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 11px;
+  list-style: none;
+}
+.execution-trace li {
+  display: grid;
+  grid-template-columns: 24px 1fr auto;
+  align-items: center;
+  gap: 8px;
+}
+.execution-trace li b {
+  color: var(--muted);
+  font-size: 11px;
+}
+.execution-trace li em {
+  color: var(--muted);
+  font-size: 10px;
+  font-style: normal;
+}
+.execution-trace li.done b,
+.execution-trace li.done em,
+.execution-trace li.running b,
+.execution-trace li.running em {
+  color: #0aa876;
+}
+.task-result-preview {
+  margin-top: 20px;
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  border: 1px solid #dfe2e9;
+  border-radius: 14px;
+}
+.task-result-preview > b {
+  width: 58px;
+  height: 58px;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  background: #2787ee;
+  color: #fff;
+}
+.task-result-preview div {
+  flex: 1;
+}
+.task-result-preview strong,
+.task-result-preview small {
+  display: block;
+}
+.task-result-preview small {
+  margin-top: 5px;
+  color: var(--muted);
+}
+.task-result-preview a {
+  color: var(--purple);
+}
+.complex-composer {
+  margin-top: 28px;
+  padding: 14px 16px;
+  border: 1px solid #d7dbe4;
+  border-radius: 16px;
+  box-shadow: 0 8px 28px rgb(41 49 74 / 8%);
+}
+.complex-composer > label > span {
+  color: var(--muted);
+  font-size: 10px;
+}
+.complex-composer textarea {
+  width: 100%;
+  min-height: 68px;
+  margin-top: 5px;
+  resize: vertical;
+  border: 0;
+  outline: 0;
+}
+.task-budget-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  padding-top: 10px;
+  border-top: 1px solid #eef0f3;
+}
+.task-budget-grid label {
+  display: grid;
+  gap: 4px;
+}
+.task-budget-grid span {
+  color: var(--muted);
+  font-size: 9px;
+}
+.task-budget-grid input {
+  width: 100%;
+  min-width: 0;
+  padding: 7px 8px;
+  border: 1px solid #dfe2e9;
+  border-radius: 8px;
+}
+.complex-actions {
+  margin-top: 10px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.complex-actions small {
+  flex: 1;
+  color: var(--muted);
+}
+.complex-actions .thread-send {
+  min-height: 38px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 10px;
+  background: #2787ee;
+  color: #fff;
+}
+.complex-actions .thread-send:disabled {
+  background: #cfd3dc;
+}
+.task-workspace {
+  padding: 24px 18px;
+  border-left: 1px solid var(--line);
+  background: #fafbfc;
+}
+.task-workspace > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.task-workspace > header span {
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: #2787ee;
+  color: #fff;
+  font-size: 10px;
+}
+.task-workspace > section,
+.confirmation-card {
+  margin-top: 18px;
+  padding: 16px;
+  border: 1px solid #dfe2e9;
+  border-radius: 14px;
+  background: #f4f6f9;
+}
+.task-workspace section small {
+  color: #0aa876;
+}
+.task-workspace section h2 {
+  margin: 12px 0 8px;
+  font-size: 15px;
+}
+.task-workspace progress {
+  width: 100%;
+  accent-color: #2787ee;
+}
+.task-workspace section p,
+.workspace-files p,
+.confirmation-card p {
+  color: var(--muted);
+  font-size: 10px;
+}
+.workspace-files {
+  margin-top: 28px;
+  display: grid;
+  gap: 9px;
+}
+.workspace-files > strong {
+  margin-bottom: 2px;
+}
+.workspace-files span {
+  padding: 12px;
+  display: flex;
+  justify-content: space-between;
+  border: 1px solid #dfe2e9;
+  border-radius: 11px;
+  background: #fff;
+  font-size: 11px;
+}
+.workspace-files em {
+  color: #0aa876;
+  font-style: normal;
+}
+.confirmation-card {
+  margin-top: 28px;
+}
+.confirmation-card small,
+.confirmation-card strong {
+  display: block;
+}
+.confirmation-card strong {
+  margin-top: 9px;
+}
+.confirmation-card button {
+  min-height: 34px;
+  border: 0;
+  border-radius: 9px;
+  color: var(--muted);
+}
 @media (max-width: 760px) {
   .ai-thread {
     min-height: calc(100vh - 64px);
@@ -146,5 +454,37 @@
   .thread-actions .thread-send {
     width: 38px;
     margin-left: auto;
+  }
+  .complex-heading {
+    padding: 12px 14px;
+  }
+  .complex-layout {
+    display: block;
+  }
+  .complex-main {
+    padding: 18px 14px 106px;
+  }
+  .complex-request {
+    max-width: 92%;
+  }
+  .execution-trace,
+  .task-result-preview,
+  .complex-composer {
+    margin-left: 0;
+  }
+  .task-budget-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .complex-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .complex-actions .thread-send {
+    width: 100%;
+  }
+  .task-workspace {
+    padding: 18px 14px 104px;
+    border-top: 1px solid var(--line);
+    border-left: 0;
   }
 }

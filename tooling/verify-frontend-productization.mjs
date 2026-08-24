@@ -22,6 +22,7 @@ export function createFrontendMatrix(pageTreeSource) {
   const designedPages = new Set([
     'PAGE-003',
     'PAGE-004',
+    'PAGE-005',
     'PAGE-014',
     'PAGE-175',
     'PAGE-176',

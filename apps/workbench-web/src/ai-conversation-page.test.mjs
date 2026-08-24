@@ -53,4 +53,38 @@ describe('乐趣宝 AI 对话态', () => {
     expect(html).toContain('data-route="page-003"');
     expect(html).toContain('data-route="page-010"');
   });
+
+  it('复杂任务态展示计划、预算、来源和人工确认边界', () => {
+    const html = renderConversationThread({
+      contract: { id: 'PAGE-005', title: '复杂任务' },
+      demoMode: true,
+      livePageState: { request: null, data: null },
+      view: { page: 'page-005', state: 'default' },
+      escapeHtml,
+      icon,
+    });
+    expect(html).toContain('data-experience="task-plan"');
+    expect(html).toContain('执行轨迹');
+    expect(html).toContain('data-command-field="maxCostMicros"');
+    expect(html).toContain('本次成果');
+    expect(html).toContain('小满不会自动外发');
+    expect(html).toContain('data-action="start-demo-task"');
+  });
+
+  it('复杂任务生产态连接真实命令且不展示模拟成果', () => {
+    const html = renderConversationThread({
+      contract: { id: 'PAGE-005', title: '复杂任务' },
+      demoMode: false,
+      livePageState: {
+        request: { commands: [{ id: 'employee-agent-task-create-complex' }] },
+        data: { title: '管理层汇报', status: 'ACTIVE' },
+      },
+      view: { page: 'page-005', state: 'default' },
+      escapeHtml,
+      icon,
+    });
+    expect(html).toContain('data-command="employee-agent-task-create-complex"');
+    expect(html).toContain('生产模式不展示模拟成果');
+    expect(html).not.toContain('经营汇报_v1.pptx');
+  });
 });
