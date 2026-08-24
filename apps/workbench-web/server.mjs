@@ -47,6 +47,7 @@ async function proxyRequest(request, response, apiBaseUrl, fetchImpl) {
         'content-length',
         'forwarded',
         'host',
+        'transfer-encoding',
         'x-forwarded-for',
         'x-forwarded-host',
         'x-forwarded-proto',

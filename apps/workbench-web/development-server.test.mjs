@@ -92,6 +92,48 @@ describe('Workbench development server', () => {
     });
   });
 
+  it('accepts chunked PC writes without forwarding hop-by-hop transfer headers', async () => {
+    let observed;
+    const upstream = createServer(async (request, response) => {
+      const chunks = [];
+      for await (const chunk of request) chunks.push(chunk);
+      observed = {
+        transferEncoding: request.headers['transfer-encoding'],
+        body: Buffer.concat(chunks).toString('utf8'),
+      };
+      response.writeHead(202, { 'content-type': 'application/json' });
+      response.end('{"queued":true}');
+    });
+    const upstreamUrl = await listen(upstream);
+    const development = await listen(createWorkbenchDevelopmentServer({ apiBaseUrl: upstreamUrl }));
+    const target = new URL('/api/v1/merchant-intake/sessions', development);
+    const result = await new Promise((resolve, reject) => {
+      const outgoing = request(
+        target,
+        { method: 'POST', headers: { 'content-type': 'application/json' } },
+        (response) => {
+          const chunks = [];
+          response.on('data', (chunk) => chunks.push(chunk));
+          response.on('end', () =>
+            resolve({
+              status: response.statusCode,
+              body: Buffer.concat(chunks).toString('utf8'),
+            }),
+          );
+        },
+      );
+      outgoing.on('error', reject);
+      outgoing.write('{"channel":"WEB"}');
+      outgoing.end();
+    });
+
+    expect(result).toEqual({ status: 202, body: '{"queued":true}' });
+    expect(observed).toEqual({
+      transferEncoding: undefined,
+      body: '{"channel":"WEB"}',
+    });
+  });
+
   it('creates a browser-local session only through the opted-in development identity flow', async () => {
     const upstream = createServer(async (request, response) => {
       expect(request.url).toBe('/api/v1/auth/sessions/exchange');
