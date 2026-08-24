@@ -56,11 +56,9 @@ let livePageState = { request: null, data: null };
 const resultPanelStorageKey = 'lequbao.workbench-result-panel';
 let resultPanel = resultPanelFromStorage(sessionStorage.getItem(resultPanelStorageKey));
 let draftMessage = '';
-let aiDraft = '';
-let aiMode = 'NORMAL';
-let aiFeedback = '';
-let aiMenuOpen = false;
 let aiStartPage = null;
+let aiConversationPage = null;
+const aiPageStyles = { 'page-003': '/ai-start.css', 'page-004': '/ai-conversation.css' };
 const scrollPositions = new Map();
 let activeExperience = null;
 let experienceLoadVersion = 0;
@@ -184,11 +182,11 @@ function topbar() {
     return aiStartPage.renderAiTopbar({
       view,
       shell,
-      aiMode,
-      aiMenuOpen,
       escapeHtml,
       icon,
     });
+  if (view.page === 'page-004' && aiConversationPage)
+    return aiConversationPage.renderConversationTopbar({ view, shell, escapeHtml, icon });
   const resultAction = intakePages.has(view.page)
     ? `<button data-action="open-results" aria-controls="workbench-results" aria-expanded="${resultPanel.open}">${icon('clock')} ${demoMode ? `后台任务 ${shell.backgroundTaskCount}` : '任务与成果'}</button>`
     : '';
@@ -211,13 +209,21 @@ function genericWorkbenchPage() {
           demoMode,
           livePageState,
           view,
-          aiDraft,
-          aiMode,
-          aiFeedback,
           escapeHtml,
           icon,
         })
       : '<section class="ai-start" aria-busy="true"><div class="loading-skeleton" aria-hidden="true"><span></span><span></span><span></span></div></section>';
+  if (view.page === 'page-004')
+    return aiConversationPage
+      ? aiConversationPage.renderConversationThread({
+          contract,
+          demoMode,
+          livePageState,
+          view,
+          escapeHtml,
+          icon,
+        })
+      : '<section class="ai-thread" aria-busy="true"><div class="loading-skeleton" aria-hidden="true"><span></span><span></span><span></span></div></section>';
   const experience = activeExperience?.page === view.page ? activeExperience : null;
   if (experience) return renderDedicatedExperience(experience, contract);
   const domains = contract.apiDomains.length ? contract.apiDomains : ['无外部数据'];
@@ -712,10 +718,13 @@ async function bootstrapExperience(page) {
     loadWorkbenchPageExperience(page),
     page === 'page-003' ? import('./ai-start-page.mjs') : null,
   ]);
+  const conversationModule =
+    page === 'page-004' ? await import('./ai-conversation-page.mjs') : null;
   if (loadVersion !== experienceLoadVersion || view.page !== page) return;
   activeExperience = experience;
   if (aiModule) aiStartPage = aiModule;
-  if (experience || aiModule) render();
+  if (conversationModule) aiConversationPage = conversationModule;
+  if (experience || aiModule || conversationModule) render();
 }
 
 function captureScrollPosition() {
@@ -739,15 +748,18 @@ function setResultPanel(action, tab) {
   sessionStorage.setItem(resultPanelStorageKey, JSON.stringify(resultPanel));
 }
 
+function ensureAiPageStyle() {
+  const href = aiPageStyles[view.page];
+  if (!href || document.querySelector(`link[href="${href}"]`)) return;
+  const style = document.createElement('link');
+  style.rel = 'stylesheet';
+  style.href = href;
+  document.head.append(style);
+}
+
 function render() {
   const restoreMainFocus = document.activeElement?.id === 'main-content';
-  if (view.page === 'page-003' && !document.querySelector('link[data-ai-start-style]')) {
-    const pageStyle = document.createElement('link');
-    pageStyle.rel = 'stylesheet';
-    pageStyle.href = '/ai-start.css';
-    pageStyle.dataset.aiStartStyle = '';
-    document.head.append(pageStyle);
-  }
+  ensureAiPageStyle();
   document.body.dataset.mobilePage = String(view.mobile);
   document.title = `乐趣宝 · ${view.title}`;
   const intake = intakePages.has(view.page);
@@ -773,36 +785,13 @@ app.addEventListener('click', (event) => {
     history.back();
     return;
   }
-  if (target.dataset.action === 'execution-mode') {
-    aiMode = aiMode === 'NORMAL' ? 'COMPLEX' : 'NORMAL';
-    aiFeedback = aiMode === 'COMPLEX' ? '已切换到深度执行。' : '已切换到普通执行。';
-    render();
-    document.querySelector('[data-action="execution-mode"]')?.focus();
-    return;
-  }
-  if (target.dataset.action === 'share-ai-task') {
-    void aiStartPage.shareAiTask(target).then((feedback) => {
-      if (feedback) aiFeedback = feedback;
-    });
-    return;
-  }
-  if (target.dataset.action === 'ai-menu') {
-    aiMenuOpen = !aiMenuOpen;
-    render();
-    document.querySelector('[data-action="ai-menu"]')?.focus();
-    return;
-  }
-  if (target.dataset.action === 'ai-capability') {
-    aiFeedback = aiStartPage.toggleAiCapability(target);
-    return;
-  }
-  if (target.dataset.action === 'start-demo-conversation') {
-    if (!aiDraft.trim()) {
-      document.querySelector('#ai-task-title')?.focus();
+  if (view.page === 'page-003' && aiStartPage.handleStartAction(target, render, navigateTo)) return;
+  if (target.dataset.action === 'start-demo-task') {
+    if (!aiConversationPage.submitDemoTask()) {
+      document.querySelector('#conversation-task-prompt')?.focus();
       return;
     }
-    aiFeedback = '演示会话已创建。';
-    navigateTo('page-004');
+    render();
     return;
   }
   if (target.dataset.action === 'open-results') {
@@ -904,14 +893,16 @@ addEventListener('keydown', (event) => {
 app.addEventListener('input', (event) => {
   if (
     event.target instanceof HTMLTextAreaElement &&
+    event.target.dataset.commandField === 'prompt'
+  ) {
+    aiConversationPage.updateConversationDraft(event.target);
+    return;
+  }
+  if (
+    event.target instanceof HTMLTextAreaElement &&
     event.target.dataset.commandField === 'title'
   ) {
-    aiDraft = event.target.value;
-    event.target.removeAttribute('aria-invalid');
-    const error = document.querySelector('#ai-task-title-error');
-    if (error) error.textContent = '';
-    const send = document.querySelector('.ai-send');
-    if (send instanceof HTMLButtonElement) send.disabled = !aiDraft.trim();
+    aiStartPage.updateStartDraft(event.target);
     return;
   }
   if (event.target instanceof HTMLTextAreaElement && event.target.closest('.composer')) {
@@ -1086,7 +1077,7 @@ async function executeLiveCommand(commandId) {
   try {
     const data = await workbenchApi.post(command.path, { ...command.body, ...inputBody });
     if (commandId === 'employee-agent-conversation-create' && typeof data?.id === 'string') {
-      aiDraft = '';
+      aiStartPage.clearStartDraft();
       history.pushState({}, '', `/bao/page-004?conversationId=${encodeURIComponent(data.id)}`);
       view = viewFor('page-004');
       activeExperience = null;
@@ -1097,6 +1088,7 @@ async function executeLiveCommand(commandId) {
       void bootstrapLivePage();
       return;
     }
+    if (commandId.startsWith('employee-agent-task-create-')) aiConversationPage?.clearDraft();
     livePageState = { ...livePageState, data };
     view = { ...view, state: 'success' };
   } catch (error) {

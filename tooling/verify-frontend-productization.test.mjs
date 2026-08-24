@@ -14,12 +14,13 @@ describe('frontend productization gate', () => {
     const matrix = createFrontendMatrix(source);
     expect(matrix.pages).toHaveLength(197);
     expect(matrix.pages.every((page) => page.contracted && page.connected)).toBe(true);
-    expect(matrix.pages.filter((page) => page.designed)).toHaveLength(68);
-    expect(matrix.pages.find((page) => page.pageId === 'PAGE-003')).toMatchObject({
-      designed: true,
-      interactive: true,
-      accepted: false,
-    });
+    expect(matrix.pages.filter((page) => page.designed)).toHaveLength(69);
+    for (const pageId of ['PAGE-003', 'PAGE-004'])
+      expect(matrix.pages.find((page) => page.pageId === pageId)).toMatchObject({
+        designed: true,
+        interactive: true,
+        accepted: false,
+      });
     expect(
       matrix.pages
         .filter((page) => ['PAGE-198', 'PAGE-211', 'PAGE-227', 'PAGE-240'].includes(page.pageId))

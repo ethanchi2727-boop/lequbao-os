@@ -20,8 +20,8 @@
       "route": "/bao/page-004",
       "contracted": true,
       "connected": true,
-      "designed": false,
-      "interactive": false,
+      "designed": true,
+      "interactive": true,
       "accepted": false
     },
     {

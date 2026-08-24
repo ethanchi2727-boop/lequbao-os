@@ -1,4 +1,9 @@
-export function renderAiTopbar({ view, shell, aiMode, aiMenuOpen, escapeHtml, icon }) {
+let aiDraft = '';
+let aiMode = 'NORMAL';
+let aiFeedback = '';
+let aiMenuOpen = false;
+
+export function renderAiTopbar({ view, shell, escapeHtml, icon }) {
   return `<header class="topbar ai-topbar"><div class="mobile-title"><button data-action="back" aria-label="返回">${icon('back')}</button><strong>${escapeHtml(view.title)}</strong><small>${escapeHtml(shell.status)}</small></div><div class="crumb">乐趣宝 <b>›</b> <strong>${escapeHtml(view.title)}</strong></div><div class="top-actions"><span>${escapeHtml(shell.status)}</span><button data-action="execution-mode" aria-pressed="${aiMode === 'COMPLEX'}">${aiMode === 'COMPLEX' ? '深度执行' : '普通对话'}⌄</button><button data-action="share-ai-task">${icon('share')} 分享</button><button data-action="ai-menu" aria-label="更多操作" aria-expanded="${aiMenuOpen}">${icon('menu')}</button>${aiMenuOpen ? `<div class="ai-overflow-menu"><button data-route="page-010">后台任务</button><button data-route="page-170">帮助与审计</button></div>` : ''}</div></header>`;
 }
 
@@ -34,14 +39,48 @@ export function toggleAiCapability(button) {
   return feedback;
 }
 
+export function updateStartDraft(control) {
+  aiDraft = control.value;
+  control.removeAttribute('aria-invalid');
+  const error = document.querySelector('#ai-task-title-error');
+  if (error) error.textContent = '';
+  const send = document.querySelector('.ai-send');
+  if (send instanceof HTMLButtonElement) send.disabled = !aiDraft.trim();
+}
+
+export function clearStartDraft() {
+  aiDraft = '';
+}
+
+export function handleStartAction(button, rerender, navigate) {
+  const action = button.dataset.action;
+  if (action === 'execution-mode') {
+    aiMode = aiMode === 'NORMAL' ? 'COMPLEX' : 'NORMAL';
+    aiFeedback = aiMode === 'COMPLEX' ? '已切换到深度执行。' : '已切换到普通执行。';
+    rerender();
+    document.querySelector('[data-action="execution-mode"]')?.focus();
+  } else if (action === 'share-ai-task') {
+    void shareAiTask(button).then((feedback) => {
+      if (feedback) aiFeedback = feedback;
+    });
+  } else if (action === 'ai-menu') {
+    aiMenuOpen = !aiMenuOpen;
+    rerender();
+    document.querySelector('[data-action="ai-menu"]')?.focus();
+  } else if (action === 'ai-capability') {
+    aiFeedback = toggleAiCapability(button);
+  } else if (action === 'start-demo-conversation') {
+    if (!aiDraft.trim()) document.querySelector('#ai-task-title')?.focus();
+    else navigate('page-004');
+  } else return false;
+  return true;
+}
+
 export function renderAiConversationStart({
   contract,
   demoMode,
   livePageState,
   view,
-  aiDraft,
-  aiMode,
-  aiFeedback,
   escapeHtml,
   icon,
 }) {

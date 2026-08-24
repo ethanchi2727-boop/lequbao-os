@@ -21,6 +21,7 @@ export function createFrontendMatrix(pageTreeSource) {
   const leaves = csvRows(pageTreeSource).filter((page) => page.is_leaf === 'true');
   const designedPages = new Set([
     'PAGE-003',
+    'PAGE-004',
     'PAGE-014',
     'PAGE-175',
     'PAGE-176',
