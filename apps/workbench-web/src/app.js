@@ -52,14 +52,14 @@ const workbenchApi =
         token: sessionToken,
       });
 let liveSession = null;
-const blank = { request: null, data: null };
-let livePageState = blank;
+const nil = { request: null, data: null };
+let livePageState = nil;
 const resultPanelStorageKey = 'lequbao.workbench-result-panel';
 let resultPanel = resultPanelFromStorage(sessionStorage.getItem(resultPanelStorageKey));
 let draftMessage = '';
 let aiStartPage = null;
 let aiConversationPage = null;
-const aiPages = new Set([
+const ai = new Set([
   'page-004',
   'page-005',
   'page-006',
@@ -71,6 +71,7 @@ const aiPages = new Set([
   'page-015',
   'page-016',
   'page-017',
+  'page-018',
 ]);
 const scrollPositions = new Map();
 let activeExperience = null;
@@ -198,7 +199,7 @@ function topbar() {
       escapeHtml,
       icon,
     });
-  if (aiPages.has(view.page) && aiConversationPage)
+  if (ai.has(view.page) && aiConversationPage)
     return aiConversationPage.renderConversationTopbar({ view, shell, escapeHtml, icon });
   const resultAction = intakePages.has(view.page)
     ? `<button data-action="open-results" aria-controls="workbench-results" aria-expanded="${resultPanel.open}">${icon('clock')} ${demoMode ? `后台任务 ${shell.backgroundTaskCount}` : '任务与成果'}</button>`
@@ -226,7 +227,7 @@ function genericWorkbenchPage() {
           icon,
         })
       : '<section class="ai-start" aria-busy="true"><div class="loading-skeleton" aria-hidden="true"><span></span><span></span><span></span></div></section>';
-  if (aiPages.has(view.page))
+  if (ai.has(view.page))
     return aiConversationPage
       ? aiConversationPage.renderConversationThread({
           contract,
@@ -717,7 +718,7 @@ function navigateTo(page) {
   history.pushState({}, '', `/bao/${page}${location.search}`);
   view = viewFor(page);
   activeExperience = null;
-  livePageState = blank;
+  livePageState = nil;
   render();
   focusMainContent();
   restoreScrollPosition();
@@ -731,7 +732,7 @@ async function bootstrapExperience(page) {
     loadWorkbenchPageExperience(page),
     page === 'page-003' ? import('./ai-start-page.mjs') : null,
   ]);
-  const conversationModule = aiPages.has(page)
+  const conversationModule = ai.has(page)
     ? await import(page > 'page-005' ? './artifact-preview-page.mjs' : './ai-conversation-page.mjs')
     : null;
   if (loadVersion !== experienceLoadVersion || view.page !== page) return;
@@ -766,7 +767,7 @@ function ensureAiPageStyle() {
   const href =
     view.page === 'page-003'
       ? '/ai-start.css'
-      : aiPages.has(view.page)
+      : ai.has(view.page)
         ? view.page < 'page-006'
           ? '/ai-conversation.css'
           : '/artifact-preview.css'
@@ -881,7 +882,7 @@ app.addEventListener('submit', (event) => {
 addEventListener('popstate', () => {
   view = viewFor(resolvePage(location.pathname));
   activeExperience = null;
-  livePageState = blank;
+  livePageState = nil;
   render();
   focusMainContent();
   restoreScrollPosition(scrollPositions.get(location.href));
@@ -1104,7 +1105,7 @@ async function executeLiveCommand(commandId) {
       history.pushState({}, '', `/bao/page-004?conversationId=${encodeURIComponent(data.id)}`);
       view = viewFor('page-004');
       activeExperience = null;
-      livePageState = blank;
+      livePageState = nil;
       render();
       focusMainContent();
       void bootstrapExperience(view.page);

@@ -24,6 +24,8 @@ export function renderConversationTopbar({ view, shell, escapeHtml, icon }) {
 }
 
 export function renderConversationThread({ contract, demoMode, livePageState, view, escapeHtml }) {
+  if (view.page === 'page-018')
+    return renderChangeConfirmation({ contract, demoMode, livePageState, view, escapeHtml });
   if (view.page === 'page-017')
     return renderMissingItems({ contract, demoMode, livePageState, view, escapeHtml });
   if (view.page === 'page-016')
@@ -131,6 +133,70 @@ export function renderConversationThread({ contract, demoMode, livePageState, vi
       </aside>
     </div>
   </section>`;
+}
+
+function renderChangeConfirmation({ contract, demoMode, livePageState, view, escapeHtml }) {
+  if (!demoMode && !livePageState.data) return renderUnavailable(contract, view, escapeHtml);
+  const session = demoMode
+    ? {
+        id: 'demo-intake-session',
+        status: 'WAITING_CONFIRMATION',
+        version: 4,
+        missingItems: [],
+        impactTargets: ['MINI_PROGRAM', 'GEO', 'AI_CUSTOMER_SERVICE'],
+        fields: [
+          {
+            id: 'field-legal',
+            fieldPath: 'merchant.legalName',
+            candidateValue: '南京拾味餐饮管理有限公司',
+            decisionStatus: 'PROPOSED',
+            confidence: 0.99,
+          },
+          {
+            id: 'field-contact',
+            fieldPath: 'merchant.public_contact.phone',
+            candidateValue: '025-8888 6612',
+            decisionStatus: 'PROPOSED',
+            confidence: 0.91,
+          },
+          {
+            id: 'field-price',
+            fieldPath: 'product.average_price',
+            candidateValue: 6800,
+            decisionStatus: 'PROPOSED',
+            confidence: 0.88,
+          },
+        ],
+      }
+    : livePageState.data;
+  const pending = list(session.fields).filter((field) =>
+    ['PROPOSED', 'CONFLICT'].includes(field.decisionStatus),
+  );
+  const conflicts = pending.filter((field) => field.decisionStatus === 'CONFLICT').length;
+  const sessionId = String(session.id ?? 'session');
+  const blocked = list(session.missingItems).length > 0 || conflicts > 0;
+  const success = view.state === 'success';
+  return `<section class="confirmation-page" data-page-id="${contract.id}" data-experience="change-confirmation"><header class="confirmation-heading"><div><small>${demoMode ? '演示确认 · 非真实业务数据' : '字段级人工确认'}</small><h1>确认变更</h1><p>逐项核对候选、影响和确认资格；不同风险类型必须分别提交。</p></div><a href="/bao/page-016?${demoMode ? 'demo=1&' : ''}sessionId=${encodeURIComponent(sessionId)}">返回识别结果</a></header>${success ? `<section class="confirmation-receipt" role="status"><b>确认请求已受理</b><span>服务端返回会话 v${escapeHtml(session.version ?? 1)}；确认事件与审计记录已在服务端保存。</span></section>` : ''}<section class="confirmation-summary"><span><small>待确认候选</small><b>${pending.length}</b><em>会话 v${escapeHtml(session.version ?? 1)}</em></span><span><small>冲突字段</small><b>${conflicts}</b><em>${conflicts ? '必须先处理' : '当前无冲突'}</em></span><span><small>阻断缺项</small><b>${list(session.missingItems).length}</b><em>${blocked ? '不可整体提交' : '已满足确认条件'}</em></span></section><div class="confirmation-layout"><main><header><div><small>字段差异</small><h2>正式值与待确认候选</h2></div><span>${pending.length} 项</span></header><div class="confirmation-list">${pending.length ? pending.map((field) => renderConfirmationField(field, escapeHtml)).join('') : '<div class="source-list-empty"><strong>没有待确认候选</strong><p>返回识别结果检查材料处理状态。</p></div>'}</div></main><aside><section><small>影响范围</small><h2>确认后可能进入这些服务</h2><div class="confirmation-targets">${
+    list(session.impactTargets)
+      .map((target) => `<span>${escapeHtml(target)}</span>`)
+      .join('') || '<span>服务端尚未返回影响目标</span>'
+  }</div><p>确认只记录字段决定，不代表已经对外发布。</p></section><section><small>确认资格</small><h2>由服务端最终裁决</h2><ul><li>当前角色必须拥有商户建档确认权限</li><li>法律主体、支付和公开承诺要求 MFA</li><li>候选类型与确认类型必须完全匹配</li><li>提交版本必须仍是 v${escapeHtml(session.version ?? 1)}</li></ul></section>${demoMode ? '<section class="confirmation-command"><small>提交确认</small><h2>演示模式不可写入</h2><button disabled>选择字段后确认</button></section>' : `<section class="confirmation-command" data-command-form="merchant-intake-confirm"><small>提交一组同类型字段</small><h2>填写候选编号和确认快照</h2><label>确认类型<select data-command-field="confirmationType" required><option value="">请选择</option><option value="LEGAL_SUBJECT">法律主体</option><option value="PAYMENT">支付配置</option><option value="PRICE">商品价格</option><option value="REFUND_RULE">退款规则</option><option value="PUBLIC_CONTACT">公开联系方式</option><option value="PUBLISH_IMPACT">发布影响</option></select></label><label>候选字段编号<input data-command-field="candidateIds" required placeholder="多个编号用逗号分隔"/></label><label>确认内容 JSON<textarea data-command-field="confirmedPayload" required placeholder='{"merchant.legalName":"示例"}'></textarea></label><label>确认渠道<select data-command-field="confirmationChannel" required><option value="WEB_CLICK">网页确认</option><option value="MOBILE_CLICK">移动端确认</option><option value="WECOM_SECURE_CARD">企业微信安全卡片</option></select></label><label>当前会话版本<input data-command-field="expectedVersion" type="number" required value="${escapeHtml(session.version ?? 1)}"/></label><button type="button" data-command="merchant-intake-confirm" ${blocked ? 'disabled' : ''}>核对后提交字段确认</button><output aria-live="polite">${blocked ? '仍有冲突或缺项，请先返回处理' : '提交前还会显示二次确认'}</output></section>`}<nav><a href="/bao/page-019?${demoMode ? 'demo=1&' : ''}sessionId=${encodeURIComponent(sessionId)}">查看字段来源</a><a href="/bao/page-021?${demoMode ? 'demo=1&' : ''}sessionId=${encodeURIComponent(sessionId)}">查看影响与发布</a></nav></aside></div></section>`;
+}
+
+function renderConfirmationField(field, escapeHtml) {
+  const path = String(field.fieldPath ?? '未知字段');
+  const risk = path.startsWith('payment.')
+    ? '资金配置'
+    : path.includes('price')
+      ? '公开价格'
+      : path.startsWith('merchant.public_contact.')
+        ? '公开信息'
+        : path.startsWith('merchant.')
+          ? '法律主体'
+          : '业务资料';
+  const confidence =
+    field.confidence == null ? '—' : `${Math.round(Number(field.confidence) * 100)}%`;
+  return `<article class="confirmation-field status-${String(field.decisionStatus).toLowerCase()}"><header><code>${escapeHtml(path)}</code><span>${risk}</span></header><div><section><small>当前正式值</small><strong>尚未写入正式档案</strong><p>本接口不返回历史正式值，不在客户端推测。</p></section><b>→</b><section><small>待确认候选 · ${confidence}</small><strong>${escapeHtml(text(field.candidateValue, '空候选'))}</strong><p>${escapeHtml(field.decisionStatus ?? 'PROPOSED')} · 编号 ${escapeHtml(field.id ?? '未知')}</p></section></div></article>`;
 }
 
 function renderMissingItems({ contract, demoMode, livePageState, view, escapeHtml }) {

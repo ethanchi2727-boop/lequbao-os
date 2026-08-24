@@ -307,6 +307,23 @@ describe('乐趣宝成果预览', () => {
     expect(html).not.toContain('data-command="merchant-intake-message-add"');
   });
 
+  it('确认变更逐字段展示候选、影响、资格和版本绑定', () => {
+    const html = renderConversationThread({
+      contract: { id: 'PAGE-018', title: '确认变更' },
+      demoMode: true,
+      livePageState: { data: null },
+      view: { page: 'page-018', state: 'default' },
+      escapeHtml,
+    });
+    expect(html).toContain('data-experience="change-confirmation"');
+    expect(html).toContain('尚未写入正式档案');
+    expect(html).toContain('merchant.public_contact.phone');
+    expect(html).toContain('不同风险类型必须分别提交');
+    expect(html).toContain('服务端最终裁决');
+    expect(html).toContain('/bao/page-021?demo=1&sessionId=demo-intake-session');
+    expect(html).not.toContain('data-command="merchant-intake-confirm"');
+  });
+
   it('身份空间展示服务端会话范围和真实切换边界', () => {
     const html = renderConversationThread({
       contract: { id: 'PAGE-012', title: '身份与空间切换' },
