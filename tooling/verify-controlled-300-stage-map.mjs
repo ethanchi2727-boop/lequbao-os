@@ -139,7 +139,7 @@ export function validateControlled300StageMap(plan, mapping) {
     failures.push('suite codes must be unique');
   for (const item of suites) {
     const suite = planByCode.get(item.suiteCode);
-    if (!Number.isInteger(item.expectedArtifactCount) || item.expectedArtifactCount <= 0)
+    if (!Number.isSafeInteger(item.expectedArtifactCount) || item.expectedArtifactCount <= 0)
       failures.push(
         `${item.suiteCode ?? 'unknown suite'} artifact count must be a positive integer`,
       );
@@ -152,7 +152,7 @@ export function validateControlled300StageMap(plan, mapping) {
   }
   const artifactCount = suites.reduce(
     (total, item) =>
-      total + (Number.isInteger(item.expectedArtifactCount) ? item.expectedArtifactCount : 0),
+      total + (Number.isSafeInteger(item.expectedArtifactCount) ? item.expectedArtifactCount : 0),
     0,
   );
   if (artifactCount !== 47)

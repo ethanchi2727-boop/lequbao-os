@@ -46,7 +46,7 @@ export async function verifyCandidateCheckProvenance({
     token,
     `${apiRoot}/commits/${candidate}/check-runs?per_page=100`,
   );
-  if (!Array.isArray(checks?.check_runs) || !Number.isInteger(checks?.total_count))
+  if (!Array.isArray(checks?.check_runs) || !Number.isSafeInteger(checks?.total_count))
     throw new Error('GitHub check-run response is invalid');
   if (checks.total_count !== checks.check_runs.length)
     throw new Error('GitHub check-run response is incomplete');

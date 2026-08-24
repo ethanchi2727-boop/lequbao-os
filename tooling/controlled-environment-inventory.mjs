@@ -214,7 +214,7 @@ export async function fetchGitHubEnvironmentNames({
   ]);
   function extractNames(payload, field) {
     const records = payload?.[field];
-    if (!Array.isArray(records) || !Number.isInteger(payload.total_count))
+    if (!Array.isArray(records) || !Number.isSafeInteger(payload.total_count))
       throw new Error(`GitHub ${field} name response is malformed`);
     if (payload.total_count !== records.length)
       throw new Error(`GitHub ${field} name response is incomplete`);
