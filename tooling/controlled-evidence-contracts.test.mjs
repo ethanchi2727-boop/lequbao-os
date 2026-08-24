@@ -209,7 +209,7 @@ describe('controlled JSON evidence contracts', () => {
             declaredEnvironment: 'production',
             locationSha256: 'b'.repeat(64),
             fileSha256: 'c'.repeat(64),
-            bytes: 1,
+            bytes: Number.MAX_SAFE_INTEGER + 1,
             tableCount: 0,
             nonEmptyTableCount: 1,
             rowCount: 1,
@@ -233,6 +233,7 @@ describe('controlled JSON evidence contracts', () => {
       expect.arrayContaining([
         'legacy-production-inventory.json source IDs must be unique',
         'legacy-production-inventory.json source locations must be unique',
+        'legacy-production-inventory.json sources[0].bytes must be a non-negative integer',
         'legacy-production-inventory.json sources[0].nonEmptyTableCount must not exceed tableCount',
         'legacy-production-inventory.json sources[0].EMPTY_REVIEW_REQUIRED conflicts with non-empty counts',
         'legacy-production-inventory.json sources[1].DATA_PRESENT_REVIEW_REQUIRED conflicts with zero counts',

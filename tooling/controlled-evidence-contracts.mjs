@@ -679,7 +679,7 @@ function validateLegacyInventory(value) {
     if (!['EMPTY_REVIEW_REQUIRED', 'DATA_PRESENT_REVIEW_REQUIRED'].includes(source.outcome))
       failures.push(`${prefix}.outcome contains a stop-release or unknown result`);
     for (const fieldName of ['bytes', 'tableCount', 'nonEmptyTableCount', 'rowCount'])
-      if (!Number.isInteger(source[fieldName]) || source[fieldName] < 0)
+      if (!Number.isSafeInteger(source[fieldName]) || source[fieldName] < 0)
         failures.push(`${prefix}.${fieldName} must be a non-negative integer`);
     if (source.nonEmptyTableCount > source.tableCount)
       failures.push(`${prefix}.nonEmptyTableCount must not exceed tableCount`);
