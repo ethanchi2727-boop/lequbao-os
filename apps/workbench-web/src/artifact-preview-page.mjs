@@ -24,6 +24,8 @@ export function renderConversationTopbar({ view, shell, escapeHtml, icon }) {
 }
 
 export function renderConversationThread({ contract, demoMode, livePageState, view, escapeHtml }) {
+  if (view.page === 'page-007')
+    return renderProvenance({ contract, demoMode, livePageState, view, escapeHtml });
   if (!demoMode && !livePageState.data) return renderUnavailable(contract, view, escapeHtml);
   const task = demoMode
     ? {
@@ -117,6 +119,111 @@ export function renderConversationThread({ contract, demoMode, livePageState, vi
       </aside>
     </div>
   </section>`;
+}
+
+function renderProvenance({ contract, demoMode, livePageState, view, escapeHtml }) {
+  if (!demoMode && !livePageState.data) return renderUnavailable(contract, view, escapeHtml);
+  const task = demoMode
+    ? {
+        id: 'demo-task',
+        status: 'SUCCEEDED',
+        updated_at: '2026-08-24T12:18:00.000Z',
+        steps: [
+          {
+            step_number: 1,
+            action_code: 'READ_OPERATION_FACTS',
+            tool_code: 'merchant-operations',
+            risk_level: 'READ',
+            status: 'SUCCEEDED',
+            attempt_count: 1,
+            output_summary_redacted: '读取 7 天门店订单、核销与退款摘要',
+          },
+          {
+            step_number: 2,
+            action_code: 'CALCULATE_WEEKLY_CHANGE',
+            tool_code: 'analytics',
+            risk_level: 'READ',
+            status: 'SUCCEEDED',
+            attempt_count: 1,
+            output_summary_redacted: '完成周环比计算并保存输入范围',
+          },
+          {
+            step_number: 3,
+            action_code: 'GENERATE_REPORT',
+            tool_code: 'document',
+            risk_level: 'CONFIRM',
+            status: 'SUCCEEDED',
+            attempt_count: 1,
+            output_summary_redacted: '生成管理层汇报与数据核验表',
+          },
+        ],
+        evidence: [
+          {
+            evidence_type: 'BUSINESS_RECORD',
+            label: '门店经营日报',
+            summary_redacted: '订单、核销与退款事实摘要',
+            reference_hash: 'ev-41f8a731',
+            created_at: '2026-08-24T11:42:00.000Z',
+          },
+          {
+            evidence_type: 'TOOL_RESULT',
+            label: '周环比计算',
+            summary_redacted: '计算版本与输入范围已锁定',
+            reference_hash: 'ev-d7125a44',
+            created_at: '2026-08-24T11:55:00.000Z',
+          },
+          {
+            evidence_type: 'HUMAN_CONFIRMATION',
+            label: '财务口径确认',
+            summary_redacted: '收入与退款口径已经人工复核',
+            reference_hash: 'ev-9cc2d018',
+            created_at: '2026-08-24T12:08:00.000Z',
+          },
+        ],
+        artifacts: [{ id: 'artifact-1' }, { id: 'artifact-2' }],
+      }
+    : livePageState.data;
+  const steps = list(task.steps);
+  const evidence = list(task.evidence);
+  const taskId = read(task, 'id') ?? 'task';
+  const toolSteps = steps.filter((step) => read(step, 'tool_code', 'toolCode'));
+  const confirmSteps = steps.filter((step) =>
+    ['CONFIRM', 'DUAL_CONFIRM'].includes(read(step, 'risk_level', 'riskLevel')),
+  );
+  return `<section class="provenance-page" data-page-id="${contract.id}" data-experience="provenance-timeline">
+    <header class="provenance-heading"><div><small>${demoMode ? '演示轨迹 · 非真实业务数据' : '权威任务轨迹'}</small><h1>来源与工具轨迹</h1><p>按执行顺序核对读取范围、工具结果、权限边界和人工确认。</p></div><span>${escapeHtml(read(task, 'status') ?? 'UNKNOWN')}</span></header>
+    <div class="provenance-layout">
+      <main>
+        <section class="trace-summary"><span><small>任务步骤</small><b>${steps.length}</b></span><span><small>工具调用</small><b>${toolSteps.length}</b></span><span><small>确认步骤</small><b>${confirmSteps.length}</b></span><span><small>证据记录</small><b>${evidence.length}</b></span></section>
+        <section class="step-ledger"><header><div><small>执行账本</small><h2>任务步骤与工具结果</h2></div><span>只读</span></header>${steps.length ? steps.map((step) => renderStep(step, escapeHtml)).join('') : '<p class="trace-empty">服务端尚未返回执行步骤。</p>'}</section>
+        <section class="evidence-timeline"><header><div><small>证据时间线</small><h2>不可变来源记录</h2></div><span>${evidence.length} 条</span></header>${evidence.length ? evidence.map((item) => renderTimelineEvidence(item, escapeHtml)).join('') : '<p class="trace-empty">没有可展示的脱敏证据。</p>'}</section>
+      </main>
+      <aside class="trace-inspector">
+        <section><small>轨迹完整性</small><h2>${steps.length && evidence.length ? '已建立可追溯链' : '等待完整记录'}</h2><p>步骤、成果和证据均以服务端任务编号关联；页面不读取模型提示词、秘密凭据或原始客户载荷。</p><dl><div><dt>任务编号</dt><dd>${escapeHtml(taskId)}</dd></div><div><dt>最近更新</dt><dd>${escapeHtml(dateText(read(task, 'updated_at', 'updatedAt')))}</dd></div><div><dt>关联成果</dt><dd>${list(task.artifacts).length} 项</dd></div></dl></section>
+        <section><small>安全边界</small><h2>审计记录不可改写</h2><ul><li>修正内容必须产生新版本</li><li>失败步骤保留原因与尝试次数</li><li>权限裁决只展示脱敏摘要</li><li>人工确认保留对象与引用哈希</li></ul></section>
+        <nav><a href="/bao/page-006?${demoMode ? 'demo=1&' : ''}taskId=${encodeURIComponent(taskId)}">查看成果预览</a><a href="/bao/page-011${demoMode ? '?demo=1' : ''}">查看原始材料</a></nav>
+      </aside>
+    </div>
+  </section>`;
+}
+
+function renderStep(step, escapeHtml) {
+  const number = read(step, 'step_number', 'stepNumber') ?? '—';
+  const action = read(step, 'action_code', 'actionCode') ?? '未记录动作';
+  const tool = read(step, 'tool_code', 'toolCode');
+  const risk = read(step, 'risk_level', 'riskLevel') ?? 'READ';
+  const status = read(step, 'status') ?? 'UNKNOWN';
+  const attempts = read(step, 'attempt_count', 'attemptCount') ?? 0;
+  const output = text(
+    read(step, 'output_summary_redacted', 'outputSummaryRedacted'),
+    '尚无脱敏输出摘要',
+  );
+  const failure = read(step, 'failure_code', 'failureCode');
+  return `<article class="step-record"><b>${escapeHtml(number)}</b><div><header><strong>${escapeHtml(action)}</strong><span>${escapeHtml(status)}</span></header><p>${escapeHtml(output)}</p><footer><code>${escapeHtml(tool ?? 'NO_TOOL')}</code><small>风险 ${escapeHtml(risk)} · 尝试 ${escapeHtml(attempts)} 次${failure ? ` · 失败 ${escapeHtml(failure)}` : ''}</small></footer></div></article>`;
+}
+
+function renderTimelineEvidence(item, escapeHtml) {
+  return `<article><time>${escapeHtml(dateText(read(item, 'created_at', 'createdAt')))}</time><i></i><div><small>${escapeHtml(read(item, 'evidence_type', 'evidenceType') ?? 'EVIDENCE')}</small><h3>${escapeHtml(item.label ?? '未命名证据')}</h3><p>${escapeHtml(text(read(item, 'summary_redacted', 'summaryRedacted'), '无可展示的脱敏摘要'))}</p><code>${escapeHtml(String(read(item, 'reference_hash', 'referenceHash') ?? '').slice(0, 24))}</code></div></article>`;
 }
 
 function renderUnavailable(contract, view, escapeHtml) {

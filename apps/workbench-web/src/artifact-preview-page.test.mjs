@@ -74,4 +74,47 @@ describe('乐趣宝成果预览', () => {
     expect(html).toContain('data-route="page-003"');
     expect(html).toContain('data-route="page-010"');
   });
+
+  it('来源轨迹展示步骤、工具、证据和不可改写边界', () => {
+    const html = renderConversationThread({
+      contract: { id: 'PAGE-007', title: '来源与工具轨迹' },
+      demoMode: true,
+      livePageState: { data: null },
+      view: { page: 'page-007', state: 'default' },
+      escapeHtml,
+    });
+    expect(html).toContain('data-experience="provenance-timeline"');
+    expect(html).toContain('merchant-operations');
+    expect(html).toContain('HUMAN_CONFIRMATION');
+    expect(html).toContain('审计记录不可改写');
+    expect(html).toContain('/bao/page-006?demo=1&taskId=demo-task');
+  });
+
+  it('来源轨迹生产态不展示演示步骤', () => {
+    const html = renderConversationThread({
+      contract: { id: 'PAGE-007', title: '来源与工具轨迹' },
+      demoMode: false,
+      livePageState: {
+        data: {
+          id: 'task-live',
+          status: 'FAILED',
+          steps: [
+            {
+              step_number: 1,
+              action_code: 'LIVE_STEP',
+              status: 'FAILED',
+              failure_code: 'UPSTREAM_TIMEOUT',
+            },
+          ],
+          evidence: [],
+          artifacts: [],
+        },
+      },
+      view: { page: 'page-007', state: 'default' },
+      escapeHtml,
+    });
+    expect(html).toContain('LIVE_STEP');
+    expect(html).toContain('UPSTREAM_TIMEOUT');
+    expect(html).not.toContain('READ_OPERATION_FACTS');
+  });
 });

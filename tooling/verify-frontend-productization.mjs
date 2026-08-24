@@ -24,6 +24,7 @@ export function createFrontendMatrix(pageTreeSource) {
     'PAGE-004',
     'PAGE-005',
     'PAGE-006',
+    'PAGE-007',
     'PAGE-014',
     'PAGE-175',
     'PAGE-176',
