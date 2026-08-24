@@ -18,6 +18,17 @@ const session = (accessToken = 'access-one', refreshToken = 'refresh-one'.padEnd
 });
 
 describe('life consumer session client', () => {
+  it('uses the platform UniApp storage APIs by default', () => {
+    const storage = storageFixture({ 'lequ.life.consumer.session.v1': session() });
+    vi.stubGlobal('uni', storage);
+    try {
+      expect(createLifeSessionClient().load()).toEqual(session());
+      expect(storage.getStorageSync).toHaveBeenCalledWith('lequ.life.consumer.session.v1');
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
   it('accepts only bounded JSON payment credentials and ignores a provider override', () => {
     expect(
       parsePaymentCredential('{"timeStamp":"1","nonceStr":"n","provider":"attacker"}'),

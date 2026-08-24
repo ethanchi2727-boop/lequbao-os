@@ -1,5 +1,15 @@
+/* global uni */
+
 const SESSION_KEY = 'lequ.bao.employee.session.v1';
 const DEVICE_KEY = 'lequ.bao.employee.device.v1';
+
+const uniRuntime = {
+  getStorageSync: (key) => uni.getStorageSync(key),
+  setStorageSync: (key, value) => uni.setStorageSync(key, value),
+  removeStorageSync: (key) => uni.removeStorageSync(key),
+  request: (options) => uni.request(options),
+  login: (options) => uni.login(options),
+};
 
 export const baoRuntimeProfile = Object.freeze({
   previewData: import.meta.env.VITE_LEQU_PREVIEW_DATA === '1',
@@ -22,8 +32,8 @@ function responseError(response) {
 }
 
 export function createBaoSessionClient({
-  transport = globalThis.uni,
-  storage = globalThis.uni,
+  transport = uniRuntime,
+  storage = uniRuntime,
   apiBase = typeof globalThis.location === 'undefined' ? 'https://bao.lequ.com' : '',
 } = {}) {
   const apiUrl = (path) => `${apiBase.replace(/\/$/u, '')}${path}`;

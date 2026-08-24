@@ -23,6 +23,17 @@ const session = (accessToken = 'employee-access-one') => ({
 });
 
 describe('bao employee session client', () => {
+  it('uses the platform UniApp storage APIs by default', () => {
+    const storage = storageFixture({ 'lequ.bao.employee.session.v1': session() });
+    vi.stubGlobal('uni', storage);
+    try {
+      expect(createBaoSessionClient().load()).toEqual(session());
+      expect(storage.getStorageSync).toHaveBeenCalledWith('lequ.bao.employee.session.v1');
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
   it('exchanges an enterprise assertion without persisting it', async () => {
     const storage = storageFixture();
     const transport = { request: vi.fn().mockResolvedValue({ statusCode: 200, data: session() }) };
