@@ -24,6 +24,8 @@ export function renderConversationTopbar({ view, shell, escapeHtml, icon }) {
 }
 
 export function renderConversationThread({ contract, demoMode, livePageState, view, escapeHtml }) {
+  if (view.page === 'page-009')
+    return renderSessionInbox({ contract, demoMode, livePageState, view, escapeHtml });
   if (view.page === 'page-007')
     return renderProvenance({ contract, demoMode, livePageState, view, escapeHtml });
   if (!demoMode && !livePageState.data) return renderUnavailable(contract, view, escapeHtml);
@@ -119,6 +121,130 @@ export function renderConversationThread({ contract, demoMode, livePageState, vi
       </aside>
     </div>
   </section>`;
+}
+
+export function handlePageInput(target) {
+  if (!(target instanceof HTMLInputElement) || target.dataset.action !== 'conversation-search')
+    return false;
+  const query = target.value.trim().toLocaleLowerCase('zh-CN');
+  let visible = 0;
+  for (const row of document.querySelectorAll('[data-conversation-row]')) {
+    const matches = !query || (row.dataset.search ?? '').includes(query);
+    row.hidden = !matches;
+    if (matches) visible += 1;
+  }
+  const count = document.querySelector('[data-conversation-count]');
+  if (count) count.textContent = `${visible} 个会话`;
+  return true;
+}
+
+function renderSessionInbox({ contract, demoMode, livePageState, view, escapeHtml }) {
+  if (!demoMode && !livePageState.data && view.state !== 'empty')
+    return renderUnavailable(contract, view, escapeHtml);
+  const conversations = demoMode
+    ? [
+        {
+          id: 'demo-conversation-1',
+          storeId: 'store-east',
+          customerId: 'customer-731802',
+          channel: 'WECHAT_MINI_PROGRAM',
+          status: 'HUMAN_QUEUED',
+          riskLevel: 'HIGH',
+          contextType: 'ORDER',
+          contextId: 'order-240824',
+          updatedAt: '2026-08-24T14:26:00.000Z',
+          ticket: {
+            reasonCode: 'REFUND_DISPUTE',
+            priority: 'URGENT',
+            status: 'OPEN',
+            dueAt: '2026-08-24T15:00:00.000Z',
+          },
+        },
+        {
+          id: 'demo-conversation-2',
+          storeId: 'store-east',
+          customerId: 'customer-184529',
+          channel: 'H5',
+          status: 'HUMAN_ACTIVE',
+          riskLevel: 'NORMAL',
+          contextType: 'PRODUCT',
+          contextId: 'product-18',
+          updatedAt: '2026-08-24T14:18:00.000Z',
+          ticket: {
+            reasonCode: 'PRODUCT_QUESTION',
+            priority: 'NORMAL',
+            status: 'ASSIGNED',
+            dueAt: '2026-08-24T16:30:00.000Z',
+          },
+        },
+        {
+          id: 'demo-conversation-3',
+          storeId: 'store-west',
+          customerId: 'customer-650417',
+          channel: 'WECHAT_MINI_PROGRAM',
+          status: 'WAITING_CUSTOMER',
+          riskLevel: 'NORMAL',
+          contextType: 'GROUP_BUY',
+          contextId: 'group-07',
+          updatedAt: '2026-08-24T13:55:00.000Z',
+          ticket: {
+            reasonCode: 'VOUCHER_USE',
+            priority: 'HIGH',
+            status: 'ASSIGNED',
+            dueAt: '2026-08-24T17:00:00.000Z',
+          },
+        },
+        {
+          id: 'demo-conversation-4',
+          storeId: 'store-west',
+          customerId: 'customer-905163',
+          channel: 'H5',
+          status: 'HUMAN_QUEUED',
+          riskLevel: 'SENSITIVE',
+          contextType: 'ORDER',
+          contextId: 'order-240817',
+          updatedAt: '2026-08-24T13:36:00.000Z',
+          ticket: {
+            reasonCode: 'PRIVACY_REQUEST',
+            priority: 'URGENT',
+            status: 'OPEN',
+            dueAt: '2026-08-24T14:45:00.000Z',
+          },
+        },
+      ]
+    : list(livePageState.data);
+  const urgent = conversations.filter((item) => item.ticket?.priority === 'URGENT').length;
+  const queued = conversations.filter((item) => item.status === 'HUMAN_QUEUED').length;
+  const active = conversations.filter((item) => item.status === 'HUMAN_ACTIVE').length;
+  return `<section class="session-inbox-page" data-page-id="${contract.id}" data-experience="session-inbox">
+    <header class="session-inbox-heading"><div><small>${demoMode ? '演示队列 · 非真实客户数据' : '权威客服队列'}</small><h1>会话列表</h1><p>按责任范围处理待接入、进行中和等待客户的会话。</p></div><button data-route="page-003">＋ 新对话</button></header>
+    <nav class="session-filters" aria-label="会话状态筛选"><a class="active" href="/bao/page-009${demoMode ? '?demo=1' : ''}">待我处理 <b>${queued}</b></a><a href="/bao/page-009?${demoMode ? 'demo=1&' : ''}status=HUMAN_ACTIVE">进行中 <b>${active}</b></a><a href="/bao/page-009?${demoMode ? 'demo=1&' : ''}status=WAITING_CUSTOMER">等待对方</a><a href="/bao/page-009?${demoMode ? 'demo=1&' : ''}status=CLOSED">已完成</a></nav>
+    <div class="session-inbox-layout">
+      <main>
+        <div class="session-list-tools"><label><span>⌕</span><input type="search" data-action="conversation-search" placeholder="搜索客户尾号、状态、渠道或工单原因" autocomplete="off"/></label><span data-conversation-count>${conversations.length} 个会话</span></div>
+        <section class="session-list" aria-live="polite">${conversations.length ? conversations.map((item) => renderConversationRow(item, demoMode, escapeHtml)).join('') : '<div class="session-list-empty"><strong>当前筛选下没有会话</strong><p>服务端没有返回当前身份与门店范围内的记录。</p></div>'}</section>
+      </main>
+      <aside class="session-queue-summary"><section><small>队列概览</small><h2>优先处理高风险与临期会话</h2><div><span><b>${queued}</b><small>等待接入</small></span><span><b>${active}</b><small>处理中</small></span><span><b>${urgent}</b><small>紧急工单</small></span></div></section><section><small>数据边界</small><h2>服务端决定可见范围</h2><ul><li>租户与门店范围逐条校验</li><li>列表不预取消息正文</li><li>客户标识只显示安全尾号</li><li>搜索不会扩大授权范围</li></ul></section><section><small>处理流程</small><ol><li>核对风险和截止时间</li><li>进入会话读取授权消息</li><li>接入、回复或等待客户</li><li>关闭时记录解决代码</li></ol></section></aside>
+    </div>
+  </section>`;
+}
+
+function renderConversationRow(item, demoMode, escapeHtml) {
+  const customer = String(item.customerId ?? 'unknown');
+  const ticket = item.ticket;
+  const statusCopy =
+    {
+      HUMAN_QUEUED: '等待接入',
+      HUMAN_ACTIVE: '处理中',
+      WAITING_CUSTOMER: '等待客户',
+      CLOSED: '已完成',
+    }[item.status] ?? item.status;
+  const search = [customer, item.status, item.channel, ticket?.reasonCode, item.riskLevel]
+    .filter(Boolean)
+    .join(' ')
+    .toLocaleLowerCase('zh-CN');
+  const href = `/bao/page-100?${demoMode ? 'demo=1&' : ''}conversationId=${encodeURIComponent(item.id)}`;
+  return `<article data-conversation-row data-search="${escapeHtml(search)}"><div class="session-avatar">客</div><div class="session-row-main"><header><strong>客户 · ${escapeHtml(customer.slice(-6))}</strong><time>${escapeHtml(dateText(item.updatedAt))}</time></header><p>${escapeHtml(ticket?.reasonCode ?? 'GENERAL_SUPPORT')} · 内容需进入会话后按权限读取</p><footer><span>${escapeHtml(item.channel)}</span><span>${escapeHtml(item.contextType ?? 'NONE')}</span>${item.riskLevel !== 'NORMAL' ? `<span class="risk">${escapeHtml(item.riskLevel)}</span>` : ''}</footer></div><div class="session-row-status"><b>${escapeHtml(statusCopy)}</b>${ticket ? `<small class="priority-${String(ticket.priority).toLowerCase()}">${escapeHtml(ticket.priority)} · ${escapeHtml(ticket.status)}</small><time>${escapeHtml(ticket.dueAt ? `截止 ${dateText(ticket.dueAt)}` : '无截止时间')}</time>` : '<small>无转人工工单</small>'}<a href="${href}" aria-label="打开客户 ${escapeHtml(customer.slice(-6))} 的会话">打开会话</a></div></article>`;
 }
 
 function renderProvenance({ contract, demoMode, livePageState, view, escapeHtml }) {

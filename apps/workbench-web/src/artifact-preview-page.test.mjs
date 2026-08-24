@@ -117,4 +117,46 @@ describe('乐趣宝成果预览', () => {
     expect(html).toContain('UPSTREAM_TIMEOUT');
     expect(html).not.toContain('READ_OPERATION_FACTS');
   });
+
+  it('会话列表展示责任队列、风险、截止时间和授权详情入口', () => {
+    const html = renderConversationThread({
+      contract: { id: 'PAGE-009', title: '会话列表' },
+      demoMode: true,
+      livePageState: { data: null },
+      view: { page: 'page-009', state: 'default' },
+      escapeHtml,
+    });
+    expect(html).toContain('data-experience="session-inbox"');
+    expect(html).toContain('data-action="conversation-search"');
+    expect(html).toContain('REFUND_DISPUTE');
+    expect(html).toContain('URGENT · OPEN');
+    expect(html).toContain('/bao/page-100?demo=1&conversationId=demo-conversation-1');
+    expect(html).toContain('列表不预取消息正文');
+  });
+
+  it('会话列表生产态只展示服务端授权记录', () => {
+    const html = renderConversationThread({
+      contract: { id: 'PAGE-009', title: '会话列表' },
+      demoMode: false,
+      livePageState: {
+        data: [
+          {
+            id: 'live-1',
+            customerId: 'customer-live-998877',
+            channel: 'H5',
+            status: 'HUMAN_ACTIVE',
+            riskLevel: 'NORMAL',
+            contextType: 'ORDER',
+            updatedAt: '2026-08-24T13:00:00.000Z',
+            ticket: null,
+          },
+        ],
+      },
+      view: { page: 'page-009', state: 'default' },
+      escapeHtml,
+    });
+    expect(html).toContain('998877');
+    expect(html).toContain('/bao/page-100?conversationId=live-1');
+    expect(html).not.toContain('REFUND_DISPUTE');
+  });
 });
