@@ -476,6 +476,54 @@ describe('controlled JSON evidence contracts', () => {
     );
   });
 
+  it('rejects non-public literal legal publication URLs', () => {
+    const evidenceFor = (publishedUrl) => ({
+      result: 'PASS',
+      releaseCommit: 'a'.repeat(40),
+      deploymentId: 'deployment-1',
+      documents: [
+        {
+          documentId: 'privacy-policy',
+          version: 'v1',
+          ownerRef: 'org:legal-owner',
+          approvalReceipt: 'legal-receipt',
+          sha256: 'b'.repeat(64),
+          publishedUrl,
+          effectiveAt: '2026-08-19T01:00:00.000Z',
+        },
+      ],
+      surfaceMatrix: [],
+      approvals: [],
+      unresolvedItems: [],
+    });
+    for (const publishedUrl of [
+      'https://10.1.2.3/privacy',
+      'https://100.64.0.1/privacy',
+      'https://169.254.1.1/privacy',
+      'https://172.16.0.1/privacy',
+      'https://192.168.1.1/privacy',
+      'https://198.51.100.1/privacy',
+      'https://[fc12::1]/privacy',
+      'https://[fd34::1]/privacy',
+      'https://[fe80::1]/privacy',
+      'https://[::ffff:10.0.0.1]/privacy',
+    ]) {
+      expect(
+        validateControlledJsonEvidence('legal-document-release.json', evidenceFor(publishedUrl)),
+      ).toContain(
+        'legal-document-release.json documents[0].publishedUrl must be a public credential-free HTTPS URL',
+      );
+    }
+    expect(
+      validateControlledJsonEvidence(
+        'legal-document-release.json',
+        evidenceFor('https://8.8.8.8/privacy'),
+      ),
+    ).not.toContain(
+      'legal-document-release.json documents[0].publishedUrl must be a public credential-free HTTPS URL',
+    );
+  });
+
   it('requires opaque upload identity and concrete retained-object metadata', () => {
     expect(
       validateControlledJsonEvidence('upload-response.json', {

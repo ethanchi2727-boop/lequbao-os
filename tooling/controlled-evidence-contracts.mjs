@@ -1,4 +1,5 @@
 import { readdir, readFile } from 'node:fs/promises';
+import { isIP } from 'node:net';
 import path from 'node:path';
 import { parseCanonicalUtcTimestamp } from './canonical-time.mjs';
 import { requiredAlertCodes, requiredAlertPolicy } from './operations-alert-policy.mjs';
@@ -570,6 +571,49 @@ export const controlledJsonEvidenceReviewRules = Object.freeze({
 const validSha256 = (value) => typeof value === 'string' && /^[a-f0-9]{64}$/u.test(value);
 const opaqueSubject = /^(?:github|org|workforce):[A-Za-z0-9._-]{1,128}$/u;
 const opaqueReference = /^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$/u;
+const isNonPublicIpv4 = (octets) => {
+  const [first, second, third] = octets;
+  return (
+    first === 0 ||
+    first === 10 ||
+    (first === 100 && second >= 64 && second <= 127) ||
+    first === 127 ||
+    (first === 169 && second === 254) ||
+    (first === 172 && second >= 16 && second <= 31) ||
+    (first === 192 && second === 0 && third === 0) ||
+    (first === 192 && second === 0 && third === 2) ||
+    (first === 192 && second === 168) ||
+    (first === 198 && (second === 18 || second === 19)) ||
+    (first === 198 && second === 51 && third === 100) ||
+    (first === 203 && second === 0 && third === 113) ||
+    first >= 224
+  );
+};
+const isNonPublicLiteralHostname = (hostname) => {
+  const normalized = hostname
+    .toLowerCase()
+    .replace(/^\[|\]$/gu, '')
+    .replace(/\.$/u, '');
+  if (normalized === 'localhost' || normalized.endsWith('.localhost')) return true;
+  if (isIP(normalized) === 4) return isNonPublicIpv4(normalized.split('.').map(Number));
+  if (isIP(normalized) !== 6) return false;
+  const mapped = /^::ffff:([0-9a-f]{1,4}):([0-9a-f]{1,4})$/u.exec(normalized);
+  if (mapped) {
+    const high = Number.parseInt(mapped[1], 16);
+    const low = Number.parseInt(mapped[2], 16);
+    return isNonPublicIpv4([high >> 8, high & 0xff, low >> 8, low & 0xff]);
+  }
+  const firstHextet = Number.parseInt(normalized.split(':')[0] || '0', 16);
+  return (
+    normalized === '::' ||
+    normalized === '::1' ||
+    (firstHextet & 0xfe00) === 0xfc00 ||
+    (firstHextet >= 0xfe80 && firstHextet <= 0xfebf) ||
+    normalized.startsWith('2001:db8:') ||
+    normalized === '2001:db8::' ||
+    firstHextet >= 0xff00
+  );
+};
 const validDateTime = (value) =>
   parseCanonicalUtcTimestamp(value) !== undefined &&
   parseCanonicalUtcTimestamp(value) <= Date.now() + 5 * 60_000;
@@ -957,8 +1001,7 @@ function validateLegalRelease(value, binding) {
         url.password ||
         url.search ||
         url.hash ||
-        ['localhost', '0.0.0.0', '::', '::1'].includes(hostname) ||
-        /^127(?:\.[0-9]{1,3}){3}$/u.test(hostname)
+        isNonPublicLiteralHostname(hostname)
       )
         throw new Error('not a public credential-free HTTPS URL');
     } catch {
