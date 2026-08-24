@@ -2052,6 +2052,266 @@
   color: #5366ca;
   background: #eef1ff;
 }
+.missing-page {
+  min-height: calc(100vh - 64px);
+  color: var(--ink);
+  background: #f5f6fa;
+}
+.missing-heading {
+  min-height: 98px;
+  padding: 18px 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  border-bottom: 1px solid var(--line);
+  background: #fff;
+}
+.missing-heading h1,
+.missing-heading p,
+.missing-layout h2 {
+  margin: 4px 0 0;
+}
+.missing-heading h1 {
+  font-size: 20px;
+}
+.missing-heading small,
+.missing-heading p,
+.missing-layout small,
+.missing-layout aside p,
+.missing-layout li {
+  color: var(--muted);
+}
+.missing-heading a,
+.missing-next {
+  min-height: 40px;
+  padding: 0 14px;
+  display: grid;
+  place-items: center;
+  border-radius: 9px;
+  color: #5366ca;
+  background: #eef1ff;
+  font-size: 10px;
+}
+.missing-progress {
+  padding: 16px 28px;
+  display: grid;
+  grid-template-columns: minmax(180px, 320px) 1fr;
+  align-items: center;
+  gap: 18px;
+  border-bottom: 1px solid var(--line);
+}
+.missing-progress > div {
+  height: 8px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #dfe3ed;
+}
+.missing-progress > div span {
+  width: var(--done);
+  height: 100%;
+  display: block;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #6275e2, #7756d2);
+}
+.missing-progress p {
+  margin: 0;
+  font-size: 11px;
+}
+.missing-progress p b {
+  color: #d26345;
+  font-size: 16px;
+}
+.missing-progress p small {
+  margin-left: 10px;
+  color: var(--muted);
+}
+.missing-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 350px;
+}
+.missing-layout > main,
+.missing-layout > aside {
+  padding: 24px;
+}
+.missing-layout > main {
+  padding-left: clamp(24px, 5vw, 70px);
+  display: grid;
+  align-content: start;
+  gap: 22px;
+}
+.missing-layout > main > section > header {
+  margin-bottom: 13px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 14px;
+}
+.missing-layout h2 {
+  font-size: 15px;
+}
+.missing-layout > main > section > header > span {
+  color: var(--muted);
+  font-size: 10px;
+}
+.missing-list {
+  display: grid;
+  gap: 11px;
+}
+.missing-list > article {
+  padding: 16px;
+  display: grid;
+  grid-template-columns: 32px minmax(0, 1fr);
+  gap: 12px;
+  border: 1px solid #e0e3ec;
+  border-left: 3px solid #e6875b;
+  border-radius: 14px;
+  background: #fff;
+}
+.missing-list.optional > article {
+  border-left-color: #8695df;
+}
+.missing-list > article > b {
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  border-radius: 9px;
+  color: #bd6038;
+  background: #fff0e9;
+  font-size: 10px;
+}
+.missing-list article header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.missing-list article header span {
+  font-size: 11px;
+  font-weight: 800;
+}
+.missing-list article em {
+  padding: 4px 7px;
+  border-radius: 6px;
+  color: #b85c38;
+  background: #fff0e9;
+  font-size: 8px;
+  font-style: normal;
+}
+.missing-list article em.optional {
+  color: #5366ca;
+  background: #eef1ff;
+}
+.missing-list article code {
+  margin-top: 5px;
+  display: block;
+  color: #596579;
+  font-size: 9px;
+}
+.missing-list article p {
+  margin: 9px 0 12px;
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.6;
+}
+.missing-list article button {
+  min-height: 32px;
+  margin-right: 7px;
+  padding: 0 10px;
+  border: 1px solid #d9deec;
+  border-radius: 8px;
+  color: #5366ca;
+  background: #fff;
+  font: inherit;
+  font-size: 9px;
+  cursor: pointer;
+}
+.missing-none {
+  margin: 0;
+  padding: 20px;
+  border: 1px dashed #d9deea;
+  border-radius: 12px;
+  color: var(--muted);
+  font-size: 10px;
+  text-align: center;
+}
+.missing-layout > aside {
+  display: grid;
+  align-content: start;
+  gap: 13px;
+  border-left: 1px solid var(--line);
+  background: #fff;
+}
+.missing-layout > aside > section {
+  padding: 17px;
+  border: 1px solid #e1e4ed;
+  border-radius: 13px;
+  background: #fbfcfe;
+}
+.missing-layout aside textarea {
+  width: 100%;
+  min-height: 110px;
+  margin: 10px 0;
+  padding: 11px;
+  resize: vertical;
+  border: 1px solid #dce0ea;
+  border-radius: 9px;
+  color: var(--ink);
+  font: inherit;
+  font-size: 10px;
+}
+.missing-layout aside button,
+.missing-next {
+  width: 100%;
+  min-height: 40px;
+  border: 0;
+  border-radius: 9px;
+  color: #fff;
+  background: #5369d9;
+  font: inherit;
+  font-size: 10px;
+}
+.missing-layout aside button:disabled {
+  color: #8a91a1;
+  background: #e5e7ed;
+}
+.missing-layout aside output {
+  margin-top: 8px;
+  display: block;
+  color: #697286;
+  font-size: 9px;
+  line-height: 1.5;
+}
+.missing-recovery ol {
+  margin: 12px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+  list-style: none;
+}
+.missing-recovery li {
+  display: grid;
+  grid-template-columns: 24px 1fr;
+  align-items: center;
+  gap: 8px;
+  font-size: 9px;
+}
+.missing-recovery li b {
+  width: 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  border-radius: 7px;
+  color: #5366ca;
+  background: #eef1ff;
+}
+.missing-layout aside ul {
+  margin: 10px 0 0;
+  padding-left: 18px;
+  font-size: 9px;
+  line-height: 1.9;
+}
 .source-list-tools label {
   width: min(460px, 100%);
   min-height: 42px;
@@ -2333,6 +2593,13 @@
   color: #fff;
 }
 @media (max-width: 900px) {
+  .missing-layout {
+    display: block;
+  }
+  .missing-layout > aside {
+    border-top: 1px solid var(--line);
+    border-left: 0;
+  }
   .recognition-layout {
     display: block;
   }
@@ -2349,6 +2616,34 @@
   }
 }
 @media (max-width: 760px) {
+  .missing-heading {
+    min-height: auto;
+    padding: 14px;
+  }
+  .missing-heading h1 {
+    font-size: 17px;
+  }
+  .missing-heading p {
+    display: none;
+  }
+  .missing-heading a {
+    padding: 0 10px;
+  }
+  .missing-progress {
+    padding: 14px;
+    grid-template-columns: 1fr;
+    gap: 9px;
+  }
+  .missing-layout > main,
+  .missing-layout > aside {
+    padding: 14px;
+  }
+  .missing-layout > aside {
+    padding-bottom: 100px;
+  }
+  .missing-list > article {
+    padding: 14px;
+  }
   .recognition-heading {
     min-height: auto;
     padding: 14px;

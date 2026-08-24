@@ -290,6 +290,23 @@ describe('乐趣宝成果预览', () => {
     expect(html).not.toContain('AI 自动确认');
   });
 
+  it('缺项追问区分阻断与建议，并保留原会话恢复边界', () => {
+    const html = renderConversationThread({
+      contract: { id: 'PAGE-017', title: '缺项追问' },
+      demoMode: true,
+      livePageState: { data: null },
+      view: { page: 'page-017', state: 'default' },
+      escapeHtml,
+    });
+    expect(html).toContain('data-experience="missing-items"');
+    expect(html).toContain('merchant.publicContact');
+    expect(html).toContain('product.refundRule');
+    expect(html).toContain('暂不提供');
+    expect(html).toContain('继续原任务');
+    expect(html).toContain('/bao/page-016?demo=1&sessionId=demo-intake-session');
+    expect(html).not.toContain('data-command="merchant-intake-message-add"');
+  });
+
   it('身份空间展示服务端会话范围和真实切换边界', () => {
     const html = renderConversationThread({
       contract: { id: 'PAGE-012', title: '身份与空间切换' },

@@ -24,6 +24,8 @@ export function renderConversationTopbar({ view, shell, escapeHtml, icon }) {
 }
 
 export function renderConversationThread({ contract, demoMode, livePageState, view, escapeHtml }) {
+  if (view.page === 'page-017')
+    return renderMissingItems({ contract, demoMode, livePageState, view, escapeHtml });
   if (view.page === 'page-016')
     return renderRecognitionReview({ contract, demoMode, livePageState, view, escapeHtml });
   if (view.page === 'page-012')
@@ -129,6 +131,50 @@ export function renderConversationThread({ contract, demoMode, livePageState, vi
       </aside>
     </div>
   </section>`;
+}
+
+function renderMissingItems({ contract, demoMode, livePageState, view, escapeHtml }) {
+  if (!demoMode && !livePageState.data) return renderUnavailable(contract, view, escapeHtml);
+  const session = demoMode
+    ? {
+        id: 'demo-intake-session',
+        status: 'WAITING_ANSWERS',
+        version: 4,
+        fields: [{ fieldPath: 'merchant.legalName' }, { fieldPath: 'store.name' }],
+        missingItems: ['merchant.publicContact', 'store.serviceHours', 'product.refundRule'],
+        suggestedItems: ['store.parkingGuide'],
+      }
+    : livePageState.data;
+  const blockers = list(session.missingItems);
+  const suggestions = demoMode ? list(session.suggestedItems) : [];
+  const sessionId = String(session.id ?? 'session');
+  const completeness = Math.min(
+    100,
+    Math.round(
+      (list(session.fields).length / Math.max(1, list(session.fields).length + blockers.length)) *
+        100,
+    ),
+  );
+  return `<section class="missing-page" data-page-id="${contract.id}" data-experience="missing-items"><header class="missing-heading"><div><small>${demoMode ? '演示缺项 · 非真实业务数据' : '服务端阻断清单'}</small><h1>缺项追问</h1><p>只追问影响当前建档和交付的内容，并说明为什么需要。</p></div><a href="/bao/page-016?${demoMode ? 'demo=1&' : ''}sessionId=${encodeURIComponent(sessionId)}">返回识别结果</a></header><section class="missing-progress"><div><span style="--done:${completeness}%"></span></div><p><b>${blockers.length}</b> 项阻断内容待处理 <small>会话 v${escapeHtml(session.version ?? 1)} · ${escapeHtml(session.status ?? 'UNKNOWN')}</small></p></section><div class="missing-layout"><main><section><header><div><small>阻断缺项</small><h2>补齐后才能进入确认</h2></div><span>${blockers.length} 项</span></header><div class="missing-list">${blockers.length ? blockers.map((item, index) => renderMissingItem(item, index, true, escapeHtml)).join('') : '<div class="source-list-empty"><strong>没有阻断缺项</strong><p>可返回识别结果核对冲突和待确认字段。</p></div>'}</div></section><section><header><div><small>建议补充</small><h2>不阻断当前任务</h2></div><span>${suggestions.length} 项</span></header><div class="missing-list optional">${suggestions.length ? suggestions.map((item, index) => renderMissingItem(item, index, false, escapeHtml)).join('') : '<p class="missing-none">服务端当前没有返回建议补充项。</p>'}</div></section></main><aside><section><small>回答当前缺项</small><h2>保存为可追溯文字材料</h2><p>请同时写明字段名和答案；系统会重新识别并更新缺项，不直接写入正式档案。</p>${demoMode ? '<textarea disabled placeholder="演示模式不写入业务系统"></textarea><button disabled>提交回答材料</button>' : '<div class="missing-answer" data-command-form="merchant-intake-message-add"><label for="missing-answer">缺项回答</label><textarea id="missing-answer" data-command-field="content" required maxlength="4000" placeholder="例：门店营业时间为每天 10:00–22:00"></textarea><button type="button" data-command="merchant-intake-message-add">提交回答材料</button></div>'}<output aria-live="polite">${demoMode ? '演示模式不提交' : '回答后回到同一会话和原字段位置'}</output></section><section class="missing-recovery"><small>恢复位置</small><ol><li><b>1</b><span>回答写入当前建档会话</span></li><li><b>2</b><span>处理链重新识别受影响字段</span></li><li><b>3</b><span>继续原任务，不新建无关会话</span></li></ol></section><section><small>数据最小化</small><ul><li>不收集与当前交付无关的个人或经营信息</li><li>明确“暂不提供”不等于绕过阻断检查</li><li>主体、价格和退款规则仍需单独人工确认</li></ul></section><a class="missing-next" href="/bao/page-018?${demoMode ? 'demo=1&' : ''}sessionId=${encodeURIComponent(sessionId)}">进入确认变更</a></aside></div></section>`;
+}
+
+function renderMissingItem(item, index, blocking, escapeHtml) {
+  const path = String(item);
+  const category = path.startsWith('merchant.')
+    ? '主体信息'
+    : path.startsWith('store.')
+      ? '门店信息'
+      : path.startsWith('product.')
+        ? '商品与规则'
+        : '交付依赖';
+  const reason = path.includes('publicContact')
+    ? '用于公开页面客户联系，需确认可公开范围。'
+    : path.includes('serviceHours')
+      ? '营业时间会影响展示、客服回答和履约预期。'
+      : path.includes('refundRule')
+        ? '退款规则是高风险公开承诺，必须明确并人工确认。'
+        : '可提高门店公开信息完整度，但不阻断当前建档。';
+  return `<article><b>${index + 1}</b><div><header><span>${category}</span>${blocking ? '<em>阻断</em>' : '<em class="optional">可选</em>'}</header><code>${escapeHtml(path)}</code><p>${reason}</p><button type="button" data-missing-choice="${escapeHtml(path)}">填写此项</button><button type="button" data-missing-choice="${escapeHtml(`${path}: 暂不提供`)}">暂不提供</button></div></article>`;
 }
 
 function renderRecognitionReview({ contract, demoMode, livePageState, view, escapeHtml }) {
@@ -259,6 +305,17 @@ function renderIdentitySwitcher({ contract, demoMode, livePageState, view, escap
       <aside><section><small>切换工作空间</small><h2>输入受信任的组织 ID</h2><p>请使用管理员或邀请链接提供的目标 ID。本页不枚举其他租户的成员关系。</p><form data-tenant-switch><label for="target-tenant">目标组织 ID</label><input id="target-tenant" name="tenantId" type="text" required pattern="[0-9a-fA-F-]{36}" placeholder="00000000-0000-4000-8000-000000000000" ${demoMode ? 'disabled' : ''}/><button ${demoMode ? 'disabled' : ''}>验证并切换</button><output aria-live="polite">${demoMode ? '演示模式不签发会话' : '切换会写入安全审计记录'}</output></form></section><section class="identity-guard"><small>最小权限边界</small><ul><li>不向页面展示访问或刷新凭证</li><li>不接受客户端自声明的用户和角色</li><li>切换失败时保留当前有效会话</li><li>新会话必须重新裁决所有资源范围</li></ul></section><a class="identity-return" href="/bao/page-003${demoMode ? '?demo=1' : ''}">返回新对话</a></aside></div>
   </section>`;
 }
+
+if (typeof document !== 'undefined')
+  document.addEventListener('click', (event) => {
+    const button =
+      event.target instanceof Element ? event.target.closest('[data-missing-choice]') : null;
+    const answer = document.querySelector('#missing-answer');
+    if (!(button instanceof HTMLButtonElement) || !(answer instanceof HTMLTextAreaElement)) return;
+    answer.value = button.dataset.missingChoice ?? '';
+    answer.dispatchEvent(new Event('input', { bubbles: true }));
+    answer.focus();
+  });
 
 if (typeof document !== 'undefined')
   document.addEventListener('submit', async (event) => {
