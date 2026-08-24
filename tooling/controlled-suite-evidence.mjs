@@ -38,6 +38,7 @@ export const controlledSuiteCrossEvidenceRules = {
   GREENFIELD_CUTOVER_GUARD: [
     'the waiver database-path coverage includes every inventoried V5 source location',
     'production inventory sources contain zero rows and the waiver review follows inventory',
+    'greenfield coverage inspections do not predate the production inventory',
   ],
   PERFORMANCE_CORE_AND_MESSAGES: [
     'performance report images equal the protected candidate manifest',
@@ -255,6 +256,16 @@ export function validateControlledSuiteDocuments(suiteCode, documents) {
       const reviewedAt = Date.parse(waiver.reviewedAt);
       if (Number.isFinite(generatedAt) && Number.isFinite(reviewedAt) && reviewedAt < generatedAt)
         failures.push('greenfield waiver review precedes legacy inventory generation');
+      const coverageInspections = Object.values(waiver.coverage ?? {})
+        .flatMap((records) => (Array.isArray(records) ? records : []))
+        .map((record) => Date.parse(record?.inspectedAt));
+      if (
+        Number.isFinite(generatedAt) &&
+        coverageInspections.some(
+          (inspectedAt) => Number.isFinite(inspectedAt) && inspectedAt < generatedAt,
+        )
+      )
+        failures.push('greenfield coverage inspection predates legacy inventory generation');
     }
   } else if (suiteCode === 'PERFORMANCE_CORE_AND_MESSAGES') {
     const report = get('performance-report.json');

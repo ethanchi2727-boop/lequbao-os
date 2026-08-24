@@ -206,7 +206,9 @@ describe('controlled suite cross-evidence contracts', () => {
         },
         'greenfield-waiver.json': {
           reviewedAt: '2026-08-19T01:00:00.000Z',
-          coverage: { databasePaths: [{ scopeRef: 'b'.repeat(64) }] },
+          coverage: {
+            databasePaths: [{ scopeRef: 'b'.repeat(64), inspectedAt: '2026-08-19T00:59:00.000Z' }],
+          },
         },
       }),
     ).toEqual(
@@ -214,6 +216,7 @@ describe('controlled suite cross-evidence contracts', () => {
         'inventory source production-v5 is absent from waiver coverage',
         'production inventory source production-v5 is not empty',
         'greenfield waiver review precedes legacy inventory generation',
+        'greenfield coverage inspection predates legacy inventory generation',
       ]),
     );
     expect(
