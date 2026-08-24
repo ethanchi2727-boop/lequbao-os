@@ -55,6 +55,21 @@ const restoredIntake = await json(
   { headers: employeeHeaders },
 );
 assert.deepEqual(restoredIntake.body, intake.body);
+const intakeMessage = await json(
+  `http://127.0.0.1:4173/api/v1/merchant-intake/sessions/${encodeURIComponent(intake.body.id)}/messages`,
+  {
+    method: 'POST',
+    headers: { ...employeeHeaders, 'idempotency-key': 'development-smoke-intake-message-v1' },
+    body: JSON.stringify({
+      content: '开发模拟资料：门店营业时间为每天十点到二十二点。',
+      sourceMessageId: 'development-smoke-message-v1',
+    }),
+  },
+);
+assert.equal(intakeMessage.response.status, 202);
+assert.equal(intakeMessage.body.sessionId, intake.body.id);
+assert.equal(intakeMessage.body.securityStatus, 'PENDING');
+assert.equal(intakeMessage.body.processingStatus, 'QUEUED');
 
 const lifeLogin = await json('http://127.0.0.1:4173/api/v1/life/auth/sessions/exchange', {
   method: 'POST',
