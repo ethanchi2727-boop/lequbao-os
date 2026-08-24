@@ -14,7 +14,7 @@ describe('frontend productization gate', () => {
     const matrix = createFrontendMatrix(source);
     expect(matrix.pages).toHaveLength(197);
     expect(matrix.pages.every((page) => page.contracted && page.connected)).toBe(true);
-    expect(matrix.pages.filter((page) => page.designed)).toHaveLength(80);
+    expect(matrix.pages.filter((page) => page.designed)).toHaveLength(81);
     for (const pageId of [
       'PAGE-003',
       'PAGE-004',
@@ -29,6 +29,7 @@ describe('frontend productization gate', () => {
       'PAGE-016',
       'PAGE-017',
       'PAGE-018',
+      'PAGE-019',
     ])
       expect(matrix.pages.find((page) => page.pageId === pageId)).toMatchObject({
         designed: true,

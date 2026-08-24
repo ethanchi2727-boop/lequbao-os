@@ -2846,6 +2846,180 @@
   grid-template-columns: 1fr 1fr;
   gap: 8px;
 }
+.provenance-page {
+  min-height: 100%;
+  background: #f6f7fb;
+  color: var(--ink);
+}
+.provenance-heading {
+  min-height: 112px;
+  padding: 22px 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  border-bottom: 1px solid var(--line);
+  background: #fff;
+}
+.provenance-heading small,
+.provenance-layout small {
+  color: #6974bd;
+  font-size: 9px;
+  font-weight: 700;
+}
+.provenance-heading h1 {
+  margin: 5px 0;
+  font-size: 23px;
+}
+.provenance-heading p,
+.provenance-layout p,
+.provenance-layout li {
+  margin: 0;
+  color: var(--muted);
+  font-size: 9px;
+  line-height: 1.7;
+}
+.provenance-heading a,
+.provenance-layout nav a {
+  min-height: 38px;
+  padding: 0 13px;
+  display: grid;
+  place-items: center;
+  border: 1px solid #d9deef;
+  border-radius: 9px;
+  color: #4f63c8;
+  font-size: 9px;
+}
+.provenance-summary {
+  padding: 18px 28px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+.provenance-summary > span {
+  padding: 14px;
+  display: grid;
+  gap: 4px;
+  border: 1px solid #e1e4ed;
+  border-radius: 12px;
+  background: #fff;
+}
+.provenance-summary small,
+.provenance-summary em {
+  color: var(--muted);
+  font-size: 9px;
+  font-style: normal;
+}
+.provenance-summary b {
+  font-size: 20px;
+}
+.provenance-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 330px;
+  border-top: 1px solid var(--line);
+}
+.provenance-layout > main,
+.provenance-layout > aside {
+  padding: 22px 28px 40px;
+}
+.provenance-layout > main > header,
+.provenance-path > header,
+.provenance-candidate header,
+.provenance-candidate footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.provenance-layout h2 {
+  margin: 5px 0;
+  font-size: 15px;
+}
+.provenance-list {
+  margin-top: 14px;
+  display: grid;
+  gap: 12px;
+}
+.provenance-path {
+  padding: 16px;
+  border: 1px solid #dfe3ee;
+  border-radius: 13px;
+  background: #fff;
+}
+.provenance-path > header code,
+.provenance-path > header span {
+  color: #5965ac;
+  font-size: 9px;
+}
+.provenance-path > div {
+  margin-top: 12px;
+  display: grid;
+  gap: 8px;
+}
+.provenance-candidate {
+  padding: 12px;
+  display: grid;
+  grid-template-columns: 26px minmax(0, 1fr);
+  gap: 10px;
+  border-radius: 10px;
+  background: #f7f8fb;
+}
+.provenance-candidate.status-conflict {
+  background: #fff5f3;
+}
+.provenance-candidate > b {
+  width: 26px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+  background: #e9edff;
+  color: #5365c2;
+  font-size: 9px;
+}
+.provenance-candidate strong {
+  overflow-wrap: anywhere;
+  font-size: 11px;
+}
+.provenance-candidate header span,
+.provenance-candidate footer span,
+.provenance-candidate footer code,
+.provenance-candidate footer em {
+  color: var(--muted);
+  font-size: 8px;
+  font-style: normal;
+}
+.provenance-candidate footer {
+  margin-top: 8px;
+  padding-top: 8px;
+  flex-wrap: wrap;
+  border-top: 1px solid #e5e8ef;
+}
+.provenance-layout > aside {
+  display: grid;
+  align-content: start;
+  gap: 12px;
+  border-left: 1px solid var(--line);
+  background: #fff;
+}
+.provenance-layout > aside > section {
+  padding: 16px;
+  border: 1px solid #e1e4ed;
+  border-radius: 13px;
+  background: #fbfcfe;
+}
+.provenance-layout ul {
+  padding-left: 18px;
+}
+.provenance-guard {
+  border-color: #c9dfd4 !important;
+  background: #f2faf6 !important;
+}
+.provenance-layout nav {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
 @media (max-width: 900px) {
   .missing-layout {
     display: block;
@@ -2875,8 +3049,40 @@
     border-top: 1px solid var(--line);
     border-left: 0;
   }
+  .provenance-layout {
+    display: block;
+  }
+  .provenance-layout > aside {
+    border-top: 1px solid var(--line);
+    border-left: 0;
+  }
 }
 @media (max-width: 760px) {
+  .provenance-heading {
+    min-height: auto;
+    padding: 14px;
+  }
+  .provenance-heading h1 {
+    font-size: 17px;
+  }
+  .provenance-heading p {
+    display: none;
+  }
+  .provenance-summary {
+    padding: 14px;
+    grid-template-columns: 1fr;
+  }
+  .provenance-layout > main,
+  .provenance-layout > aside {
+    padding: 14px;
+  }
+  .provenance-layout > aside {
+    padding-bottom: 100px;
+  }
+  .provenance-candidate footer {
+    align-items: flex-start;
+    flex-direction: column;
+  }
   .confirmation-heading {
     min-height: auto;
     padding: 14px;

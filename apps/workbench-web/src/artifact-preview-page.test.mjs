@@ -324,6 +324,22 @@ describe('乐趣宝成果预览', () => {
     expect(html).not.toContain('data-command="merchant-intake-confirm"');
   });
 
+  it('字段来源保留候选历史、材料哈希和未暴露证据边界', () => {
+    const html = renderConversationThread({
+      contract: { id: 'PAGE-019', title: '字段来源' },
+      demoMode: true,
+      livePageState: { data: null },
+      view: { page: 'page-019', state: 'default' },
+      escapeHtml,
+    });
+    expect(html).toContain('data-experience="field-provenance"');
+    expect(html).toContain('store.address');
+    expect(html).toContain('店长补充说明.wav');
+    expect(html).toContain('SHA-256');
+    expect(html).toContain('不在客户端推测');
+    expect(html).toContain('/bao/page-020?demo=1&sessionId=demo-intake-session');
+  });
+
   it('身份空间展示服务端会话范围和真实切换边界', () => {
     const html = renderConversationThread({
       contract: { id: 'PAGE-012', title: '身份与空间切换' },

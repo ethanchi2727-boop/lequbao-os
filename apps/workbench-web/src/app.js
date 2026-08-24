@@ -72,6 +72,7 @@ const ai = new Set([
   'page-016',
   'page-017',
   'page-018',
+  'page-019',
 ]);
 const scrollPositions = new Map();
 let activeExperience = null;

@@ -24,6 +24,8 @@ export function renderConversationTopbar({ view, shell, escapeHtml, icon }) {
 }
 
 export function renderConversationThread({ contract, demoMode, livePageState, view, escapeHtml }) {
+  if (view.page === 'page-019')
+    return renderFieldProvenance({ contract, demoMode, livePageState, view, escapeHtml });
   if (view.page === 'page-018')
     return renderChangeConfirmation({ contract, demoMode, livePageState, view, escapeHtml });
   if (view.page === 'page-017')
@@ -133,6 +135,92 @@ export function renderConversationThread({ contract, demoMode, livePageState, vi
       </aside>
     </div>
   </section>`;
+}
+
+function renderFieldProvenance({ contract, demoMode, livePageState, view, escapeHtml }) {
+  if (!demoMode && !livePageState.data) return renderUnavailable(contract, view, escapeHtml);
+  const session = demoMode
+    ? {
+        id: 'demo-intake-session',
+        status: 'WAITING_CONFIRMATION',
+        version: 4,
+        assets: [
+          {
+            id: 'asset-license',
+            originalFilename: '营业执照.jpg',
+            assetType: 'IMAGE',
+            sourceChannel: 'WEB_UPLOAD',
+            sha256: 'a1b2c3d4e5f60718293a4b5c6d7e8f901234567890abcdef1234567890abcdef',
+            securityStatus: 'SAFE',
+            processingStatus: 'SUCCEEDED',
+            createdAt: '2026-08-25T00:00:00.000Z',
+          },
+          {
+            id: 'asset-audio',
+            originalFilename: '店长补充说明.wav',
+            assetType: 'AUDIO',
+            sourceChannel: 'WEB_UPLOAD',
+            sha256: 'b2c3d4e5f60718293a4b5c6d7e8f901234567890abcdef1234567890abcdef1',
+            securityStatus: 'SAFE',
+            processingStatus: 'SUCCEEDED',
+            createdAt: '2026-08-25T00:08:00.000Z',
+          },
+        ],
+        fields: [
+          {
+            id: 'field-1',
+            fieldPath: 'merchant.legalName',
+            candidateValue: '南京拾味餐饮管理有限公司',
+            confidence: 0.99,
+            decisionStatus: 'CONFIRMED',
+            sourceAssetId: 'asset-license',
+          },
+          {
+            id: 'field-2',
+            fieldPath: 'store.address',
+            candidateValue: '秦淮区中山南路 18 号',
+            confidence: 0.74,
+            decisionStatus: 'CONFLICT',
+            sourceAssetId: 'asset-license',
+          },
+          {
+            id: 'field-3',
+            fieldPath: 'store.address',
+            candidateValue: '中山南路 18 号 2 楼',
+            confidence: 0.67,
+            decisionStatus: 'CONFLICT',
+            sourceAssetId: 'asset-audio',
+          },
+        ],
+      }
+    : livePageState.data;
+  const fields = list(session.fields);
+  const assets = new Map(list(session.assets).map((asset) => [asset.id, asset]));
+  const paths = [...new Set(fields.map((field) => String(field.fieldPath)))];
+  const sessionId = String(session.id ?? 'session');
+  return `<section class="provenance-page" data-page-id="${contract.id}" data-experience="field-provenance"><header class="provenance-heading"><div><small>${demoMode ? '演示来源 · 非真实业务数据' : '服务端持久化证据'}</small><h1>字段来源</h1><p>从候选字段回到原始材料、安全处理状态和人工决定。</p></div><a href="/bao/page-016?${demoMode ? 'demo=1&' : ''}sessionId=${encodeURIComponent(sessionId)}">返回识别结果</a></header><section class="provenance-summary"><span><small>字段路径</small><b>${paths.length}</b><em>会话 v${escapeHtml(session.version ?? 1)}</em></span><span><small>候选记录</small><b>${fields.length}</b><em>追加式历史</em></span><span><small>来源材料</small><b>${assets.size}</b><em>哈希绑定</em></span></section><div class="provenance-layout"><main><header><div><small>候选历史</small><h2>按服务端返回顺序保留</h2></div><span>${escapeHtml(session.status ?? 'UNKNOWN')}</span></header><div class="provenance-list">${
+    paths.length
+      ? paths
+          .map((path) =>
+            renderProvenancePath(
+              path,
+              fields.filter((field) => field.fieldPath === path),
+              assets,
+              escapeHtml,
+            ),
+          )
+          .join('')
+      : '<div class="source-list-empty"><strong>暂无字段来源</strong><p>材料完成识别后会形成不可覆盖的候选记录。</p></div>'
+  }</div></main><aside><section><small>证据边界</small><h2>当前接口实际返回</h2><ul><li>候选值、置信度和决定状态</li><li>来源材料类型、渠道和 SHA-256</li><li>安全扫描与处理结果</li><li>会话版本和业务状态</li></ul></section><section><small>尚未由读取接口暴露</small><h2>不在客户端推测</h2><ul><li>OCR 页码、框选坐标或音频时间段</li><li>模型、规则和规范化版本</li><li>决定人、确认时间和审计追踪号</li></ul></section><section class="provenance-guard"><small>不可覆盖原则</small><p>修正只能追加候选和决定；原始材料、哈希、冲突与被替代值继续保留。</p></section><nav><a href="/bao/page-020?${demoMode ? 'demo=1&' : ''}sessionId=${encodeURIComponent(sessionId)}">查看原始材料</a><a href="/bao/page-018?${demoMode ? 'demo=1&' : ''}sessionId=${encodeURIComponent(sessionId)}">返回确认变更</a></nav></aside></div></section>`;
+}
+
+function renderProvenancePath(path, candidates, assets, escapeHtml) {
+  return `<article class="provenance-path"><header><code>${escapeHtml(path)}</code><span>${candidates.length} 个候选</span></header><div>${candidates
+    .map((field, index) => {
+      const asset = assets.get(field.sourceAssetId);
+      return `<section class="provenance-candidate status-${String(field.decisionStatus).toLowerCase()}"><b>${index + 1}</b><div><header><strong>${escapeHtml(text(field.candidateValue, '空候选'))}</strong><span>${escapeHtml(field.decisionStatus ?? 'PROPOSED')}</span></header><p>置信度 ${field.confidence == null ? '未返回' : `${Math.round(Number(field.confidence) * 100)}%`} · 候选 ${escapeHtml(field.id ?? '未知')}</p><footer><span>${escapeHtml(asset?.originalFilename ?? '未知材料')}</span><code>${escapeHtml(String(asset?.sha256 ?? '无哈希').slice(0, 12))}…</code><em>${escapeHtml(asset?.securityStatus ?? 'UNKNOWN')} / ${escapeHtml(asset?.processingStatus ?? 'UNKNOWN')}</em></footer></div></section>`;
+    })
+    .join('')}</div></article>`;
 }
 
 function renderChangeConfirmation({ contract, demoMode, livePageState, view, escapeHtml }) {
