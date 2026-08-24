@@ -25,6 +25,8 @@ describe('public preview stack', () => {
     const smoke = await read('tooling/preview-stack-smoke.mjs');
 
     expect(commands).toContain('node tooling/preview-stack-smoke.mjs');
+    expect(smoke).toContain("from 'node:http'");
+    expect(smoke).toContain('headers: { ...hostHeaders, ...init.headers }');
     expect(smoke).toContain('/__development/login');
     expect(smoke).toContain('/api/v1/merchant-intake/sessions');
     expect(smoke).toContain('/messages');
