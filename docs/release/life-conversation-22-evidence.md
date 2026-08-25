@@ -25,7 +25,7 @@ Date: 2026-08-25
 - 乐趣生活 `mp-weixin` production build passed.
 - Full root `pnpm check` passed: formatting, lint, frozen V6 contracts, RBAC, release/readiness/acceptance maps, security, operations, deployment, types, 963 tests and all production builds.
 - Production artifact policy passed: Life Web 99 files / 4,812,977 bytes; complete artifact manifest `8eee0bd10886d744`.
-- Exact-commit GitHub CI is recorded after the commit is pushed and the remote run completes.
+- GitHub Actions run `32837781719` passed exact commit `5e56797782d897ca070c9c9b3f406c4ea4665b01`: code quality, candidate container builds and smoke, preview/development stacks, and the complete PostgreSQL contract job all passed.
 
 ## Rollout, rollback and reconciliation
 
