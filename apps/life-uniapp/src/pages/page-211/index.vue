@@ -43,7 +43,7 @@ onLoad((options) => {
     eyebrow="PAGE-211 · 溯源报告"
     :title="report?.title || '商品溯源'"
     detail="只展示已核验且仍在有效期内的服务端报告"
-    tone="blue"
+    theme-color="blue"
   >
     <view v-if="loading" class="section empty-safe">正在核对报告版本…</view>
     <view v-else-if="error?.status === 401" class="section empty-safe">登录后查看溯源报告</view>

@@ -105,7 +105,7 @@ onShow(() => load());
           class="store-card"
           @click="openStore(store)"
         >
-          <image src="/static/local-dining.webp" mode="aspectFill" />
+          <view class="store-photo" />
           <view>
             <text>{{ store.name }}</text>
             <text>{{ store.cityCode || '当前城市' }} · {{ store.productCount }} 件在售</text>
@@ -188,10 +188,12 @@ onShow(() => load());
   background: #f8faf9;
   border-radius: 22rpx;
 }
-.store-card image {
+.store-photo {
   width: 150rpx;
   height: 120rpx;
   border-radius: 18rpx;
+  flex: none;
+  background: url('../../assets/v63-retail/category-sprite.webp') 50% 100% / 500% 300% no-repeat;
 }
 .store-card > view {
   display: flex;

@@ -1,6 +1,7 @@
 <script setup>
 import { computed, ref } from 'vue';
 import { onLoad } from '@dcloudio/uni-app';
+import LifeRetailProductCard from '../../components/LifeRetailProductCard.vue';
 import LifeSurface from '../../components/LifeSurface.vue';
 import { filterLifeDiscovery } from '../../services/life-discovery.js';
 import { lifeSession } from '../../services/life-session.js';
@@ -56,7 +57,7 @@ onLoad(() => void load());
     eyebrow="PAGE-207 · 商城精选"
     title="今天值得带回家"
     detail="只展示当前账户关联商户的真实在售商品"
-    tone="orange"
+    theme-color="coral"
   >
     <view class="mall-search">
       <input v-model="query" placeholder="在精选商品中搜索" confirm-type="search" />
@@ -76,17 +77,15 @@ onLoad(() => void load());
         ><text>实时精选</text><text>{{ visibleProducts.length }} 件</text></view
       >
       <view v-if="visibleProducts.length" class="goods-list">
-        <view v-for="product in visibleProducts" :key="product.id" class="goods-card">
-          <image src="/static/life-product.webp" mode="aspectFill" @click="openProduct(product)" />
-          <view class="goods-copy" @click="openProduct(product)">
-            <text>{{ product.title }}</text>
-            <text>{{ product.storeName }} · {{ product.variantTitle }}</text>
-            <text class="price">¥{{ (product.salePriceCents / 100).toFixed(2) }}</text>
-          </view>
-          <button size="mini" :disabled="product.availableQuantity < 1" @click="addToCart(product)">
-            {{ product.availableQuantity < 1 ? '售罄' : '加购' }}
-          </button>
-        </view>
+        <LifeRetailProductCard
+          v-for="(product, index) in visibleProducts"
+          :key="product.id"
+          compact
+          :product="product"
+          :index="index"
+          @select="openProduct"
+          @add="addToCart"
+        />
       </view>
       <view v-else class="empty-safe">没有匹配当前关键词的商品</view>
     </view>
@@ -117,41 +116,5 @@ onLoad(() => void load());
 .goods-list {
   display: grid;
   gap: 18rpx;
-}
-.goods-card {
-  display: flex;
-  min-width: 0;
-  padding: 16rpx;
-  align-items: center;
-  gap: 18rpx;
-  border-radius: 22rpx;
-  background: #f8faf9;
-}
-.goods-card image {
-  width: 150rpx;
-  height: 128rpx;
-  border-radius: 18rpx;
-}
-.goods-copy {
-  display: flex;
-  min-width: 0;
-  flex: 1;
-  flex-direction: column;
-  gap: 8rpx;
-}
-.goods-copy text:first-child {
-  font-size: 26rpx;
-  font-weight: 900;
-}
-.goods-copy text:nth-child(2) {
-  color: #66736d;
-  font-size: 19rpx;
-}
-.goods-card button {
-  margin: 0;
-  color: #fff;
-  background: #076c50;
-  border-radius: 999rpx;
-  font-size: 18rpx;
 }
 </style>

@@ -87,4 +87,16 @@ describe('乐趣生活 V6.3 high-traffic leaves', () => {
     expect(service).toContain('/api/v1/life/rewards?limit=50');
     expect(service).toContain("props.pageId === '246' ? '/aftercare' : ''");
   });
+
+  it('removes legacy product and dining placeholders from all Life leaves', async () => {
+    const leaves = await Promise.all(
+      ['pages/page-198/index.vue', 'pages/page-207/index.vue', 'pages/page-213/index.vue'].map(
+        (file) => readFile(new URL(file, import.meta.url), 'utf8'),
+      ),
+    );
+    expect(leaves.join('\n')).not.toMatch(/\/static\/(?:life-product|local-dining)\.webp/u);
+    expect(leaves[0]).toContain('../../assets/v63-retail/category-sprite.webp');
+    expect(leaves[1]).toContain('LifeRetailProductCard');
+    expect(leaves[2]).toContain('../../assets/v63-retail/product-sprite.webp');
+  });
 });

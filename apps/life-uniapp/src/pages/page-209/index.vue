@@ -68,7 +68,7 @@ onLoad((options) => {
     eyebrow="PAGE-209 · 商品详情"
     :title="product?.title || '商品详情'"
     detail="价格、规格和库存均由服务端实时确认"
-    tone="orange"
+    theme-color="coral"
   >
     <view v-if="state === 'loading'" class="section empty-safe">正在读取商品详情…</view>
     <view v-else-if="state === 'unauthenticated'" class="section empty-safe"

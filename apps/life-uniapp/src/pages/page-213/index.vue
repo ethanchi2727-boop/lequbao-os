@@ -38,7 +38,7 @@ onLoad(() => void load());
     eyebrow="PAGE-213 · 活动会场"
     title="正在进行的真实优惠"
     detail="会场只聚合当前可售团购商品，不虚构活动倒计时或原价"
-    tone="orange"
+    theme-color="coral"
   >
     <view class="truth-note"
       ><text>实时规则</text><text>库存、成交价与履约条件以下单时服务端确认结果为准</text></view
@@ -65,7 +65,7 @@ onLoad(() => void load());
         class="event-card"
         @click="openProduct(product)"
       >
-        <image src="/static/local-dining.webp" mode="aspectFill" /><view
+        <view class="event-photo" /><view
           ><text>{{ product.title }}</text
           ><text>{{ product.storeName }} · {{ product.variantTitle }}</text
           ><text class="price">¥{{ (product.salePriceCents / 100).toFixed(2) }}</text
@@ -104,10 +104,12 @@ onLoad(() => void load());
   background: #f8faf9;
   border-radius: 22rpx;
 }
-.event-card image {
+.event-photo {
   width: 180rpx;
   height: 150rpx;
   border-radius: 18rpx;
+  flex: none;
+  background: url('../../assets/v63-retail/product-sprite.webp') 33.333% 100% / 400% 200% no-repeat;
 }
 .event-card view {
   display: flex;
