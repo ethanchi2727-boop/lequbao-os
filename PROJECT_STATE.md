@@ -218,6 +218,7 @@ VISUAL-LIFE-11 removes the remaining legacy `life-product`, `local-dining` and c
 - GitHub Actions run `32056896317` passed commit `8583984`: 61 unit tests, the live Web API client/build, all code-quality gates and both clean/incremental PostgreSQL contract jobs.
 - GitHub Actions run `32057022551` passed commit `482ba9d`: the documented live-workbench checkpoint retained both code-quality and PostgreSQL contract gates.
 - Payment sandbox, real WeCom/provider callbacks, physical/WAL cross-fault-domain recovery, controlled V5 zero-data inventory/greenfield approval and real WeChat acceptance remain unverified. Local encrypted logical recovery and expand-only compatibility are verified but do not replace those controlled results; any discovered V5 record restores the full migration rehearsal gate.
+- RELEASE-LOCAL-12 is green for candidate `60ef4cf`: the root `pnpm check` passed 955 tests, every workspace type check and production build, the 164-table contract boundary, 201 OpenAPI paths and the final artifact inventory. Real Chromium preview of the built 乐趣生活 H5 passed at 390x844 and 1024x768 with all 15 home categories, working mall/cart navigation, truthful unauthenticated states, no horizontal overflow and no browser errors. See `docs/release/release-local-12-evidence.md`; authenticated data and all controlled/provider/device evidence remain explicitly pending.
 
 ## Exact next step
 
