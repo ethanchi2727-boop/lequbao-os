@@ -216,6 +216,7 @@ describe('customer-service conversation and human takeover', () => {
       consumerCommand({ conversationId, content: '营业时间是几点？' }),
     );
     expect(response.id).toBe(messageId);
+    expect(response).not.toHaveProperty('contentObjectRef');
     expect(order.slice(0, 2)).toEqual(['object-content', 'database-message']);
     expect(fx.query).toHaveBeenCalledWith(
       expect.stringContaining('INSERT INTO conversation_ai_jobs'),

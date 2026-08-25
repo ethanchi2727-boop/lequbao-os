@@ -50,7 +50,6 @@ const MessageSchema = z.object({
   senderUserId: UuidSchema.nullable(),
   senderDisplayName: z.string().nullable(),
   messageType: z.enum(['TEXT', 'IMAGE', 'FILE', 'ORDER_CARD', 'PRODUCT_CARD', 'SYSTEM_EVENT']),
-  contentObjectRef: z.string(),
   contentPreviewRedacted: z.string().nullable(),
   riskLabels: z.array(z.string()),
   createdAt: z.string(),
@@ -434,13 +433,12 @@ export function createCustomerService(
       sender_user_id: string | null;
       display_name: string | null;
       message_type: string;
-      content_object_key: string;
       content_preview_redacted: string | null;
       risk_labels: string[];
       created_at: Date | string;
     }>(
       `SELECT message.id,message.conversation_id,message.sender_type,message.sender_user_id,
-              actor.display_name,message.message_type,message.content_object_key,
+              actor.display_name,message.message_type,
               message.content_preview_redacted,message.risk_labels,message.created_at
          FROM conversation_messages message
          LEFT JOIN users actor ON actor.id=message.sender_user_id
@@ -456,7 +454,6 @@ export function createCustomerService(
       senderUserId: row.sender_user_id,
       senderDisplayName: row.display_name,
       messageType: row.message_type,
-      contentObjectRef: row.content_object_key,
       contentPreviewRedacted: row.content_preview_redacted,
       riskLabels: row.risk_labels,
       createdAt: new Date(row.created_at).toISOString(),

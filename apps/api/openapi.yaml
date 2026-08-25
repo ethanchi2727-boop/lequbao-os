@@ -4272,7 +4272,6 @@ components:
           senderUserId,
           senderDisplayName,
           messageType,
-          contentObjectRef,
           contentPreviewRedacted,
           riskLabels,
           createdAt,
@@ -4285,7 +4284,6 @@ components:
         senderDisplayName: { type: [string, 'null'] }
         messageType:
           { type: string, enum: [TEXT, IMAGE, FILE, ORDER_CARD, PRODUCT_CARD, SYSTEM_EVENT] }
-        contentObjectRef: { type: string, description: 受鉴权内容引用，不是可公开下载地址 }
         contentPreviewRedacted: { type: [string, 'null'] }
         riskLabels: { type: array, items: { type: string } }
         createdAt: { type: string, format: date-time }
