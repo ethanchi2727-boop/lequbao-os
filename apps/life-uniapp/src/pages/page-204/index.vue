@@ -1,6 +1,7 @@
 <script setup>
 import { computed, ref } from 'vue';
 import { onLoad } from '@dcloudio/uni-app';
+import LifeRetailProductCard from '../../components/LifeRetailProductCard.vue';
 import LifeSurface from '../../components/LifeSurface.vue';
 import { filterLifeDiscovery, normalizeLifeQuery } from '../../services/life-discovery.js';
 import { lifeSession } from '../../services/life-session.js';
@@ -112,25 +113,17 @@ onLoad((options) => {
         <view class="section-head"
           ><text>商品与服务</text><text>{{ productResults.length }} 条</text></view
         >
-        <view class="result-list"
-          ><view
-            v-for="product in productResults"
+        <view class="result-list">
+          <LifeRetailProductCard
+            v-for="(product, index) in productResults"
             :key="product.id"
-            class="result-card"
-            @click="openProduct(product)"
-            ><image src="/static/life-product.webp" mode="aspectFill" /><view
-              ><text>{{ product.title }}</text
-              ><text>{{ product.storeName }} · {{ product.variantTitle }}</text
-              ><text class="price">¥{{ (product.salePriceCents / 100).toFixed(2) }}</text></view
-            ><button
-              size="mini"
-              :disabled="product.availableQuantity < 1"
-              @click.stop="addToCart(product)"
-            >
-              加购
-            </button></view
-          ></view
-        >
+            compact
+            :product="product"
+            :index="index"
+            @select="openProduct"
+            @add="addToCart"
+          />
+        </view>
       </view>
       <view v-if="activeTab !== 'products' && storeResults.length" class="section">
         <view class="section-head"
@@ -143,7 +136,7 @@ onLoad((options) => {
             class="store-result"
             @click="openStore(store)"
           >
-            <image src="/static/local-dining.webp" mode="aspectFill" /><view
+            <view class="store-photo" /><view
               ><text>{{ store.name }}</text
               ><text
                 >{{ store.cityCode || '当前城市' }} · {{ store.productCount }} 件在售</text
@@ -199,7 +192,6 @@ onLoad((options) => {
   display: grid;
   gap: 16rpx;
 }
-.result-card,
 .store-result {
   display: flex;
   width: 100%;
@@ -213,13 +205,13 @@ onLoad((options) => {
   border-radius: 20rpx;
   box-sizing: border-box;
 }
-.result-card image,
-.store-result image {
+.store-photo {
   width: 118rpx;
   height: 100rpx;
   border-radius: 16rpx;
+  flex: none;
+  background: url('../../assets/v63-retail/category-sprite.webp') 50% 100% / 500% 300% no-repeat;
 }
-.result-card > view,
 .store-result > view {
   display: flex;
   min-width: 0;
@@ -227,22 +219,13 @@ onLoad((options) => {
   flex-direction: column;
   gap: 7rpx;
 }
-.result-card view text:first-child,
 .store-result view text:first-child {
   font-size: 24rpx;
   font-weight: 900;
 }
-.result-card view text:nth-child(2),
 .store-result view text:nth-child(2) {
   color: #66736d;
   font-size: 19rpx;
-}
-.result-card button {
-  margin: 0;
-  color: #fff;
-  background: #076c50;
-  border-radius: 999rpx;
-  font-size: 18rpx;
 }
 .store-result > text:last-child {
   color: #076c50;

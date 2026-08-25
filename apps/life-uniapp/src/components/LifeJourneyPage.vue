@@ -438,6 +438,21 @@ onShow(load);
       ><view class="section-head"
         ><text>订单 {{ detail.orderNumber || detail.id }}</text
         ><text>{{ detail.status }}</text></view
+      ><view v-if="pageId === '238'" class="order-truth-grid"
+        ><view
+          ><text>支付状态</text><text>{{ detail.paymentStatus }}</text></view
+        ><view
+          ><text>履约状态</text><text>{{ detail.fulfillmentStatus }}</text></view
+        ><view
+          ><text>售后状态</text><text>{{ detail.aftercareStatus || '暂无售后' }}</text></view
+        ><view
+          ><text>订单应付</text><text>{{ money(detail.payableAmountCents) }}</text></view
+        ></view
+      ><view v-if="pageId === '238' && detail.items?.length" class="order-item-list"
+        ><view v-for="item in detail.items" :key="item.id"
+          ><text>{{ item.title }} × {{ item.quantity }}</text
+          ><text>{{ money(item.lineAmountCents) }}</text></view
+        ></view
       ><view class="facts"
         ><text>应付 {{ money(detail.payableAmountCents) }}</text
         ><text>支付 {{ detail.paymentStatus }}</text
@@ -682,5 +697,45 @@ onShow(load);
   color: var(--life-brand-deep);
   font-size: 18rpx;
   font-weight: 800;
+}
+.order-truth-grid {
+  display: grid;
+  margin-top: 18rpx;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12rpx;
+}
+.order-truth-grid > view {
+  display: flex;
+  padding: 18rpx;
+  border-radius: 18rpx;
+  flex-direction: column;
+  gap: 7rpx;
+  background: var(--life-brand-soft);
+}
+.order-truth-grid text:first-child {
+  color: var(--life-muted);
+  font-size: 16rpx;
+}
+.order-truth-grid text:last-child {
+  color: var(--life-brand-deep);
+  font-size: 22rpx;
+  font-weight: 900;
+}
+.order-item-list {
+  display: grid;
+  margin-top: 18rpx;
+  gap: 10rpx;
+}
+.order-item-list > view {
+  display: flex;
+  padding: 16rpx 0;
+  border-bottom: 1rpx solid var(--life-line);
+  justify-content: space-between;
+  gap: 18rpx;
+  font-size: 20rpx;
+}
+.order-item-list text:last-child {
+  color: var(--life-red);
+  font-weight: 900;
 }
 </style>

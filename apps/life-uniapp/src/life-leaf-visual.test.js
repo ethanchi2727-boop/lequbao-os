@@ -27,4 +27,22 @@ describe('乐趣生活 V6.3 high-traffic leaves', () => {
     expect(journey).toContain('/api/v1/life/orders?');
     expect(journey).toContain("go('238', { orderId: order.id })");
   });
+
+  it('shares official product cards across category and search results', async () => {
+    const [categoryResults, search, searchResults, journey] = await Promise.all(
+      [
+        'pages/page-201/index.vue',
+        'pages/page-203/index.vue',
+        'pages/page-204/index.vue',
+        'components/LifeJourneyPage.vue',
+      ].map((file) => readFile(new URL(file, import.meta.url), 'utf8')),
+    );
+    expect(categoryResults).toContain('LifeRetailProductCard');
+    expect(searchResults).toContain('LifeRetailProductCard');
+    expect(searchResults).toContain('../../assets/v63-retail/category-sprite.webp');
+    expect(search).toContain('不跨租户猜测');
+    expect(journey).toContain('order-truth-grid');
+    expect(journey).toContain('detail.fulfillmentStatus');
+    expect(journey).toContain('detail.aftercareStatus');
+  });
 });

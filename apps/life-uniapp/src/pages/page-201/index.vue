@@ -1,6 +1,7 @@
 <script setup>
 import { computed, ref } from 'vue';
 import { onLoad } from '@dcloudio/uni-app';
+import LifeRetailProductCard from '../../components/LifeRetailProductCard.vue';
 import LifeSurface from '../../components/LifeSurface.vue';
 import { categoryById, filterLifeDiscovery } from '../../services/life-discovery.js';
 import { lifeSession } from '../../services/life-session.js';
@@ -103,33 +104,14 @@ onLoad((options) => {
         ><text>在售结果</text><text>{{ filtered.length }} 件</text></view
       >
       <view v-if="filtered.length" class="product-grid">
-        <view
-          v-for="product in filtered"
+        <LifeRetailProductCard
+          v-for="(product, index) in filtered"
           :key="product.id"
-          class="product-card"
-          @click="openProduct(product)"
-        >
-          <image
-            :src="
-              product.productType === 'PHYSICAL'
-                ? '/static/life-product.webp'
-                : '/static/local-dining.webp'
-            "
-            mode="aspectFill"
-          />
-          <text>{{ product.title }}</text>
-          <text>{{ product.storeName }} · {{ product.variantTitle }}</text>
-          <view
-            ><text class="price">¥{{ (product.salePriceCents / 100).toFixed(2) }}</text
-            ><button
-              size="mini"
-              :disabled="product.availableQuantity < 1"
-              @click.stop="addToCart(product)"
-            >
-              {{ product.availableQuantity < 1 ? '已售罄' : '加入购物车' }}
-            </button></view
-          >
-        </view>
+          :product="product"
+          :index="index"
+          @select="openProduct"
+          @add="addToCart"
+        />
       </view>
       <view v-else class="empty-safe">没有匹配当前关键词的商品</view>
     </view>
@@ -162,44 +144,5 @@ onLoad((options) => {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 18rpx;
-}
-.product-card {
-  display: flex;
-  min-width: 0;
-  padding: 16rpx;
-  border: 1rpx solid #edf1ef;
-  border-radius: 22rpx;
-  flex-direction: column;
-  background: #fff;
-}
-.product-card > image {
-  width: 100%;
-  height: 220rpx;
-  border-radius: 18rpx;
-}
-.product-card > text:nth-child(2) {
-  margin-top: 14rpx;
-  font-size: 25rpx;
-  font-weight: 900;
-}
-.product-card > text:nth-child(3) {
-  margin: 8rpx 0 14rpx;
-  color: #66736d;
-  font-size: 19rpx;
-}
-.product-card > view {
-  display: flex;
-  margin-top: auto;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8rpx;
-}
-.product-card button {
-  margin: 0;
-  padding: 0 14rpx;
-  color: #fff;
-  background: #076c50;
-  border-radius: 999rpx;
-  font-size: 18rpx;
 }
 </style>

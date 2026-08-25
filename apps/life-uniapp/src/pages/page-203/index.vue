@@ -48,6 +48,9 @@ onShow(() => {
       />
       <button @click="search()">搜索</button>
     </view>
+    <view class="search-trust"
+      ><text>商品实时在售</text><text>门店关系有效</text><text>不跨租户猜测</text></view
+    >
     <view class="section">
       <view class="section-head"><text>大家常搜</text><text>快捷入口</text></view>
       <view class="chips"
@@ -94,6 +97,29 @@ onShow(() => {
   background: #076c50;
   border-radius: 24rpx;
   font-size: 24rpx;
+}
+.search-trust {
+  display: grid;
+  margin-top: 16rpx;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10rpx;
+}
+.search-trust text {
+  padding: 14rpx 8rpx;
+  border-radius: 16rpx;
+  color: var(--life-brand-deep);
+  background: var(--life-brand-soft);
+  text-align: center;
+  font-size: 15rpx;
+  font-weight: 800;
+}
+.search-trust text:nth-child(2) {
+  color: #9b3f20;
+  background: var(--life-coral-soft);
+}
+.search-trust text:nth-child(3) {
+  color: #075d70;
+  background: var(--life-blue-soft);
 }
 .chips button {
   margin: 0;
