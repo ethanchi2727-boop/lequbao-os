@@ -50,4 +50,24 @@ describe('乐趣生活 V6.3 official retail assets', () => {
     expect(page).toContain("lifeSession.request('/api/v1/life/cart/items'");
     expect(page).not.toMatch(/新人专享|会场5折|爆款直降|第二件半价/u);
   });
+
+  it('shares the official retail card across mall and community without fabricating offers', async () => {
+    const [card, mall, community] = await Promise.all(
+      [
+        'components/LifeRetailProductCard.vue',
+        'pages/mall/index.vue',
+        'pages/community/index.vue',
+      ].map((file) => readFile(new URL(file, import.meta.url), 'utf8')),
+    );
+    expect(card).toContain('../assets/v63-retail/product-sprite.webp');
+    expect(card).toContain('product.salePriceCents');
+    expect(card).toContain('product.availableQuantity');
+    for (const page of [mall, community]) {
+      expect(page).toContain('LifeRetailProductCard');
+      expect(page).toContain('/api/v1/life/cart/items');
+      expect(page).not.toMatch(/新人专享|会场5折|爆款直降|第二件半价/u);
+    }
+    expect(mall).toContain('theme-color="coral"');
+    expect(community).toContain('theme-color="blue"');
+  });
 });
