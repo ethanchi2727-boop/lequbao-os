@@ -59,7 +59,8 @@ onShow(load);
 </script>
 <template>
   <LifeSurface
-    tone="orange"
+    primary
+    theme-color="coral"
     eyebrow="精选商城"
     title="把好品质带回家"
     detail="规格、配送与售后规则一次讲清"

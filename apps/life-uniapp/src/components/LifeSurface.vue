@@ -1,32 +1,74 @@
 <script setup>
+import { computed } from 'vue';
+import LifeTopBar from './LifeTopBar.vue';
 import { lifeRuntimeProfile } from '../services/life-session.js';
+import { lifeBannerThemeStyle } from '../services/life-visual.js';
 
-defineProps({
+const props = defineProps({
   eyebrow: String,
   title: String,
   detail: String,
-  tone: { type: String, default: 'green' },
+  city: { type: String, default: '选择城市' },
+  primary: { type: Boolean, default: false },
+  themeColor: { type: String, default: 'green' },
 });
+
+const themeStyle = computed(() => lifeBannerThemeStyle(props.themeColor));
 </script>
 
 <template>
-  <view class="surface">
-    <view v-if="lifeRuntimeProfile.previewData" class="preview-note"
-      ><text>开发预览数据</text><text>正式交易接入前不会产生订单或资金变动</text></view
-    >
-    <view :class="['hero', tone]"
-      ><text>{{ eyebrow }}</text
-      ><text class="title">{{ title }}</text
-      ><text>{{ detail }}</text></view
-    >
-    <view class="assurance"><text>来源可查</text><text>规则透明</text><text>售后有门</text></view>
-    <slot />
+  <view class="surface" :style="themeStyle">
+    <LifeTopBar v-if="primary" :city="city" :theme-color="themeColor">
+      <view class="primary-intro">
+        <text>{{ eyebrow }}</text>
+        <text class="primary-title">{{ title }}</text>
+        <text>{{ detail }}</text>
+      </view>
+    </LifeTopBar>
+    <view class="surface-content">
+      <view v-if="lifeRuntimeProfile.previewData" class="preview-note"
+        ><text>开发预览数据</text><text>正式交易接入前不会产生订单或资金变动</text></view
+      >
+      <view v-if="!primary" class="hero"
+        ><text>{{ eyebrow }}</text
+        ><text class="title">{{ title }}</text
+        ><text>{{ detail }}</text></view
+      >
+      <view class="assurance"><text>来源可查</text><text>规则透明</text><text>售后有门</text></view>
+      <slot />
+    </view>
   </view>
 </template>
 
 <style scoped>
 .surface {
-  padding: 28rpx;
+  min-height: 100vh;
+  background: var(--life-bg);
+}
+.surface-content {
+  padding: 20rpx;
+}
+.primary-intro {
+  display: flex;
+  padding: 24rpx 28rpx 28rpx;
+  flex-direction: column;
+  color: var(--life-paper);
+  text-shadow: 0 2rpx 10rpx rgba(7, 68, 49, 0.18);
+}
+.primary-intro > text:first-child {
+  font-size: 20rpx;
+  font-weight: 700;
+  opacity: 0.9;
+}
+.primary-title {
+  margin: 10rpx 0 8rpx;
+  font-size: 42rpx;
+  line-height: 1.16;
+  font-weight: 900;
+}
+.primary-intro > text:last-child {
+  font-size: 21rpx;
+  opacity: 0.88;
 }
 .preview-note {
   display: flex;
@@ -49,15 +91,9 @@ defineProps({
   border-radius: 34rpx;
   box-sizing: border-box;
   flex-direction: column;
-  color: #fff;
-  background: linear-gradient(135deg, #076c50, #0f9d72);
-  box-shadow: 0 20rpx 48rpx rgba(22, 57, 43, 0.14);
-}
-.hero.orange {
-  background: linear-gradient(135deg, #9b3f20, #ff6038);
-}
-.hero.blue {
-  background: linear-gradient(135deg, #155e75, #0f9d72);
+  color: var(--life-paper);
+  background: linear-gradient(135deg, var(--tone-top), var(--tone-mid));
+  box-shadow: var(--life-shadow);
 }
 .title {
   margin: 18rpx 0 12rpx;
@@ -71,8 +107,8 @@ defineProps({
   margin: 24rpx 0;
   padding: 22rpx;
   border-radius: 24rpx;
-  color: #076c50;
-  background: #e8f7f0;
+  color: var(--life-brand-deep);
+  background: var(--life-brand-soft);
   font-size: 22rpx;
   font-weight: 700;
 }

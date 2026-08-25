@@ -13,8 +13,28 @@ export default {
 
 <style>
 page {
-  background: #f5f7f5;
-  color: #18231f;
+  --life-brand: #0aa76d;
+  --life-brand-deep: #067a52;
+  --life-brand-soft: #e8fbf3;
+  --life-coral: #ff4f55;
+  --life-coral-soft: #fff0ed;
+  --life-red: #f02f36;
+  --life-yellow: #ffcf2f;
+  --life-yellow-soft: #fff7d7;
+  --life-blue: #20bfe2;
+  --life-blue-soft: #e9fbff;
+  --life-paper: #ffffff;
+  --life-bg: #f3f4f3;
+  --life-ink: #18231f;
+  --life-muted: #7b8883;
+  --life-line: #e8ecea;
+  --life-shadow: 0 16rpx 52rpx rgba(31, 68, 54, 0.1);
+  --life-shadow-soft: 0 8rpx 30rpx rgba(31, 68, 54, 0.07);
+  --life-radius-xl: 48rpx;
+  --life-radius-lg: 36rpx;
+  --life-radius-md: 28rpx;
+  background: var(--life-bg);
+  color: var(--life-ink);
   font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
 }
 button::after {
@@ -23,10 +43,10 @@ button::after {
 .section {
   margin-top: 26rpx;
   padding: 28rpx;
-  border: 1rpx solid #e6ebe8;
-  border-radius: 28rpx;
-  background: #fff;
-  box-shadow: 0 12rpx 36rpx rgba(22, 57, 43, 0.07);
+  border: 1rpx solid var(--life-line);
+  border-radius: var(--life-radius-md);
+  background: var(--life-paper);
+  box-shadow: var(--life-shadow-soft);
 }
 .section-head {
   display: flex;
@@ -39,7 +59,7 @@ button::after {
   font-weight: 900;
 }
 .section-head text:last-child {
-  color: #0f9d72;
+  color: var(--life-brand);
   font-size: 22rpx;
 }
 .card-list {
@@ -69,11 +89,11 @@ button::after {
 }
 .row-card .copy text:nth-child(2) {
   margin: 8rpx 0 12rpx;
-  color: #66736d;
+  color: var(--life-muted);
   font-size: 22rpx;
 }
 .price {
-  color: #ff6038;
+  color: var(--life-red);
   font-size: 30rpx;
   font-weight: 900;
 }
@@ -85,16 +105,30 @@ button::after {
 .chip {
   padding: 10rpx 18rpx;
   border-radius: 999rpx;
-  color: #076c50;
-  background: #e8f7f0;
+  color: var(--life-brand-deep);
+  background: var(--life-brand-soft);
   font-size: 20rpx;
   font-weight: 700;
 }
 .empty-safe {
   padding: 52rpx 24rpx;
-  border: 2rpx dashed #cfd9d4;
+  border: 2rpx dashed var(--life-line);
   border-radius: 24rpx;
   text-align: center;
-  color: #66736d;
+  color: var(--life-muted);
+}
+
+@media (min-width: 600px) {
+  uni-page-body {
+    width: 480px;
+    min-height: 100vh;
+    margin: 0 auto;
+    box-shadow: var(--life-shadow);
+  }
+  .uni-tabbar-bottom .uni-tabbar {
+    width: 480px;
+    left: 50%;
+    transform: translateX(-50%);
+  }
 }
 </style>

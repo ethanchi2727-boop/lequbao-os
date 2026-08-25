@@ -122,7 +122,12 @@ async function submitCheckout() {
 onShow(load);
 </script>
 <template>
-  <LifeSurface eyebrow="分组结算" title="购物车" detail="优惠、配送、奖励与实付逐项算清"
+  <LifeSurface
+    primary
+    theme-color="green"
+    eyebrow="分组结算"
+    title="购物车"
+    detail="优惠、配送、奖励与实付逐项算清"
     ><view v-if="state === 'loading'" class="section empty-safe">正在重新校验价格与库存…</view>
     <view v-else-if="state === 'unauthenticated'" class="section empty-safe">登录后查看购物车</view>
     <view v-else-if="state === 'recoverable-error'" class="section empty-safe" @click="load"

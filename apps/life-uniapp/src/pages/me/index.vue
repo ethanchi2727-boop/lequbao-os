@@ -373,7 +373,12 @@ async function requestUnshippedRefund() {
 }
 </script>
 <template>
-  <LifeSurface eyebrow="生活账户" title="我的" detail="订单、售后、会员权益和隐私设置"
+  <LifeSurface
+    primary
+    theme-color="green"
+    eyebrow="生活账户"
+    title="我的"
+    detail="订单、售后、会员权益和隐私设置"
     ><view class="section">
       <view class="section-head"
         ><text>登录状态</text><text>{{ session ? '已登录' : '未登录' }}</text></view

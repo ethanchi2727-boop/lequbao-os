@@ -56,6 +56,8 @@ onShow(load);
 </script>
 <template>
   <LifeSurface
+    primary
+    theme-color="green"
     eyebrow="今日生活直供"
     title="把新鲜和附近，装进生活篮子"
     detail="当日达 · 来源可查 · 售后有入口"

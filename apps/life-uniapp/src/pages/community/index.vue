@@ -59,7 +59,8 @@ onShow(load);
 </script>
 <template>
   <LifeSurface
-    tone="blue"
+    primary
+    theme-color="blue"
     eyebrow="附近好生活"
     title="在城市里发现点新鲜"
     detail="真实门店 · 实际距离 · 到店规则透明"

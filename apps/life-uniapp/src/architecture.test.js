@@ -7,6 +7,34 @@ describe('乐趣生活 UniApp 架构', () => {
     expect(pkg.scripts['build:mp-weixin']).toContain('mp-weixin');
   });
 
+  it('implements the official V6.3 primary-page top operation contract', async () => {
+    const [visual, topBar, surface, lifePage, mallPage, communityPage, cartPage, mePage] =
+      await Promise.all(
+        [
+          'services/life-visual.js',
+          'components/LifeTopBar.vue',
+          'components/LifeSurface.vue',
+          'pages/life/index.vue',
+          'pages/mall/index.vue',
+          'pages/community/index.vue',
+          'pages/cart/index.vue',
+          'pages/me/index.vue',
+        ].map((file) => readFile(new URL(file, import.meta.url), 'utf8')),
+      );
+    expect(visual).toContain('getMenuButtonBoundingClientRect');
+    expect(topBar).toContain('搜索商品、附近好店');
+    expect(topBar).toContain("'/pages/page-198/index'");
+    expect(topBar).toContain("'/pages/page-203/index'");
+    expect(topBar).toContain('capsule-reserve');
+    expect(surface).toContain('LifeTopBar');
+    for (const page of [lifePage, mallPage, communityPage, cartPage, mePage]) {
+      expect(page).toMatch(/<LifeSurface\s+primary/u);
+    }
+    expect(lifePage).toContain('theme-color="green"');
+    expect(mallPage).toContain('theme-color="coral"');
+    expect(communityPage).toContain('theme-color="blue"');
+  });
+
   it('uses the platform consumer audience and keeps preview data behind build-time flags', async () => {
     const [
       session,
