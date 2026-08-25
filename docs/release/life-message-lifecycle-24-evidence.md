@@ -24,7 +24,7 @@ Date: 2026-08-25
 - Full Life suite passed: 7 files / 43 tests; H5 and `mp-weixin` production builds passed.
 - Full root `pnpm check` passed: formatting, lint, frozen V6 contracts, RBAC, release/readiness/acceptance maps, security, operations, deployment, types, 963 tests and all production builds.
 - Production artifact policy passed: Life Web 99 files / 4,813,277 bytes; complete artifact manifest `fe9a36d1f1222a56`.
-- Exact-commit GitHub CI is recorded after the commit is pushed and the remote run completes.
+- GitHub Actions run `32840013339` passed exact commit `ccd78af8181f487de049252a32c1be8e0a777cc3`: code quality, candidate container builds and smoke, preview/development stacks, and the complete PostgreSQL contract job all passed.
 
 ## Rollout, rollback and reconciliation
 
