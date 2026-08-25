@@ -2,6 +2,7 @@ node_modules
 dist
 coverage
 tmp
+.pnpm-store
 docs/v6.1/source-package
 docs/v6.1/DECISIONS_AND_CONFLICTS.md
 docs/v6.1/MIGRATION_MATRIX.md
