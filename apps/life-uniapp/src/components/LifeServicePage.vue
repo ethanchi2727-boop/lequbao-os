@@ -283,6 +283,10 @@ onShow(load);
         >Life
         平台令牌不能替代某一商户的消费者令牌。请从订单或商家详情进入对应商户上下文后，再管理授权、订阅、助手会话或客服工单。</text
       >
+      <view class="boundary-facts"
+        ><text>当前：平台消费者会话</text><text>需要：具体商户消费者会话</text
+        ><text>结果：不发送越权请求</text></view
+      >
       <button
         class="secondary"
         @click="
@@ -295,11 +299,16 @@ onShow(load);
       </button>
     </view>
 
-    <view v-if="pageId === '219' && state === 'ready'" class="section card-list"
-      ><view v-for="store in records" :key="store.id" class="row"
+    <view v-if="pageId === '219' && state === 'ready'" class="map-grid"
+      ><view v-for="store in records" :key="store.id" class="map-card"
         ><view
           ><text>{{ store.name }}</text
-          ><text>{{ store.cityCode || '城市未标注' }} · {{ store.productCount }} 件在售</text></view
+          ><text>{{ store.cityCode || '城市未标注' }} · {{ store.productCount }} 件在售</text
+          ><text>{{
+            store.latitude === null || store.longitude === null
+              ? '坐标尚未核验'
+              : '坐标来自门店主档'
+          }}</text></view
         ><button size="mini" @click="openStore(store)">地图</button></view
       ></view
     >
@@ -324,6 +333,9 @@ onShow(load);
         ><text>已付 {{ money(detail.paidAmountCents) }}</text
         ><text>已退 {{ money(detail.refundedAmountCents) }}</text
         ><text>履约 {{ detail.fulfillmentStatus }}</text></view
+      ><view class="aftercare-note"
+        >申请范围和金额由服务端按订单快照重新计算；客户端不会直接改变支付、履约或退款状态。</view
+      >
       ><picker
         :range="[
           'UNSHIPPED_REFUND',
@@ -354,12 +366,16 @@ onShow(load);
         placeholder="补充说明（可选）"
       /><button class="danger" :loading="busy" @click="submitRefund">确认提交售后申请</button></view
     >
-    <view v-if="pageId === '246' && state === 'ready'" class="section card-list"
-      ><view v-for="item in records" :key="item.id" class="row"
+    <view v-if="pageId === '246' && state === 'ready'" class="aftercare-grid"
+      ><view v-for="item in records" :key="item.id" class="aftercare-card"
         ><view
           ><text>{{ item.refundNo || item.id }}</text
-          ><text>{{ item.reasonCode }} · {{ money(item.amountCents) }}</text></view
-        ><text>{{ item.status }}</text></view
+          ><text>{{ item.status }}</text></view
+        ><text>{{ item.reasonCode }}</text>
+        <view
+          ><text>{{ money(item.amountCents) }}</text
+          ><text>渠道结果以服务端为准</text></view
+        ></view
       ></view
     >
     <view v-if="pageId === '248' && ['ready', 'empty'].includes(state)" class="section"
@@ -444,15 +460,17 @@ onShow(load);
         ><button class="primary" :loading="busy" @click="saveInvoice">保存抬头</button></view
       ></view
     >
-    <view v-if="pageId === '252' && state === 'ready'" class="section card-list"
-      ><view v-for="item in records" :key="item.id" class="row"
+    <view v-if="pageId === '252' && state === 'ready'" class="ledger-grid"
+      ><view v-for="item in records" :key="item.id" class="ledger-card"
         ><view
           ><text>{{ item.ruleVersion || '消费奖励' }}</text
           ><text
             >原额 {{ money(item.originalAmountCents) }} · 已兑
             {{ money(item.redeemedAmountCents) }} · 冲正 {{ money(item.reversedAmountCents) }}</text
           ></view
-        ><text>{{ money(item.availableAmountCents) }}</text></view
+        ><view class="ledger-balance"
+          ><text>当前可用</text><text>{{ money(item.availableAmountCents) }}</text></view
+        ></view
       ></view
     >
     <view v-if="pageId === '259' && state === 'ready'" class="section card-list"
@@ -633,5 +651,143 @@ onShow(load);
   border: 1rpx solid var(--life-line);
   border-radius: 18rpx;
   background: var(--life-paper);
+}
+.boundary-facts {
+  display: grid;
+  margin-top: 18rpx;
+  gap: 8rpx;
+}
+.boundary-facts text {
+  padding: 12rpx 16rpx;
+  border-radius: 14rpx;
+  color: var(--life-muted);
+  background: var(--life-bg);
+  font-size: 17rpx;
+}
+.map-grid,
+.aftercare-grid,
+.ledger-grid {
+  display: grid;
+  margin-top: 20rpx;
+  gap: 14rpx;
+}
+.map-card {
+  display: flex;
+  padding: 22rpx;
+  border-radius: var(--life-radius-md);
+  align-items: center;
+  justify-content: space-between;
+  gap: 18rpx;
+  background: linear-gradient(135deg, var(--life-blue-soft), var(--life-paper));
+  box-shadow: var(--life-shadow-soft);
+}
+.map-card > view {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: 6rpx;
+}
+.map-card view text:first-child {
+  font-size: 24rpx;
+  font-weight: 900;
+}
+.map-card view text:not(:first-child) {
+  color: var(--life-muted);
+  font-size: 17rpx;
+}
+.map-card button {
+  margin: 0;
+  border-radius: 999rpx;
+  color: #075d70;
+  background: var(--life-paper);
+  font-size: 18rpx;
+}
+.aftercare-note {
+  margin: 18rpx 0;
+  padding: 18rpx;
+  border-radius: 18rpx;
+  color: #9b3f20;
+  background: var(--life-coral-soft);
+  font-size: 17rpx;
+  line-height: 1.55;
+}
+.aftercare-card,
+.ledger-card {
+  padding: 22rpx;
+  border-radius: var(--life-radius-md);
+  background: var(--life-paper);
+  box-shadow: var(--life-shadow-soft);
+}
+.aftercare-card > view {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16rpx;
+}
+.aftercare-card > view:first-child text:first-child {
+  overflow: hidden;
+  font-size: 22rpx;
+  font-weight: 900;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.aftercare-card > view:first-child text:last-child {
+  padding: 6rpx 10rpx;
+  border-radius: 10rpx;
+  color: #9b3f20;
+  background: var(--life-coral-soft);
+  font-size: 15rpx;
+}
+.aftercare-card > text {
+  display: block;
+  margin: 14rpx 0;
+  color: var(--life-muted);
+  font-size: 18rpx;
+}
+.aftercare-card > view:last-child text:first-child {
+  color: var(--life-red);
+  font-size: 27rpx;
+  font-weight: 900;
+}
+.aftercare-card > view:last-child text:last-child {
+  color: var(--life-muted);
+  font-size: 16rpx;
+}
+.ledger-card {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 18rpx;
+}
+.ledger-card > view:first-child {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 8rpx;
+}
+.ledger-card > view:first-child text:first-child {
+  font-size: 22rpx;
+  font-weight: 900;
+}
+.ledger-card > view:first-child text:last-child {
+  color: var(--life-muted);
+  font-size: 16rpx;
+  line-height: 1.5;
+}
+.ledger-balance {
+  display: flex;
+  align-items: flex-end;
+  flex-direction: column;
+}
+.ledger-balance text:first-child {
+  color: var(--life-muted);
+  font-size: 14rpx;
+}
+.ledger-balance text:last-child {
+  margin-top: 5rpx;
+  color: var(--life-red);
+  font-size: 27rpx;
+  font-weight: 900;
 }
 </style>

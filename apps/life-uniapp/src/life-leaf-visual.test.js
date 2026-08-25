@@ -73,4 +73,18 @@ describe('乐趣生活 V6.3 high-traffic leaves', () => {
     expect(service).toContain("'/api/v1/life/invoice-profiles'");
     expect(service).toContain('平台令牌不能替代某一商户的消费者令牌');
   });
+
+  it('presents map, aftercare and reward facts without synthesizing controlled results', async () => {
+    const service = await readFile(
+      new URL('components/LifeServicePage.vue', import.meta.url),
+      'utf8',
+    );
+    expect(service).toContain('map-card');
+    expect(service).toContain('aftercare-card');
+    expect(service).toContain('ledger-card');
+    expect(service).toContain('坐标来自门店主档');
+    expect(service).toContain('渠道结果以服务端为准');
+    expect(service).toContain('/api/v1/life/rewards?limit=50');
+    expect(service).toContain("props.pageId === '246' ? '/aftercare' : ''");
+  });
 });
