@@ -78,6 +78,10 @@ describe('乐趣生活 V6.3 high-traffic leaves', () => {
     expect(service).toContain("'/api/v1/customer-profile/privacy-requests'");
     expect(service).toContain('policyVersion: consent.policyVersion');
     expect(service).toContain("'/api/v1/customer-service/conversations'");
+    expect(service).toContain('/messages`');
+    expect(service).toContain('/actions/request-human`');
+    expect(service).toContain('messageContents[message.id]');
+    expect(service).toContain("reasonCode: 'CUSTOMER_REQUESTED_HUMAN'");
     expect(service).toContain('merchantTenantId: order.merchantTenantId');
   });
 

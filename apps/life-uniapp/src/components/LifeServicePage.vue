@@ -31,6 +31,10 @@ const records = ref([]);
 const detail = ref(null);
 const merchantContext = ref(null);
 const notice = ref('');
+const selectedConversation = ref(null);
+const messages = ref([]);
+const messageContents = reactive({});
+const messageDraft = ref('');
 const addressDraft = reactive({
   recipientName: '',
   mobile: '',
@@ -70,6 +74,13 @@ const consentByType = (consentType) =>
 const profileConsent = computed(() => consentByType('PROFILE_MEMORY'));
 const subscriptionConsent = computed(() => consentByType('SUBSCRIPTION_MESSAGE'));
 const money = (cents) => `¥${(Number(cents || 0) / 100).toFixed(2)}`;
+const senderLabel = (message) =>
+  ({
+    CUSTOMER: '我',
+    EMPLOYEE: message.senderDisplayName || '人工客服',
+    AI: '小满助手',
+    SYSTEM: '系统',
+  })[message.senderType] || message.senderType;
 const key = (scope) => `${scope}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
 const go = (id, parameters = {}) => {
   const suffix = Object.entries(parameters)
@@ -95,6 +106,8 @@ async function load() {
   notice.value = '';
   records.value = [];
   detail.value = null;
+  selectedConversation.value = null;
+  messages.value = [];
   try {
     const params = query();
     if (merchantBoundaryPages.has(props.pageId)) {
@@ -331,6 +344,116 @@ async function requestProfileCopy() {
     busy.value = false;
   }
 }
+async function openConversation(conversation) {
+  if (!merchantContext.value) return;
+  busy.value = true;
+  notice.value = '';
+  try {
+    const conversationId = encodeURIComponent(conversation.id);
+    const [latest, persistedMessages] = await Promise.all([
+      lifeSession.requestMerchant(
+        merchantContext.value,
+        `/api/v1/customer-service/conversations/${conversationId}`,
+      ),
+      lifeSession.requestMerchant(
+        merchantContext.value,
+        `/api/v1/customer-service/conversations/${conversationId}/messages`,
+      ),
+    ]);
+    selectedConversation.value = latest;
+    messages.value = persistedMessages;
+  } catch {
+    notice.value = '会话详情读取失败；未展示任何未经服务端确认的消息。';
+  } finally {
+    busy.value = false;
+  }
+}
+async function readMessageContent(message) {
+  if (!merchantContext.value || !selectedConversation.value || messageContents[message.id]) return;
+  busy.value = true;
+  try {
+    const conversationId = encodeURIComponent(selectedConversation.value.id);
+    const messageId = encodeURIComponent(message.id);
+    const response = await lifeSession.requestMerchant(
+      merchantContext.value,
+      `/api/v1/customer-service/conversations/${conversationId}/messages/${messageId}/content`,
+    );
+    messageContents[message.id] = response.content;
+  } catch {
+    notice.value = '消息正文未能通过归属校验，已保留脱敏预览。';
+  } finally {
+    busy.value = false;
+  }
+}
+async function sendConversationMessage() {
+  const content = messageDraft.value.trim();
+  if (!merchantContext.value || !selectedConversation.value || !content)
+    return uni.showToast({ title: '请输入消息内容', icon: 'none' });
+  busy.value = true;
+  try {
+    const conversationId = encodeURIComponent(selectedConversation.value.id);
+    await lifeSession.requestMerchant(
+      merchantContext.value,
+      `/api/v1/customer-service/conversations/${conversationId}/messages`,
+      {
+        method: 'POST',
+        header: { 'Idempotency-Key': key(`life-message-${selectedConversation.value.id}`) },
+        data: { content, messageType: 'TEXT' },
+      },
+    );
+    messageDraft.value = '';
+    await openConversation(selectedConversation.value);
+    notice.value = '消息正文已先写入持久化对象存储，当前会话已刷新。';
+  } catch {
+    notice.value = '消息未确认持久化，请保留原文并刷新后重试。';
+  } finally {
+    busy.value = false;
+  }
+}
+async function requestConversationHuman() {
+  if (
+    !merchantContext.value ||
+    !selectedConversation.value ||
+    selectedConversation.value.status !== 'BOT_ACTIVE' ||
+    !(await confirm('将创建当前商户门店的人工客服工单，确认进入人工队列？'))
+  )
+    return;
+  busy.value = true;
+  try {
+    const conversationId = encodeURIComponent(selectedConversation.value.id);
+    const updated = await lifeSession.requestMerchant(
+      merchantContext.value,
+      `/api/v1/customer-service/conversations/${conversationId}/actions/request-human`,
+      {
+        method: 'POST',
+        header: { 'Idempotency-Key': key(`life-human-${selectedConversation.value.id}`) },
+        data: { reasonCode: 'CUSTOMER_REQUESTED_HUMAN', priority: 'NORMAL' },
+      },
+    );
+    selectedConversation.value = updated;
+    try {
+      await loadConversationsWithoutClosingDetail();
+      notice.value = '人工工单已由服务端持久化，当前接管状态已更新。';
+    } catch {
+      notice.value = '人工工单已持久化，但会话列表刷新失败；当前详情仍显示服务端返回状态。';
+    }
+  } catch {
+    notice.value = '人工请求未确认入队，请刷新会话状态后重试。';
+  } finally {
+    busy.value = false;
+  }
+}
+async function loadConversationsWithoutClosingDetail() {
+  if (!merchantContext.value) return;
+  const conversations = await lifeSession.requestMerchant(
+    merchantContext.value,
+    '/api/v1/customer-service/conversations',
+  );
+  records.value =
+    props.pageId === '264'
+      ? conversations.filter((conversation) => conversation.ticket)
+      : conversations;
+}
 onShow(load);
 </script>
 
@@ -437,11 +560,57 @@ onShow(load);
       ><view class="context-note"
         >仅展示当前商户和门店下由服务端授权的会话；人工接管与工单状态保持同源。</view
       ><view v-for="conversation in records" :key="conversation.id" class="row"
-        ><view
+        ><view @click="openConversation(conversation)"
           ><text>{{ conversation.ticket?.id || conversation.id }}</text
           ><text
             >{{ conversation.status }} · {{ conversation.riskLevel }} ·
             {{ conversation.ticket?.status || '暂无人工工单' }}</text
+          ></view
+        ><button size="mini" :loading="busy" @click="openConversation(conversation)">
+          查看
+        </button></view
+      ><view v-if="selectedConversation" class="conversation-detail"
+        ><view class="section-head"
+          ><text>会话 {{ selectedConversation.id }}</text
+          ><text>{{ selectedConversation.status }}</text></view
+        ><view v-if="selectedConversation.ticket" class="ticket-facts"
+          ><text>工单 {{ selectedConversation.ticket.id }}</text
+          ><text>{{ selectedConversation.ticket.status }}</text
+          ><text>{{ selectedConversation.ticket.priority }}</text></view
+        ><view class="message-list"
+          ><view v-for="message in messages" :key="message.id" class="message-card"
+            ><view class="message-meta"
+              ><text>{{ senderLabel(message) }}</text
+              ><text>{{ message.createdAt }}</text></view
+            ><text>{{
+              messageContents[message.id] || message.contentPreviewRedacted || '正文已受保护'
+            }}</text
+            ><button
+              v-if="!messageContents[message.id]"
+              size="mini"
+              :loading="busy"
+              @click="readMessageContent(message)"
+            >
+              读取正文
+            </button></view
+          ></view
+        ><view v-if="selectedConversation.status !== 'CLOSED'" class="message-composer">
+          <textarea
+            v-model="messageDraft"
+            class="field textarea"
+            maxlength="1000"
+            placeholder="输入要发送给当前商户客服的消息"
+          /><view class="conversation-actions"
+            ><button class="primary" :loading="busy" @click="sendConversationMessage">
+              发送消息</button
+            ><button
+              v-if="selectedConversation.status === 'BOT_ACTIVE'"
+              class="secondary"
+              :loading="busy"
+              @click="requestConversationHuman"
+            >
+              转人工
+            </button></view
           ></view
         ></view
       ></view
@@ -744,8 +913,64 @@ onShow(load);
 .consent-actions button {
   width: 100%;
 }
+.conversation-detail {
+  margin-top: 22rpx;
+  padding-top: 22rpx;
+  border-top: 1rpx solid var(--life-line);
+}
+.ticket-facts,
+.conversation-actions {
+  display: flex;
+  gap: 10rpx;
+  flex-wrap: wrap;
+}
+.ticket-facts text {
+  padding: 9rpx 13rpx;
+  border-radius: 999rpx;
+  color: #9b5c00;
+  background: var(--life-yellow-soft);
+  font-size: 18rpx;
+}
+.message-list {
+  display: grid;
+  margin-top: 18rpx;
+  gap: 12rpx;
+}
+.message-card {
+  display: grid;
+  gap: 10rpx;
+  padding: 18rpx;
+  border-radius: 18rpx;
+  background: var(--life-bg);
+  color: var(--life-ink);
+  font-size: 21rpx;
+  line-height: 1.6;
+}
+.message-card button {
+  margin: 0;
+  justify-self: start;
+}
+.message-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 12rpx;
+  color: var(--life-muted);
+  font-size: 17rpx;
+}
+.message-composer {
+  margin-top: 18rpx;
+}
+.conversation-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12rpx;
+}
+.conversation-actions button {
+  width: 100%;
+}
 @media (max-width: 520px) {
-  .consent-actions {
+  .consent-actions,
+  .conversation-actions {
     grid-template-columns: 1fr;
   }
 }
