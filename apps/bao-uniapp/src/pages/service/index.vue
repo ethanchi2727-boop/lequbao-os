@@ -140,7 +140,7 @@ onShow(load);
 <style scoped>
 .empty-state {
   padding: 44rpx 22rpx;
-  color: #737789;
+  color: var(--bao-mobile-ink-500);
   text-align: center;
   font-size: 23rpx;
 }
@@ -149,8 +149,8 @@ onShow(load);
   margin: 0 0 0 18rpx;
   padding: 2rpx 20rpx;
   border-radius: 999rpx;
-  color: #fff;
-  background: #5b50ed;
+  color: var(--bao-mobile-paper);
+  background: var(--bao-mobile-gradient-brand);
   font-size: 22rpx;
   font-weight: 800;
   line-height: 52rpx;
@@ -160,8 +160,8 @@ onShow(load);
   margin: 0 0 0 18rpx;
   padding: 2rpx 20rpx;
   border-radius: 999rpx;
-  color: #5145cd;
-  background: #ebe9ff;
+  color: var(--bao-mobile-jade-700);
+  background: var(--bao-mobile-jade-100);
   font-size: 22rpx;
   font-weight: 800;
   line-height: 52rpx;

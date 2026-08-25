@@ -117,18 +117,18 @@ async function switchTenant() {
 </template>
 <style scoped>
 .session-button {
-  color: #fff;
-  background: #5b50ed;
+  color: var(--bao-mobile-paper);
+  background: var(--bao-mobile-gradient-brand);
   border-radius: 999rpx;
   font-size: 25rpx;
   font-weight: 800;
 }
 .session-button.secondary {
-  color: #5145cd;
-  background: #ebe9ff;
+  color: var(--bao-mobile-jade-700);
+  background: var(--bao-mobile-jade-100);
 }
 .session-message {
-  color: #737789;
+  color: var(--bao-mobile-ink-500);
   text-align: center;
   font-size: 21rpx;
 }
@@ -136,15 +136,15 @@ async function switchTenant() {
   display: flex;
   flex-direction: column;
   gap: 20rpx;
-  color: #737789;
+  color: var(--bao-mobile-ink-500);
   font-size: 22rpx;
 }
 .tenant-switch input {
   height: 76rpx;
   padding: 0 24rpx;
-  border: 2rpx solid #e2e4ed;
+  border: 2rpx solid var(--bao-mobile-line);
   border-radius: 18rpx;
-  color: #202334;
-  background: #fff;
+  color: var(--bao-mobile-ink-900);
+  background: var(--bao-mobile-paper);
 }
 </style>

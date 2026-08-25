@@ -16,6 +16,7 @@ import {
 } from './state.mjs';
 import { ApiError, createMerchantIntakeApi, createWorkbenchApi } from './api-client.js';
 import { resolveLivePageRequest } from './live-page-registry.mjs';
+import { renderBaoV62CanonicalPage } from './bao-v62-canonical-pages.mjs';
 import { loadWorkbenchPageExperience } from './experience-registry.mjs';
 import {
   INTAKE_FILE_TYPES,
@@ -172,7 +173,7 @@ function sidebar() {
     <button class="new-task" data-route="page-003">${icon('plus')} 新建 AI 任务 <kbd>Ctrl N</kbd></button>
     ${pageSearch}
     <nav>${[
-      ['chat', 'AI 对话', 'page-003'],
+      ['chat', 'AI 工作台', 'page-003'],
       ['work', '商务中心', 'page-026'],
       ['shop', '商户交付', 'page-053'],
       ['shop', '商家经营', 'page-079'],
@@ -217,6 +218,8 @@ const intakePages = new Set(['page-014', 'page-175', 'page-176', 'page-177', 'pa
 function genericWorkbenchPage() {
   const contract = view.contract;
   if (!contract) return '';
+  const canonicalPage = demoMode ? renderBaoV62CanonicalPage({ page: view.page, icon }) : null;
+  if (canonicalPage) return canonicalPage;
   if (view.page === 'page-003')
     return aiStartPage
       ? aiStartPage.renderAiConversationStart({

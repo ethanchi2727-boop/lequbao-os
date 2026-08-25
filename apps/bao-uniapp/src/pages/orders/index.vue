@@ -66,7 +66,7 @@ onShow(load);
 <style scoped>
 .empty-state {
   padding: 44rpx 22rpx;
-  color: #737789;
+  color: var(--bao-mobile-ink-500);
   text-align: center;
   font-size: 23rpx;
 }

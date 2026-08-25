@@ -7,23 +7,22 @@ defineProps({ eyebrow: String, title: String, detail: String });
   <view class="page"
     ><view v-if="baoRuntimeProfile.previewData" class="preview-note"
       ><text>开发预览</text><text>模拟数据不可用于经营决策</text></view
-    ><view class="brand"
-      ><text class="mark">乐</text
-      ><view><text>乐趣宝</text><text class="small">AI 经营工作台</text></view></view
-    ><view class="hero"
-      ><text class="eyebrow">{{ eyebrow }}</text
-      ><text class="title">{{ title }}</text
-      ><text class="detail">{{ detail }}</text></view
-    ><view class="actions"
-      ><view><text>AI 任务</text><text>自然语言发起工作</text></view
-      ><view><text>待办事项</text><text>需要你确认的关键动作</text></view
-      ><view><text>经营异常</text><text>订单、退款与交付提醒</text></view></view
-    ></view
-  >
+    ><view class="mobile-top"
+      ><view class="app-grid"><text></text><text></text><text></text><text></text></view
+      ><view class="top-copy"
+        ><text class="title">{{ title }}</text
+        ><text class="eyebrow">{{ eyebrow }}</text></view
+      ><view class="new-action">＋</view></view
+    ><view class="page-intro"
+      ><text>{{ detail }}</text></view
+    ><slot></slot
+  ></view>
 </template>
 <style scoped>
 .page {
-  padding: 28rpx;
+  min-height: 100vh;
+  padding: 24rpx 24rpx 36rpx;
+  box-sizing: border-box;
 }
 .preview-note {
   display: flex;
@@ -32,82 +31,65 @@ defineProps({ eyebrow: String, title: String, detail: String });
   border-radius: 18rpx;
   align-items: center;
   justify-content: space-between;
-  color: #744210;
-  background: #fff3df;
+  color: var(--bao-mobile-warning-700);
+  background: var(--bao-mobile-warning-100);
   font-size: 18rpx;
 }
 .preview-note text:first-child {
   font-weight: 900;
 }
-.brand {
+.mobile-top {
   display: flex;
   align-items: center;
-  gap: 16rpx;
-  margin: 12rpx 0 28rpx;
-  font-weight: 900;
+  min-height: 84rpx;
+  gap: 18rpx;
 }
-.brand view,
-.brand text {
-  display: flex;
-  flex-direction: column;
-}
-.mark {
-  display: grid !important;
+.app-grid,
+.new-action {
+  display: grid;
   place-items: center;
-  width: 70rpx;
-  height: 70rpx;
-  border-radius: 24rpx;
-  color: #fff;
-  background: #5b50ed;
+  width: 68rpx;
+  height: 68rpx;
+  border: 1rpx solid var(--bao-mobile-line);
+  border-radius: 22rpx;
+  background: var(--bao-mobile-paper);
 }
-.small {
-  color: #737789;
-  font-size: 20rpx;
-  font-weight: 500;
+.app-grid {
+  grid-template-columns: repeat(2, 10rpx);
+  grid-template-rows: repeat(2, 10rpx);
+  gap: 6rpx;
 }
-.hero {
+.app-grid text {
+  width: 10rpx;
+  height: 10rpx;
+  border: 2rpx solid var(--bao-mobile-ink-700);
+  border-radius: 3rpx;
+}
+.top-copy {
   display: flex;
-  min-height: 280rpx;
-  padding: 42rpx;
-  border-radius: 34rpx;
-  box-sizing: border-box;
+  flex: 1;
   flex-direction: column;
-  color: #fff;
-  background: linear-gradient(135deg, #3d3479, #5b50ed);
-  box-shadow: 0 22rpx 52rpx rgba(36, 32, 70, 0.16);
+  text-align: center;
 }
 .eyebrow {
-  color: #dcd8ff;
-  font-size: 22rpx;
+  margin-top: 4rpx;
+  color: var(--bao-mobile-jade-600);
+  font-size: 18rpx;
 }
 .title {
-  margin: 18rpx 0 12rpx;
-  font-size: 48rpx;
+  font-size: 28rpx;
   font-weight: 900;
 }
-.detail {
-  font-size: 24rpx;
-  line-height: 1.6;
+.new-action {
+  border-color: var(--bao-mobile-ink-900);
+  color: var(--bao-mobile-paper);
+  background: var(--bao-mobile-ink-900);
+  font-size: 34rpx;
 }
-.actions {
-  display: grid;
-  gap: 18rpx;
-  margin-top: 26rpx;
-}
-.actions view {
-  display: flex;
-  padding: 28rpx;
-  border-radius: 24rpx;
-  flex-direction: column;
-  background: #fff;
-  box-shadow: 0 12rpx 30rpx rgba(36, 32, 70, 0.07);
-}
-.actions view text:first-child {
-  font-weight: 800;
-}
-.actions view text:last-child {
-  margin-top: 8rpx;
-  color: #737789;
-  font-size: 22rpx;
+.page-intro {
+  padding: 4rpx 12rpx 10rpx;
+  color: var(--bao-mobile-ink-500);
+  font-size: 20rpx;
+  line-height: 1.55;
 }
 </style>

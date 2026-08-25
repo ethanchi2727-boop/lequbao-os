@@ -1,7 +1,11 @@
 export const baoMobileSurfaceContract = Object.freeze({
   workbench: Object.freeze({ read: ['/api/v1/operational-home/today'] }),
   merchants: Object.freeze({
-    read: ['/api/v1/merchant-operations/profile', '/api/v1/merchant-operations/stores'],
+    read: [
+      '/api/v1/merchant-operations/profile',
+      '/api/v1/merchant-operations/stores',
+      '/api/v1/revenue-operations/summary',
+    ],
   }),
   orders: Object.freeze({
     read: ['/api/v1/merchant-operations/orders', '/api/v1/merchant-operations/refunds'],

@@ -1,14 +1,14 @@
 :root {
   font-family: Inter, 'PingFang SC', 'Microsoft YaHei', sans-serif;
-  color: #171927;
-  background: #f7f8fc;
+  color: var(--bao-pc-ink-900);
+  background: var(--bao-pc-canvas);
   font-synthesis: none;
-  --purple: #5d4ff0;
-  --purple-dark: #403591;
-  --line: #e3e5ee;
-  --muted: #5f6474;
-  --green: #0b6b50;
-  --amber: #a96b16;
+  --purple: var(--bao-pc-ai-600);
+  --purple-dark: var(--bao-pc-ai-700);
+  --line: var(--bao-pc-line);
+  --muted: var(--bao-pc-ink-600);
+  --green: var(--bao-pc-jade-700);
+  --amber: var(--bao-pc-warning-600);
 }
 .ui-icon {
   width: 1.15em;
@@ -38,6 +38,7 @@
 body {
   margin: 0;
   min-width: 320px;
+  background: var(--bao-pc-canvas);
 }
 .skip-link {
   position: fixed;
@@ -72,8 +73,9 @@ textarea {
   position: sticky;
   top: 0;
   height: 100vh;
-  background: #fbfbfd;
-  border-right: 1px solid var(--line);
+  background: var(--bao-pc-gradient-dark);
+  border-right: 1px solid var(--bao-pc-line-dark);
+  color: var(--bao-pc-paper);
   padding: 18px 14px;
   display: flex;
   flex-direction: column;
@@ -84,7 +86,7 @@ textarea {
   gap: 12px;
   align-items: center;
   text-decoration: none;
-  color: inherit;
+  color: var(--bao-pc-paper);
   padding: 4px 8px 12px;
 }
 .brand > b,
@@ -94,8 +96,8 @@ textarea {
   border-radius: 11px;
   display: grid;
   place-items: center;
-  background: linear-gradient(145deg, #6d5df5, #4777ec);
-  color: white;
+  background: var(--bao-pc-gradient-brand);
+  color: var(--bao-pc-paper);
   font-size: 21px;
 }
 .brand strong {
@@ -105,15 +107,15 @@ textarea {
 .brand small,
 .identity small {
   display: block;
-  color: var(--muted);
+  color: var(--bao-pc-ink-400);
   font-size: 10px;
 }
 .new-task {
   height: 44px;
   border: 0;
   border-radius: 11px;
-  background: linear-gradient(100deg, #6753e9, #4c73ee);
-  color: #fff;
+  background: var(--bao-pc-gradient-brand);
+  color: var(--bao-pc-paper);
   font-weight: 700;
   text-align: left;
   padding: 0 14px;
@@ -130,10 +132,11 @@ textarea {
   display: flex;
   align-items: center;
   gap: 8px;
-  border: 1px solid #dcdfea;
+  border: 1px solid var(--bao-pc-line-dark);
   border-radius: 10px;
   padding: 0 10px;
-  background: white;
+  background: var(--bao-pc-white-08);
+  color: var(--bao-pc-ink-300);
 }
 .search-shell {
   position: relative;
@@ -183,11 +186,16 @@ textarea {
   outline: 0;
   min-width: 0;
   flex: 1;
+  background: transparent;
+  color: var(--bao-pc-paper);
+}
+.search input::placeholder {
+  color: var(--bao-pc-ink-400);
 }
 .search kbd {
   border: 0;
-  color: var(--muted);
-  background: #f1f2f6;
+  color: var(--bao-pc-ink-300);
+  background: var(--bao-pc-white-08);
   padding: 3px 8px;
   border-radius: 6px;
 }
@@ -201,19 +209,20 @@ textarea {
   display: flex;
   gap: 10px;
   align-items: center;
-  color: #343644;
+  color: var(--bao-pc-ink-300);
   text-decoration: none;
   border-radius: 9px;
 }
 .sidebar nav a.active {
-  background: #eae8ff;
-  color: #5447d7;
+  background: var(--bao-pc-white-08);
+  color: var(--bao-pc-paper);
   font-weight: 700;
+  box-shadow: inset 3px 0 var(--bao-pc-jade-400);
 }
 .sidebar nav em {
   margin-left: auto;
-  background: #ffebe6;
-  color: #a43f2d;
+  background: var(--bao-pc-warning-500);
+  color: var(--bao-pc-paper);
   border-radius: 20px;
   padding: 2px 9px;
   font-style: normal;
@@ -224,24 +233,25 @@ textarea {
   margin: 10px;
 }
 .recent small {
-  color: var(--muted);
+  color: var(--bao-pc-ink-500);
 }
 .recent a {
-  color: #5d6070;
+  color: var(--bao-pc-ink-300);
   text-decoration: none;
   font-size: 12px;
 }
 .recent > span {
-  color: var(--muted);
+  color: var(--bao-pc-ink-400);
   font-size: 11px;
   line-height: 1.5;
 }
 .identity {
   margin-top: auto;
   height: 56px;
-  border: 1px solid var(--line);
+  border: 1px solid var(--bao-pc-line-dark);
   border-radius: 12px;
-  background: white;
+  background: var(--bao-pc-white-08);
+  color: var(--bao-pc-paper);
   display: flex;
   gap: 9px;
   align-items: center;
@@ -249,8 +259,8 @@ textarea {
   padding: 8px;
 }
 .identity > b {
-  background: #e5efff;
-  color: #2f5fb8;
+  background: var(--bao-pc-paper);
+  color: var(--bao-pc-jade-700);
   border-radius: 8px;
   padding: 10px;
 }
@@ -262,7 +272,7 @@ main {
 }
 .topbar {
   height: 64px;
-  background: white;
+  background: var(--bao-pc-paper);
   border-bottom: 1px solid var(--line);
   display: flex;
   align-items: center;
@@ -294,8 +304,8 @@ main {
   padding: 0 11px;
 }
 .top-actions button:first-of-type {
-  color: var(--purple);
-  background: #f1efff;
+  color: var(--bao-pc-jade-700);
+  background: var(--bao-pc-jade-50);
 }
 .mobile-title {
   display: none;

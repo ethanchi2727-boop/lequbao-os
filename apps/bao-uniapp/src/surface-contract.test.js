@@ -11,6 +11,7 @@ describe('乐趣宝 UniApp mobile contract', () => {
       'me',
     ]);
     expect(baoMobileSurfaceContract.workbench.read).toEqual(['/api/v1/operational-home/today']);
+    expect(baoMobileSurfaceContract.merchants.read).toContain('/api/v1/revenue-operations/summary');
     expect(baoMobileSurfaceContract.orders.read).toContain('/api/v1/merchant-operations/refunds');
   });
 
