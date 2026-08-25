@@ -4,7 +4,8 @@
     { "path": "pages/merchants/index", "style": { "navigationBarTitleText": "商户" } },
     { "path": "pages/orders/index", "style": { "navigationBarTitleText": "订单" } },
     { "path": "pages/service/index", "style": { "navigationBarTitleText": "客服" } },
-    { "path": "pages/me/index", "style": { "navigationBarTitleText": "我的" } }
+    { "path": "pages/me/index", "style": { "navigationBarTitleText": "我的" } },
+    { "path": "pages/detail/index", "style": { "navigationBarTitleText": "任务详情" } }
   ],
   "tabBar": {
     "color": "#8C9A95",

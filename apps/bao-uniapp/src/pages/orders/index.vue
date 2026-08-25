@@ -2,6 +2,7 @@
 import { ref } from 'vue';
 import { onShow } from '@dcloudio/uni-app';
 import BaoSurface from '../../components/BaoSurface.vue';
+import BaoTaskDirectory from '../../components/BaoTaskDirectory.vue';
 import { baoSession } from '../../services/bao-session.js';
 
 const loading = ref(false);
@@ -60,7 +61,7 @@ onShow(load);
           }}</text></view
         ></view
       ></view
-    ></BaoSurface
+    ><BaoTaskDirectory family="orders" /> ></BaoSurface
   >
 </template>
 <style scoped>

@@ -15,6 +15,7 @@ for (const file of [
   'product-tokens.css',
   'app.js',
   'bao-v62-canonical-pages.mjs',
+  'bao-v62-experience-page.mjs',
   'ai-start-page.mjs',
   'ai-conversation-page.mjs',
   'artifact-preview-page.mjs',

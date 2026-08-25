@@ -2,6 +2,7 @@
 import { ref } from 'vue';
 import { onShow } from '@dcloudio/uni-app';
 import BaoSurface from '../../components/BaoSurface.vue';
+import BaoTaskDirectory from '../../components/BaoTaskDirectory.vue';
 import { baoRuntimeProfile, baoSession } from '../../services/bao-session.js';
 
 const loading = ref(false);
@@ -87,9 +88,8 @@ onShow(load);
           >当前没有需要处理的异常</view
         ></view
       ></view
-    ><view v-if="today" class="composer"
-      ><text>继续说或发资料…</text><text>↑</text></view
-    ></BaoSurface
+    ><view v-if="today" class="composer"><text>继续说或发资料…</text><text>↑</text></view
+    ><BaoTaskDirectory family="delivery" /> ></BaoSurface
   >
 </template>
 <style scoped>

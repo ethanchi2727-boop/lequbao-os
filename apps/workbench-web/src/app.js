@@ -60,6 +60,7 @@ let resultPanel = resultPanelFromStorage(sessionStorage.getItem(resultPanelStora
 let draftMessage = '';
 let startPage = null;
 let convoPage = null;
+let v62Page = null;
 const ai = new Set([
   'page-004',
   'page-005',
@@ -270,32 +271,19 @@ function genericWorkbenchPage() {
 }
 
 function renderDedicatedExperience(experience, contract) {
-  const liveContent = livePageState.data
-    ? renderLiveData(livePageState.data, livePageState.request?.kind)
-    : demoMode
-      ? `<div class="experience-panels">${experience.panels
-          .map(
-            ([title, description], index) =>
-              `<article><b>${String(index + 1).padStart(2, '0')}</b><div><strong>${escapeHtml(title)}</strong><p>${escapeHtml(description)}</p></div></article>`,
-          )
-          .join('')}</div>`
-      : view.state === 'loading'
-        ? '<div class="loading-skeleton" aria-hidden="true"><span></span><span></span><span></span></div>'
-        : '<div class="protected-empty"><strong>等待权威页面数据</strong><p>生产模式不展示演示业务记录；只有服务端完成身份、租户和资源范围校验后才会显示内容。</p></div>';
-  const blocked = ['loading', 'denied', 'stopped', 'recoverable-failure'].includes(view.state);
-  const actions = experience.actions
-    .map(
-      ([label, route], index) =>
-        `<button class="${index === 0 ? 'primary' : ''}" data-route="${route}" ${blocked ? 'disabled' : ''}>${escapeHtml(label)}</button>`,
-    )
-    .join('');
-  return `<section class="dedicated-page experience-${experience.layout}" data-page-id="${contract.id}" data-experience="${experience.layout}">
-    <header><div><small>${escapeHtml(experience.kicker)}</small><h1>${escapeHtml(experience.headline)}</h1><p>${escapeHtml(experience.description)}</p></div><span class="experience-mode">${demoMode ? '演示结构' : '权威数据模式'}</span></header>
-    <div class="experience-scope"><span>${escapeHtml(contract.primaryRole)}</span>${contract.apiDomains.map((domain) => `<b>${escapeHtml(domain)}</b>`).join('')}<em>服务端最终裁决</em></div>
-    ${liveContent}
-    <aside class="experience-guardrail">${icon('warning')}<span><strong>执行边界</strong><small>${escapeHtml(experience.guardrail)}</small></span></aside>
-    <footer>${actions}<a href="/bao/page-170${demoMode ? '?demo=1' : ''}">${icon('help')} 帮助与审计</a></footer>
-  </section>`;
+  if (!v62Page)
+    return '<section class="v62-page" aria-busy="true"><div class="loading-skeleton" aria-hidden="true"><span></span><span></span><span></span></div></section>';
+  return v62Page.renderBaoV62ExperiencePage({
+    experience,
+    contract,
+    liveData: livePageState.data,
+    liveRequestKind: livePageState.request?.kind,
+    demoMode,
+    state: view.state,
+    escapeHtml,
+    icon,
+    renderLiveData,
+  });
 }
 
 function renderLiveCommands(contract) {
@@ -732,9 +720,10 @@ function navigateTo(page) {
 
 async function bootstrapExperience(page) {
   const loadVersion = ++loads;
-  const [loaded, aiModule] = await Promise.all([
+  const [loaded, aiModule, v62Module] = await Promise.all([
     loadWorkbenchPageExperience(page),
     page === 'page-003' ? import('./ai-start-page.mjs') : null,
+    !ai.has(page) && !intakePages.has(page) ? import('./bao-v62-experience-page.mjs') : null,
   ]);
   const conversationModule = ai.has(page)
     ? await import(page > 'page-005' ? './artifact-preview-page.mjs' : './ai-conversation-page.mjs')
@@ -743,7 +732,8 @@ async function bootstrapExperience(page) {
   experience = loaded;
   if (aiModule) startPage = aiModule;
   if (conversationModule) convoPage = conversationModule;
-  if (loaded || aiModule || conversationModule) render();
+  if (v62Module) v62Page = v62Module;
+  if (loaded || aiModule || conversationModule || v62Module) render();
 }
 
 function captureScrollPosition() {

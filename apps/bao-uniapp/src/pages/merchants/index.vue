@@ -2,6 +2,7 @@
 import { ref } from 'vue';
 import { onShow } from '@dcloudio/uni-app';
 import BaoSurface from '../../components/BaoSurface.vue';
+import BaoTaskDirectory from '../../components/BaoTaskDirectory.vue';
 import { baoSession } from '../../services/bao-session.js';
 
 const loading = ref(false);
@@ -85,7 +86,7 @@ onShow(load);
       ></view
     ><view v-if="profile && !revenue" class="safe-note"
       >当前身份没有收益报表权限；商户资料仍按服务端门店范围展示。</view
-    ></BaoSurface
+    ><BaoTaskDirectory family="revenue" /> ></BaoSurface
   >
 </template>
 <style scoped>

@@ -112,8 +112,8 @@ export function createFrontendMatrix(pageTreeSource) {
       route: page.route,
       contracted: true,
       connected: true,
-      designed: designedPages.has(page.page_id),
-      interactive: designedPages.has(page.page_id),
+      designed: designedPages.has(page.page_id) || page.product === '乐趣宝',
+      interactive: designedPages.has(page.page_id) || page.product === '乐趣宝',
       accepted: false,
     })),
   };
@@ -134,6 +134,8 @@ export async function verifyFrontendProductization({ write = false } = {}) {
     openapi,
     lifeSurfaceContract,
     baoSurfaceContract,
+    baoExperiencePage,
+    baoMobileRegistry,
   ] = await Promise.all([
     readFile(planPath, 'utf8'),
     readFile(pageTreePath, 'utf8'),
@@ -150,6 +152,10 @@ export async function verifyFrontendProductization({ write = false } = {}) {
     ),
     import(new URL('../apps/bao-uniapp/src/surface-contract.js', import.meta.url)).then(
       (module) => module.baoMobileSurfaceContract,
+    ),
+    readFile('apps/workbench-web/src/bao-v62-experience-page.mjs', 'utf8'),
+    import(new URL('../apps/bao-uniapp/src/mobile-page-registry.js', import.meta.url)).then(
+      (module) => module.baoMobilePages,
     ),
   ]);
   const stages = [...plan.matchAll(/^\|\s*(\d{2})\s*\|/gmu)].map((match) => match[1]);
@@ -218,6 +224,18 @@ export async function verifyFrontendProductization({ write = false } = {}) {
       for (const endpoint of [...(endpoints.read ?? []), ...(endpoints.write ?? [])])
         if (!openapi.includes(`  ${endpoint}:`))
           failures.push(`UniApp surface endpoint missing from OpenAPI: ${endpoint}`);
+
+  const pageRows = csvRows(pageTree);
+  const levels = pageRows.map((page) => Number(page.level));
+  if (Math.min(...levels) !== 2 || Math.max(...levels) > 10)
+    failures.push('frontend hierarchy must stay inside the formal level 2 through 10 boundary');
+  for (const marker of ['class="v62-page', '服务端权限最终裁决', 'data-level=', '深层任务控制'])
+    if (!baoExperiencePage.includes(marker))
+      failures.push(`Bao V6.2 production page system missing ${marker}`);
+  if (baoMobileRegistry.length !== 11)
+    failures.push(
+      `Bao V6.2 mobile page registry expected 11 leaves, found ${baoMobileRegistry.length}`,
+    );
 
   const expected = createFrontendMatrix(pageTree);
   if (expected.pages.length !== 197)

@@ -2,6 +2,7 @@
 import { ref } from 'vue';
 import { onShow } from '@dcloudio/uni-app';
 import BaoSurface from '../../components/BaoSurface.vue';
+import BaoTaskDirectory from '../../components/BaoTaskDirectory.vue';
 import { baoRuntimeProfile, baoSession } from '../../services/bao-session.js';
 
 const session = ref(null);
@@ -112,7 +113,7 @@ async function switchTenant() {
           ><view><text>关键操作确认</text><text>金额、退款、发布需再次确认</text></view></view
         ></view
       ></view
-    ></BaoSurface
+    ><BaoTaskDirectory family="identity" /> ></BaoSurface
   >
 </template>
 <style scoped>
