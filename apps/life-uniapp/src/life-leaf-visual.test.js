@@ -45,4 +45,18 @@ describe('乐趣生活 V6.3 high-traffic leaves', () => {
     expect(journey).toContain('detail.fulfillmentStatus');
     expect(journey).toContain('detail.aftercareStatus');
   });
+
+  it('keeps checkout, payment and refund surfaces bound to server truth', async () => {
+    const journey = await readFile(
+      new URL('components/LifeJourneyPage.vue', import.meta.url),
+      'utf8',
+    );
+    expect(journey).toContain('checkout-truth');
+    expect(journey).toContain('payment-truth');
+    expect(journey).toContain('微信客户端结果不等于订单支付成功');
+    expect(journey).toContain('refund-card');
+    expect(journey).toContain("'/api/v1/life/checkouts/quote'");
+    expect(journey).toContain("'/api/v1/life/payment-intents'");
+    expect(journey).toContain('/refunds`');
+  });
 });

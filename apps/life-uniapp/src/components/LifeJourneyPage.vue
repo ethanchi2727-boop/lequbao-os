@@ -426,6 +426,15 @@ onShow(load);
       ><view class="section-head"
         ><text>服务端核价</text
         ><text>{{ checkout ? money(checkout.payableAmountCents) : '待核价' }}</text></view
+      ><view class="checkout-truth"
+        ><view
+          ><text>购物车版本</text><text>{{ cart.version }}</text></view
+        ><view
+          ><text>履约分组</text
+          ><text>{{ checkout?.groups?.length || cart.groups.length }}</text></view
+        ><view
+          ><text>价格状态</text><text>{{ checkout ? '已核价' : '待重新核价' }}</text></view
+        ></view
       ><view class="facts"
         ><text>购物车版本 {{ cart.version }}</text
         ><text>{{ checkout?.groups?.length || cart.groups.length }} 个履约分组</text
@@ -466,6 +475,9 @@ onShow(load);
       >
         发起微信支付</button
       ><button v-if="pageId === '232'" class="secondary" @click="load">刷新服务端支付状态</button
+      ><text v-if="pageId === '232'" class="payment-truth"
+        >微信客户端结果不等于订单支付成功；本页只展示服务端回调确认后的状态。</text
+      >
       ><button v-if="pageId === '238'" class="secondary" @click="go('239', { orderId: detail.id })">
         查看售后记录</button
       ><button
@@ -525,14 +537,18 @@ onShow(load);
       ><view
         v-for="refundItem in records"
         :key="refundItem.id"
-        class="journey-row"
+        class="refund-card"
         @click="
           pageId === '239' && go('240', { orderId: query().orderId, refundId: refundItem.id })
         "
-        ><view
+        ><view class="refund-card-head"
           ><text>退款 {{ refundItem.id }}</text
-          ><text>{{ refundItem.reasonCode || refundItem.requestType }}</text></view
-        ><text>{{ refundItem.status }}</text></view
+          ><text>{{ refundItem.status }}</text></view
+        ><text>{{ refundItem.reasonCode || refundItem.requestType }}</text>
+        <view class="refund-card-foot"
+          ><text>{{ money(refundItem.amountCents) }}</text
+          ><text>{{ pageId === '239' ? '查看退款详情 ›' : '渠道进度以服务端为准' }}</text></view
+        ></view
       ></view
     >
     <text v-if="notice" class="notice section">{{ notice }}</text>
@@ -737,5 +753,82 @@ onShow(load);
 .order-item-list text:last-child {
   color: var(--life-red);
   font-weight: 900;
+}
+.checkout-truth {
+  display: grid;
+  margin-top: 18rpx;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10rpx;
+}
+.checkout-truth > view {
+  display: flex;
+  min-width: 0;
+  padding: 16rpx 8rpx;
+  border-radius: 18rpx;
+  align-items: center;
+  flex-direction: column;
+  background: var(--life-brand-soft);
+}
+.checkout-truth text:first-child {
+  color: var(--life-muted);
+  font-size: 14rpx;
+}
+.checkout-truth text:last-child {
+  margin-top: 6rpx;
+  color: var(--life-brand-deep);
+  font-size: 19rpx;
+  font-weight: 900;
+}
+.payment-truth {
+  display: block;
+  margin-top: 16rpx;
+  padding: 18rpx;
+  border-radius: 18rpx;
+  color: #075d70;
+  background: var(--life-blue-soft);
+  font-size: 18rpx;
+  line-height: 1.55;
+}
+.refund-card {
+  padding: 22rpx;
+  border-radius: var(--life-radius-md);
+  background: var(--life-paper);
+  box-shadow: var(--life-shadow-soft);
+}
+.refund-card-head,
+.refund-card-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16rpx;
+}
+.refund-card-head text:first-child {
+  overflow: hidden;
+  font-size: 22rpx;
+  font-weight: 900;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.refund-card-head text:last-child {
+  padding: 6rpx 10rpx;
+  border-radius: 10rpx;
+  color: #9b3f20;
+  background: var(--life-coral-soft);
+  font-size: 15rpx;
+}
+.refund-card > text {
+  display: block;
+  margin: 14rpx 0;
+  color: var(--life-muted);
+  font-size: 18rpx;
+}
+.refund-card-foot text:first-child {
+  color: var(--life-red);
+  font-size: 27rpx;
+  font-weight: 900;
+}
+.refund-card-foot text:last-child {
+  color: #9b3f20;
+  font-size: 16rpx;
 }
 </style>
