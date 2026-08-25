@@ -80,7 +80,11 @@ onLoad((options) => {
     >
     <view v-else-if="state === 'empty'" class="section empty-safe">商品不存在或已经下架</view>
     <template v-else>
-      <image class="product-image" src="/static/life-product.webp" mode="aspectFill" />
+      <view class="product-image">
+        <view class="product-status">{{
+          product.availableQuantity > 0 ? `库存 ${product.availableQuantity}` : '暂时售罄'
+        }}</view>
+      </view>
       <view class="section product-main">
         <text class="price">¥{{ (product.salePriceCents / 100).toFixed(2) }}</text>
         <text class="product-title">{{ product.title }}</text>
@@ -90,25 +94,46 @@ onLoad((options) => {
           ><text class="chip">{{ product.variants.length }} 个有效规格</text></view
         >
       </view>
+      <view class="service-strip"
+        ><text>✓ 当前在售</text><text>✓ 库存实核</text><text>✓ 售后有门</text></view
+      >
       <button class="detail-link" @click="openPage('210')">
         <text>选择规格</text><text>查看库存与价格 ›</text>
       </button>
       <button class="detail-link" @click="openPage('211')">
         <text>溯源报告</text><text>仅展示已核验证据 ›</text>
       </button>
-      <view class="purchase-actions"
-        ><button @click="addPreferred">加入购物车</button
-        ><button @click="openPage('210')">选择规格</button></view
-      >
+      <view class="purchase-spacer" />
+      <view class="purchase-actions">
+        <button @click="openPage('211')">来源证据</button>
+        <button :disabled="product.availableQuantity < 1" @click="addPreferred">加入购物车</button>
+        <button :disabled="product.availableQuantity < 1" @click="openPage('210')">
+          立即选规格
+        </button>
+      </view>
     </template>
   </LifeSurface>
 </template>
 
 <style scoped>
 .product-image {
+  position: relative;
   width: 100%;
-  height: 440rpx;
-  border-radius: 30rpx;
+  height: 580rpx;
+  border-radius: var(--life-radius-lg);
+  background: url('../../assets/v63-retail/product-sprite.webp') 0 0 / 400% 200% no-repeat;
+  box-shadow: var(--life-shadow-soft);
+}
+.product-status {
+  position: absolute;
+  left: 22rpx;
+  bottom: 22rpx;
+  padding: 8rpx 14rpx;
+  border-radius: 12rpx;
+  color: var(--life-paper);
+  background: var(--life-red);
+  font-size: 17rpx;
+  font-weight: 800;
 }
 .product-main {
   display: flex;
@@ -129,8 +154,9 @@ onLoad((options) => {
   margin: 18rpx 0 0;
   padding: 24rpx;
   justify-content: space-between;
-  background: #fff;
-  border-radius: 22rpx;
+  background: var(--life-paper);
+  border-radius: var(--life-radius-md);
+  box-shadow: var(--life-shadow-soft);
   font-size: 23rpx;
 }
 .detail-link text:first-child {
@@ -140,10 +166,18 @@ onLoad((options) => {
   color: #076c50;
 }
 .purchase-actions {
+  position: fixed;
+  z-index: 20;
+  right: 0;
+  bottom: 0;
+  left: 0;
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  padding: 16rpx 20rpx calc(16rpx + env(safe-area-inset-bottom));
+  grid-template-columns: 150rpx 1fr 1fr;
   gap: 14rpx;
-  margin-top: 24rpx;
+  background: var(--life-paper);
+  box-shadow: 0 -10rpx 32rpx rgba(31, 68, 54, 0.1);
+  box-sizing: border-box;
 }
 .purchase-actions button {
   margin: 0;
@@ -155,5 +189,34 @@ onLoad((options) => {
 .purchase-actions button:last-child {
   color: #fff;
   background: #076c50;
+}
+.purchase-actions button:first-child {
+  color: var(--life-muted);
+  background: var(--life-paper);
+}
+.purchase-actions button[disabled] {
+  opacity: 0.45;
+}
+.purchase-spacer {
+  height: 112rpx;
+}
+.service-strip {
+  display: flex;
+  min-height: 70rpx;
+  margin-top: 18rpx;
+  border-radius: 24rpx;
+  align-items: center;
+  justify-content: space-around;
+  color: var(--life-brand-deep);
+  background: var(--life-brand-soft);
+  font-size: 17rpx;
+}
+@media (min-width: 600px) {
+  .purchase-actions {
+    width: 480px;
+    right: auto;
+    left: 50%;
+    transform: translateX(-50%);
+  }
 }
 </style>

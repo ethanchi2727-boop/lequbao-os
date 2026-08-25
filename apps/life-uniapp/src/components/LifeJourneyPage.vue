@@ -39,12 +39,25 @@ const checkout = ref(null);
 const deliveryMode = ref('STORE_PICKUP');
 const selectedAddressId = ref('');
 const notice = ref('');
+const orderFilter = ref('ALL');
+const orderFilters = Object.freeze([
+  ['ALL', '全部'],
+  ['PENDING_PAYMENT', '待付款'],
+  ['PAID', '已付款'],
+  ['FULFILLING', '履约中'],
+  ['COMPLETED', '已完成'],
+]);
 const query = () => getCurrentPages().at(-1)?.options ?? {};
 const state = computed(() =>
   lifeSurfaceState({ loading: loading.value, error: error.value, records: records.value }),
 );
 const cartItems = computed(() => (cart.value.groups || []).flatMap((group) => group.items || []));
 const orderId = computed(() => query().orderId || detail.value?.id || records.value[0]?.id || '');
+const filteredOrders = computed(() =>
+  props.pageId !== '237' || orderFilter.value === 'ALL'
+    ? records.value
+    : records.value.filter((order) => order.status === orderFilter.value),
+);
 const money = (cents) => `¥${(Number(cents || 0) / 100).toFixed(2)}`;
 const key = (scope) => `${scope}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
 const go = (id, parameters = {}) => {
@@ -287,7 +300,12 @@ onShow(load);
 </script>
 
 <template>
-  <LifeSurface :eyebrow="`PAGE-${pageId}`" :title="meta[0]" :detail="meta[1]" :tone="meta[2]">
+  <LifeSurface
+    :eyebrow="`PAGE-${pageId}`"
+    :title="meta[0]"
+    :detail="meta[1]"
+    :theme-color="meta[2] === 'orange' ? 'coral' : meta[2]"
+  >
     <view v-if="state === 'loading'" class="section empty-safe">正在读取服务端真实状态…</view>
     <view
       v-else-if="state === 'unauthenticated'"
@@ -457,18 +475,37 @@ onShow(load);
         ><text>订单支付与奖励独立记账</text></view
       ></view
     >
-    <view v-if="pageId === '237' && state === 'ready'" class="section card-list"
-      ><view
-        v-for="order in records"
-        :key="order.id"
-        class="journey-row"
-        @click="go('238', { orderId: order.id })"
-        ><view
-          ><text>{{ order.orderNumber || order.id }}</text
-          ><text>{{ order.storeName || '商家订单' }} · {{ order.status }}</text></view
-        ><text>{{ money(order.payableAmountCents) }}</text></view
-      ></view
-    >
+    <view v-if="pageId === '237' && state === 'ready'" class="order-list-surface">
+      <scroll-view scroll-x class="order-filters">
+        <button
+          v-for="filter in orderFilters"
+          :key="filter[0]"
+          :class="{ active: orderFilter === filter[0] }"
+          @click="orderFilter = filter[0]"
+        >
+          {{ filter[1] }}
+        </button>
+      </scroll-view>
+      <view v-if="filteredOrders.length" class="card-list">
+        <view
+          v-for="order in filteredOrders"
+          :key="order.id"
+          class="order-card"
+          @click="go('238', { orderId: order.id })"
+        >
+          <view class="order-card-head"
+            ><text>{{ order.storeName || '商家订单' }}</text
+            ><text>{{ order.status }}</text></view
+          >
+          <text class="order-number">订单 {{ order.orderNumber || order.id }}</text>
+          <view class="order-card-foot"
+            ><text>{{ money(order.payableAmountCents) }}</text
+            ><text>查看详情 ›</text></view
+          >
+        </view>
+      </view>
+      <view v-else class="empty-safe">当前筛选下没有订单</view>
+    </view>
     <view v-if="['239', '240'].includes(pageId) && state === 'ready'" class="section card-list"
       ><view
         v-for="refundItem in records"
@@ -584,5 +621,66 @@ onShow(load);
   display: block;
   margin-top: 20rpx;
   line-height: 1.7;
+}
+.order-list-surface {
+  margin-top: 20rpx;
+}
+.order-filters {
+  width: 100%;
+  padding-bottom: 16rpx;
+  white-space: nowrap;
+}
+.order-filters button {
+  display: inline-flex;
+  margin: 0 12rpx 0 0;
+  padding: 8rpx 25rpx;
+  border-radius: 999rpx;
+  color: var(--life-muted);
+  background: var(--life-paper);
+  font-size: 19rpx;
+}
+.order-filters button.active {
+  color: var(--life-paper);
+  background: var(--life-brand);
+  font-weight: 900;
+}
+.order-card {
+  padding: 24rpx;
+  border-radius: var(--life-radius-md);
+  background: var(--life-paper);
+  box-shadow: var(--life-shadow-soft);
+}
+.order-card-head,
+.order-card-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.order-card-head text:first-child {
+  font-size: 25rpx;
+  font-weight: 900;
+}
+.order-card-head text:last-child {
+  padding: 6rpx 10rpx;
+  border-radius: 10rpx;
+  color: var(--life-brand-deep);
+  background: var(--life-brand-soft);
+  font-size: 16rpx;
+}
+.order-number {
+  display: block;
+  margin: 15rpx 0;
+  color: var(--life-muted);
+  font-size: 18rpx;
+}
+.order-card-foot text:first-child {
+  color: var(--life-red);
+  font-size: 30rpx;
+  font-weight: 900;
+}
+.order-card-foot text:last-child {
+  color: var(--life-brand-deep);
+  font-size: 18rpx;
+  font-weight: 800;
 }
 </style>

@@ -25,13 +25,28 @@ function openCategory(category) {
         :class="['category-card', category.accent]"
         @click="openCategory(category)"
       >
-        <view class="category-icon">
-          <image src="/static/life-category-sprite.webp" mode="aspectFill" />
-        </view>
+        <view
+          class="category-icon"
+          :style="{
+            '--sprite-x': `${(index % 5) * 25}%`,
+            '--sprite-y': `${Math.floor(index / 5) * 50}%`,
+          }"
+        />
         <text>{{ category.label }}</text>
         <text>{{
           index < 2 ? '送到家或到店自提' : index === 2 ? '规则与库存实时确认' : '预约和履约状态可查'
         }}</text>
+      </button>
+    </view>
+    <view class="scene-strip">
+      <button @click="openCategory(lifeCategories[0])">
+        <text>今日新鲜</text><text>果蔬肉蛋 · 实时库存</text>
+      </button>
+      <button @click="openCategory(lifeCategories[2])">
+        <text>附近好吃</text><text>团购规则 · 到店核销</text>
+      </button>
+      <button @click="openCategory(lifeCategories[3])">
+        <text>周末放松</text><text>服务预约 · 履约可查</text>
       </button>
     </view>
     <view class="section promise">
@@ -43,65 +58,91 @@ function openCategory(category) {
 
 <style scoped>
 .search-entry {
-  margin: 24rpx 0;
-  color: #66736d;
+  margin: 4rpx 0 24rpx;
+  padding: 0 26rpx;
+  color: var(--life-muted);
   text-align: left;
-  background: #fff;
-  border-radius: 22rpx;
+  background: var(--life-paper);
+  border-radius: var(--life-radius-md);
+  box-shadow: var(--life-shadow-soft);
   font-size: 23rpx;
 }
 .category-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: 18rpx;
 }
 .category-card {
   display: flex;
-  min-height: 260rpx;
+  min-height: 244rpx;
   margin: 0;
-  padding: 22rpx;
-  align-items: flex-start;
+  padding: 18rpx 12rpx;
+  align-items: center;
   flex-direction: column;
-  text-align: left;
-  background: #fff;
-  border-radius: 26rpx;
-  box-shadow: 0 12rpx 30rpx rgba(22, 57, 43, 0.08);
+  text-align: center;
+  background: var(--life-paper);
+  border-radius: var(--life-radius-md);
+  box-shadow: var(--life-shadow-soft);
 }
 .category-icon {
-  width: 96rpx;
-  height: 96rpx;
-  margin-bottom: 18rpx;
-  border-radius: 30rpx;
-  overflow: hidden;
-  background: #e8f7f0;
-}
-.category-icon image {
-  width: 100%;
-  height: 100%;
+  width: 116rpx;
+  height: 116rpx;
+  margin-bottom: 14rpx;
+  border-radius: 50%;
+  background-image: url('../../assets/v63-retail/category-sprite.webp');
+  background-repeat: no-repeat;
+  background-size: 500% 300%;
+  background-position: var(--sprite-x) var(--sprite-y);
+  box-shadow: 0 6rpx 16rpx rgba(0, 0, 0, 0.08);
 }
 .category-card > text:nth-child(2) {
-  font-size: 28rpx;
+  font-size: 23rpx;
   font-weight: 900;
 }
 .category-card > text:last-child {
   margin-top: 10rpx;
-  color: #66736d;
-  font-size: 19rpx;
-  line-height: 1.5;
+  color: var(--life-muted);
+  font-size: 16rpx;
+  line-height: 1.4;
 }
-.category-card.orange .category-icon,
-.category-card.red .category-icon {
-  background: #fff0eb;
+.scene-strip {
+  display: grid;
+  margin-top: 20rpx;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12rpx;
 }
-.category-card.blue .category-icon,
-.category-card.purple .category-icon {
-  background: #e9f6f8;
+.scene-strip button {
+  display: flex;
+  min-width: 0;
+  min-height: 128rpx;
+  margin: 0;
+  padding: 18rpx 12rpx;
+  border-radius: var(--life-radius-md);
+  justify-content: center;
+  flex-direction: column;
+  background: var(--life-brand-soft);
+  line-height: 1.35;
 }
-.category-card.gold .category-icon {
-  background: #fff6df;
+.scene-strip button:nth-child(2) {
+  background: var(--life-coral-soft);
+}
+.scene-strip button:nth-child(3) {
+  background: var(--life-blue-soft);
+}
+.scene-strip text:first-child {
+  font-size: 21rpx;
+  font-weight: 900;
+}
+.scene-strip text:last-child {
+  margin-top: 6rpx;
+  color: var(--life-muted);
+  font-size: 14rpx;
+}
+.promise {
+  margin-bottom: 30rpx;
 }
 .promise > text {
-  color: #66736d;
+  color: var(--life-muted);
   font-size: 22rpx;
   line-height: 1.7;
 }
