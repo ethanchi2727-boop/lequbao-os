@@ -35,6 +35,16 @@ const selectedConversation = ref(null);
 const messages = ref([]);
 const messageContents = reactive({});
 const messageDraft = ref('');
+const conversationFilter = ref('ALL');
+const conversationFilters = Object.freeze([
+  ['ALL', '全部'],
+  ['BOT_ACTIVE', '助手处理中'],
+  ['HUMAN_REQUESTED', '正在转人工'],
+  ['HUMAN_QUEUED', '人工排队'],
+  ['HUMAN_ACTIVE', '人工处理中'],
+  ['WAITING_CUSTOMER', '等待我回复'],
+  ['CLOSED', '已结束'],
+]);
 const addressDraft = reactive({
   recipientName: '',
   mobile: '',
@@ -73,6 +83,11 @@ const consentByType = (consentType) =>
   detail.value?.consents?.find((consent) => consent.consentType === consentType) ?? null;
 const profileConsent = computed(() => consentByType('PROFILE_MEMORY'));
 const subscriptionConsent = computed(() => consentByType('SUBSCRIPTION_MESSAGE'));
+const visibleConversations = computed(() =>
+  conversationFilter.value === 'ALL'
+    ? records.value
+    : records.value.filter((conversation) => conversation.status === conversationFilter.value),
+);
 const money = (cents) => `¥${(Number(cents || 0) / 100).toFixed(2)}`;
 const senderLabel = (message) =>
   ({
@@ -81,6 +96,23 @@ const senderLabel = (message) =>
     AI: '小满助手',
     SYSTEM: '系统',
   })[message.senderType] || message.senderType;
+const conversationStatusLabel = (status) =>
+  ({
+    BOT_ACTIVE: '助手处理中',
+    HUMAN_REQUESTED: '正在转人工',
+    HUMAN_QUEUED: '人工排队',
+    HUMAN_ACTIVE: '人工处理中',
+    WAITING_CUSTOMER: '等待我回复',
+    CLOSED: '已结束',
+  })[status] || status;
+const ticketStatusLabel = (status) =>
+  ({
+    OPEN: '待分配',
+    ASSIGNED: '处理中',
+    RESOLVED: '已解决',
+    CANCELLED: '已取消',
+    EXPIRED: '已超时',
+  })[status] || status;
 const key = (scope) => `${scope}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
 const go = (id, parameters = {}) => {
   const suffix = Object.entries(parameters)
@@ -131,6 +163,10 @@ async function load() {
           props.pageId === '264'
             ? conversations.filter((conversation) => conversation.ticket)
             : conversations;
+        const requestedConversation = records.value.find(
+          (conversation) => conversation.id === params.conversationId,
+        );
+        if (requestedConversation) await openConversation(requestedConversation);
       }
       return;
     }
@@ -476,7 +512,7 @@ onShow(load);
       >加载失败，点此重试</view
     >
     <view
-      v-else-if="state === 'empty' && !['248', '250'].includes(pageId)"
+      v-else-if="state === 'empty' && !['248', '250', '258', '262', '264'].includes(pageId)"
       class="section empty-safe"
       >当前没有可展示的数据</view
     >
@@ -555,16 +591,40 @@ onShow(load);
     >
 
     <view
-      v-if="merchantContext && ['258', '262', '264'].includes(pageId) && state === 'ready'"
+      v-if="
+        merchantContext &&
+        ['258', '262', '264'].includes(pageId) &&
+        ['ready', 'empty'].includes(state)
+      "
       class="section card-list"
       ><view class="context-note"
         >仅展示当前商户和门店下由服务端授权的会话；人工接管与工单状态保持同源。</view
-      ><view v-for="conversation in records" :key="conversation.id" class="row"
+      ><scroll-view v-if="records.length" class="conversation-filters" scroll-x
+        ><button
+          v-for="filter in conversationFilters"
+          :key="filter[0]"
+          size="mini"
+          :class="{ active: conversationFilter === filter[0] }"
+          @click="conversationFilter = filter[0]"
+        >
+          {{ filter[1] }}
+        </button></scroll-view
+      ><view v-if="!records.length" class="privacy-note blue">{{
+        pageId === '264' ? '当前商户暂无人工工单。' : '当前商户暂无可查看的历史会话。'
+      }}</view
+      ><view v-else-if="!visibleConversations.length" class="privacy-note blue"
+        >当前筛选条件下没有会话。</view
+      ><view v-for="conversation in visibleConversations" :key="conversation.id" class="row"
         ><view @click="openConversation(conversation)"
           ><text>{{ conversation.ticket?.id || conversation.id }}</text
           ><text
-            >{{ conversation.status }} · {{ conversation.riskLevel }} ·
-            {{ conversation.ticket?.status || '暂无人工工单' }}</text
+            >{{ conversationStatusLabel(conversation.status) }} · {{ conversation.riskLevel }} ·
+            {{
+              conversation.ticket ? ticketStatusLabel(conversation.ticket.status) : '暂无人工工单'
+            }}</text
+          ><text>更新于 {{ conversation.updatedAt }}</text
+          ><text v-if="conversation.ticket?.dueAt"
+            >处理时限 {{ conversation.ticket.dueAt }}</text
           ></view
         ><button size="mini" :loading="busy" @click="openConversation(conversation)">
           查看
@@ -572,10 +632,10 @@ onShow(load);
       ><view v-if="selectedConversation" class="conversation-detail"
         ><view class="section-head"
           ><text>会话 {{ selectedConversation.id }}</text
-          ><text>{{ selectedConversation.status }}</text></view
+          ><text>{{ conversationStatusLabel(selectedConversation.status) }}</text></view
         ><view v-if="selectedConversation.ticket" class="ticket-facts"
           ><text>工单 {{ selectedConversation.ticket.id }}</text
-          ><text>{{ selectedConversation.ticket.status }}</text
+          ><text>{{ ticketStatusLabel(selectedConversation.ticket.status) }}</text
           ><text>{{ selectedConversation.ticket.priority }}</text></view
         ><view class="message-list"
           ><view v-for="message in messages" :key="message.id" class="message-card"
@@ -836,7 +896,7 @@ onShow(load);
   font-size: 25rpx;
   font-weight: 800;
 }
-.row view text:last-child,
+.row view text:not(:first-child),
 .notice,
 .boundary > text {
   color: #66736d;
@@ -917,6 +977,24 @@ onShow(load);
   margin-top: 22rpx;
   padding-top: 22rpx;
   border-top: 1rpx solid var(--life-line);
+}
+.conversation-filters {
+  width: 100%;
+  margin: 8rpx 0 16rpx;
+  white-space: nowrap;
+}
+.conversation-filters button {
+  display: inline-block;
+  width: auto;
+  margin: 0 10rpx 0 0;
+  border-radius: 999rpx;
+  color: var(--life-muted);
+  background: var(--life-bg);
+  font-size: 18rpx;
+}
+.conversation-filters button.active {
+  color: #fff;
+  background: var(--life-brand);
 }
 .ticket-facts,
 .conversation-actions {

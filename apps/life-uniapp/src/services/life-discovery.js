@@ -74,7 +74,8 @@ export function frozenLifePageRoute(pathname, search = '') {
   if (!match || !FROZEN_PAGES.has(match[1])) return null;
   const safe = new URLSearchParams();
   const incoming = new URLSearchParams(String(search).replace(/^\?/u, ''));
-  for (const name of ['merchantTenantId', 'storeId', 'orderId']) {
+  for (const name of ['merchantTenantId', 'storeId', 'orderId', 'conversationId']) {
+    if (name === 'conversationId' && !['258', '262', '264'].includes(match[1])) continue;
     const value = incoming.get(name);
     if (
       /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu.test(

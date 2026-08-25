@@ -41,10 +41,18 @@ describe('life discovery presentation policy', () => {
     expect(
       frozenLifePageRoute(
         '/life/page-254/',
-        '?merchantTenantId=00000000-0000-4000-8000-000000000081&storeId=00000000-0000-4000-8000-000000000083&accessToken=secret',
+        '?merchantTenantId=00000000-0000-4000-8000-000000000081&storeId=00000000-0000-4000-8000-000000000083&conversationId=00000000-0000-4000-8000-000000000084&accessToken=secret',
       ),
     ).toBe(
       '/pages/page-254/index?merchantTenantId=00000000-0000-4000-8000-000000000081&storeId=00000000-0000-4000-8000-000000000083',
+    );
+    expect(
+      frozenLifePageRoute(
+        '/life/page-262/',
+        '?merchantTenantId=00000000-0000-4000-8000-000000000081&storeId=00000000-0000-4000-8000-000000000083&conversationId=00000000-0000-4000-8000-000000000084&accessToken=secret',
+      ),
+    ).toBe(
+      '/pages/page-262/index?merchantTenantId=00000000-0000-4000-8000-000000000081&storeId=00000000-0000-4000-8000-000000000083&conversationId=00000000-0000-4000-8000-000000000084',
     );
     expect(frozenLifePageRoute('/life/page-254/', '?merchantTenantId=invalid')).toBe(
       '/pages/page-254/index',
