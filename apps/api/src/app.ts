@@ -255,6 +255,12 @@ import {
   type MerchantConsumerJourneyService,
 } from './merchant-consumer-journey-service.js';
 import {
+  LifeMerchantContextAuthenticationError,
+  LifeMerchantContextConflictError,
+  LifeMerchantContextNotFoundError,
+  type LifeMerchantContextSessionService,
+} from './life-merchant-context-session-service.js';
+import {
   EmployeeAgentAuthorizationError,
   EmployeeAgentConflictError,
   type EmployeeAgentService,
@@ -315,6 +321,7 @@ export interface AppOptions {
   platformAftercare?: PlatformAftercareService;
   platformDiscovery?: PlatformDiscoveryService;
   merchantConsumerJourney?: MerchantConsumerJourneyService;
+  lifeMerchantContextSessions?: LifeMerchantContextSessionService;
   customerService?: CustomerService;
   customerServiceAi?: CustomerServiceAiOrchestrator;
   commerceOrders?: CommerceOrderService;
@@ -2414,6 +2421,23 @@ export async function buildApp(options: AppOptions = {}): Promise<FastifyInstanc
     );
   });
 
+  app.post('/api/v1/life/merchant-context/sessions', async (request, reply) => {
+    if (!options.lifeMerchantContextSessions)
+      return reply.code(503).send({ code: 'SERVICE_UNAVAILABLE' });
+    const identity = lifeConsumerIdentity(options, request.headers.authorization, reply);
+    if (!identity) return;
+    const idempotencyKey = headerValue(request.headers['idempotency-key']);
+    if (!idempotencyKey || idempotencyKey.length > 255)
+      return reply.code(400).send({ code: 'INVALID_REQUEST_CONTEXT' });
+    return handleLifeMerchantContext(reply, () =>
+      options.lifeMerchantContextSessions!.exchange({
+        identity,
+        idempotencyKey,
+        body: request.body,
+      }),
+    );
+  });
+
   app.get<{
     Querystring: { productType?: string; query?: string; limit?: string; offset?: string };
   }>('/api/v1/consumer/products', async (request, reply) => {
@@ -4384,6 +4408,24 @@ async function handleConsumerStoreSwitch(
       return reply.code(404).send({ code: 'STORE_NOT_FOUND' });
     if (error instanceof ConsumerStoreSwitchConflictError)
       return reply.code(409).send({ code: 'STORE_SWITCH_CONFLICT' });
+    throw error;
+  }
+}
+
+async function handleLifeMerchantContext(
+  reply: { code(statusCode: number): { send(payload: unknown): unknown } },
+  work: () => Promise<unknown>,
+) {
+  try {
+    return await work();
+  } catch (error) {
+    if (error instanceof ZodError) return reply.code(400).send({ code: 'INVALID_REQUEST' });
+    if (error instanceof LifeMerchantContextAuthenticationError)
+      return reply.code(401).send({ code: 'INVALID_LIFE_CONSUMER_SESSION' });
+    if (error instanceof LifeMerchantContextNotFoundError)
+      return reply.code(404).send({ code: 'MERCHANT_CONTEXT_NOT_FOUND' });
+    if (error instanceof LifeMerchantContextConflictError)
+      return reply.code(409).send({ code: 'MERCHANT_CONTEXT_CONFLICT' });
     throw error;
   }
 }

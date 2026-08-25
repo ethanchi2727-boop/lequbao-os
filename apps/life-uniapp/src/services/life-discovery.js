@@ -69,10 +69,22 @@ export function categoryById(categoryId) {
   return lifeCategories.find((category) => category.id === categoryId) ?? lifeCategories[0];
 }
 
-export function frozenLifePageRoute(pathname) {
+export function frozenLifePageRoute(pathname, search = '') {
   const match = String(pathname).match(/\/life\/page-(\d{3})\/?$/u);
   if (!match || !FROZEN_PAGES.has(match[1])) return null;
-  return `/pages/page-${match[1]}/index`;
+  const safe = new URLSearchParams();
+  const incoming = new URLSearchParams(String(search).replace(/^\?/u, ''));
+  for (const name of ['merchantTenantId', 'storeId', 'orderId']) {
+    const value = incoming.get(name);
+    if (
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu.test(
+        value ?? '',
+      )
+    )
+      safe.set(name, value);
+  }
+  const suffix = safe.toString();
+  return `/pages/page-${match[1]}/index${suffix ? `?${suffix}` : ''}`;
 }
 
 export function recentLifeSearches(values, nextValue) {

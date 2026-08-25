@@ -79,6 +79,7 @@ for (const path of [
   '/api/v1/life/cart/items',
   '/api/v1/life/cart/items/{itemId}',
   '/api/v1/life/orders',
+  '/api/v1/life/merchant-context/sessions',
   '/api/v1/life/orders/{orderId}',
   '/api/v1/orders/{orderId}',
   '/api/v1/payment-intents',

@@ -7,6 +7,7 @@ import {
   createConsumerSessionTokenSigner,
 } from './consumer-session-identity.js';
 import { createConsumerStoreSwitchService } from './consumer-store-switch-service.js';
+import { createLifeMerchantContextSessionService } from './life-merchant-context-session-service.js';
 import { createConsumerCatalogService } from './consumer-catalog-service.js';
 import {
   createLifeConsumerSessionIdentityVerifier,
@@ -140,6 +141,12 @@ const consumerSession = consumerAuthSecret
   : undefined;
 const consumerStoreSwitch = consumerAuthSecret
   ? createConsumerStoreSwitchService(pool, createConsumerSessionTokenSigner(consumerAuthSecret))
+  : undefined;
+const lifeMerchantContextSessions = consumerAuthSecret
+  ? createLifeMerchantContextSessionService(
+      pool,
+      createConsumerSessionTokenSigner(consumerAuthSecret),
+    )
   : undefined;
 const platformSensitiveCipher = process.env.PLATFORM_ADDRESS_ENCRYPTION_KEY
   ? createPlatformAddressCipher(process.env.PLATFORM_ADDRESS_ENCRYPTION_KEY)
@@ -335,6 +342,7 @@ const app = await buildApp({
     ? {
         consumerSession,
         consumerStoreSwitch: consumerStoreSwitch!,
+        lifeMerchantContextSessions: lifeMerchantContextSessions!,
       }
     : {}),
   ...(process.env.LIFE_CONSUMER_AUTH_JWT_SECRET

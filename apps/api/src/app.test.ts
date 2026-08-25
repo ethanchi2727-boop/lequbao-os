@@ -979,6 +979,43 @@ describe('platform API shell', () => {
     });
   });
 
+  it('exchanges a platform consumer session for one verified merchant context', async () => {
+    const lifeConsumer = {
+      accountId: '00000000-0000-4000-8000-000000000086',
+      sessionId: 'life-session-86',
+      authLevel: 'PHONE_BOUND' as const,
+    };
+    const exchange = vi.fn().mockResolvedValue({
+      merchantTenantId: '00000000-0000-4000-8000-000000000081',
+      storeId: '00000000-0000-4000-8000-000000000083',
+      accessToken: 'merchant-context-token',
+    });
+    app = await buildApp({
+      lifeConsumerSession: { verify: () => lifeConsumer },
+      lifeMerchantContextSessions: { exchange },
+    });
+    const payload = {
+      merchantTenantId: '00000000-0000-4000-8000-000000000081',
+      storeId: '00000000-0000-4000-8000-000000000083',
+    };
+    const response = await app.inject({
+      method: 'POST',
+      url: '/api/v1/life/merchant-context/sessions',
+      headers: {
+        authorization: 'Bearer life-consumer',
+        'idempotency-key': 'merchant-context-1',
+      },
+      payload,
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(exchange).toHaveBeenCalledWith({
+      identity: lifeConsumer,
+      idempotencyKey: 'merchant-context-1',
+      body: payload,
+    });
+  });
+
   it('keeps the cross-merchant cart behind the separate platform consumer audience', async () => {
     const lifeConsumer = {
       accountId: '00000000-0000-4000-8000-000000000086',

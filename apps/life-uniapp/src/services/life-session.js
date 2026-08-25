@@ -1,6 +1,7 @@
 /* global uni */
 
 const SESSION_KEY = 'lequ.life.consumer.session.v1';
+const MERCHANT_CONTEXT_KEY = 'lequ.life.merchant.context.v1';
 const DEVICE_KEY = 'lequ.life.consumer.device.v1';
 
 const uniRuntime = {
@@ -58,7 +59,11 @@ export function createLifeSessionClient({
     storage.setStorageSync(SESSION_KEY, session);
     return session;
   };
-  const clear = () => storage.removeStorageSync(SESSION_KEY);
+  const clearMerchantContext = () => storage.removeStorageSync(MERCHANT_CONTEXT_KEY);
+  const clear = () => {
+    storage.removeStorageSync(SESSION_KEY);
+    clearMerchantContext();
+  };
 
   async function rawRequest(options) {
     const response = await transport.request(options);
@@ -139,6 +144,56 @@ export function createLifeSessionClient({
     }
   }
 
+  const merchantContextMatches = (context, requested) =>
+    context?.merchantTenantId === requested.merchantTenantId &&
+    context?.storeId === requested.storeId &&
+    typeof context?.accessToken === 'string' &&
+    new Date(context.expiresAt).getTime() > Date.now() + 30_000;
+
+  async function exchangeMerchantContext(requested) {
+    const context = await request('/api/v1/life/merchant-context/sessions', {
+      method: 'POST',
+      header: {
+        'Idempotency-Key': `life-context-${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`,
+      },
+      data: requested,
+    });
+    storage.setStorageSync(MERCHANT_CONTEXT_KEY, context);
+    return context;
+  }
+
+  async function requestMerchant(requested, path, options = {}, retry = true) {
+    if (
+      !path.startsWith('/api/v1/consumer/') &&
+      !path.startsWith('/api/v1/customer-service/') &&
+      path !== '/api/v1/customer-profile' &&
+      !path.startsWith('/api/v1/customer-profile/')
+    )
+      throw new Error('INVALID_MERCHANT_CONTEXT_PATH');
+    const saved = storage.getStorageSync(MERCHANT_CONTEXT_KEY);
+    const context = merchantContextMatches(saved, requested)
+      ? saved
+      : await exchangeMerchantContext(requested);
+    try {
+      return await rawRequest({
+        url: apiUrl(path),
+        method: options.method ?? 'GET',
+        data: options.data,
+        header: { ...options.header, Authorization: `Bearer ${context.accessToken}` },
+      });
+    } catch (error) {
+      if (error.status !== 401 || !retry) throw error;
+      clearMerchantContext();
+      const rotated = await exchangeMerchantContext(requested);
+      return rawRequest({
+        url: apiUrl(path),
+        method: options.method ?? 'GET',
+        data: options.data,
+        header: { ...options.header, Authorization: `Bearer ${rotated.accessToken}` },
+      });
+    }
+  }
+
   async function loginWithWechat() {
     const result = await transport.login({ provider: 'weixin' });
     if (!result?.code) throw new Error('WECHAT_LOGIN_UNAVAILABLE');
@@ -165,6 +220,8 @@ export function createLifeSessionClient({
     exchangeMobileOtp,
     refresh,
     request,
+    exchangeMerchantContext,
+    requestMerchant,
     loginWithWechat,
     logout,
   };

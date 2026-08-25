@@ -3027,6 +3027,30 @@ paths:
         '400': { $ref: '#/components/responses/BadRequest' }
         '401': { description: 平台消费者会话无效、撤销或过期 }
         '409': { description: 商户绑定、商品、门店、规格或库存不可用 }
+  /api/v1/life/merchant-context/sessions:
+    post:
+      operationId: exchangeLifeMerchantContextSession
+      summary: 将有效平台消费者会话交换为一个已绑定商户和营业门店的短期消费者会话
+      description: 服务端独立验证平台会话、活动商户客户绑定和门店状态；商户会话最长十五分钟且不超过平台会话到期时间，平台令牌不会发送给商户接口。
+      security: [{ LifeConsumerBearer: [] }]
+      parameters: [{ $ref: '#/components/parameters/IdempotencyKey' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [merchantTenantId, storeId]
+              properties:
+                merchantTenantId: { type: string, format: uuid }
+                storeId: { type: string, format: uuid }
+              additionalProperties: false
+      responses:
+        '200': { description: 已验证商户、门店、短期商户消费者访问令牌和到期时间 }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { description: 平台消费者会话无效、撤销或过期 }
+        '404': { description: 当前平台账户未绑定该商户客户，或目标门店不存在、停用 }
+        '409': { description: 幂等重放上下文不一致或原短期会话已失效 }
   /api/v1/life/cart/items/{itemId}:
     delete:
       operationId: removePlatformConsumerCartItem

@@ -29,6 +29,7 @@ const busy = ref(false);
 const error = ref(null);
 const records = ref([]);
 const detail = ref(null);
+const merchantContext = ref(null);
 const notice = ref('');
 const addressDraft = reactive({
   recipientName: '',
@@ -53,9 +54,16 @@ const refundDraft = reactive({
 });
 const query = () => getCurrentPages().at(-1)?.options ?? {};
 const state = computed(() =>
-  merchantBoundaryPages.has(props.pageId) && !loading.value && !error.value
+  merchantBoundaryPages.has(props.pageId) &&
+  !merchantContext.value &&
+  !loading.value &&
+  !error.value
     ? 'boundary'
-    : lifeSurfaceState({ loading: loading.value, error: error.value, records: records.value }),
+    : lifeSurfaceState({
+        loading: loading.value,
+        error: error.value,
+        records: detail.value ? [detail.value] : records.value,
+      }),
 );
 const money = (cents) => `¥${(Number(cents || 0) / 100).toFixed(2)}`;
 const key = (scope) => `${scope}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
@@ -85,7 +93,30 @@ async function load() {
   detail.value = null;
   try {
     const params = query();
-    if (merchantBoundaryPages.has(props.pageId)) return;
+    if (merchantBoundaryPages.has(props.pageId)) {
+      if (!params.merchantTenantId || !params.storeId) return;
+      merchantContext.value = {
+        merchantTenantId: params.merchantTenantId,
+        storeId: params.storeId,
+      };
+      if (['254', '255'].includes(props.pageId)) {
+        detail.value = await lifeSession.requestMerchant(
+          merchantContext.value,
+          '/api/v1/customer-profile',
+        );
+        records.value = detail.value.facts || [];
+      } else {
+        const conversations = await lifeSession.requestMerchant(
+          merchantContext.value,
+          '/api/v1/customer-service/conversations',
+        );
+        records.value =
+          props.pageId === '264'
+            ? conversations.filter((conversation) => conversation.ticket)
+            : conversations;
+      }
+      return;
+    }
     if (props.pageId === '219')
       records.value = await lifeSession.request('/api/v1/life/discovery/stores?limit=50');
     if (props.pageId === '242')
@@ -299,6 +330,46 @@ onShow(load);
       </button>
     </view>
 
+    <view
+      v-if="merchantContext && ['254', '255'].includes(pageId) && state === 'ready'"
+      class="section"
+      ><view class="section-head"
+        ><text>{{ pageId === '254' ? '商户隐私档案' : '商户消息授权' }}</text
+        ><text>{{ detail.status }}</text></view
+      ><view class="boundary-facts"
+        ><text>商户上下文已验证</text><text>门店范围已确认</text
+        ><text>持续档案授权 {{ detail.profileMemoryConsent }}</text></view
+      ><text class="context-note"
+        >当前内容由短期商户消费者会话读取；平台令牌未发送到商户档案接口。</text
+      >
+      <view v-if="pageId === '254'" class="card-list"
+        ><view v-for="fact in records" :key="fact.id" class="row"
+          ><view
+            ><text>{{ fact.factType }}</text
+            ><text>{{ fact.value }} · {{ fact.purpose }} · {{ fact.status }}</text></view
+          ></view
+        ></view
+      ><view v-else class="privacy-note blue"
+        >订阅消息授权必须绑定已发布的政策版本与微信侧订阅结果；缺少该两项服务端事实时不提供伪造开关。</view
+      ></view
+    >
+
+    <view
+      v-if="merchantContext && ['258', '262', '264'].includes(pageId) && state === 'ready'"
+      class="section card-list"
+      ><view class="context-note"
+        >仅展示当前商户和门店下由服务端授权的会话；人工接管与工单状态保持同源。</view
+      ><view v-for="conversation in records" :key="conversation.id" class="row"
+        ><view
+          ><text>{{ conversation.ticket?.id || conversation.id }}</text
+          ><text
+            >{{ conversation.status }} · {{ conversation.riskLevel }} ·
+            {{ conversation.ticket?.status || '暂无人工工单' }}</text
+          ></view
+        ></view
+      ></view
+    >
+
     <view v-if="pageId === '219' && state === 'ready'" class="map-grid"
       ><view v-for="store in records" :key="store.id" class="map-card"
         ><view
@@ -478,7 +549,21 @@ onShow(load);
         ><view @click="go('238', { orderId: order.id })"
           ><text>{{ order.orderNumber || order.orderNo || order.id }}</text
           ><text>{{ order.storeName || '商家订单' }} · {{ order.status }}</text></view
-        ><button size="mini" @click="go('245', { orderId: order.id })">售后</button></view
+        ><view class="row-actions"
+          ><button size="mini" @click="go('245', { orderId: order.id })">售后</button
+          ><button
+            size="mini"
+            @click="
+              go('262', {
+                merchantTenantId: order.merchantTenantId,
+                storeId: order.storeId,
+                orderId: order.id,
+              })
+            "
+          >
+            客服
+          </button></view
+        ></view
       ></view
     >
     <text v-if="notice" class="notice section">{{ notice }}</text>
@@ -588,6 +673,22 @@ onShow(load);
 }
 .notice {
   display: block;
+}
+.context-note {
+  display: block;
+  margin: 14rpx 0;
+  color: #66736d;
+  font-size: 21rpx;
+  line-height: 1.7;
+}
+.row-actions {
+  display: flex;
+  flex: 0 0 auto;
+  flex-direction: column;
+  gap: 8rpx;
+}
+.row-actions button {
+  margin: 0;
 }
 .boundary {
   border: 1rpx solid #d8e3dd;

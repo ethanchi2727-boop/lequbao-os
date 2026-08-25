@@ -38,6 +38,17 @@ describe('life discovery presentation policy', () => {
     expect(frozenLifePageRoute('/life/page-240/')).toBe('/pages/page-240/index');
     expect(frozenLifePageRoute('/life/page-219')).toBe('/pages/page-219/index');
     expect(frozenLifePageRoute('/life/page-264/')).toBe('/pages/page-264/index');
+    expect(
+      frozenLifePageRoute(
+        '/life/page-254/',
+        '?merchantTenantId=00000000-0000-4000-8000-000000000081&storeId=00000000-0000-4000-8000-000000000083&accessToken=secret',
+      ),
+    ).toBe(
+      '/pages/page-254/index?merchantTenantId=00000000-0000-4000-8000-000000000081&storeId=00000000-0000-4000-8000-000000000083',
+    );
+    expect(frozenLifePageRoute('/life/page-254/', '?merchantTenantId=invalid')).toBe(
+      '/pages/page-254/index',
+    );
     expect(frozenLifePageRoute('/life/page-214')).toBeNull();
     expect(frozenLifePageRoute('/bao/page-198')).toBeNull();
   });

@@ -4,7 +4,10 @@ import { frozenLifePageRoute } from './services/life-discovery.js';
 export default {
   onLaunch() {
     // #ifdef H5
-    const target = frozenLifePageRoute(globalThis.location?.pathname ?? '');
+    const target = frozenLifePageRoute(
+      globalThis.location?.pathname ?? '',
+      globalThis.location?.search ?? '',
+    );
     if (target) setTimeout(() => uni.reLaunch({ url: target }), 0);
     // #endif
   },

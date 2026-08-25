@@ -72,6 +72,10 @@ describe('乐趣生活 V6.3 high-traffic leaves', () => {
     expect(service).toContain("'/api/v1/life/addresses'");
     expect(service).toContain("'/api/v1/life/invoice-profiles'");
     expect(service).toContain('平台令牌不能替代某一商户的消费者令牌');
+    expect(service).toContain('lifeSession.requestMerchant');
+    expect(service).toContain("'/api/v1/customer-profile'");
+    expect(service).toContain("'/api/v1/customer-service/conversations'");
+    expect(service).toContain('merchantTenantId: order.merchantTenantId');
   });
 
   it('presents map, aftercare and reward facts without synthesizing controlled results', async () => {

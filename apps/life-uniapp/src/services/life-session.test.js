@@ -123,4 +123,50 @@ describe('life consumer session client', () => {
     expect(JSON.stringify([...storage.values.values()])).not.toContain('+8613800000000');
     expect(JSON.stringify([...storage.values.values()])).not.toContain('123456');
   });
+
+  it('exchanges and uses a short merchant token without sending the platform token downstream', async () => {
+    const storage = storageFixture({ 'lequ.life.consumer.session.v1': session() });
+    const context = {
+      merchantTenantId: 'tenant-1',
+      storeId: 'store-1',
+      accessToken: 'merchant-context-token',
+      expiresAt: new Date(Date.now() + 300_000).toISOString(),
+    };
+    const transport = {
+      request: vi
+        .fn()
+        .mockResolvedValueOnce({ statusCode: 200, data: context })
+        .mockResolvedValueOnce({ statusCode: 200, data: { status: 'ACTIVE' } }),
+    };
+    const client = createLifeSessionClient({ transport, storage, apiBase: '' });
+    await expect(
+      client.requestMerchant(
+        { merchantTenantId: 'tenant-1', storeId: 'store-1' },
+        '/api/v1/customer-profile',
+      ),
+    ).resolves.toEqual({ status: 'ACTIVE' });
+
+    expect(transport.request.mock.calls[0][0]).toMatchObject({
+      url: '/api/v1/life/merchant-context/sessions',
+      header: expect.objectContaining({ Authorization: 'Bearer access-one' }),
+    });
+    expect(transport.request.mock.calls[1][0]).toMatchObject({
+      url: '/api/v1/customer-profile',
+      header: expect.objectContaining({ Authorization: 'Bearer merchant-context-token' }),
+    });
+    expect(transport.request.mock.calls[1][0].header.Authorization).not.toContain('access-one');
+  });
+
+  it('rejects merchant-context use outside the merchant consumer API allowlist', async () => {
+    const storage = storageFixture({ 'lequ.life.consumer.session.v1': session() });
+    const transport = { request: vi.fn() };
+    const client = createLifeSessionClient({ transport, storage, apiBase: '' });
+    await expect(
+      client.requestMerchant(
+        { merchantTenantId: 'tenant-1', storeId: 'store-1' },
+        '/api/v1/life/cart',
+      ),
+    ).rejects.toThrow('INVALID_MERCHANT_CONTEXT_PATH');
+    expect(transport.request).not.toHaveBeenCalled();
+  });
 });
