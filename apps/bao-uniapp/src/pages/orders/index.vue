@@ -1,5 +1,5 @@
 <script setup>
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
 import { onShow } from '@dcloudio/uni-app';
 import BaoSurface from '../../components/BaoSurface.vue';
 import BaoTaskDirectory from '../../components/BaoTaskDirectory.vue';
@@ -9,6 +9,17 @@ const loading = ref(false);
 const error = ref(false);
 const orders = ref([]);
 const refunds = ref([]);
+
+const completedCount = computed(
+  () =>
+    orders.value.filter((order) => ['COMPLETED', 'FULFILLED', 'CANCELLED'].includes(order.status))
+      .length,
+);
+const progress = computed(() =>
+  orders.value.length ? Math.round((completedCount.value / orders.value.length) * 100) : 0,
+);
+const progressStyle = computed(() => `--progress:${progress.value * 3.6}deg`);
+
 async function load() {
   loading.value = true;
   error.value = false;
@@ -25,50 +36,61 @@ async function load() {
     loading.value = false;
   }
 }
+
 onShow(load);
 </script>
+
 <template>
-  <BaoSurface eyebrow="履约处理" title="订单与核销" detail="接单、核销、退款和异常恢复按权限执行。"
-    ><view v-if="loading" class="panel empty-state">正在读取订单与退款…</view>
-    <view v-else-if="error" class="panel empty-state" @click="load">登录后查看，或点此重试</view>
-    <view v-if="!error" class="panel"
-      ><view class="panel-head"
-        ><text>订单队列</text><text>{{ orders.length }} 笔</text></view
-      ><view class="task-list"
-        ><view v-for="order in orders" :key="order.id" class="task"
-          ><view
-            ><text>{{ order.orderNo }} · ¥{{ (order.payableAmountCents / 100).toFixed(2) }}</text
-            ><text
-              >门店 {{ order.storeId.slice(0, 8) }}… · 已退款 ¥{{
-                (order.refundedAmountCents / 100).toFixed(2)
-              }}</text
-            ></view
-          ><text :class="['status', order.status === 'CANCELLED' ? 'warning' : '']">{{
-            order.status
-          }}</text></view
-        ><view v-if="orders.length === 0" class="empty-state">当前没有订单</view> ></view
-      ></view
-    ><view v-if="refunds.length" class="panel"
-      ><view class="panel-head"
-        ><text>退款队列</text><text>{{ refunds.length }} 笔</text></view
-      ><view class="task-list"
-        ><view v-for="refund in refunds" :key="refund.id" class="task"
-          ><view
-            ><text>退款 ¥{{ (refund.amountCents / 100).toFixed(2) }}</text
-            ><text>订单 {{ refund.orderId.slice(0, 8) }}… · {{ refund.reasonCode }}</text></view
-          ><text :class="['status', refund.status === 'FAILED' ? 'warning' : '']">{{
-            refund.status
-          }}</text></view
-        ></view
-      ></view
-    ><BaoTaskDirectory family="orders" /> ></BaoSurface
+  <BaoSurface
+    eyebrow="服务端任务同步"
+    title="交付任务"
+    detail="订单、履约、退款和核销任务按权限推进。"
   >
+    <view class="m-progress-hero">
+      <view
+        ><text>总体进度</text><text>{{ orders.length ? `${progress}%` : '—' }}</text
+        ><text>{{
+          loading ? '正在同步任务' : `${orders.length + refunds.length} 项业务任务`
+        }}</text></view
+      >
+      <view class="progress-ring" :style="progressStyle"
+        ><text>{{ orders.length ? `${progress}%` : '—' }}</text></view
+      >
+    </view>
+
+    <view class="m-section"
+      ><text>执行轨迹</text><text>{{ orders.length + refunds.length }} 个任务</text></view
+    >
+    <view class="m-timeline">
+      <view v-if="error" class="timeline-step active" @click="load"
+        ><text>!</text
+        ><view><text>等待员工身份确认</text><text>登录后读取当前门店的真实任务</text></view
+        ><text>重试</text></view
+      >
+      <view v-else-if="!orders.length && !loading" class="timeline-step done"
+        ><text>✓</text><view><text>当前没有待处理订单</text><text>服务端队列已同步</text></view
+        ><text>完成</text></view
+      >
+      <view
+        v-for="(order, index) in orders.slice(0, 4)"
+        :key="order.id"
+        :class="[
+          'timeline-step',
+          index < completedCount ? 'done' : index === completedCount ? 'active' : '',
+        ]"
+      >
+        <text>{{ index < completedCount ? '✓' : index + 1 }}</text>
+        <view
+          ><text>{{ order.orderNo }}</text
+          ><text
+            >¥{{ (order.payableAmountCents / 100).toFixed(2) }} · {{ order.status }}</text
+          ></view
+        >
+        <text>{{ index < completedCount ? '完成' : '处理中' }}</text>
+      </view>
+    </view>
+
+    <view class="m-notice">✓ 关键动作需要人工确认，其他步骤由服务端任务继续推进。</view>
+    <BaoTaskDirectory family="orders" />
+  </BaoSurface>
 </template>
-<style scoped>
-.empty-state {
-  padding: 44rpx 22rpx;
-  color: var(--bao-mobile-ink-500);
-  text-align: center;
-  font-size: 23rpx;
-}
-</style>

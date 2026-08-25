@@ -1,39 +1,39 @@
 <script setup>
 import { baoRuntimeProfile } from '../services/bao-session.js';
-
 defineProps({ eyebrow: String, title: String, detail: String });
 </script>
 <template>
-  <view class="page"
-    ><view v-if="baoRuntimeProfile.previewData" class="preview-note"
+  <view class="page">
+    <view v-if="baoRuntimeProfile.previewData" class="preview-note"
       ><text>开发预览</text><text>模拟数据不可用于经营决策</text></view
-    ><view class="mobile-top"
-      ><view class="app-grid"><text></text><text></text><text></text><text></text></view
-      ><view class="top-copy"
+    >
+    <view class="mobile-top">
+      <view class="app-grid"><text></text><text></text><text></text><text></text></view>
+      <view class="top-copy"
         ><text class="title">{{ title }}</text
         ><text class="eyebrow">{{ eyebrow }}</text></view
-      ><view class="new-action">＋</view></view
-    ><view class="page-intro"
-      ><text>{{ detail }}</text></view
-    ><slot></slot
-  ></view>
+      >
+      <view class="new-action">＋</view>
+    </view>
+    <text class="sr-only">{{ detail }}</text>
+    <view class="mobile-content"><slot></slot></view>
+  </view>
 </template>
 <style scoped>
 .page {
   min-height: 100vh;
-  padding: 24rpx 24rpx 36rpx;
+  padding-bottom: calc(122rpx + env(safe-area-inset-bottom));
   box-sizing: border-box;
+  background: var(--bao-mobile-ink-50);
 }
 .preview-note {
   display: flex;
-  margin: 4rpx 0 20rpx;
-  padding: 16rpx 20rpx;
-  border-radius: 18rpx;
+  padding: 12rpx 24rpx;
   align-items: center;
   justify-content: space-between;
   color: var(--bao-mobile-warning-700);
   background: var(--bao-mobile-warning-100);
-  font-size: 18rpx;
+  font-size: 17rpx;
 }
 .preview-note text:first-child {
   font-weight: 900;
@@ -41,17 +41,19 @@ defineProps({ eyebrow: String, title: String, detail: String });
 .mobile-top {
   display: flex;
   align-items: center;
-  min-height: 84rpx;
-  gap: 18rpx;
+  min-height: 116rpx;
+  padding: 0 24rpx;
+  border-bottom: 1rpx solid var(--bao-mobile-line);
+  background: var(--bao-mobile-paper);
 }
 .app-grid,
 .new-action {
   display: grid;
-  place-items: center;
   width: 68rpx;
   height: 68rpx;
+  place-items: center;
   border: 1rpx solid var(--bao-mobile-line);
-  border-radius: 22rpx;
+  border-radius: var(--bao-mobile-radius-control);
   background: var(--bao-mobile-paper);
 }
 .app-grid {
@@ -71,25 +73,31 @@ defineProps({ eyebrow: String, title: String, detail: String });
   flex-direction: column;
   text-align: center;
 }
+.title {
+  font-size: 24rpx;
+  font-weight: 900;
+}
 .eyebrow {
   margin-top: 4rpx;
   color: var(--bao-mobile-jade-600);
-  font-size: 18rpx;
-}
-.title {
-  font-size: 28rpx;
-  font-weight: 900;
+  font-size: 15rpx;
 }
 .new-action {
-  border-color: var(--bao-mobile-ink-900);
+  border: 0;
   color: var(--bao-mobile-paper);
   background: var(--bao-mobile-ink-900);
-  font-size: 34rpx;
+  font-size: 30rpx;
 }
-.page-intro {
-  padding: 4rpx 12rpx 10rpx;
-  color: var(--bao-mobile-ink-500);
-  font-size: 20rpx;
-  line-height: 1.55;
+.mobile-content {
+  position: relative;
+  padding: 26rpx 24rpx 30rpx;
+}
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
 }
 </style>

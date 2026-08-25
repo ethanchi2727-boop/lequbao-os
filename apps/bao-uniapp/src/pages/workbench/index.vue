@@ -8,6 +8,7 @@ import { baoRuntimeProfile, baoSession } from '../../services/bao-session.js';
 const loading = ref(false);
 const error = ref(false);
 const today = ref(null);
+
 async function load() {
   loading.value = true;
   error.value = false;
@@ -22,6 +23,7 @@ async function load() {
     loading.value = false;
   }
 }
+
 function openTodo(todo) {
   const destination =
     todo.kind === 'CUSTOMER_HANDOFF'
@@ -32,236 +34,59 @@ function openTodo(todo) {
   if (destination) return uni.switchTab({ url: destination });
   return uni.showToast({ title: '请在 PC 经营中心处理', icon: 'none' });
 }
+
+function openLogin() {
+  uni.switchTab({ url: '/pages/me/index' });
+}
+
 onShow(load);
 </script>
+
 <template>
   <BaoSurface
     eyebrow="在线 · 自动保存"
     title="乐趣宝 AI"
-    detail="随手发一句话，AI 就把经营、交付和待确认事项继续往前推进。"
-    ><view v-if="loading" class="panel empty-state">正在读取服务端经营数据…</view>
-    <view v-else-if="error" class="panel empty-state" @click="load">登录后查看，或点此重试</view>
-    <view v-if="today" class="current-context"
-      ><view
-        ><text>当前工作范围</text><text>{{ today.storeScope }}</text></view
-      ><text>{{ today.todos.length }} 项待办</text></view
-    ><view v-if="today" class="user-message"
-      >先把今天需要处理的经营事项继续推进，关键动作再让我确认。</view
-    >
-    <view v-if="today" class="ai-card"
-      ><view class="ai-head"
-        ><text>AI</text><view><text>乐趣宝 AI</text><text>刚刚</text></view></view
-      ><text class="ai-title">已整理今日经营，当前需要 {{ today.todos.length }} 类确认</text
-      ><text class="ai-detail"
-        >订单、履约和退款数据来自服务端当前权限范围；涉及金额、发布和退款的动作不会自动越过确认。</text
-      ><view class="result-grid"
-        ><view
-          ><text>今日实收</text
-          ><text>¥{{ (today.metrics.paidAmountCents / 100).toFixed(2) }}</text></view
-        ><view
-          ><text>今日订单</text><text>{{ today.metrics.ordersCreated }} 笔</text></view
-        ><view
-          ><text>待履约</text><text>{{ today.metrics.fulfillment }} 项</text></view
-        ><view
-          ><text>退款中</text><text>{{ today.metrics.refunds }} 项</text></view
-        ></view
-      ><button v-if="today.todos.length" @click="openTodo(today.todos[0])">
-        打开第一项待办　›
-      </button></view
-    ><view v-if="today" class="panel trajectory"
-      ><view class="panel-head"
-        ><text>执行轨迹</text><text>{{ today.timezone }}</text></view
-      ><view class="task-list"
-        ><view
-          v-for="(todo, index) in today.todos"
-          :key="todo.kind"
-          class="task"
-          @click="openTodo(todo)"
-          ><text :class="['step', index === 0 ? 'active' : '']">{{ index + 1 }}</text
-          ><view
-            ><text>{{ todo.label }}</text
-            ><text>服务端权限范围内 {{ todo.count }} 项</text></view
-          ><text :class="['status', ['URGENT', 'HIGH'].includes(todo.priority) ? 'warning' : '']">{{
-            todo.priority
-          }}</text></view
-        ><view v-if="today.todos.length === 0" class="empty-state"
-          >当前没有需要处理的异常</view
-        ></view
-      ></view
-    ><view v-if="today" class="composer"><text>继续说或发资料…</text><text>↑</text></view
-    ><BaoTaskDirectory family="delivery" /> ></BaoSurface
+    detail="通过对话推进经营、交付和确认事项。"
   >
+    <view v-if="today" class="m-context">
+      <text>当前商户</text><text>{{ today.storeScope }}</text
+      ><text>{{ today.todos.length }} 项</text>
+    </view>
+    <view v-else class="m-context">
+      <text>当前商户</text><text>{{ loading ? '正在安全连接…' : '等待员工身份确认' }}</text
+      ><text>—</text>
+    </view>
+
+    <view class="m-user">帮我把今天的经营与交付继续推进，需要我确认的单独列出来。</view>
+
+    <view class="m-agent">
+      <view class="m-agent-head"
+        ><text>AI</text><text>乐趣宝 AI</text><text>{{ today ? '刚刚' : '待连接' }}</text></view
+      >
+      <text v-if="today" class="agent-title"
+        >已整理今日经营，当前需要 {{ today.todos.length }} 项确认</text
+      >
+      <text v-else class="agent-title">{{
+        loading ? '正在读取当前工作范围' : '登录后继续你的工作'
+      }}</text>
+      <text v-if="today">订单、履约和退款均来自服务端当前权限范围，关键动作仍需本人确认。</text>
+      <text v-else>为了保护商户、金额和客户信息，本页不会在身份校验前展示经营数据。</text>
+      <view class="m-result">
+        <view
+          ><text>自动完成</text><text>{{ today ? today.metrics.ordersCreated : '—' }}</text></view
+        >
+        <view
+          ><text>等待确认</text><text>{{ today ? today.todos.length : '—' }}</text></view
+        >
+      </view>
+      <button v-if="today?.todos.length" class="agent-action" @click="openTodo(today.todos[0])">
+        打开第一项确认　›
+      </button>
+      <button v-else-if="error" class="agent-action" @click="openLogin">员工身份安全登录　›</button>
+      <button v-else class="agent-action" disabled>正在连接服务端…</button>
+    </view>
+
+    <view class="m-composer"><text>＋</text><text>继续说或发资料…</text><text>↑</text></view>
+    <BaoTaskDirectory family="delivery" />
+  </BaoSurface>
 </template>
-<style scoped>
-.empty-state {
-  padding: 44rpx 22rpx;
-  color: var(--bao-mobile-ink-500);
-  text-align: center;
-  font-size: 23rpx;
-}
-.current-context {
-  display: flex;
-  align-items: center;
-  padding: 22rpx 24rpx;
-  border-radius: 24rpx;
-  color: var(--bao-mobile-paper);
-  background: var(--bao-mobile-gradient-dark);
-}
-.current-context view {
-  display: flex;
-  flex: 1;
-  flex-direction: column;
-}
-.current-context view text:first-child {
-  color: var(--bao-mobile-jade-300);
-  font-size: 18rpx;
-}
-.current-context view text:last-child {
-  margin-top: 8rpx;
-  font-size: 24rpx;
-  font-weight: 800;
-}
-.current-context > text {
-  color: var(--bao-mobile-jade-300);
-  font-size: 22rpx;
-  font-weight: 800;
-}
-.user-message {
-  max-width: 78%;
-  margin: 26rpx 0 22rpx auto;
-  padding: 24rpx;
-  border-radius: 28rpx 28rpx 8rpx 28rpx;
-  color: var(--bao-mobile-paper);
-  background: var(--bao-mobile-ink-900);
-  font-size: 22rpx;
-  line-height: 1.6;
-}
-.ai-card {
-  padding: 24rpx;
-  border: 1rpx solid var(--bao-mobile-line);
-  border-radius: 28rpx;
-  background: var(--bao-mobile-paper);
-  box-shadow: 0 12rpx 32rpx rgba(17, 27, 25, 0.06);
-}
-.ai-head {
-  display: flex;
-  align-items: center;
-  gap: 14rpx;
-}
-.ai-head > text {
-  display: grid;
-  place-items: center;
-  width: 54rpx;
-  height: 54rpx;
-  border-radius: 18rpx;
-  color: var(--bao-mobile-paper);
-  background: var(--bao-mobile-gradient-ai);
-  font-size: 21rpx;
-  font-weight: 900;
-}
-.ai-head view {
-  display: flex;
-  flex: 1;
-  flex-direction: column;
-}
-.ai-head view text:first-child {
-  font-size: 23rpx;
-  font-weight: 800;
-}
-.ai-head view text:last-child {
-  margin-top: 3rpx;
-  color: var(--bao-mobile-ink-400);
-  font-size: 17rpx;
-}
-.ai-title,
-.ai-detail {
-  display: block;
-}
-.ai-title {
-  margin-top: 22rpx;
-  font-size: 27rpx;
-  font-weight: 900;
-}
-.ai-detail {
-  margin-top: 10rpx;
-  color: var(--bao-mobile-ink-500);
-  font-size: 20rpx;
-  line-height: 1.6;
-}
-.result-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 12rpx;
-  margin-top: 22rpx;
-}
-.result-grid view {
-  display: flex;
-  padding: 20rpx;
-  border-radius: 18rpx;
-  flex-direction: column;
-  background: var(--bao-mobile-ink-50);
-}
-.result-grid view text:first-child {
-  color: var(--bao-mobile-ink-500);
-  font-size: 18rpx;
-}
-.result-grid view text:last-child {
-  margin-top: 7rpx;
-  font-size: 27rpx;
-  font-weight: 900;
-}
-.ai-card button {
-  width: 100%;
-  margin-top: 20rpx;
-  border-radius: 18rpx;
-  color: var(--bao-mobile-jade-700);
-  background: var(--bao-mobile-jade-100);
-  font-size: 22rpx;
-  font-weight: 800;
-}
-.trajectory {
-  padding-bottom: 12rpx;
-}
-.step {
-  display: grid;
-  place-items: center;
-  width: 52rpx;
-  height: 52rpx;
-  margin-right: 16rpx;
-  border: 1rpx solid var(--bao-mobile-ink-200);
-  border-radius: 17rpx;
-  color: var(--bao-mobile-ink-500);
-  background: var(--bao-mobile-paper);
-  font-weight: 900;
-}
-.step.active {
-  border: 0;
-  color: var(--bao-mobile-paper);
-  background: var(--bao-mobile-gradient-ai);
-}
-.composer {
-  display: flex;
-  align-items: center;
-  margin-top: 20rpx;
-  padding: 12rpx 12rpx 12rpx 24rpx;
-  border: 1rpx solid var(--bao-mobile-line);
-  border-radius: 24rpx;
-  color: var(--bao-mobile-ink-400);
-  background: var(--bao-mobile-paper);
-}
-.composer text:first-child {
-  flex: 1;
-  font-size: 21rpx;
-}
-.composer text:last-child {
-  display: grid;
-  place-items: center;
-  width: 62rpx;
-  height: 62rpx;
-  border-radius: 20rpx;
-  color: var(--bao-mobile-paper);
-  background: var(--bao-mobile-gradient-brand);
-  font-size: 30rpx;
-  font-weight: 900;
-}
-</style>

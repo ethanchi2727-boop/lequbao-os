@@ -35,7 +35,8 @@ describe('乐趣宝 UniApp 架构', () => {
     expect(`${workbench}${merchants}${orders}${service}`).not.toContain('¥12,680');
     expect(app).toContain('--bao-mobile-gradient-brand');
     expect(surface).toContain('class="mobile-top"');
-    expect(workbench).toContain('class="ai-card"');
+    expect(workbench).toContain('class="m-agent"');
+    expect(workbench).toContain('class="m-context"');
     expect(merchants).toContain('class="income-hero"');
     expect(JSON.parse(pages).tabBar.list.map((item) => item.text)).toEqual([
       '对话',
@@ -48,5 +49,6 @@ describe('乐趣宝 UniApp 架构', () => {
       expect(item.iconPath).toContain('static/v62-tabs/');
       expect(item.selectedIconPath).toContain('static/v62-tabs/');
     }
+    for (const page of JSON.parse(pages).pages) expect(page.style.navigationStyle).toBe('custom');
   });
 });

@@ -1,11 +1,11 @@
 {
   "pages": [
     { "path": "pages/workbench/index", "style": { "navigationStyle": "custom" } },
-    { "path": "pages/merchants/index", "style": { "navigationBarTitleText": "商户" } },
-    { "path": "pages/orders/index", "style": { "navigationBarTitleText": "订单" } },
-    { "path": "pages/service/index", "style": { "navigationBarTitleText": "客服" } },
-    { "path": "pages/me/index", "style": { "navigationBarTitleText": "我的" } },
-    { "path": "pages/detail/index", "style": { "navigationBarTitleText": "任务详情" } }
+    { "path": "pages/merchants/index", "style": { "navigationStyle": "custom" } },
+    { "path": "pages/orders/index", "style": { "navigationStyle": "custom" } },
+    { "path": "pages/service/index", "style": { "navigationStyle": "custom" } },
+    { "path": "pages/me/index", "style": { "navigationStyle": "custom" } },
+    { "path": "pages/detail/index", "style": { "navigationStyle": "custom" } }
   ],
   "tabBar": {
     "color": "#8C9A95",

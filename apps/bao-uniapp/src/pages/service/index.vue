@@ -11,6 +11,7 @@ const conversations = ref([]);
 const tasks = ref([]);
 const acceptingId = ref('');
 const completingTaskId = ref('');
+
 async function load() {
   loading.value = true;
   error.value = false;
@@ -29,6 +30,7 @@ async function load() {
     loading.value = false;
   }
 }
+
 async function acceptConversation(conversation) {
   if (acceptingId.value) return;
   acceptingId.value = conversation.id;
@@ -38,9 +40,7 @@ async function acceptConversation(conversation) {
       {
         method: 'POST',
         data: {},
-        header: {
-          'Idempotency-Key': `bao-accept-${conversation.id}-${Date.now().toString(36)}`,
-        },
+        header: { 'Idempotency-Key': `bao-accept-${conversation.id}-${Date.now().toString(36)}` },
       },
     );
     uni.showToast({ title: '已接管会话', icon: 'success' });
@@ -55,6 +55,7 @@ async function acceptConversation(conversation) {
     acceptingId.value = '';
   }
 }
+
 async function confirmTaskCompletion(task) {
   if (completingTaskId.value) return;
   const confirmation = await uni.showModal({
@@ -70,9 +71,7 @@ async function confirmTaskCompletion(task) {
       {
         method: 'POST',
         data: { expectedVersion: task.version, resolutionCode: 'COMPLETED_IN_MOBILE_WORKBENCH' },
-        header: {
-          'Idempotency-Key': `bao-task-complete-${task.id}-${task.version}`,
-        },
+        header: { 'Idempotency-Key': `bao-task-complete-${task.id}-${task.version}` },
       },
     );
     uni.showToast({ title: '任务已完成', icon: 'success' });
@@ -84,91 +83,73 @@ async function confirmTaskCompletion(task) {
     completingTaskId.value = '';
   }
 }
+
 onShow(load);
 </script>
+
 <template>
-  <BaoSurface
-    eyebrow="AI 客服"
-    title="需要人工接管的会话"
-    detail="AI 先处理，风险和复杂问题及时交给员工。"
-    ><view v-if="loading" class="panel empty-state">正在读取人工队列…</view>
-    <view v-else-if="error" class="panel empty-state" @click="load">登录后查看，或点此重试</view>
-    <view v-if="!error" class="panel"
-      ><view class="panel-head"
+  <BaoSurface eyebrow="AI 客服 · 人工接管" title="消息中心" detail="风险和复杂问题及时交给员工。">
+    <view class="m-context"
+      ><text>待处理消息</text
+      ><text>{{
+        error ? '等待员工身份确认' : `${conversations.length} 个会话 · ${tasks.length} 项任务`
+      }}</text
+      ><text>{{ loading ? '…' : conversations.length + tasks.length }}</text></view
+    >
+
+    <view class="panel">
+      <view class="panel-head"
         ><text>人工接管队列</text><text>{{ conversations.length }} 个</text></view
-      ><view class="task-list"
-        ><view v-for="conversation in conversations" :key="conversation.id" class="task"
-          ><view
+      >
+      <view class="task-list">
+        <view v-if="error" class="empty-state" @click="load">登录后查看，或点此重试</view>
+        <view v-else-if="!conversations.length && !loading" class="empty-state"
+          >当前没有待接管会话</view
+        >
+        <view v-for="conversation in conversations" :key="conversation.id" class="task-row">
+          <view
             ><text>会话 {{ conversation.id.slice(0, 8) }}…</text
             ><text
               >门店 {{ conversation.storeId.slice(0, 8) }}… ·
               {{ conversation.riskLevel || 'NORMAL' }}</text
             ></view
-          ><button
-            class="takeover-button"
+          >
+          <button
+            class="row-action"
             :loading="acceptingId === conversation.id"
             :disabled="Boolean(acceptingId)"
             @click="acceptConversation(conversation)"
           >
             接管
-          </button></view
-        ><view v-if="conversations.length === 0" class="empty-state">当前没有待接管会话</view>
-        ></view
-      ></view
-    ><view v-if="tasks.length" class="panel"
-      ><view class="panel-head"
+          </button>
+        </view>
+      </view>
+    </view>
+
+    <view v-if="tasks.length" class="panel">
+      <view class="panel-head"
         ><text>客户服务任务</text><text>{{ tasks.length }} 项</text></view
-      ><view class="task-list"
-        ><view v-for="task in tasks" :key="task.id" class="task"
-          ><view
+      >
+      <view class="task-list">
+        <view v-for="task in tasks" :key="task.id" class="task-row">
+          <view
             ><text>{{ task.summary || task.taskType || '客户服务任务' }}</text
             ><text
               >{{ task.storeName || task.storeId }} · {{ task.priority || 'NORMAL' }}</text
             ></view
-          ><button
-            class="complete-button"
+          >
+          <button
+            class="row-action secondary"
             :loading="completingTaskId === task.id"
             :disabled="Boolean(completingTaskId)"
             @click="confirmTaskCompletion(task)"
           >
             完成
-          </button></view
-        ></view
-      ></view
-    ><BaoTaskDirectory family="service" /> ></BaoSurface
-  >
+          </button>
+        </view>
+      </view>
+    </view>
+
+    <BaoTaskDirectory family="service" />
+  </BaoSurface>
 </template>
-<style scoped>
-.empty-state {
-  padding: 44rpx 22rpx;
-  color: var(--bao-mobile-ink-500);
-  text-align: center;
-  font-size: 23rpx;
-}
-.takeover-button {
-  min-width: 112rpx;
-  margin: 0 0 0 18rpx;
-  padding: 2rpx 20rpx;
-  border-radius: 999rpx;
-  color: var(--bao-mobile-paper);
-  background: var(--bao-mobile-gradient-brand);
-  font-size: 22rpx;
-  font-weight: 800;
-  line-height: 52rpx;
-}
-.complete-button {
-  min-width: 112rpx;
-  margin: 0 0 0 18rpx;
-  padding: 2rpx 20rpx;
-  border-radius: 999rpx;
-  color: var(--bao-mobile-jade-700);
-  background: var(--bao-mobile-jade-100);
-  font-size: 22rpx;
-  font-weight: 800;
-  line-height: 52rpx;
-}
-.takeover-button[disabled],
-.complete-button[disabled] {
-  opacity: 0.55;
-}
-</style>

@@ -10,6 +10,7 @@ const context = ref(null);
 const busy = ref(false);
 const message = ref('');
 const targetTenantId = ref('');
+
 async function loadContext() {
   session.value = baoSession.load();
   if (!session.value) {
@@ -22,7 +23,7 @@ async function loadContext() {
     context.value = null;
   }
 }
-onShow(loadContext);
+
 async function login() {
   busy.value = true;
   message.value = '';
@@ -38,6 +39,7 @@ async function login() {
     busy.value = false;
   }
 }
+
 async function logout() {
   busy.value = true;
   try {
@@ -51,6 +53,7 @@ async function logout() {
     busy.value = false;
   }
 }
+
 async function switchTenant() {
   if (!/^[0-9a-f-]{36}$/iu.test(targetTenantId.value)) {
     message.value = '请输入邀请链接或管理员提供的组织 ID';
@@ -69,83 +72,67 @@ async function switchTenant() {
     busy.value = false;
   }
 }
+
+onShow(loadContext);
 </script>
+
 <template>
   <BaoSurface
-    eyebrow="员工身份"
-    title="我的工作空间"
-    detail="租户、门店、角色和数据范围由服务端最终裁决。"
-    ><view class="panel"
-      ><view class="panel-head"
-        ><text>当前身份</text><text>{{ context ? '服务端已确认' : '未登录' }}</text></view
-      ><view class="task-list"
-        ><view v-if="context" class="task"
-          ><view
-            ><text>员工 {{ context.userId.slice(0, 8) }}…</text
-            ><text
-              >{{ context.roleCodes.join(' · ') }} /
-              {{ context.storeIds.length || '租户级' }} 门店范围</text
-            ></view
-          ><text class="status">在线</text></view
-        ><button v-if="context" class="session-button secondary" :loading="busy" @click="logout">
-          退出工作会话</button
-        ><button v-else class="session-button" :loading="busy" @click="login">
-          企业微信安全登录
-        </button>
-        <text v-if="message" class="session-message">{{ message }}</text>
-        ></view
-      ></view
-    ><view v-if="context" class="panel"
-      ><view class="panel-head"><text>切换工作空间</text><text>服务端重新授权</text></view
-      ><view class="tenant-switch"
-        ><text>输入管理员或邀请链接提供的组织 ID；本页不会枚举其他租户。</text
-        ><input v-model.trim="targetTenantId" type="text" placeholder="目标组织 ID" />
-        <button class="session-button" :loading="busy" @click="switchTenant">
-          验证并切换
-        </button></view
-      ></view
-    ><view class="panel"
-      ><view class="panel-head"><text>安全与设置</text><text>审计记录</text></view
-      ><view class="task-list"
-        ><view class="task"
-          ><view><text>数据范围</text><text>仅显示当前租户与授权门店</text></view></view
-        ><view class="task"
-          ><view><text>关键操作确认</text><text>金额、退款、发布需再次确认</text></view></view
-        ></view
-      ></view
-    ><BaoTaskDirectory family="identity" /> ></BaoSurface
+    eyebrow="员工身份 · 安全会话"
+    title="我的"
+    detail="租户、门店、角色和数据范围由服务端裁决。"
   >
+    <view class="m-context"
+      ><text>当前工作空间</text
+      ><text>{{ context ? `员工 ${context.userId.slice(0, 8)}…` : '尚未登录' }}</text
+      ><text>{{ context ? '在线' : '—' }}</text></view
+    >
+
+    <view class="panel">
+      <view class="panel-head"
+        ><text>当前身份</text><text>{{ context ? '服务端已确认' : '未登录' }}</text></view
+      >
+      <view class="task-list">
+        <view v-if="context" class="task-row"
+          ><view
+            ><text>{{ context.roleCodes.join(' · ') }}</text
+            ><text>{{ context.storeIds.length || '租户级' }} 门店范围</text></view
+          ><text class="status-chip">在线</text></view
+        >
+        <button v-if="context" class="m-primary" :loading="busy" @click="logout">
+          退出工作会话
+        </button>
+        <button v-else class="m-primary" :loading="busy" @click="login">企业微信安全登录</button>
+        <text v-if="message" class="session-note">{{ message }}</text>
+      </view>
+    </view>
+
+    <view v-if="context" class="panel">
+      <view class="panel-head"><text>切换工作空间</text><text>服务端重新授权</text></view>
+      <view class="form-stack"
+        ><text>输入管理员或邀请链接提供的组织 ID；本页不会枚举其他租户。</text
+        ><input
+          v-model.trim="targetTenantId"
+          class="form-input"
+          type="text"
+          placeholder="目标组织 ID"
+        /><button class="m-primary" :loading="busy" @click="switchTenant">验证并切换</button></view
+      >
+    </view>
+
+    <view class="panel">
+      <view class="panel-head"><text>安全与设置</text><text>审计记录</text></view>
+      <view class="task-list"
+        ><view class="task-row"
+          ><view><text>数据范围</text><text>仅显示当前租户与授权门店</text></view
+          ><text>›</text></view
+        ><view class="task-row"
+          ><view><text>关键操作确认</text><text>金额、退款、发布需再次确认</text></view
+          ><text>›</text></view
+        ></view
+      >
+    </view>
+
+    <BaoTaskDirectory family="identity" />
+  </BaoSurface>
 </template>
-<style scoped>
-.session-button {
-  color: var(--bao-mobile-paper);
-  background: var(--bao-mobile-gradient-brand);
-  border-radius: 999rpx;
-  font-size: 25rpx;
-  font-weight: 800;
-}
-.session-button.secondary {
-  color: var(--bao-mobile-jade-700);
-  background: var(--bao-mobile-jade-100);
-}
-.session-message {
-  color: var(--bao-mobile-ink-500);
-  text-align: center;
-  font-size: 21rpx;
-}
-.tenant-switch {
-  display: flex;
-  flex-direction: column;
-  gap: 20rpx;
-  color: var(--bao-mobile-ink-500);
-  font-size: 22rpx;
-}
-.tenant-switch input {
-  height: 76rpx;
-  padding: 0 24rpx;
-  border: 2rpx solid var(--bao-mobile-line);
-  border-radius: 18rpx;
-  color: var(--bao-mobile-ink-900);
-  background: var(--bao-mobile-paper);
-}
-</style>
