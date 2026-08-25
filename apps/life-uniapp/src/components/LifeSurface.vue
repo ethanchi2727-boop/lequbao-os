@@ -10,6 +10,7 @@ const props = defineProps({
   detail: String,
   city: { type: String, default: '选择城市' },
   primary: { type: Boolean, default: false },
+  showAssurance: { type: Boolean, default: true },
   themeColor: { type: String, default: 'green' },
 });
 
@@ -19,11 +20,13 @@ const themeStyle = computed(() => lifeBannerThemeStyle(props.themeColor));
 <template>
   <view class="surface" :style="themeStyle">
     <LifeTopBar v-if="primary" :city="city" :theme-color="themeColor">
-      <view class="primary-intro">
-        <text>{{ eyebrow }}</text>
-        <text class="primary-title">{{ title }}</text>
-        <text>{{ detail }}</text>
-      </view>
+      <slot name="ambient">
+        <view class="primary-intro">
+          <text>{{ eyebrow }}</text>
+          <text class="primary-title">{{ title }}</text>
+          <text>{{ detail }}</text>
+        </view>
+      </slot>
     </LifeTopBar>
     <view class="surface-content">
       <view v-if="lifeRuntimeProfile.previewData" class="preview-note"
@@ -34,7 +37,9 @@ const themeStyle = computed(() => lifeBannerThemeStyle(props.themeColor));
         ><text class="title">{{ title }}</text
         ><text>{{ detail }}</text></view
       >
-      <view class="assurance"><text>来源可查</text><text>规则透明</text><text>售后有门</text></view>
+      <view v-if="showAssurance" class="assurance"
+        ><text>来源可查</text><text>规则透明</text><text>售后有门</text></view
+      >
       <slot />
     </view>
   </view>
