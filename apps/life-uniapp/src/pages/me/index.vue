@@ -414,16 +414,17 @@ async function requestUnshippedRefund() {
     </template>
     <view class="service-grid">
       <button @click="uni.navigateTo({ url: '/pages/page-237/index' })">
-        <text>订单服务</text><text>查看履约进度</text>
+        <view class="service-icon order-icon"></view><text>全部订单</text><text>履约进度</text>
       </button>
       <button @click="uni.navigateTo({ url: '/pages/page-239/index' })">
-        <text>售后退款</text><text>按订单申请</text>
+        <view class="service-icon aftercare-icon"></view><text>售后退款</text
+        ><text>按订单申请</text>
       </button>
       <button @click="uni.navigateTo({ url: '/pages/page-252/index' })">
-        <text>消费奖励</text><text>独立账本</text>
+        <view class="service-icon reward-icon"></view><text>消费奖励</text><text>独立账本</text>
       </button>
       <button @click="uni.navigateTo({ url: '/pages/page-254/index' })">
-        <text>隐私授权</text><text>查看与撤回</text>
+        <view class="service-icon privacy-icon"></view><text>隐私授权</text><text>查看与撤回</text>
       </button>
     </view>
     <view class="section">
@@ -457,11 +458,20 @@ async function requestUnshippedRefund() {
       ><view class="section-head"
         ><text>最近订单</text><text>{{ orders.length }} 笔</text></view
       ><view v-if="orders.length" class="card-list"
-        ><view v-for="order in orders" :key="order.id" class="row-card" @click="openOrder(order)"
+        ><view
+          v-for="order in orders"
+          :key="order.id"
+          class="row-card account-order"
+          @click="openOrder(order)"
           ><view class="copy"
-            ><text>{{ order.storeName }} · {{ statusText[order.status] || order.status }}</text
-            ><text>订单 {{ order.orderNo }} · {{ order.paymentStatus }}</text
-            ><text class="price">¥{{ (order.payableAmountCents / 100).toFixed(2) }}</text
+            ><view class="account-order-head"
+              ><text>{{ order.storeName || '商家订单' }}</text
+              ><text>{{ statusText[order.status] || order.status }}</text></view
+            ><text>订单 {{ order.orderNo || order.orderNumber || order.id }}</text
+            ><view class="account-order-foot"
+              ><text>{{ order.items?.length || order.itemCount || 0 }} 件商品</text
+              ><text class="price">¥{{ (order.payableAmountCents / 100).toFixed(2) }}</text></view
+            >
             ><button
               v-if="order.status === 'PENDING_PAYMENT'"
               class="pay-button"
@@ -637,22 +647,22 @@ async function requestUnshippedRefund() {
   border-radius: var(--life-radius-lg);
   align-items: center;
   gap: 20rpx;
-  color: var(--life-paper);
-  background: linear-gradient(135deg, var(--life-brand-deep), var(--life-brand));
-  box-shadow: var(--life-shadow);
+  color: var(--life-ink);
+  background: var(--life-paper);
+  box-shadow: var(--life-shadow-soft);
   box-sizing: border-box;
 }
 .account-avatar {
   display: flex;
   width: 104rpx;
   height: 104rpx;
-  border: 6rpx solid rgba(255, 255, 255, 0.32);
+  border: 6rpx solid var(--life-brand-soft);
   border-radius: 50%;
   align-items: center;
   justify-content: center;
   flex: none;
-  background: var(--life-yellow);
-  color: #7b4f00;
+  background: linear-gradient(135deg, var(--life-brand), var(--life-brand-deep));
+  color: var(--life-paper);
   font-size: 42rpx;
   font-weight: 900;
 }
@@ -682,12 +692,13 @@ async function requestUnshippedRefund() {
   align-self: flex-start;
   padding: 7rpx 12rpx;
   border-radius: 999rpx;
-  background: rgba(255, 255, 255, 0.18);
+  color: var(--life-brand-deep);
+  background: var(--life-brand-soft);
   font-size: 16rpx;
 }
 .account-overview {
   display: grid;
-  margin: 18rpx 20rpx 0;
+  margin: -20rpx 34rpx 0;
   padding: 20rpx 12rpx;
   border-radius: var(--life-radius-lg);
   grid-template-columns: repeat(4, 1fr);
@@ -715,29 +726,119 @@ async function requestUnshippedRefund() {
 }
 .service-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 14rpx;
+  padding: 24rpx 12rpx;
+  border-radius: var(--life-radius-lg);
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8rpx;
+  background: var(--life-paper);
+  box-shadow: var(--life-shadow-soft);
 }
 .service-grid button {
   display: flex;
-  min-height: 114rpx;
+  min-height: 134rpx;
   margin: 0;
-  padding: 18rpx 22rpx;
-  border-radius: var(--life-radius-md);
-  justify-content: center;
+  padding: 8rpx 4rpx;
+  border-radius: 16rpx;
+  align-items: center;
+  justify-content: flex-start;
   flex-direction: column;
-  background: var(--life-paper);
-  box-shadow: var(--life-shadow-soft);
-  text-align: left;
+  background: transparent;
+  text-align: center;
 }
-.service-grid text:first-child {
-  font-size: 23rpx;
+.service-grid button > text:nth-child(2) {
+  margin-top: 10rpx;
+  font-size: 19rpx;
   font-weight: 900;
 }
-.service-grid text:last-child {
-  margin-top: 5rpx;
+.service-grid button > text:last-child {
+  margin-top: 3rpx;
   color: var(--life-muted);
+  font-size: 14rpx;
+}
+.service-icon {
+  position: relative;
+  width: 68rpx;
+  height: 68rpx;
+  border-radius: 20rpx;
+  background: var(--life-brand-soft);
+}
+.service-icon::before,
+.service-icon::after {
+  position: absolute;
+  box-sizing: border-box;
+  content: '';
+}
+.service-icon::before {
+  inset: 17rpx 19rpx;
+  border: 4rpx solid var(--life-brand);
+  border-radius: 6rpx;
+}
+.service-icon::after {
+  left: 26rpx;
+  bottom: 14rpx;
+  width: 17rpx;
+  height: 4rpx;
+  border-radius: 999rpx;
+  background: var(--life-brand);
+}
+.aftercare-icon {
+  background: var(--life-coral-soft);
+}
+.aftercare-icon::before {
+  border-color: var(--life-red);
+  border-radius: 50%;
+}
+.aftercare-icon::after {
+  background: var(--life-red);
+}
+.reward-icon {
+  background: #fff5d6;
+}
+.reward-icon::before {
+  border-color: #d38a00;
+  transform: rotate(45deg);
+}
+.reward-icon::after {
+  background: #d38a00;
+}
+.privacy-icon {
+  background: var(--life-blue-soft);
+}
+.privacy-icon::before {
+  border-color: #1687a0;
+  border-radius: 50% 50% 8rpx 8rpx;
+}
+.privacy-icon::after {
+  background: #1687a0;
+}
+.account-order {
+  border: 1rpx solid var(--life-line);
+  border-radius: var(--life-radius-md);
+  box-shadow: none;
+}
+.account-order-head,
+.account-order-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14rpx;
+}
+.account-order-head > text:last-child {
+  padding: 5rpx 10rpx;
+  border-radius: 999rpx;
+  color: var(--life-brand-deep);
+  background: var(--life-brand-soft);
   font-size: 16rpx;
+}
+.account-order-foot {
+  margin-top: 8rpx;
+  color: var(--life-muted);
+  font-size: 18rpx;
+}
+.account-order-foot .price {
+  color: var(--life-red);
+  font-size: 28rpx;
+  font-weight: 900;
 }
 .account-button {
   color: #fff;

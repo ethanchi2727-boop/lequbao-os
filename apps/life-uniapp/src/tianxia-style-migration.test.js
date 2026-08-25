@@ -48,4 +48,44 @@ describe('天下摄影消费视觉迁移', () => {
     expect(page).not.toContain('分50期发放');
     expect(page).not.toContain('订单金额的20%');
   });
+
+  it('把成熟搜索头、历史热词和分类结果切换迁移到真实发现接口', async () => {
+    const [search, results] = await Promise.all([
+      source('pages/page-203/index.vue'),
+      source('pages/page-204/index.vue'),
+    ]);
+    expect(search).toContain('search-mark');
+    expect(search).toContain('历史搜索');
+    expect(search).toContain('热门搜索');
+    expect(search).toContain('recentLifeSearches');
+    expect(results).toContain('result-search-mark');
+    expect(results).toContain('result-tabs');
+    expect(results).toContain('/api/v1/life/discovery/products?limit=100');
+    expect(results).toContain('/api/v1/life/discovery/stores?limit=100');
+  });
+
+  it('把商城购物车的信息密度和金额清单接在服务端核价链路上', async () => {
+    const cart = await source('pages/cart/index.vue');
+    expect(cart).toContain('basket-mark');
+    expect(cart).toContain('cart-group');
+    expect(cart).toContain('amount-lines');
+    expect(cart).toContain('/api/v1/life/checkouts/quote');
+    expect(cart).toContain('/actions/submit');
+    expect(cart).not.toContain('🛒');
+  });
+
+  it('让结算订单和账户中心使用正式卡片层级且保留真实服务端状态', async () => {
+    const [journey, account] = await Promise.all([
+      source('components/LifeJourneyPage.vue'),
+      source('pages/me/index.vue'),
+    ]);
+    expect(journey).toContain('delivery-tabs');
+    expect(journey).toContain('checkout-amounts');
+    expect(journey).toContain('order-card-summary');
+    expect(journey).toContain('/api/v1/life/orders?');
+    expect(account).toContain('service-icon');
+    expect(account).toContain('account-order-head');
+    expect(account).toContain('/api/v1/life/orders?limit=10');
+    expect(account).toContain('/api/v1/life/invoice-profiles');
+  });
 });

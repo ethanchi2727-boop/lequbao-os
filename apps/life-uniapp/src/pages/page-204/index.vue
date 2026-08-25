@@ -75,18 +75,21 @@ onLoad((options) => {
 
 <template>
   <LifeSurface
+    compact
+    :show-assurance="false"
     eyebrow="PAGE-204 · 搜索结果"
     :title="query ? `“${query}”的结果` : '综合搜索结果'"
     detail="商品与门店分开呈现，空结果和失败均可恢复"
   >
     <view class="result-search"
+      ><view class="result-search-mark"></view
       ><input v-model="query" maxlength="60" confirm-type="search" @confirm="submitSearch" /><button
         @click="submitSearch"
       >
         更新
       </button></view
     >
-    <view class="result-tabs">
+    <scroll-view scroll-x class="result-tabs">
       <button :class="{ active: activeTab === 'all' }" @click="activeTab = 'all'">
         全部 {{ records.length }}
       </button>
@@ -96,7 +99,7 @@ onLoad((options) => {
       <button :class="{ active: activeTab === 'stores' }" @click="activeTab = 'stores'">
         门店 {{ storeResults.length }}
       </button>
-    </view>
+    </scroll-view>
     <view v-if="state === 'loading'" class="section empty-safe">正在搜索真实商品与门店…</view>
     <view v-else-if="state === 'unauthenticated'" class="section empty-safe"
       >登录后查看搜索结果</view
@@ -109,7 +112,7 @@ onLoad((options) => {
       >没有找到匹配结果，返回修改关键词</view
     >
     <view v-else>
-      <view v-if="activeTab !== 'stores' && productResults.length" class="section">
+      <view v-if="activeTab !== 'stores' && productResults.length" class="result-section">
         <view class="section-head"
           ><text>商品与服务</text><text>{{ productResults.length }} 条</text></view
         >
@@ -125,7 +128,7 @@ onLoad((options) => {
           />
         </view>
       </view>
-      <view v-if="activeTab !== 'products' && storeResults.length" class="section">
+      <view v-if="activeTab !== 'products' && storeResults.length" class="result-section">
         <view class="section-head"
           ><text>附近门店</text><text>{{ storeResults.length }} 家</text></view
         >
@@ -152,41 +155,62 @@ onLoad((options) => {
 <style scoped>
 .result-search {
   display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 12rpx;
+  grid-template-columns: 28rpx 1fr auto;
+  gap: 8rpx;
   margin-top: 24rpx;
+  padding: 8rpx 8rpx 8rpx 20rpx;
+  border: 1rpx solid var(--life-line);
+  border-radius: 999rpx;
+  align-items: center;
+  background: var(--life-paper);
+  box-shadow: var(--life-shadow-soft);
 }
 .result-search input {
-  height: 76rpx;
-  padding: 0 22rpx;
-  border: 1rpx solid #dce5e0;
-  border-radius: 20rpx;
-  background: #fff;
+  height: 66rpx;
+  padding: 0 8rpx;
+  box-sizing: border-box;
+}
+.result-search-mark {
+  width: 19rpx;
+  height: 19rpx;
+  border: 4rpx solid var(--life-muted);
+  border-radius: 50%;
   box-sizing: border-box;
 }
 .result-search button {
   margin: 0;
-  color: #fff;
-  background: #076c50;
-  border-radius: 20rpx;
+  padding: 0 26rpx;
+  color: var(--life-paper);
+  background: var(--life-brand);
+  border-radius: 999rpx;
   font-size: 22rpx;
 }
 .result-tabs {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 10rpx;
+  width: 100%;
   margin-top: 18rpx;
+  padding-bottom: 6rpx;
+  white-space: nowrap;
 }
 .result-tabs button {
-  margin: 0;
-  color: #66736d;
-  background: #fff;
-  border-radius: 18rpx;
+  display: inline-flex;
+  margin: 0 12rpx 0 0;
+  padding: 7rpx 24rpx;
+  color: var(--life-muted);
+  background: var(--life-paper);
+  border-radius: 999rpx;
   font-size: 20rpx;
 }
 .result-tabs button.active {
-  color: #fff;
-  background: #076c50;
+  color: var(--life-paper);
+  background: var(--life-brand);
+  font-weight: 900;
+}
+.result-section {
+  margin-top: 22rpx;
+  padding: 24rpx;
+  border-radius: var(--life-radius-lg);
+  background: var(--life-paper);
+  box-shadow: var(--life-shadow-soft);
 }
 .result-list {
   display: grid;
@@ -201,6 +225,7 @@ onLoad((options) => {
   align-items: center;
   gap: 18rpx;
   text-align: left;
+  border: 1rpx solid var(--life-line);
   background: #f8faf9;
   border-radius: 20rpx;
   box-sizing: border-box;

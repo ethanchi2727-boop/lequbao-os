@@ -138,7 +138,8 @@ onShow(load);
           ><text>价格、库存与配送方式将在提交前再次核验</text></view
         >
         <view class="cart-basket"
-          ><text>🛒</text><text>¥{{ (total / 100).toFixed(2) }}</text></view
+          ><view class="basket-mark"><view></view><view></view></view
+          ><text>¥{{ (total / 100).toFixed(2) }}</text></view
         >
       </view>
     </template>
@@ -152,17 +153,22 @@ onShow(load);
       >加载失败，点此重试</view
     >
     <view v-else-if="state === 'empty'" class="section empty-safe">购物车还是空的</view>
-    <view v-for="group in cart.groups" v-else :key="group.storeId" class="section"
+    <view v-for="group in cart.groups" v-else :key="group.storeId" class="section cart-group"
       ><view class="section-head"
         ><text>{{ group.storeName || '当前门店' }}</text
         ><text>{{ group.items.length }} 件商品</text></view
-      ><view v-for="(item, index) in group.items" :key="item.id" class="row-card"
+      ><view v-for="(item, index) in group.items" :key="item.id" class="row-card cart-line"
         ><view class="cart-photo" :style="{ '--sprite-x': `${(index % 4) * 33.333}%` }" /><view
           class="copy"
-          ><text>{{ item.productTitle }} × {{ item.quantity }}</text
-          ><text>{{ item.available ? item.variantTitle : '商品或库存已变化' }}</text
+          ><text>{{ item.productTitle }}</text
+          ><text class="cart-variant">{{
+            item.available ? item.variantTitle : '商品或库存已变化'
+          }}</text
           ><view class="cart-action"
-            ><text class="price">¥{{ ((item.unitPriceCents || 0) / 100).toFixed(2) }}</text
+            ><view class="line-price"
+              ><text class="price">¥{{ ((item.unitPriceCents || 0) / 100).toFixed(2) }}</text
+              ><text>× {{ item.quantity }}</text></view
+            >
             ><button size="mini" @click="removeItem(item)">移除</button></view
           ></view
         ></view
@@ -206,10 +212,12 @@ onShow(load);
       <view v-else-if="deliveryMode === 'PHYSICAL_DELIVERY'" class="empty-safe address-empty"
         >请先在“我的”添加收货地址</view
       >
-      ><view class="section-head"><text>金额明细</text><text>规则快照</text></view
-      ><view class="chips"
-        ><text class="chip">商品 ¥{{ (total / 100).toFixed(2) }}</text
-        ><text class="chip">运费结算时确认</text><text class="chip">价格已实时校验</text></view
+      ><view class="section-head"><text>金额明细</text><text>服务端核价</text></view
+      ><view class="amount-lines"
+        ><view
+          ><text>商品合计</text><text>¥{{ (total / 100).toFixed(2) }}</text></view
+        ><view><text>配送费用</text><text>结算时确认</text></view
+        ><view><text>优惠与奖励</text><text>以核价结果为准</text></view></view
       ><button
         v-if="!checkout"
         class="checkout-button"
@@ -270,13 +278,51 @@ onShow(load);
   flex-direction: column;
   background: rgba(255, 255, 255, 0.16);
 }
-.cart-basket text:first-child {
-  font-size: 54rpx;
-}
-.cart-basket text:last-child {
-  margin-top: 6rpx;
+.cart-basket > text {
+  margin-top: 10rpx;
   font-size: 19rpx;
   font-weight: 900;
+}
+.basket-mark {
+  position: relative;
+  width: 58rpx;
+  height: 44rpx;
+  border: 5rpx solid var(--life-paper);
+  border-top: 0;
+  border-radius: 5rpx 5rpx 14rpx 14rpx;
+  box-sizing: border-box;
+}
+.basket-mark::before,
+.basket-mark::after {
+  position: absolute;
+  top: -12rpx;
+  width: 32rpx;
+  height: 5rpx;
+  border-radius: 999rpx;
+  background: var(--life-paper);
+  content: '';
+}
+.basket-mark::before {
+  left: -2rpx;
+  transform: rotate(-38deg);
+}
+.basket-mark::after {
+  right: -2rpx;
+  transform: rotate(38deg);
+}
+.basket-mark > view {
+  position: absolute;
+  top: 10rpx;
+  width: 4rpx;
+  height: 20rpx;
+  border-radius: 999rpx;
+  background: var(--life-paper);
+}
+.basket-mark > view:first-child {
+  left: 16rpx;
+}
+.basket-mark > view:last-child {
+  right: 16rpx;
 }
 .cart-trust {
   display: flex;
@@ -289,17 +335,60 @@ onShow(load);
   font-size: 16rpx;
 }
 .cart-photo {
-  width: 174rpx;
-  height: 142rpx;
-  border-radius: 22rpx;
+  width: 150rpx;
+  height: 132rpx;
+  border-radius: 18rpx;
   flex: none;
   background: url('../../assets/v63-retail/product-sprite.webp') var(--sprite-x) 0 / 400% 200%
     no-repeat;
+}
+.cart-group {
+  padding: 22rpx;
+}
+.cart-line {
+  padding: 16rpx 0;
+  border-bottom: 1rpx solid var(--life-line);
+  border-radius: 0;
+  box-shadow: none;
+}
+.cart-line:last-child {
+  border-bottom: 0;
+}
+.cart-variant {
+  display: inline-flex;
+  align-self: flex-start;
+  padding: 5rpx 10rpx;
+  border-radius: 8rpx;
+  background: #f1f4f2;
 }
 .cart-action {
   display: flex;
   align-items: center;
   justify-content: space-between;
+}
+.line-price {
+  display: flex;
+  align-items: baseline;
+  gap: 9rpx;
+}
+.line-price > text:last-child {
+  color: var(--life-muted);
+  font-size: 18rpx;
+}
+.amount-lines {
+  display: grid;
+  gap: 14rpx;
+}
+.amount-lines > view {
+  display: flex;
+  justify-content: space-between;
+  color: var(--life-muted);
+  font-size: 21rpx;
+}
+.amount-lines > view:first-child text:last-child {
+  color: var(--life-red);
+  font-size: 26rpx;
+  font-weight: 900;
 }
 .cart-action button {
   margin: 0;

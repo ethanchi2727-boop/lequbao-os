@@ -59,6 +59,16 @@ const filteredOrders = computed(() =>
     : records.value.filter((order) => order.status === orderFilter.value),
 );
 const money = (cents) => `¥${(Number(cents || 0) / 100).toFixed(2)}`;
+const orderStatusText = Object.freeze({
+  PENDING_PAYMENT: '待付款',
+  PAID: '已付款',
+  FULFILLING: '履约中',
+  COMPLETED: '已完成',
+  CANCELLED: '已取消',
+  REFUNDING: '退款中',
+  REFUNDED: '已退款',
+});
+const statusText = (status) => orderStatusText[status] || status || '状态更新中';
 const key = (scope) => `${scope}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
 const go = (id, parameters = {}) => {
   const suffix = Object.entries(parameters)
@@ -301,6 +311,8 @@ onShow(load);
 
 <template>
   <LifeSurface
+    compact
+    :show-assurance="false"
     :eyebrow="`PAGE-${pageId}`"
     :title="meta[0]"
     :detail="meta[1]"
@@ -386,17 +398,17 @@ onShow(load);
     >
     <view v-if="pageId === '227' && state === 'ready'" class="section"
       ><view class="section-head"><text>履约方式</text><text>按门店分别履约</text></view
-      ><view class="tabs"
+      ><view class="tabs delivery-tabs"
         ><button
           :class="{ active: deliveryMode === 'STORE_PICKUP' }"
           @click="deliveryMode = 'STORE_PICKUP'"
         >
-          到店自提</button
+          <text>到店自提</text><text>到店核验后取货</text></button
         ><button
           :class="{ active: deliveryMode === 'PHYSICAL_DELIVERY' }"
           @click="deliveryMode = 'PHYSICAL_DELIVERY'"
         >
-          配送到家
+          <text>配送到家</text><text>按地址安排履约</text>
         </button></view
       ><picker
         v-if="deliveryMode === 'PHYSICAL_DELIVERY' && addresses.length"
@@ -435,6 +447,17 @@ onShow(load);
         ><view
           ><text>价格状态</text><text>{{ checkout ? '已核价' : '待重新核价' }}</text></view
         ></view
+      ><view class="checkout-amounts"
+        ><view
+          ><text>商品金额</text
+          ><text>{{
+            money(cart.groups.reduce((sum, group) => sum + Number(group.subtotalCents || 0), 0))
+          }}</text></view
+        ><view><text>配送与优惠</text><text>服务端规则计算</text></view
+        ><view class="checkout-payable"
+          ><text>应付金额</text
+          ><text>{{ checkout ? money(checkout.payableAmountCents) : '待核价' }}</text></view
+        ></view
       ><view class="facts"
         ><text>购物车版本 {{ cart.version }}</text
         ><text>{{ checkout?.groups?.length || cart.groups.length }} 个履约分组</text
@@ -446,7 +469,7 @@ onShow(load);
     <view v-if="['231', '232', '238'].includes(pageId) && detail" class="section"
       ><view class="section-head"
         ><text>订单 {{ detail.orderNumber || detail.id }}</text
-        ><text>{{ detail.status }}</text></view
+        ><text>{{ statusText(detail.status) }}</text></view
       ><view v-if="pageId === '238'" class="order-truth-grid"
         ><view
           ><text>支付状态</text><text>{{ detail.paymentStatus }}</text></view
@@ -530,9 +553,13 @@ onShow(load);
         >
           <view class="order-card-head"
             ><text>{{ order.storeName || '商家订单' }}</text
-            ><text>{{ order.status }}</text></view
+            ><text>{{ statusText(order.status) }}</text></view
           >
           <text class="order-number">订单 {{ order.orderNumber || order.id }}</text>
+          <view class="order-card-summary"
+            ><text>{{ order.items?.length || order.itemCount || 0 }} 件商品</text
+            ><text>{{ order.fulfillmentStatus || '等待履约信息' }}</text></view
+          >
           <view class="order-card-foot"
             ><text>{{ money(order.payableAmountCents) }}</text
             ><text>查看详情 ›</text></view
@@ -648,6 +675,23 @@ onShow(load);
   color: #fff;
   background: #076c50;
 }
+.delivery-tabs button {
+  display: flex;
+  min-height: 108rpx;
+  padding: 17rpx 20rpx;
+  flex-direction: column;
+  justify-content: center;
+  text-align: left;
+}
+.delivery-tabs button text:first-child {
+  font-size: 23rpx;
+  font-weight: 900;
+}
+.delivery-tabs button text:last-child {
+  margin-top: 4rpx;
+  font-size: 16rpx;
+  opacity: 0.74;
+}
 .picker {
   margin-top: 18rpx;
   padding: 22rpx;
@@ -711,6 +755,16 @@ onShow(load);
   margin: 15rpx 0;
   color: var(--life-muted);
   font-size: 18rpx;
+}
+.order-card-summary {
+  display: flex;
+  margin: 0 0 16rpx;
+  padding: 14rpx 16rpx;
+  border-radius: 14rpx;
+  justify-content: space-between;
+  color: var(--life-muted);
+  background: #f7f9f8;
+  font-size: 17rpx;
 }
 .order-card-foot text:first-child {
   color: var(--life-red);
@@ -786,6 +840,31 @@ onShow(load);
   color: var(--life-brand-deep);
   font-size: 19rpx;
   font-weight: 900;
+}
+.checkout-amounts {
+  display: grid;
+  margin-top: 20rpx;
+  padding: 20rpx;
+  border: 1rpx solid var(--life-line);
+  border-radius: var(--life-radius-md);
+  gap: 13rpx;
+  background: #f9fbfa;
+}
+.checkout-amounts > view {
+  display: flex;
+  justify-content: space-between;
+  color: var(--life-muted);
+  font-size: 20rpx;
+}
+.checkout-amounts .checkout-payable {
+  padding-top: 14rpx;
+  border-top: 1rpx solid var(--life-line);
+  color: var(--life-ink);
+  font-weight: 900;
+}
+.checkout-payable text:last-child {
+  color: var(--life-red);
+  font-size: 28rpx;
 }
 .payment-truth {
   display: block;

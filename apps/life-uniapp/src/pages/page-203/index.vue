@@ -33,11 +33,14 @@ onShow(() => {
 
 <template>
   <LifeSurface
+    compact
+    :show-assurance="false"
     eyebrow="PAGE-203 · 综合搜索"
-    title="找商品，也找附近服务"
-    detail="结果仅来自当前账户有权访问的门店，不跨租户猜测"
+    title="搜索乐趣生活"
+    detail="商品、门店与本地服务，一次找到"
   >
     <view class="search-form">
+      <view class="search-mark" aria-hidden="true"></view>
       <input
         v-model="query"
         maxlength="60"
@@ -48,28 +51,37 @@ onShow(() => {
       />
       <button @click="search()">搜索</button>
     </view>
-    <view class="search-trust"
-      ><text>商品实时在售</text><text>门店关系有效</text><text>不跨租户猜测</text></view
-    >
-    <view class="section">
-      <view class="section-head"><text>大家常搜</text><text>快捷入口</text></view>
-      <view class="chips"
-        ><button v-for="item in suggestions" :key="item" class="chip" @click="search(item)">
+    <view v-if="recent.length" class="search-section">
+      <view class="search-section-head"
+        ><view><text class="history-mark"></text><text>历史搜索</text></view
+        ><button size="mini" @click="clearRecent">清除</button></view
+      >
+      <view class="search-chips recent-chips"
+        ><button v-for="item in recent" :key="item" @click="search(item)">{{ item }}</button></view
+      >
+    </view>
+    <view class="search-section">
+      <view class="search-section-head"
+        ><view><text class="hot-mark"></text><text>热门搜索</text></view
+        ><text>本地精选</text></view
+      >
+      <view class="search-chips"
+        ><button
+          v-for="(item, index) in suggestions"
+          :key="item"
+          :class="{ hot: index < 3 }"
+          @click="search(item)"
+        >
           {{ item }}
         </button></view
       >
     </view>
-    <view v-if="recent.length" class="section">
-      <view class="section-head"
-        ><text>最近搜索</text><button size="mini" @click="clearRecent">清除</button></view
-      >
-      <view class="recent-list"
-        ><button v-for="item in recent" :key="item" @click="search(item)">{{ item }}</button></view
-      >
-    </view>
-    <view class="section search-policy"
+    <view class="search-trust"
+      ><text>实时在售</text><text>同城门店</text><text>服务可追溯</text></view
+    >
+    <view class="search-policy"
       ><text
-        >搜索词仅保存在当前设备用于快捷访问；服务端按当前消费者会话和有效商户关系返回结果。</text
+        >搜索词仅保存在当前设备用于快捷访问；服务端按当前消费者会话和有效商户关系返回结果，不跨租户猜测。</text
       ></view
     >
   </LifeSurface>
@@ -78,75 +90,132 @@ onShow(() => {
 <style scoped>
 .search-form {
   display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 14rpx;
-  margin-top: 24rpx;
+  position: sticky;
+  z-index: 2;
+  top: 0;
+  grid-template-columns: 34rpx 1fr auto;
+  gap: 8rpx;
+  margin: 20rpx -2rpx 0;
+  padding: 8rpx 8rpx 8rpx 22rpx;
+  border: 1rpx solid var(--life-line);
+  border-radius: 999rpx;
+  align-items: center;
+  background: var(--life-paper);
+  box-shadow: var(--life-shadow-soft);
 }
 .search-form input {
-  height: 84rpx;
-  padding: 0 24rpx;
-  border: 2rpx solid #0f9d72;
-  border-radius: 24rpx;
-  background: #fff;
+  height: 70rpx;
+  padding: 0 8rpx;
   box-sizing: border-box;
-  font-size: 25rpx;
+  font-size: 24rpx;
 }
 .search-form button {
   margin: 0;
-  color: #fff;
-  background: #076c50;
-  border-radius: 24rpx;
-  font-size: 24rpx;
+  padding: 0 28rpx;
+  color: var(--life-paper);
+  background: var(--life-brand);
+  border-radius: 999rpx;
+  font-size: 22rpx;
+  font-weight: 800;
+}
+.search-mark {
+  width: 20rpx;
+  height: 20rpx;
+  border: 4rpx solid var(--life-muted);
+  border-radius: 50%;
+  box-sizing: border-box;
+}
+.search-mark::after {
+  display: block;
+  width: 9rpx;
+  height: 4rpx;
+  margin: 14rpx 0 0 13rpx;
+  border-radius: 999rpx;
+  background: var(--life-muted);
+  content: '';
+  transform: rotate(45deg);
+}
+.search-section {
+  margin-top: 34rpx;
+  padding: 0 4rpx;
+}
+.search-section-head {
+  display: flex;
+  margin-bottom: 18rpx;
+  align-items: center;
+  justify-content: space-between;
+}
+.search-section-head > view {
+  display: flex;
+  align-items: center;
+  gap: 10rpx;
+  font-size: 25rpx;
+  font-weight: 900;
+}
+.search-section-head > text,
+.search-section-head button {
+  margin: 0;
+  padding: 0;
+  color: var(--life-muted);
+  background: transparent;
+  font-size: 18rpx;
+}
+.history-mark,
+.hot-mark {
+  display: block;
+  width: 18rpx;
+  height: 18rpx;
+  border: 4rpx solid #9aa49f;
+  border-radius: 50%;
+}
+.hot-mark {
+  border: 0;
+  border-radius: 12rpx 12rpx 12rpx 2rpx;
+  background: var(--life-red);
+  transform: rotate(45deg);
+}
+.search-chips {
+  display: flex;
+  gap: 14rpx;
+  flex-wrap: wrap;
+}
+.search-chips button {
+  margin: 0;
+  padding: 8rpx 22rpx;
+  border-radius: 999rpx;
+  color: #59645f;
+  background: #f1f4f2;
+  font-size: 20rpx;
+}
+.search-chips button.hot {
+  color: var(--life-red);
+  background: var(--life-coral-soft);
 }
 .search-trust {
   display: grid;
-  margin-top: 16rpx;
+  margin-top: 38rpx;
+  padding: 18rpx 8rpx;
+  border-top: 1rpx solid var(--life-line);
+  border-bottom: 1rpx solid var(--life-line);
   grid-template-columns: repeat(3, 1fr);
-  gap: 10rpx;
 }
 .search-trust text {
-  padding: 14rpx 8rpx;
-  border-radius: 16rpx;
+  border-right: 1rpx solid var(--life-line);
   color: var(--life-brand-deep);
-  background: var(--life-brand-soft);
   text-align: center;
-  font-size: 15rpx;
+  font-size: 17rpx;
   font-weight: 800;
 }
-.search-trust text:nth-child(2) {
-  color: #9b3f20;
-  background: var(--life-coral-soft);
-}
-.search-trust text:nth-child(3) {
-  color: #075d70;
-  background: var(--life-blue-soft);
-}
-.chips button {
-  margin: 0;
-  border: 0;
-}
-.section-head button {
-  margin: 0;
-  color: #66736d;
-  background: #f1f5f3;
-  border-radius: 999rpx;
-}
-.recent-list {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 12rpx;
-}
-.recent-list button {
-  margin: 0;
-  color: #18231f;
-  text-align: left;
-  background: #f8faf9;
-  border-radius: 18rpx;
-  font-size: 22rpx;
+.search-trust text:last-child {
+  border-right: 0;
 }
 .search-policy {
-  color: #66736d;
-  font-size: 21rpx;
+  margin-top: 24rpx;
+  padding: 20rpx 22rpx;
+  border-radius: var(--life-radius-md);
+  color: var(--life-muted);
+  background: var(--life-paper);
+  font-size: 18rpx;
   line-height: 1.7;
 }
 </style>
