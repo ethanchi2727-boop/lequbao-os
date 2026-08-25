@@ -7,15 +7,40 @@
     { "path": "pages/me/index", "style": { "navigationBarTitleText": "我的" } }
   ],
   "tabBar": {
-    "color": "#737789",
-    "selectedColor": "#5b50ed",
+    "color": "#8C9A95",
+    "selectedColor": "#0B9569",
     "backgroundColor": "#ffffff",
     "list": [
-      { "pagePath": "pages/workbench/index", "text": "工作台" },
-      { "pagePath": "pages/merchants/index", "text": "商户" },
-      { "pagePath": "pages/orders/index", "text": "订单" },
-      { "pagePath": "pages/service/index", "text": "客服" },
-      { "pagePath": "pages/me/index", "text": "我的" }
+      {
+        "pagePath": "pages/workbench/index",
+        "text": "对话",
+        "iconPath": "static/v62-tabs/tab-0-default.png",
+        "selectedIconPath": "static/v62-tabs/tab-0-active.png"
+      },
+      {
+        "pagePath": "pages/merchants/index",
+        "text": "工作",
+        "iconPath": "static/v62-tabs/tab-1-default.png",
+        "selectedIconPath": "static/v62-tabs/tab-1-active.png"
+      },
+      {
+        "pagePath": "pages/orders/index",
+        "text": "任务",
+        "iconPath": "static/v62-tabs/tab-2-default.png",
+        "selectedIconPath": "static/v62-tabs/tab-2-active.png"
+      },
+      {
+        "pagePath": "pages/service/index",
+        "text": "消息",
+        "iconPath": "static/v62-tabs/tab-3-default.png",
+        "selectedIconPath": "static/v62-tabs/tab-3-active.png"
+      },
+      {
+        "pagePath": "pages/me/index",
+        "text": "我的",
+        "iconPath": "static/v62-tabs/tab-4-default.png",
+        "selectedIconPath": "static/v62-tabs/tab-4-active.png"
+      }
     ]
   },
   "globalStyle": {

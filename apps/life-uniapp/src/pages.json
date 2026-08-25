@@ -46,14 +46,39 @@
   ],
   "tabBar": {
     "color": "#84908a",
-    "selectedColor": "#076c50",
+    "selectedColor": "#0B8F66",
     "backgroundColor": "#ffffff",
     "list": [
-      { "pagePath": "pages/life/index", "text": "生活消费" },
-      { "pagePath": "pages/mall/index", "text": "商城" },
-      { "pagePath": "pages/community/index", "text": "生活圈" },
-      { "pagePath": "pages/cart/index", "text": "购物车" },
-      { "pagePath": "pages/me/index", "text": "我的" }
+      {
+        "pagePath": "pages/life/index",
+        "text": "首页",
+        "iconPath": "static/v63-tabs/life-default.png",
+        "selectedIconPath": "static/v63-tabs/life-active.png"
+      },
+      {
+        "pagePath": "pages/mall/index",
+        "text": "商城",
+        "iconPath": "static/v63-tabs/mall-default.png",
+        "selectedIconPath": "static/v63-tabs/mall-active.png"
+      },
+      {
+        "pagePath": "pages/community/index",
+        "text": "生活圈",
+        "iconPath": "static/v63-tabs/circle-default.png",
+        "selectedIconPath": "static/v63-tabs/circle-active.png"
+      },
+      {
+        "pagePath": "pages/cart/index",
+        "text": "购物车",
+        "iconPath": "static/v63-tabs/cart-default.png",
+        "selectedIconPath": "static/v63-tabs/cart-active.png"
+      },
+      {
+        "pagePath": "pages/me/index",
+        "text": "我的",
+        "iconPath": "static/v63-tabs/mine-default.png",
+        "selectedIconPath": "static/v63-tabs/mine-active.png"
+      }
     ]
   },
   "globalStyle": {

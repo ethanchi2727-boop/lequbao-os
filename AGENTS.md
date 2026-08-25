@@ -1,4 +1,4 @@
-# V6.1 development rules
+# V6.1 development rules with official visual amendments
 
 Before changing this repository, read these files in order:
 
@@ -6,10 +6,12 @@ Before changing this repository, read these files in order:
 2. `PROJECT_STATE.md`
 3. `docs/v6.1/DECISIONS_AND_CONFLICTS.md`
 4. The relevant V6.1 product, page, data, API, permission, UI, and test contracts.
+5. `docs/adr/0013-official-visual-baselines.md` and the product visual baseline under `docs/visual/baselines/` for frontend visual work.
 
 ## Source of truth
 
 - `V6_1_BASELINE.md` overrides old repository documents, old UI, historical code, and chat history.
+- The official 乐趣生活 V6.3 and 乐趣宝 V6.2 baselines recorded by ADR-0013 override V6.1 only for frontend visual labels, layout, theme, components, and assets. V6.1 remains authoritative for product, business, API, data, permission, money, and audit behavior.
 - Current V6.1 material is `00` through `07`. Historical material `80` through `82` is read-only migration and reconciliation evidence.
 - Do not redo a completed and verified V6.1 slice. Resume from `PROJECT_STATE.md`, Git status, recent commits, and the latest handoff.
 
@@ -17,7 +19,8 @@ Before changing this repository, read these files in order:
 
 - Public products are only `乐趣宝` and `乐趣生活`.
 - Use `商务人员`, `商务中心`, `商家经营中心`, `区域运营中心`, `小程序交付引擎`, and `GEO 服务` in new UI and contracts.
-- 乐趣生活 top-level navigation is `生活消费`, `商城`, `生活圈`, `购物车`, `我的` until the baseline is formally amended.
+- 乐趣生活 top-level navigation is `首页`, `商城`, `生活圈`, `购物车`, `我的` under the formal ADR-0013 visual amendment.
+- 乐趣宝 mobile top-level navigation is `对话`, `工作`, `任务`, `消息`, `我的` under the same visual amendment.
 - Subscription distributable income uses the versioned `70% / 10% / 20%` policy defined by the baseline.
 - Subscription income, compute-package income, voucher rewards, consumer payments, refunds, and payouts must not share an undifferentiated balance.
 - Historical orders and ledgers are immutable and always read their original policy snapshot.
