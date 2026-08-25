@@ -18,7 +18,7 @@ function aiWorkspace(icon) {
     <div class="v62-ai-main">
       ${pageHeader('AI 执行会话 · 自动保存', '为拾味小馆完成上线前核验', '小满正在调用商户资料、微信开放平台与 GEO 工具', '<span class="v62-source-chip">12 个来源</span>')}
       <div class="v62-thread"><time>今天 10:24</time><p class="v62-user-bubble">检查拾味小馆的开通资料，把缺项补齐。可以自动完成的直接做，需要商家决定的再让我确认。</p>
-        <article class="v62-agent-result"><i>${icon('ai')}</i><div><span class="v62-agent-name">乐趣宝 AI <em>执行完成</em></span><h2>上线前核验已完成，2 项需要确认</h2><p>系统已交叉核对营业执照、门店定位、套餐权益和公开资料。未发现主体冲突，支付账户仍需商家本人授权。</p>
+        <article class="v62-agent-result"><i>${icon('logo')}</i><div><span class="v62-agent-name">乐趣宝 AI <em>执行完成</em></span><h2>上线前核验已完成，2 项需要确认</h2><p>系统已交叉核对营业执照、门店定位、套餐权益和公开资料。未发现主体冲突，支付账户仍需商家本人授权。</p>
           <div class="v62-metrics"><div><small>资料完整度</small><b>92%</b><em>+18%</em></div><div><small>已核验来源</small><b>12</b><em>4 类文件</em></div><div><small>自动完成</small><b>7 项</b><em>均可回滚</em></div><div><small>风险项目</small><b>2 项</b><em class="warning">等待确认</em></div></div>
           <div class="v62-decision"><i>${icon('check')}</i><span><small>关键确认</small><b>商家支付账户与小程序名称</b><p>这两项涉及主体授权和对外展示，AI 不会代替商家决定。</p></span><button data-route="page-054">打开确认单 ${icon('back')}</button></div>
         </div></article>
@@ -40,7 +40,7 @@ function businessCenter(icon) {
     )
     .join('');
   return `<section class="v62-canonical v62-business" data-v62-master="PC_CANONICAL_BUSINESS_CENTER">
-    ${pageHeader('商务经营中心', '持续服务的每一家商户，都成为你的长期收益', '商户归属权、服务状态和月度收益在同一套账本中清晰可追溯。', `<button class="v62-primary" data-route="page-049">${icon('ai')} AI 开通新商户</button>`)}
+    ${pageHeader('商务经营中心', '持续服务的每一家商户，都成为你的长期收益', '商户归属权、服务状态和月度收益在同一套账本中清晰可追溯。', `<button class="v62-primary" data-route="page-049">${icon('logo')} AI 开通新商户</button>`)}
     <div class="v62-kpis"><article class="dark"><small>本月预计商务收益</small><b>¥43,736.00</b><span>较上月 +8.6% · 待财务锁定</span></article><article><small>持续订阅商户</small><b>48</b><span>本月净增 6 家</span></article><article><small>本月可分配净收入</small><b>¥62,480</b><span>已扣除直接成本</span></article><article><small>需要跟进</small><b>4</b><span class="warning">2 家即将到期</span></article></div>
     <div class="v62-business-charts"><article><header><span><b>持续收益趋势</b><small>近 6 个月 · 已扣除退款与直接成本</small></span><button data-route="page-037">查看完整报表</button></header><div class="v62-bars">${bars}</div></article><article><header><span><b>本月分配结构</b><small>净收入池 ¥62,480</small></span></header><div class="v62-allocation">${ring(70, '商务份额')}<ul><li><i class="ai"></i><span>商务人员</span><b>¥43,736</b></li><li><i></i><span>尚智</span><b>¥6,248</b></li><li><i class="warning"></i><span>平台主体</span><b>¥12,496</b></li></ul></div><footer>${icon('check')} 永久收益权与数据访问权相互独立</footer></article></div>
     <article class="v62-merchant-table"><header><span><b>我的商户组合</b><small>共 52 家已确权商户</small></span><nav><b>全部 52</b><span>正常订阅 48</span><span>待跟进 4</span></nav></header><div class="head"><span>商户</span><span>行业</span><span>订阅状态</span><span>本月我的预估</span><span>当前进展</span></div>${merchantRows.map((row) => `<button data-route="page-027"><span class="merchant"><i>${row[0][0]}</i><b>${row[0]}<small>永久归属 · 经营 Agent 已启用</small></b></span><span>${row[1]}</span><span>${row[2]}</span><b>${row[3]}</b><em>${row[4]} ›</em></button>`).join('')}</article>

@@ -58,8 +58,8 @@ let livePageState = nil;
 const resultPanelStorageKey = 'lequbao.workbench-result-panel';
 let resultPanel = resultPanelFromStorage(sessionStorage.getItem(resultPanelStorageKey));
 let draftMessage = '';
-let aiStartPage = null;
-let aiConversationPage = null;
+let startPage = null;
+let convoPage = null;
 const ai = new Set([
   'page-004',
   'page-005',
@@ -76,8 +76,8 @@ const ai = new Set([
   'page-019',
 ]);
 const scrollPositions = new Map();
-let activeExperience = null;
-let experienceLoadVersion = 0;
+let experience = null;
+let loads = 0;
 
 const demoFields = [
   ['主体名称', '南京拾味餐饮管理有限公司', '99%', '已识别'],
@@ -194,15 +194,15 @@ function sidebar() {
 
 function topbar() {
   const shell = resolveWorkbenchShell(demoMode);
-  if (view.page === 'page-003' && aiStartPage)
-    return aiStartPage.renderAiTopbar({
+  if (view.page === 'page-003' && startPage)
+    return startPage.renderAiTopbar({
       view,
       shell,
       escapeHtml,
       icon,
     });
-  if (ai.has(view.page) && aiConversationPage)
-    return aiConversationPage.renderConversationTopbar({ view, shell, escapeHtml, icon });
+  if (ai.has(view.page) && convoPage)
+    return convoPage.renderConversationTopbar({ view, shell, escapeHtml, icon });
   const resultAction = intakePages.has(view.page)
     ? `<button data-action="open-results" aria-controls="workbench-results" aria-expanded="${resultPanel.open}">${icon('clock')} ${demoMode ? `后台任务 ${shell.backgroundTaskCount}` : '任务与成果'}</button>`
     : '';
@@ -221,8 +221,8 @@ function genericWorkbenchPage() {
   const canonicalPage = demoMode ? renderBaoV62CanonicalPage({ page: view.page, icon }) : null;
   if (canonicalPage) return canonicalPage;
   if (view.page === 'page-003')
-    return aiStartPage
-      ? aiStartPage.renderAiConversationStart({
+    return startPage
+      ? startPage.renderAiConversationStart({
           contract,
           demoMode,
           livePageState,
@@ -232,8 +232,8 @@ function genericWorkbenchPage() {
         })
       : '<section class="ai-start" aria-busy="true"><div class="loading-skeleton" aria-hidden="true"><span></span><span></span><span></span></div></section>';
   if (ai.has(view.page))
-    return aiConversationPage
-      ? aiConversationPage.renderConversationThread({
+    return convoPage
+      ? convoPage.renderConversationThread({
           contract,
           demoMode,
           livePageState,
@@ -242,8 +242,8 @@ function genericWorkbenchPage() {
           icon,
         })
       : '<section class="ai-thread" aria-busy="true"><div class="loading-skeleton" aria-hidden="true"><span></span><span></span><span></span></div></section>';
-  const experience = activeExperience?.page === view.page ? activeExperience : null;
-  if (experience) return renderDedicatedExperience(experience, contract);
+  const pageExperience = experience?.page === view.page ? experience : null;
+  if (pageExperience) return renderDedicatedExperience(pageExperience, contract);
   const domains = contract.apiDomains.length ? contract.apiDomains : ['无外部数据'];
   const stateContent = livePageState.data
     ? renderLiveData(livePageState.data, livePageState.request?.kind)
@@ -721,7 +721,7 @@ function navigateTo(page) {
   scrollPositions.set(location.href, captureScrollPosition());
   history.pushState({}, '', `/bao/${page}${location.search}`);
   view = viewFor(page);
-  activeExperience = null;
+  experience = null;
   livePageState = nil;
   render();
   focusMainContent();
@@ -731,19 +731,19 @@ function navigateTo(page) {
 }
 
 async function bootstrapExperience(page) {
-  const loadVersion = ++experienceLoadVersion;
-  const [experience, aiModule] = await Promise.all([
+  const loadVersion = ++loads;
+  const [loaded, aiModule] = await Promise.all([
     loadWorkbenchPageExperience(page),
     page === 'page-003' ? import('./ai-start-page.mjs') : null,
   ]);
   const conversationModule = ai.has(page)
     ? await import(page > 'page-005' ? './artifact-preview-page.mjs' : './ai-conversation-page.mjs')
     : null;
-  if (loadVersion !== experienceLoadVersion || view.page !== page) return;
-  activeExperience = experience;
-  if (aiModule) aiStartPage = aiModule;
-  if (conversationModule) aiConversationPage = conversationModule;
-  if (experience || aiModule || conversationModule) render();
+  if (loadVersion !== loads || view.page !== page) return;
+  experience = loaded;
+  if (aiModule) startPage = aiModule;
+  if (conversationModule) convoPage = conversationModule;
+  if (loaded || aiModule || conversationModule) render();
 }
 
 function captureScrollPosition() {
@@ -811,9 +811,9 @@ app.addEventListener('click', (event) => {
     history.back();
     return;
   }
-  if (view.page === 'page-003' && aiStartPage.handleStartAction(target, render, navigateTo)) return;
+  if (view.page === 'page-003' && startPage.handleStartAction(target, render, navigateTo)) return;
   if (target.dataset.action === 'start-demo-task') {
-    if (!aiConversationPage.submitDemoTask()) {
+    if (!convoPage.submitDemoTask()) {
       document.querySelector('#conversation-task-prompt')?.focus();
       return;
     }
@@ -885,7 +885,7 @@ app.addEventListener('submit', (event) => {
 });
 addEventListener('popstate', () => {
   view = viewFor(resolvePage(location.pathname));
-  activeExperience = null;
+  experience = null;
   livePageState = nil;
   render();
   focusMainContent();
@@ -918,19 +918,19 @@ addEventListener('keydown', (event) => {
   }
 });
 app.addEventListener('input', (event) => {
-  if (aiConversationPage?.handlePageInput?.(event.target)) return;
+  if (convoPage?.handlePageInput?.(event.target)) return;
   if (
     event.target instanceof HTMLTextAreaElement &&
     event.target.dataset.commandField === 'prompt'
   ) {
-    aiConversationPage.updateConversationDraft(event.target);
+    convoPage.updateConversationDraft(event.target);
     return;
   }
   if (
     event.target instanceof HTMLTextAreaElement &&
     event.target.dataset.commandField === 'title'
   ) {
-    aiStartPage.updateStartDraft(event.target);
+    startPage.updateStartDraft(event.target);
     return;
   }
   if (event.target instanceof HTMLTextAreaElement && event.target.closest('.composer')) {
@@ -1105,10 +1105,10 @@ async function executeLiveCommand(commandId) {
   try {
     const data = await workbenchApi.post(command.path, { ...command.body, ...inputBody });
     if (commandId === 'employee-agent-conversation-create' && typeof data?.id === 'string') {
-      aiStartPage.clearStartDraft();
+      startPage.clearStartDraft();
       history.pushState({}, '', `/bao/page-004?conversationId=${encodeURIComponent(data.id)}`);
       view = viewFor('page-004');
-      activeExperience = null;
+      experience = null;
       livePageState = nil;
       render();
       focusMainContent();
@@ -1116,7 +1116,7 @@ async function executeLiveCommand(commandId) {
       void bootstrapLivePage();
       return;
     }
-    if (commandId.startsWith('employee-agent-task-create-')) aiConversationPage?.clearDraft();
+    if (commandId.startsWith('employee-agent-task-create-')) convoPage?.clearDraft();
     livePageState = { ...livePageState, data };
     view = { ...view, state: 'success' };
   } catch (error) {
