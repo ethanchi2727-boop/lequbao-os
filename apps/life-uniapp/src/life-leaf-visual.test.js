@@ -86,6 +86,9 @@ describe('乐趣生活 V6.3 high-traffic leaves', () => {
     expect(service).toContain('conversation.updatedAt');
     expect(service).toContain('conversation.ticket.dueAt');
     expect(service).toContain('params.conversationId');
+    expect(service).toContain('clearMessageContents()');
+    expect(service).toContain('requestSequence !== conversationRequestSequence');
+    expect(service).toContain('selectedConversation.value?.id === conversationId');
     expect(service).toContain('merchantTenantId: order.merchantTenantId');
   });
 

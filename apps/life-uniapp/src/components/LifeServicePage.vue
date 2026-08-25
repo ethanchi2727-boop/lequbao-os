@@ -36,6 +36,7 @@ const messages = ref([]);
 const messageContents = reactive({});
 const messageDraft = ref('');
 const conversationFilter = ref('ALL');
+let conversationRequestSequence = 0;
 const conversationFilters = Object.freeze([
   ['ALL', '全部'],
   ['BOT_ACTIVE', '助手处理中'],
@@ -113,6 +114,9 @@ const ticketStatusLabel = (status) =>
     CANCELLED: '已取消',
     EXPIRED: '已超时',
   })[status] || status;
+const clearMessageContents = () => {
+  for (const messageId of Object.keys(messageContents)) delete messageContents[messageId];
+};
 const key = (scope) => `${scope}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
 const go = (id, parameters = {}) => {
   const suffix = Object.entries(parameters)
@@ -133,13 +137,19 @@ const confirm = (content) =>
   );
 
 async function load() {
+  conversationRequestSequence += 1;
   loading.value = true;
+  busy.value = false;
   error.value = null;
   notice.value = '';
   records.value = [];
   detail.value = null;
+  merchantContext.value = null;
   selectedConversation.value = null;
   messages.value = [];
+  messageDraft.value = '';
+  conversationFilter.value = 'ALL';
+  clearMessageContents();
   try {
     const params = query();
     if (merchantBoundaryPages.has(props.pageId)) {
@@ -382,8 +392,12 @@ async function requestProfileCopy() {
 }
 async function openConversation(conversation) {
   if (!merchantContext.value) return;
+  const requestSequence = ++conversationRequestSequence;
   busy.value = true;
   notice.value = '';
+  selectedConversation.value = null;
+  messages.value = [];
+  clearMessageContents();
   try {
     const conversationId = encodeURIComponent(conversation.id);
     const [latest, persistedMessages] = await Promise.all([
@@ -396,25 +410,33 @@ async function openConversation(conversation) {
         `/api/v1/customer-service/conversations/${conversationId}/messages`,
       ),
     ]);
+    if (requestSequence !== conversationRequestSequence) return;
     selectedConversation.value = latest;
     messages.value = persistedMessages;
   } catch {
-    notice.value = '会话详情读取失败；未展示任何未经服务端确认的消息。';
+    if (requestSequence === conversationRequestSequence)
+      notice.value = '会话详情读取失败；未展示任何未经服务端确认的消息。';
   } finally {
-    busy.value = false;
+    if (requestSequence === conversationRequestSequence) busy.value = false;
   }
 }
 async function readMessageContent(message) {
   if (!merchantContext.value || !selectedConversation.value || messageContents[message.id]) return;
+  const conversationId = selectedConversation.value.id;
+  const requestSequence = conversationRequestSequence;
   busy.value = true;
   try {
-    const conversationId = encodeURIComponent(selectedConversation.value.id);
+    const encodedConversationId = encodeURIComponent(conversationId);
     const messageId = encodeURIComponent(message.id);
     const response = await lifeSession.requestMerchant(
       merchantContext.value,
-      `/api/v1/customer-service/conversations/${conversationId}/messages/${messageId}/content`,
+      `/api/v1/customer-service/conversations/${encodedConversationId}/messages/${messageId}/content`,
     );
-    messageContents[message.id] = response.content;
+    if (
+      requestSequence === conversationRequestSequence &&
+      selectedConversation.value?.id === conversationId
+    )
+      messageContents[message.id] = response.content;
   } catch {
     notice.value = '消息正文未能通过归属校验，已保留脱敏预览。';
   } finally {
