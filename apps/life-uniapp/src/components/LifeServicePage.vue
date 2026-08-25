@@ -65,6 +65,10 @@ const state = computed(() =>
         records: detail.value ? [detail.value] : records.value,
       }),
 );
+const consentByType = (consentType) =>
+  detail.value?.consents?.find((consent) => consent.consentType === consentType) ?? null;
+const profileConsent = computed(() => consentByType('PROFILE_MEMORY'));
+const subscriptionConsent = computed(() => consentByType('SUBSCRIPTION_MESSAGE'));
 const money = (cents) => `¥${(Number(cents || 0) / 100).toFixed(2)}`;
 const key = (scope) => `${scope}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
 const go = (id, parameters = {}) => {
@@ -282,6 +286,51 @@ async function archiveInvoice(id) {
     busy.value = false;
   }
 }
+async function withdrawConsent(consent) {
+  if (!merchantContext.value || consent?.status !== 'GRANTED' || !consent.policyVersion) return;
+  if (!(await confirm('撤回后将停止该商户后续使用此项授权；历史记录仍按法定留存规则处理。')))
+    return;
+  busy.value = true;
+  try {
+    await lifeSession.requestMerchant(merchantContext.value, '/api/v1/customer-profile/consents', {
+      method: 'POST',
+      header: { 'Idempotency-Key': key(`life-consent-${consent.consentType}`) },
+      data: {
+        consentType: consent.consentType,
+        status: 'WITHDRAWN',
+        policyVersion: consent.policyVersion,
+        evidenceRef: `LEQU_LIFE_PRIVACY_CENTER:${new Date().toISOString()}`,
+        purpose: consent.purpose,
+      },
+    });
+    await load();
+    notice.value = '撤回请求已持久化，页面已读取服务端最新状态。';
+  } catch {
+    notice.value = '撤回请求未成功持久化，请刷新状态后安全重试。';
+  } finally {
+    busy.value = false;
+  }
+}
+async function requestProfileCopy() {
+  if (!merchantContext.value) return;
+  busy.value = true;
+  try {
+    await lifeSession.requestMerchant(
+      merchantContext.value,
+      '/api/v1/customer-profile/privacy-requests',
+      {
+        method: 'POST',
+        header: { 'Idempotency-Key': key('life-profile-copy') },
+        data: { requestType: 'VIEW', scope: ['PROFILE_FACTS'] },
+      },
+    );
+    notice.value = '档案副本申请已进入服务端持久化队列。';
+  } catch {
+    notice.value = '档案副本申请未成功提交，请稍后安全重试。';
+  } finally {
+    busy.value = false;
+  }
+}
 onShow(load);
 </script>
 
@@ -343,14 +392,42 @@ onShow(load);
         >当前内容由短期商户消费者会话读取；平台令牌未发送到商户档案接口。</text
       >
       <view v-if="pageId === '254'" class="card-list"
+        ><view class="privacy-note"
+          >最新持续档案授权：{{ profileConsent?.status || '暂无记录'
+          }}<text v-if="profileConsent">
+            · {{ profileConsent.policyVersion }} · {{ profileConsent.occurredAt }}</text
+          ></view
         ><view v-for="fact in records" :key="fact.id" class="row"
           ><view
             ><text>{{ fact.factType }}</text
             ><text>{{ fact.value }} · {{ fact.purpose }} · {{ fact.status }}</text></view
           ></view
+        ><view class="consent-actions"
+          ><button class="secondary" :loading="busy" @click="requestProfileCopy">
+            申请查看档案副本</button
+          ><button
+            v-if="profileConsent?.status === 'GRANTED'"
+            class="danger"
+            :loading="busy"
+            @click="withdrawConsent(profileConsent)"
+          >
+            撤回持续档案授权
+          </button></view
         ></view
-      ><view v-else class="privacy-note blue"
-        >订阅消息授权必须绑定已发布的政策版本与微信侧订阅结果；缺少该两项服务端事实时不提供伪造开关。</view
+      ><view v-else
+        ><view v-if="subscriptionConsent" class="privacy-note blue"
+          >最新订阅授权：{{ subscriptionConsent.status }} ·
+          {{ subscriptionConsent.policyVersion }} · {{ subscriptionConsent.occurredAt }}</view
+        ><view v-else class="privacy-note blue"
+          >暂无服务端订阅授权记录。首次授权必须绑定已发布政策版本与微信侧订阅结果，因此此处不提供伪造开关。</view
+        ><button
+          v-if="subscriptionConsent?.status === 'GRANTED'"
+          class="danger"
+          :loading="busy"
+          @click="withdrawConsent(subscriptionConsent)"
+        >
+          撤回订阅消息授权
+        </button></view
       ></view
     >
 
@@ -658,6 +735,19 @@ onShow(load);
   border-radius: 999rpx;
   font-size: 23rpx;
   font-weight: 800;
+}
+.consent-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12rpx;
+}
+.consent-actions button {
+  width: 100%;
+}
+@media (max-width: 520px) {
+  .consent-actions {
+    grid-template-columns: 1fr;
+  }
 }
 .primary {
   color: #fff;

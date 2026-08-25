@@ -377,6 +377,62 @@ describe('customer-service conversation and human takeover', () => {
 });
 
 describe('customer-service knowledge and privacy controls', () => {
+  it('returns the latest durable consent facts with their authoritative policy versions', async () => {
+    const fx = fixture((sql, values) => {
+      if (sql.startsWith('SELECT profile.id,profile.status')) {
+        expect(values).toEqual([tenantId, customerId]);
+        return result([
+          {
+            id: customerId,
+            status: 'ACTIVE',
+            profile_summary: {},
+            consent_status: 'GRANTED',
+          },
+        ]);
+      }
+      if (sql.startsWith('SELECT id,fact_type,source_type')) return result();
+      if (sql.startsWith('SELECT DISTINCT ON (consent_type)'))
+        return result([
+          {
+            consent_type: 'PROFILE_MEMORY',
+            status: 'GRANTED',
+            policy_version: 'privacy-6.1',
+            purpose: 'CONTINUOUS_CUSTOMER_SERVICE',
+            occurred_at: '2026-08-18T04:00:00.000Z',
+            valid_until: null,
+          },
+          {
+            consent_type: 'SUBSCRIPTION_MESSAGE',
+            status: 'WITHDRAWN',
+            policy_version: 'subscription-6.1',
+            purpose: 'ORDER_STATUS_NOTIFICATION',
+            occurred_at: '2026-08-18T05:00:00.000Z',
+            valid_until: '2027-08-18T05:00:00.000Z',
+          },
+        ]);
+      return undefined;
+    });
+
+    await expect(fx.service.getProfile(consumer)).resolves.toEqual(
+      expect.objectContaining({
+        profileMemoryConsent: 'GRANTED',
+        consents: [
+          expect.objectContaining({
+            consentType: 'PROFILE_MEMORY',
+            policyVersion: 'privacy-6.1',
+            validUntil: null,
+          }),
+          expect.objectContaining({
+            consentType: 'SUBSCRIPTION_MESSAGE',
+            status: 'WITHDRAWN',
+            policyVersion: 'subscription-6.1',
+            validUntil: '2027-08-18T05:00:00.000Z',
+          }),
+        ],
+      }),
+    );
+  });
+
   it('queues a scoped correction without writing replacement content to database parameters', async () => {
     const fx = fixture((sql) => {
       if (sql.startsWith('SELECT 1 FROM customer_profile_facts')) return result([{ ok: true }]);

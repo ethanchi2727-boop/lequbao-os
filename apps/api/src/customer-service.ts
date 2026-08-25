@@ -1206,11 +1206,35 @@ export function createCustomerService(
             ORDER BY confirmed_at DESC`,
           [identity.tenantId, identity.customerId],
         );
+        const consents = await client.query<{
+          consent_type: string;
+          status: string;
+          policy_version: string;
+          purpose: string;
+          occurred_at: Date | string;
+          valid_until: Date | string | null;
+        }>(
+          `SELECT DISTINCT ON (consent_type)
+                  consent_type,status,policy_version,purpose,occurred_at,valid_until
+             FROM customer_consents
+            WHERE tenant_id=$1 AND customer_id=$2
+              AND consent_type IN ('PROFILE_MEMORY','MARKETING','SUBSCRIPTION_MESSAGE','LOCATION')
+            ORDER BY consent_type,occurred_at DESC,id DESC`,
+          [identity.tenantId, identity.customerId],
+        );
         return {
           id: current.id,
           status: current.status,
           summary: current.profile_summary,
           profileMemoryConsent: current.consent_status ?? 'NOT_GRANTED',
+          consents: consents.rows.map((consent) => ({
+            consentType: consent.consent_type,
+            status: consent.status,
+            policyVersion: consent.policy_version,
+            purpose: consent.purpose,
+            occurredAt: new Date(consent.occurred_at).toISOString(),
+            validUntil: consent.valid_until ? new Date(consent.valid_until).toISOString() : null,
+          })),
           facts: facts.rows,
         };
       });

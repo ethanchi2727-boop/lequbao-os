@@ -1635,7 +1635,11 @@ paths:
       summary: 消费者查看本商家范围内的持续客户档案摘要和来源
       security: [{ ConsumerBearer: [] }]
       responses:
-        '200': { description: 不含事实正文或对象存储密钥的来源、用途、置信度与到期状态 }
+        '200':
+          description: 当前消费者可见的档案事实及每类最新不可变授权记录
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CustomerProfile' }
         '401': { description: 消费者会话无效 }
   /api/v1/customer-profile/consents:
     post:
@@ -4066,6 +4070,62 @@ components:
         policyVersion: { type: string, minLength: 1, maxLength: 80 }
         evidenceRef: { type: string, minLength: 1, maxLength: 500 }
         purpose: { type: string, minLength: 1, maxLength: 255 }
+    CustomerConsentSnapshot:
+      type: object
+      additionalProperties: false
+      required: [consentType, status, policyVersion, purpose, occurredAt, validUntil]
+      properties:
+        consentType:
+          { type: string, enum: [PROFILE_MEMORY, MARKETING, SUBSCRIPTION_MESSAGE, LOCATION] }
+        status: { type: string, enum: [GRANTED, WITHDRAWN] }
+        policyVersion: { type: string }
+        purpose: { type: string }
+        occurredAt: { type: string, format: date-time }
+        validUntil: { type: [string, 'null'], format: date-time }
+    CustomerProfileFact:
+      type: object
+      additionalProperties: false
+      required:
+        [
+          id,
+          factType,
+          value,
+          sourceType,
+          sourceRef,
+          purpose,
+          generationMethod,
+          confidence,
+          status,
+          confirmedAt,
+          expiresAt,
+        ]
+      properties:
+        id: { type: string, format: uuid }
+        factType: { type: string }
+        value: { type: string }
+        sourceType: { type: string }
+        sourceRef: { type: string }
+        purpose: { type: string }
+        generationMethod: { type: string }
+        confidence: { type: [string, number, 'null'] }
+        status: { type: string }
+        confirmedAt: { type: string, format: date-time }
+        expiresAt: { type: string, format: date-time }
+    CustomerProfile:
+      type: object
+      additionalProperties: false
+      required: [id, status, summary, profileMemoryConsent, consents, facts]
+      properties:
+        id: { type: string, format: uuid }
+        status: { type: string }
+        summary: { type: object }
+        profileMemoryConsent: { type: string, enum: [GRANTED, WITHDRAWN, NOT_GRANTED] }
+        consents:
+          type: array
+          items: { $ref: '#/components/schemas/CustomerConsentSnapshot' }
+        facts:
+          type: array
+          items: { $ref: '#/components/schemas/CustomerProfileFact' }
     CreateCustomerPrivacyRequest:
       type: object
       additionalProperties: false
