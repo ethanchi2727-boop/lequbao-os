@@ -497,6 +497,14 @@ onShow(load);
       ><view class="section-head"
         ><text>{{ detail.levelName || detail.level || '会员账户' }}</text
         ><text>{{ detail.status || '有效' }}</text></view
+      ><view class="member-benefit-grid"
+        ><view
+          ><text>{{ rewards.length }}</text
+          ><text>奖励记录</text></view
+        ><view
+          ><text>{{ records.length }}</text
+          ><text>会员账户</text></view
+        ><view><text>独立</text><text>订单与奖励账本</text></view></view
       ><view class="facts"
         ><text>会员权益来自服务端账户</text><text>奖励流水 {{ rewards.length }} 条</text
         ><text>订单支付与奖励独立记账</text></view
@@ -830,5 +838,31 @@ onShow(load);
 .refund-card-foot text:last-child {
   color: #9b3f20;
   font-size: 16rpx;
+}
+.member-benefit-grid {
+  display: grid;
+  margin-top: 18rpx;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10rpx;
+}
+.member-benefit-grid > view {
+  display: flex;
+  min-width: 0;
+  padding: 18rpx 8rpx;
+  border-radius: 18rpx;
+  align-items: center;
+  flex-direction: column;
+  background: var(--life-yellow-soft);
+}
+.member-benefit-grid text:first-child {
+  color: #9b5c00;
+  font-size: 26rpx;
+  font-weight: 900;
+}
+.member-benefit-grid text:last-child {
+  margin-top: 5rpx;
+  color: var(--life-muted);
+  text-align: center;
+  font-size: 14rpx;
 }
 </style>

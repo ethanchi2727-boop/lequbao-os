@@ -59,4 +59,18 @@ describe('乐趣生活 V6.3 high-traffic leaves', () => {
     expect(journey).toContain("'/api/v1/life/payment-intents'");
     expect(journey).toContain('/refunds`');
   });
+
+  it('presents membership, credentials and encrypted profiles without crossing boundaries', async () => {
+    const [journey, service] = await Promise.all(
+      ['components/LifeJourneyPage.vue', 'components/LifeServicePage.vue'].map((file) =>
+        readFile(new URL(file, import.meta.url), 'utf8'),
+      ),
+    );
+    expect(journey).toContain('member-benefit-grid');
+    expect(service).toContain('credential-card');
+    expect(service).toContain('privacy-note');
+    expect(service).toContain("'/api/v1/life/addresses'");
+    expect(service).toContain("'/api/v1/life/invoice-profiles'");
+    expect(service).toContain('平台令牌不能替代某一商户的消费者令牌');
+  });
 });

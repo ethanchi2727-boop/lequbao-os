@@ -255,7 +255,12 @@ onShow(load);
 </script>
 
 <template>
-  <LifeSurface :eyebrow="`PAGE-${pageId}`" :title="meta[0]" :detail="meta[1]" :tone="meta[2]">
+  <LifeSurface
+    :eyebrow="`PAGE-${pageId}`"
+    :title="meta[0]"
+    :detail="meta[1]"
+    :theme-color="meta[2] === 'orange' || meta[2] === 'red' ? 'coral' : meta[2]"
+  >
     <view v-if="state === 'loading'" class="section empty-safe">正在读取服务端真实状态…</view>
     <view
       v-else-if="state === 'unauthenticated'"
@@ -298,8 +303,8 @@ onShow(load);
         ><button size="mini" @click="openStore(store)">地图</button></view
       ></view
     >
-    <view v-if="['242', '243'].includes(pageId) && state === 'ready'" class="section card-list"
-      ><view v-for="token in records" :key="token.entitlementId" class="row"
+    <view v-if="['242', '243'].includes(pageId) && state === 'ready'" class="credential-grid"
+      ><view v-for="token in records" :key="token.entitlementId" class="credential-card"
         ><view
           ><text>订单 {{ token.orderId }}</text
           ><text
@@ -358,7 +363,8 @@ onShow(load);
       ></view
     >
     <view v-if="pageId === '248' && ['ready', 'empty'].includes(state)" class="section"
-      ><view v-for="item in records" :key="item.id" class="row"
+      ><view class="privacy-note">地址仅在当前消费者鉴权后解密；历史订单继续保留原地址快照。</view>
+      <view v-for="item in records" :key="item.id" class="row account-record"
         ><view
           ><text>{{ item.recipientName }} {{ item.mobile }}</text
           ><text>{{ item.addressLine }}</text></view
@@ -403,7 +409,8 @@ onShow(load);
       ></view
     >
     <view v-if="pageId === '250' && ['ready', 'empty'].includes(state)" class="section"
-      ><view v-for="item in records" :key="item.id" class="row"
+      ><view class="privacy-note blue">发票抬头与税号加密保存；归档不会删除历史开票引用。</view>
+      <view v-for="item in records" :key="item.id" class="row account-record"
         ><view
           ><text>{{ item.title }}</text
           ><text>{{ item.profileType }} · {{ item.taxIdentifier || '无税号' }}</text></view
@@ -569,5 +576,62 @@ onShow(load);
 }
 .boundary .section-head text:last-child {
   color: #9b3f20;
+}
+.credential-grid {
+  display: grid;
+  margin-top: 20rpx;
+  gap: 14rpx;
+}
+.credential-card {
+  display: flex;
+  padding: 24rpx;
+  border-radius: var(--life-radius-md);
+  align-items: center;
+  justify-content: space-between;
+  gap: 18rpx;
+  background: linear-gradient(135deg, var(--life-yellow-soft), var(--life-paper));
+  box-shadow: var(--life-shadow-soft);
+}
+.credential-card > view {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: 8rpx;
+}
+.credential-card view text:first-child {
+  font-size: 23rpx;
+  font-weight: 900;
+}
+.credential-card view text:last-child {
+  color: var(--life-muted);
+  font-size: 18rpx;
+  line-height: 1.5;
+}
+.credential-card button {
+  margin: 0;
+  border-radius: 999rpx;
+  color: #9b5c00;
+  background: var(--life-yellow);
+  font-size: 18rpx;
+}
+.privacy-note {
+  margin-bottom: 16rpx;
+  padding: 18rpx;
+  border-radius: 18rpx;
+  color: var(--life-brand-deep);
+  background: var(--life-brand-soft);
+  font-size: 17rpx;
+  line-height: 1.55;
+}
+.privacy-note.blue {
+  color: #075d70;
+  background: var(--life-blue-soft);
+}
+.account-record {
+  padding: 18rpx;
+  border: 1rpx solid var(--life-line);
+  border-radius: 18rpx;
+  background: var(--life-paper);
 }
 </style>
