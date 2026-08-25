@@ -375,11 +375,58 @@ async function requestUnshippedRefund() {
 <template>
   <LifeSurface
     primary
+    :show-assurance="false"
     theme-color="green"
     eyebrow="生活账户"
     title="我的"
     detail="订单、售后、会员权益和隐私设置"
-    ><view class="section">
+  >
+    <template #ambient>
+      <view class="account-hero">
+        <view class="account-avatar">趣</view>
+        <view class="account-identity"
+          ><text>{{ session ? '乐趣生活用户' : '欢迎来到乐趣生活' }}</text
+          ><text>{{ session ? `消费者账户 ${accountLabel}` : '登录后管理订单、权益与售后' }}</text
+          ><text>{{
+            session ? `身份等级 ${session.identity.authLevel}` : '个人信息与凭证安全保存'
+          }}</text></view
+        >
+        <text class="account-state">{{ session ? '已登录' : '未登录' }}</text>
+      </view>
+      <view class="account-overview">
+        <view
+          ><text>{{ orders.length }}</text
+          ><text>最近订单</text></view
+        >
+        <view
+          ><text>{{ entitlements.length }}</text
+          ><text>待使用券</text></view
+        >
+        <view
+          ><text>{{ rewards.length }}</text
+          ><text>奖励记录</text></view
+        >
+        <view
+          ><text>{{ addresses.length }}</text
+          ><text>配送地址</text></view
+        >
+      </view>
+    </template>
+    <view class="service-grid">
+      <button @click="uni.navigateTo({ url: '/pages/page-237/index' })">
+        <text>订单服务</text><text>查看履约进度</text>
+      </button>
+      <button @click="uni.navigateTo({ url: '/pages/page-239/index' })">
+        <text>售后退款</text><text>按订单申请</text>
+      </button>
+      <button @click="uni.navigateTo({ url: '/pages/page-252/index' })">
+        <text>消费奖励</text><text>独立账本</text>
+      </button>
+      <button @click="uni.navigateTo({ url: '/pages/page-254/index' })">
+        <text>隐私授权</text><text>查看与撤回</text>
+      </button>
+    </view>
+    <view class="section">
       <view class="section-head"
         ><text>登录状态</text><text>{{ session ? '已登录' : '未登录' }}</text></view
       >
@@ -582,6 +629,116 @@ async function requestUnshippedRefund() {
   >
 </template>
 <style scoped>
+.account-hero {
+  display: flex;
+  min-height: 206rpx;
+  margin: 8rpx 20rpx 0;
+  padding: 30rpx;
+  border-radius: var(--life-radius-lg);
+  align-items: center;
+  gap: 20rpx;
+  color: var(--life-paper);
+  background: linear-gradient(135deg, var(--life-brand-deep), var(--life-brand));
+  box-shadow: var(--life-shadow);
+  box-sizing: border-box;
+}
+.account-avatar {
+  display: flex;
+  width: 104rpx;
+  height: 104rpx;
+  border: 6rpx solid rgba(255, 255, 255, 0.32);
+  border-radius: 50%;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  background: var(--life-yellow);
+  color: #7b4f00;
+  font-size: 42rpx;
+  font-weight: 900;
+}
+.account-identity {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+}
+.account-identity text:first-child {
+  font-size: 30rpx;
+  font-weight: 900;
+}
+.account-identity text:nth-child(2) {
+  margin-top: 8rpx;
+  overflow: hidden;
+  font-size: 18rpx;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.account-identity text:last-child {
+  margin-top: 7rpx;
+  font-size: 16rpx;
+  opacity: 0.86;
+}
+.account-state {
+  align-self: flex-start;
+  padding: 7rpx 12rpx;
+  border-radius: 999rpx;
+  background: rgba(255, 255, 255, 0.18);
+  font-size: 16rpx;
+}
+.account-overview {
+  display: grid;
+  margin: 18rpx 20rpx 0;
+  padding: 20rpx 12rpx;
+  border-radius: var(--life-radius-lg);
+  grid-template-columns: repeat(4, 1fr);
+  background: var(--life-paper);
+  box-shadow: var(--life-shadow-soft);
+}
+.account-overview > view {
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+  border-right: 1rpx solid var(--life-line);
+}
+.account-overview > view:last-child {
+  border-right: 0;
+}
+.account-overview text:first-child {
+  color: var(--life-brand-deep);
+  font-size: 30rpx;
+  font-weight: 900;
+}
+.account-overview text:last-child {
+  margin-top: 6rpx;
+  color: var(--life-muted);
+  font-size: 15rpx;
+}
+.service-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 14rpx;
+}
+.service-grid button {
+  display: flex;
+  min-height: 114rpx;
+  margin: 0;
+  padding: 18rpx 22rpx;
+  border-radius: var(--life-radius-md);
+  justify-content: center;
+  flex-direction: column;
+  background: var(--life-paper);
+  box-shadow: var(--life-shadow-soft);
+  text-align: left;
+}
+.service-grid text:first-child {
+  font-size: 23rpx;
+  font-weight: 900;
+}
+.service-grid text:last-child {
+  margin-top: 5rpx;
+  color: var(--life-muted);
+  font-size: 16rpx;
+}
 .account-button {
   color: #fff;
   background: #076c50;

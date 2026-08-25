@@ -124,11 +124,29 @@ onShow(load);
 <template>
   <LifeSurface
     primary
+    :show-assurance="false"
     theme-color="green"
     eyebrow="分组结算"
     title="购物车"
     detail="优惠、配送、奖励与实付逐项算清"
-    ><view v-if="state === 'loading'" class="section empty-safe">正在重新校验价格与库存…</view>
+  >
+    <template #ambient>
+      <view class="cart-hero">
+        <view
+          ><text>购物车</text
+          ><text>{{ items.length ? `${cart.itemCount} 件待结算` : '把喜欢的好物装进来' }}</text
+          ><text>价格、库存与配送方式将在提交前再次核验</text></view
+        >
+        <view class="cart-basket"
+          ><text>🛒</text><text>¥{{ (total / 100).toFixed(2) }}</text></view
+        >
+      </view>
+    </template>
+    <view class="cart-trust"
+      ><text>✓ 库存实核</text><text>✓ 分组履约</text><text>✓ 服务端核价</text
+      ><text>✓ 售后有门</text></view
+    >
+    <view v-if="state === 'loading'" class="section empty-safe">正在重新校验价格与库存…</view>
     <view v-else-if="state === 'unauthenticated'" class="section empty-safe">登录后查看购物车</view>
     <view v-else-if="state === 'recoverable-error'" class="section empty-safe" @click="load"
       >加载失败，点此重试</view
@@ -138,8 +156,9 @@ onShow(load);
       ><view class="section-head"
         ><text>{{ group.storeName || '当前门店' }}</text
         ><text>{{ group.items.length }} 件商品</text></view
-      ><view v-for="item in group.items" :key="item.id" class="row-card"
-        ><image src="/static/life-product.webp" mode="aspectFill" /><view class="copy"
+      ><view v-for="(item, index) in group.items" :key="item.id" class="row-card"
+        ><view class="cart-photo" :style="{ '--sprite-x': `${(index % 4) * 33.333}%` }" /><view
+          class="copy"
           ><text>{{ item.productTitle }} × {{ item.quantity }}</text
           ><text>{{ item.available ? item.variantTitle : '商品或库存已变化' }}</text
           ><view class="cart-action"
@@ -209,6 +228,74 @@ onShow(load);
   >
 </template>
 <style scoped>
+.cart-hero {
+  display: flex;
+  min-height: 260rpx;
+  margin: 8rpx 20rpx 0;
+  padding: 34rpx;
+  border-radius: var(--life-radius-lg);
+  align-items: center;
+  justify-content: space-between;
+  color: var(--life-paper);
+  background: linear-gradient(135deg, var(--life-brand-deep), var(--life-brand));
+  box-shadow: var(--life-shadow);
+  box-sizing: border-box;
+}
+.cart-hero > view:first-child {
+  display: flex;
+  max-width: 68%;
+  flex-direction: column;
+}
+.cart-hero view:first-child text:first-child {
+  font-size: 44rpx;
+  font-weight: 900;
+}
+.cart-hero view:first-child text:nth-child(2) {
+  margin-top: 10rpx;
+  font-size: 25rpx;
+  font-weight: 800;
+}
+.cart-hero view:first-child text:last-child {
+  margin-top: 10rpx;
+  font-size: 17rpx;
+  opacity: 0.88;
+}
+.cart-basket {
+  display: flex;
+  width: 150rpx;
+  height: 150rpx;
+  border-radius: 50%;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  background: rgba(255, 255, 255, 0.16);
+}
+.cart-basket text:first-child {
+  font-size: 54rpx;
+}
+.cart-basket text:last-child {
+  margin-top: 6rpx;
+  font-size: 19rpx;
+  font-weight: 900;
+}
+.cart-trust {
+  display: flex;
+  min-height: 70rpx;
+  border-radius: 24rpx;
+  align-items: center;
+  justify-content: space-around;
+  color: var(--life-brand-deep);
+  background: var(--life-brand-soft);
+  font-size: 16rpx;
+}
+.cart-photo {
+  width: 174rpx;
+  height: 142rpx;
+  border-radius: 22rpx;
+  flex: none;
+  background: url('../../assets/v63-retail/product-sprite.webp') var(--sprite-x) 0 / 400% 200%
+    no-repeat;
+}
 .cart-action {
   display: flex;
   align-items: center;
