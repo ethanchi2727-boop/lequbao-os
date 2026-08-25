@@ -36,6 +36,7 @@ const messages = ref([]);
 const messageContents = reactive({});
 const messageDraft = ref('');
 const conversationFilter = ref('ALL');
+const showGuide = ref(false);
 let conversationRequestSequence = 0;
 const conversationFilters = Object.freeze([
   ['ALL', '全部'],
@@ -88,6 +89,22 @@ const visibleConversations = computed(() =>
   conversationFilter.value === 'ALL'
     ? records.value
     : records.value.filter((conversation) => conversation.status === conversationFilter.value),
+);
+const credentialSummary = computed(() => ({
+  count: records.value.length,
+  remaining: records.value.reduce((sum, item) => sum + Number(item.remainingUses || 0), 0),
+  available: records.value.filter((item) => Number(item.remainingUses || 0) > 0).length,
+}));
+const rewardSummary = computed(() =>
+  records.value.reduce(
+    (summary, item) => ({
+      original: summary.original + Number(item.originalAmountCents || 0),
+      redeemed: summary.redeemed + Number(item.redeemedAmountCents || 0),
+      reversed: summary.reversed + Number(item.reversedAmountCents || 0),
+      available: summary.available + Number(item.availableAmountCents || 0),
+    }),
+    { original: 0, redeemed: 0, reversed: 0, available: 0 },
+  ),
 );
 const money = (cents) => `¥${(Number(cents || 0) / 100).toFixed(2)}`;
 const senderLabel = (message) =>
@@ -517,6 +534,8 @@ onShow(load);
 
 <template>
   <LifeSurface
+    :compact="['242', '252'].includes(pageId)"
+    :show-assurance="!['242', '252'].includes(pageId)"
     :eyebrow="`PAGE-${pageId}`"
     :title="meta[0]"
     :detail="meta[1]"
@@ -534,7 +553,9 @@ onShow(load);
       >加载失败，点此重试</view
     >
     <view
-      v-else-if="state === 'empty' && !['248', '250', '258', '262', '264'].includes(pageId)"
+      v-else-if="
+        state === 'empty' && !['242', '248', '250', '252', '258', '262', '264'].includes(pageId)
+      "
       class="section empty-safe"
       >当前没有可展示的数据</view
     >
@@ -711,14 +732,47 @@ onShow(load);
         ><button size="mini" @click="openStore(store)">地图</button></view
       ></view
     >
-    <view v-if="['242', '243'].includes(pageId) && state === 'ready'" class="credential-grid"
+    <view v-if="pageId === '242' && ['ready', 'empty'].includes(state)" class="voucher-surface">
+      <view class="voucher-summary">
+        <text>我的待使用券</text>
+        <text>{{ credentialSummary.remaining }}<text> 次可核销</text></text>
+        <view>
+          <text>{{ credentialSummary.count }} 张券</text>
+          <text>{{ credentialSummary.available }} 张可用</text>
+          <text>状态实时同步</text>
+        </view>
+      </view>
+      <view class="voucher-guide">
+        <view
+          ><text>使用说明</text><text>适用门店、有效期和剩余次数均以服务端签发结果为准</text></view
+        >
+        <button size="mini" @click="showGuide = true">查看规则</button>
+      </view>
+      <view v-if="records.length" class="credential-grid"
+        ><view v-for="token in records" :key="token.entitlementId" class="credential-card"
+          ><view
+            ><view class="voucher-state"
+              ><text>{{ token.remainingUses > 0 ? '可使用' : '已用完' }}</text
+              ><text>{{ token.status }}</text></view
+            ><text>订单 {{ token.orderId }}</text
+            ><text
+              >剩余 {{ token.remainingUses }} 次 · {{ token.validUntil || '有效期未标注' }}</text
+            ></view
+          ><button size="mini" :disabled="token.remainingUses < 1" @click="copyToken(token)">
+            出示券码
+          </button></view
+        ></view
+      >
+      <view v-else class="voucher-empty"
+        ><text>当前没有待使用券</text
+        ><text>购买到店团购并由服务端确认支付后，可在这里查看核销凭证</text></view
+      >
+    </view>
+    <view v-if="pageId === '243' && state === 'ready'" class="credential-grid"
       ><view v-for="token in records" :key="token.entitlementId" class="credential-card"
         ><view
           ><text>订单 {{ token.orderId }}</text
-          ><text
-            >剩余 {{ token.remainingUses }} 次 · {{ token.status }} ·
-            {{ token.validUntil || '有效期未标注' }}</text
-          ></view
+          ><text>剩余 {{ token.remainingUses }} 次 · {{ token.status }}</text></view
         ><button size="mini" :disabled="token.remainingUses < 1" @click="copyToken(token)">
           复制
         </button></view
@@ -859,19 +913,51 @@ onShow(load);
         ><button class="primary" :loading="busy" @click="saveInvoice">保存抬头</button></view
       ></view
     >
-    <view v-if="pageId === '252' && state === 'ready'" class="ledger-grid"
-      ><view v-for="item in records" :key="item.id" class="ledger-card"
-        ><view
-          ><text>{{ item.ruleVersion || '消费奖励' }}</text
-          ><text
-            >原额 {{ money(item.originalAmountCents) }} · 已兑
-            {{ money(item.redeemedAmountCents) }} · 冲正 {{ money(item.reversedAmountCents) }}</text
+    <view v-if="pageId === '252' && ['ready', 'empty'].includes(state)" class="reward-surface">
+      <view class="reward-summary">
+        <text>当前可用消费奖励</text>
+        <text>{{ money(rewardSummary.available) }}</text>
+        <view>
+          <view
+            ><text>{{ money(rewardSummary.original) }}</text
+            ><text>累计原额</text></view
+          >
+          <view
+            ><text>{{ money(rewardSummary.redeemed) }}</text
+            ><text>累计兑付</text></view
+          >
+          <view
+            ><text>{{ money(rewardSummary.reversed) }}</text
+            ><text>累计冲正</text></view
+          >
+        </view>
+      </view>
+      <view class="reward-explain">
+        <view
+          ><text>金额如何理解</text
+          ><text>原额、兑付、冲正与当前可用额来自独立账本，不以页面自行计算代替</text></view
+        >
+        <button size="mini" @click="showGuide = true">说明</button>
+      </view>
+      <view v-if="records.length" class="ledger-grid"
+        ><view v-for="item in records" :key="item.id" class="ledger-card"
+          ><view
+            ><view class="ledger-title"
+              ><text>消费奖励</text><text>{{ item.ruleVersion || '规则版本未标注' }}</text></view
+            ><text
+              >原额 {{ money(item.originalAmountCents) }} · 已兑
+              {{ money(item.redeemedAmountCents) }} · 冲正
+              {{ money(item.reversedAmountCents) }}</text
+            ></view
+          ><view class="ledger-balance"
+            ><text>当前可用</text><text>{{ money(item.availableAmountCents) }}</text></view
           ></view
-        ><view class="ledger-balance"
-          ><text>当前可用</text><text>{{ money(item.availableAmountCents) }}</text></view
-        ></view
-      ></view
-    >
+        >
+      </view>
+      <view v-else class="voucher-empty"
+        ><text>暂无消费奖励明细</text><text>奖励记录产生后会按服务端账本状态展示在这里</text></view
+      >
+    </view>
     <view v-if="pageId === '259' && state === 'ready'" class="section card-list"
       ><view v-for="order in records" :key="order.id" class="row"
         ><view @click="go('238', { orderId: order.id })"
@@ -895,6 +981,67 @@ onShow(load);
       ></view
     >
     <text v-if="notice" class="notice section">{{ notice }}</text>
+    <view v-if="showGuide" class="guide-overlay" @click="showGuide = false">
+      <view class="guide-panel" @click.stop>
+        <view class="guide-heading"
+          ><text>{{ pageId === '242' ? '团购券使用规则' : '消费奖励说明' }}</text
+          ><button @click="showGuide = false">关闭</button></view
+        >
+        <template v-if="pageId === '242'">
+          <view class="guide-item"
+            ><text>1</text
+            ><view
+              ><text>何时可以使用</text
+              ><text
+                >仅当支付及凭证状态经服务端确认、剩余次数大于零且仍在有效期内时可使用。</text
+              ></view
+            ></view
+          >
+          <view class="guide-item"
+            ><text>2</text
+            ><view
+              ><text>在哪里使用</text
+              ><text
+                >券码只能在服务端记录的适用门店核销，不向无关门店或个人发送完整凭证。</text
+              ></view
+            ></view
+          >
+          <view class="guide-item"
+            ><text>3</text
+            ><view
+              ><text>退款与失效</text
+              ><text
+                >退款、撤销或过期后的状态以订单和核销服务端结果为准，页面不会保留虚假的可用状态。</text
+              ></view
+            ></view
+          >
+        </template>
+        <template v-else>
+          <view class="guide-item"
+            ><text>1</text
+            ><view
+              ><text>原额</text
+              ><text>奖励产生时记录的原始金额，保留对应规则版本和业务来源。</text></view
+            ></view
+          >
+          <view class="guide-item"
+            ><text>2</text
+            ><view
+              ><text>兑付与冲正</text
+              ><text>已经使用的金额单独记为兑付；退款或异常产生的反向金额单独记为冲正。</text></view
+            ></view
+          >
+          <view class="guide-item"
+            ><text>3</text
+            ><view
+              ><text>当前可用</text
+              ><text>以服务端独立账本返回的可用额为准，客户端不根据展示字段重新推算。</text></view
+            ></view
+          >
+        </template>
+        <button class="guide-confirm" @click="showGuide = false">我知道了</button>
+      </view>
+    </view>
   </LifeSurface>
 </template>
 
@@ -1115,6 +1262,221 @@ onShow(load);
   display: grid;
   margin-top: 20rpx;
   gap: 14rpx;
+}
+.voucher-surface,
+.reward-surface {
+  display: grid;
+  margin-top: 20rpx;
+  gap: 18rpx;
+}
+.voucher-summary,
+.reward-summary {
+  padding: 32rpx;
+  border-radius: var(--life-radius-lg);
+  color: var(--life-paper);
+  background: linear-gradient(135deg, var(--life-coral), var(--life-red));
+  box-shadow: var(--life-shadow);
+}
+.reward-summary {
+  background: linear-gradient(135deg, var(--life-brand), var(--life-brand-deep));
+}
+.voucher-summary > text:first-child,
+.reward-summary > text:first-child {
+  display: block;
+  font-size: 21rpx;
+  opacity: 0.86;
+}
+.voucher-summary > text:nth-child(2),
+.reward-summary > text:nth-child(2) {
+  display: block;
+  margin: 8rpx 0 24rpx;
+  font-size: 52rpx;
+  font-weight: 900;
+}
+.voucher-summary > text:nth-child(2) text {
+  font-size: 21rpx;
+}
+.voucher-summary > view,
+.reward-summary > view {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10rpx;
+}
+.voucher-summary > view > text,
+.reward-summary > view > view {
+  padding: 14rpx 8rpx;
+  border-radius: 16rpx;
+  background: var(--life-glass);
+  font-size: 18rpx;
+  text-align: center;
+}
+.reward-summary > view > view {
+  display: flex;
+  flex-direction: column;
+  gap: 4rpx;
+}
+.reward-summary > view view text:first-child {
+  font-size: 22rpx;
+  font-weight: 900;
+}
+.reward-summary > view view text:last-child {
+  font-size: 15rpx;
+  opacity: 0.8;
+}
+.voucher-guide,
+.reward-explain {
+  display: flex;
+  padding: 22rpx;
+  border: 1rpx solid var(--life-line);
+  border-radius: var(--life-radius-md);
+  align-items: center;
+  gap: 18rpx;
+  background: var(--life-paper);
+  box-shadow: var(--life-shadow-card);
+}
+.voucher-guide > view,
+.reward-explain > view {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: 6rpx;
+}
+.voucher-guide view text:first-child,
+.reward-explain view text:first-child {
+  font-size: 23rpx;
+  font-weight: 900;
+}
+.voucher-guide view text:last-child,
+.reward-explain view text:last-child {
+  color: var(--life-muted);
+  font-size: 17rpx;
+  line-height: 1.5;
+}
+.voucher-guide button,
+.reward-explain button {
+  margin: 0;
+  border-radius: 999rpx;
+  color: var(--life-brand-deep);
+  background: var(--life-brand-soft);
+  font-size: 17rpx;
+}
+.voucher-state,
+.ledger-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12rpx;
+}
+.voucher-state text,
+.ledger-title text:last-child {
+  padding: 5rpx 10rpx;
+  border-radius: 999rpx;
+  color: var(--life-brand-deep);
+  background: var(--life-brand-soft);
+  font-size: 15rpx;
+  font-weight: 800;
+}
+.voucher-state text:last-child {
+  color: var(--life-muted);
+  background: var(--life-bg);
+}
+.voucher-empty {
+  display: flex;
+  min-height: 220rpx;
+  padding: 30rpx;
+  border: 2rpx dashed var(--life-line);
+  border-radius: var(--life-radius-md);
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 12rpx;
+  color: var(--life-muted);
+  background: var(--life-paper);
+  text-align: center;
+}
+.voucher-empty text:first-child {
+  color: var(--life-ink);
+  font-size: 25rpx;
+  font-weight: 900;
+}
+.voucher-empty text:last-child {
+  font-size: 18rpx;
+  line-height: 1.6;
+}
+.guide-overlay {
+  position: fixed;
+  z-index: 80;
+  inset: 0;
+  display: flex;
+  align-items: flex-end;
+  background: var(--life-overlay);
+}
+.guide-panel {
+  width: 100%;
+  padding: 30rpx 28rpx calc(30rpx + env(safe-area-inset-bottom));
+  border-radius: 38rpx 38rpx 0 0;
+  background: var(--life-paper);
+  box-sizing: border-box;
+}
+.guide-heading {
+  display: flex;
+  margin-bottom: 20rpx;
+  align-items: center;
+  justify-content: space-between;
+}
+.guide-heading > text {
+  font-size: 31rpx;
+  font-weight: 900;
+}
+.guide-heading button {
+  width: auto;
+  margin: 0;
+  border-radius: 999rpx;
+  color: var(--life-muted);
+  background: var(--life-bg);
+  font-size: 17rpx;
+}
+.guide-item {
+  display: grid;
+  padding: 20rpx 0;
+  border-bottom: 1rpx solid var(--life-line);
+  grid-template-columns: 46rpx 1fr;
+  gap: 16rpx;
+}
+.guide-item > text {
+  display: flex;
+  width: 42rpx;
+  height: 42rpx;
+  border-radius: 50%;
+  align-items: center;
+  justify-content: center;
+  color: var(--life-paper);
+  background: var(--life-brand);
+  font-size: 18rpx;
+  font-weight: 900;
+}
+.guide-item > view {
+  display: flex;
+  flex-direction: column;
+  gap: 7rpx;
+}
+.guide-item view text:first-child {
+  font-size: 23rpx;
+  font-weight: 900;
+}
+.guide-item view text:last-child {
+  color: var(--life-muted);
+  font-size: 19rpx;
+  line-height: 1.65;
+}
+.guide-confirm {
+  margin-top: 26rpx;
+  border-radius: 999rpx;
+  color: var(--life-paper);
+  background: var(--life-brand);
+  font-size: 23rpx;
+  font-weight: 900;
 }
 .credential-card {
   display: flex;

@@ -16,6 +16,21 @@ const state = computed(() =>
     records: product.value ? [product.value] : [],
   }),
 );
+const preferredVariant = computed(() => product.value?.variants?.find((item) => item.available));
+const discountPercent = computed(() => {
+  const sale = Number(product.value?.salePriceCents || 0);
+  const market = Number(product.value?.marketPriceCents || 0);
+  return market > sale && sale > 0 ? Math.round((1 - sale / market) * 100) : 0;
+});
+const serviceLabel = computed(
+  () =>
+    ({
+      PHYSICAL: '配送商品',
+      SERVICE: '到店服务',
+      GROUP_BUY: '到店核销',
+      DIGITAL_SUPPLY: '数字交付',
+    })[product.value?.productType] || '在售商品',
+);
 
 async function load() {
   if (!productId.value) return;
@@ -39,7 +54,7 @@ function openPage(page) {
 }
 
 async function addPreferred() {
-  const variant = product.value?.variants?.find((item) => item.available);
+  const variant = preferredVariant.value;
   if (!variant) return uni.showToast({ title: '当前没有可售规格', icon: 'none' });
   try {
     await lifeSession.request('/api/v1/life/cart/items', {
@@ -65,6 +80,8 @@ onLoad((options) => {
 
 <template>
   <LifeSurface
+    compact
+    :show-assurance="false"
     eyebrow="PAGE-209 · 商品详情"
     :title="product?.title || '商品详情'"
     detail="价格、规格和库存均由服务端实时确认"
@@ -81,27 +98,45 @@ onLoad((options) => {
     <view v-else-if="state === 'empty'" class="section empty-safe">商品不存在或已经下架</view>
     <template v-else>
       <view class="product-image">
+        <text v-if="discountPercent" class="discount-label">省 {{ discountPercent }}%</text>
+        <text class="image-count">1 / 1</text>
         <view class="product-status">{{
           product.availableQuantity > 0 ? `库存 ${product.availableQuantity}` : '暂时售罄'
         }}</view>
       </view>
       <view class="section product-main">
-        <text class="price">¥{{ (product.salePriceCents / 100).toFixed(2) }}</text>
+        <view class="price-line">
+          <text class="price"><text>¥</text>{{ (product.salePriceCents / 100).toFixed(2) }}</text>
+          <text
+            v-if="Number(product.marketPriceCents) > Number(product.salePriceCents)"
+            class="market-price"
+            >¥{{ (product.marketPriceCents / 100).toFixed(2) }}</text
+          >
+          <text v-if="discountPercent" class="saving">已省 {{ discountPercent }}%</text>
+        </view>
         <text class="product-title">{{ product.title }}</text>
-        <text>{{ product.storeName }} · 商品版本 {{ product.version }}</text>
+        <text>{{ product.storeName }} · 信息更新于 {{ product.updatedAt.slice(0, 10) }}</text>
         <view class="chips"
-          ><text class="chip">{{ product.productType }}</text
-          ><text class="chip">{{ product.variants.length }} 个有效规格</text></view
+          ><text class="chip">{{ serviceLabel }}</text
+          ><text class="chip">{{ product.variants.length }} 个有效规格</text
+          ><text class="chip"
+            >库存
+            {{ product.variants.reduce((sum, item) => sum + item.availableQuantity, 0) }}</text
+          ></view
         >
       </view>
       <view class="service-strip"
         ><text>✓ 当前在售</text><text>✓ 库存实核</text><text>✓ 售后有门</text></view
       >
       <button class="detail-link" @click="openPage('210')">
-        <text>选择规格</text><text>查看库存与价格 ›</text>
+        <view
+          ><text>已选</text><text>{{ preferredVariant?.title || '请选择规格' }}</text></view
+        >
+        <text>共 {{ product.variants.length }} 种 ›</text>
       </button>
       <button class="detail-link" @click="openPage('211')">
-        <text>溯源报告</text><text>仅展示已核验证据 ›</text>
+        <view><text>来源保障</text><text>查看商品证据与核验记录</text></view>
+        <text>查看 ›</text>
       </button>
       <view class="purchase-spacer" />
       <view class="purchase-actions">
@@ -124,6 +159,25 @@ onLoad((options) => {
   background: url('../../assets/v63-retail/product-sprite.webp') 0 0 / 400% 200% no-repeat;
   box-shadow: var(--life-shadow-soft);
 }
+.discount-label,
+.image-count {
+  position: absolute;
+  padding: 8rpx 14rpx;
+  border-radius: 999rpx;
+  color: var(--life-paper);
+  font-size: 17rpx;
+  font-weight: 900;
+}
+.discount-label {
+  top: 20rpx;
+  left: 20rpx;
+  background: var(--life-red);
+}
+.image-count {
+  right: 20rpx;
+  bottom: 20rpx;
+  background: var(--life-overlay);
+}
 .product-status {
   position: absolute;
   left: 22rpx;
@@ -139,6 +193,30 @@ onLoad((options) => {
   display: flex;
   flex-direction: column;
   gap: 14rpx;
+}
+.price-line {
+  display: flex;
+  align-items: baseline;
+  gap: 12rpx;
+}
+.price-line .price {
+  font-size: 46rpx;
+}
+.price-line .price > text {
+  font-size: 25rpx;
+}
+.market-price {
+  color: var(--life-muted);
+  font-size: 20rpx;
+  text-decoration: line-through;
+}
+.saving {
+  padding: 5rpx 10rpx;
+  border-radius: 999rpx;
+  color: var(--life-red);
+  background: var(--life-coral-soft);
+  font-size: 16rpx;
+  font-weight: 900;
 }
 .product-title {
   font-size: 36rpx;
@@ -159,11 +237,23 @@ onLoad((options) => {
   box-shadow: var(--life-shadow-soft);
   font-size: 23rpx;
 }
-.detail-link text:first-child {
+.detail-link > view {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6rpx;
+}
+.detail-link view text:first-child {
   font-weight: 900;
 }
-.detail-link text:last-child {
-  color: #076c50;
+.detail-link view text:last-child {
+  color: var(--life-muted);
+  font-size: 18rpx;
+}
+.detail-link > text:last-child {
+  color: var(--life-brand-deep);
+  font-size: 19rpx;
 }
 .purchase-actions {
   position: fixed;

@@ -10,6 +10,7 @@ const props = defineProps({
   detail: String,
   city: { type: String, default: '选择城市' },
   primary: { type: Boolean, default: false },
+  compact: { type: Boolean, default: false },
   showAssurance: { type: Boolean, default: true },
   themeColor: { type: String, default: 'green' },
 });
@@ -32,7 +33,7 @@ const themeStyle = computed(() => lifeBannerThemeStyle(props.themeColor));
       <view v-if="lifeRuntimeProfile.previewData" class="preview-note"
         ><text>开发预览数据</text><text>正式交易接入前不会产生订单或资金变动</text></view
       >
-      <view v-if="!primary" class="hero"
+      <view v-if="!primary" class="hero" :class="{ 'hero-compact': compact }"
         ><text>{{ eyebrow }}</text
         ><text class="title">{{ title }}</text
         ><text>{{ detail }}</text></view
@@ -99,6 +100,15 @@ const themeStyle = computed(() => lifeBannerThemeStyle(props.themeColor));
   color: var(--life-paper);
   background: linear-gradient(135deg, var(--tone-top), var(--tone-mid));
   box-shadow: var(--life-shadow);
+}
+.hero-compact {
+  min-height: 168rpx;
+  padding: 28rpx 30rpx;
+  border-radius: var(--life-radius-md);
+}
+.hero-compact .title {
+  margin: 8rpx 0 6rpx;
+  font-size: 36rpx;
 }
 .title {
   margin: 18rpx 0 12rpx;

@@ -31,8 +31,13 @@ page {
   --life-ink: #18231f;
   --life-muted: #7b8883;
   --life-line: #e8ecea;
+  --life-wash: #f8faf9;
+  --life-overlay: rgba(24, 35, 31, 0.46);
+  --life-glass: rgba(255, 255, 255, 0.2);
   --life-shadow: 0 16rpx 52rpx rgba(31, 68, 54, 0.1);
   --life-shadow-soft: 0 8rpx 30rpx rgba(31, 68, 54, 0.07);
+  --life-shadow-card: 0 5rpx 18rpx rgba(31, 68, 54, 0.08);
+  --life-shadow-float: 0 10rpx 24rpx rgba(10, 167, 109, 0.28);
   --life-radius-xl: 48rpx;
   --life-radius-lg: 36rpx;
   --life-radius-md: 28rpx;
