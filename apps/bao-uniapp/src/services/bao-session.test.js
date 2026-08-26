@@ -47,6 +47,32 @@ describe('bao employee session client', () => {
     );
   });
 
+  it('exchanges a phone OTP assertion and persists the issued employee session', async () => {
+    const storage = storageFixture();
+    const transport = { request: vi.fn().mockResolvedValue({ statusCode: 200, data: session() }) };
+    const client = createBaoSessionClient({ transport, storage, apiBase: '' });
+    await client.loginWithPhone('development-mock-assertion-for-local-workspace');
+    expect(transport.request).toHaveBeenCalledWith(
+      expect.objectContaining({
+        url: '/api/v1/auth/sessions/exchange',
+        method: 'POST',
+        data: expect.objectContaining({
+          provider: 'PHONE_OTP',
+          assertion: 'development-mock-assertion-for-local-workspace',
+        }),
+      }),
+    );
+    expect(client.load()).toEqual(session());
+  });
+
+  it('rejects phone login assertions shorter than eight characters', async () => {
+    const storage = storageFixture();
+    const transport = { request: vi.fn() };
+    const client = createBaoSessionClient({ transport, storage, apiBase: '' });
+    await expect(client.loginWithPhone('short')).rejects.toThrow();
+    expect(transport.request).not.toHaveBeenCalled();
+  });
+
   it('refreshes once after 401 with the current employee scope', async () => {
     const storage = storageFixture({ 'lequ.bao.employee.session.v1': session() });
     const transport = {

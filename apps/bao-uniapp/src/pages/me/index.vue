@@ -3,7 +3,7 @@ import { ref } from 'vue';
 import { onShow } from '@dcloudio/uni-app';
 import BaoSurface from '../../components/BaoSurface.vue';
 import BaoTaskDirectory from '../../components/BaoTaskDirectory.vue';
-import { baoRuntimeProfile, baoSession } from '../../services/bao-session.js';
+import { baoSession } from '../../services/bao-session.js';
 
 const session = ref(null);
 const context = ref(null);
@@ -24,20 +24,8 @@ async function loadContext() {
   }
 }
 
-async function login() {
-  busy.value = true;
-  message.value = '';
-  try {
-    session.value = baoRuntimeProfile.developmentMocks
-      ? await baoSession.exchange('development-preview-bao-employee-v1')
-      : await baoSession.loginWithWecom();
-    await loadContext();
-    message.value = '员工身份登录成功';
-  } catch {
-    message.value = '企业身份登录失败，请稍后重试';
-  } finally {
-    busy.value = false;
-  }
+function gotoPhoneLogin() {
+  uni.reLaunch({ url: '/pages/login/index' });
 }
 
 async function logout() {
@@ -102,7 +90,9 @@ onShow(loadContext);
         <button v-if="context" class="m-primary" :loading="busy" @click="logout">
           退出工作会话
         </button>
-        <button v-else class="m-primary" :loading="busy" @click="login">企业微信安全登录</button>
+        <button v-else class="m-primary" :loading="busy" @click="gotoPhoneLogin">
+          手机一键登录
+        </button>
         <text v-if="message" class="session-note">{{ message }}</text>
       </view>
     </view>

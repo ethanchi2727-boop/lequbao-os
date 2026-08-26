@@ -1,5 +1,18 @@
 <script>
-export default { onLaunch() {} };
+import { baoSession } from './services/bao-session.js';
+
+export default {
+  onLaunch() {
+    if (typeof uni === 'undefined') return;
+    const pages = typeof getCurrentPages === 'function' ? getCurrentPages() : [];
+    const current = pages[pages.length - 1];
+    const route = current?.route ?? '';
+    if (route === 'pages/login/index') return;
+    if (!baoSession.load()) {
+      uni.reLaunch({ url: '/pages/login/index' });
+    }
+  },
+};
 </script>
 
 <style>
@@ -356,6 +369,26 @@ button::after {
   color: var(--bao-mobile-ink-500);
   text-align: center;
   font-size: 18rpx;
+}
+.session-note.failed {
+  color: var(--bao-mobile-danger-500);
+}
+.login-checkbox {
+  display: grid;
+  width: 36rpx;
+  height: 36rpx;
+  margin-top: 4rpx;
+  place-items: center;
+  border: 1rpx solid var(--bao-mobile-line-strong);
+  border-radius: var(--bao-mobile-radius-small);
+  color: var(--bao-mobile-paper);
+  background: var(--bao-mobile-ink-100);
+  font-size: 22rpx;
+  font-weight: 900;
+}
+.login-checkbox.checked {
+  border: 0;
+  background: var(--bao-mobile-gradient-brand);
 }
 .guardrail {
   display: flex;

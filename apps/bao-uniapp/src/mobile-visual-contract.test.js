@@ -11,6 +11,7 @@ const vueFiles = [
   'pages/service/index.vue',
   'pages/me/index.vue',
   'pages/detail/index.vue',
+  'pages/login/index.vue',
 ];
 
 async function sources() {

@@ -3,18 +3,17 @@ import { ref } from 'vue';
 import { onShow } from '@dcloudio/uni-app';
 import BaoSurface from '../../components/BaoSurface.vue';
 import BaoTaskDirectory from '../../components/BaoTaskDirectory.vue';
-import { baoRuntimeProfile, baoSession } from '../../services/bao-session.js';
+import { baoSession } from '../../services/bao-session.js';
 
 const loading = ref(false);
 const error = ref(false);
 const today = ref(null);
 
 async function load() {
+  if (!baoSession.load()) return;
   loading.value = true;
   error.value = false;
   try {
-    if (!baoSession.load() && baoRuntimeProfile.developmentMocks)
-      await baoSession.exchange('development-preview-bao-employee-v1');
     today.value = await baoSession.request('/api/v1/operational-home/today');
   } catch {
     error.value = true;
@@ -36,7 +35,7 @@ function openTodo(todo) {
 }
 
 function openLogin() {
-  uni.switchTab({ url: '/pages/me/index' });
+  uni.reLaunch({ url: '/pages/login/index' });
 }
 
 onShow(load);
@@ -82,7 +81,7 @@ onShow(load);
       <button v-if="today?.todos.length" class="agent-action" @click="openTodo(today.todos[0])">
         打开第一项确认　›
       </button>
-      <button v-else-if="error" class="agent-action" @click="openLogin">员工身份安全登录　›</button>
+      <button v-else-if="error" class="agent-action" @click="openLogin">手机一键登录　›</button>
       <button v-else class="agent-action" disabled>正在连接服务端…</button>
     </view>
 

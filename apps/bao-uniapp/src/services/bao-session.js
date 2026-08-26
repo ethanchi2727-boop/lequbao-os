@@ -117,6 +117,17 @@ export function createBaoSessionClient({
       });
     }
   }
+  async function loginWithPhone(assertion) {
+    if (typeof assertion !== 'string' || assertion.length < 8)
+      throw responseError({ statusCode: 400, data: { code: 'PHONE_OTP_ASSERTION_REQUIRED' } });
+    return save(
+      await raw({
+        url: apiUrl('/api/v1/auth/sessions/exchange'),
+        method: 'POST',
+        data: { provider: 'PHONE_OTP', assertion, deviceId: deviceId(storage) },
+      }),
+    );
+  }
   async function loginWithWecom() {
     const result = await transport.login({ provider: 'weixin' });
     if (!result?.code) throw new Error('WECOM_LOGIN_UNAVAILABLE');
@@ -133,7 +144,17 @@ export function createBaoSessionClient({
       clear();
     }
   }
-  return { load, clear, exchange, refresh, switchTenant, request, loginWithWecom, logout };
+  return {
+    load,
+    clear,
+    exchange,
+    refresh,
+    switchTenant,
+    request,
+    loginWithPhone,
+    loginWithWecom,
+    logout,
+  };
 }
 
 export const baoSession = createBaoSessionClient();

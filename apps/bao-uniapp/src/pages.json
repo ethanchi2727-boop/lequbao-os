@@ -5,7 +5,8 @@
     { "path": "pages/orders/index", "style": { "navigationStyle": "custom" } },
     { "path": "pages/service/index", "style": { "navigationStyle": "custom" } },
     { "path": "pages/me/index", "style": { "navigationStyle": "custom" } },
-    { "path": "pages/detail/index", "style": { "navigationStyle": "custom" } }
+    { "path": "pages/detail/index", "style": { "navigationStyle": "custom" } },
+    { "path": "pages/login/index", "style": { "navigationStyle": "custom" } }
   ],
   "tabBar": {
     "color": "#8C9A95",
