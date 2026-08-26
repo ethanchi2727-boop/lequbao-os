@@ -1,6 +1,8 @@
 packages:
   - apps/*
   - packages/*
+  - runtime/harness-adapter
+  - runtime/tool-gateway
 
 nodeLinker: hoisted
 

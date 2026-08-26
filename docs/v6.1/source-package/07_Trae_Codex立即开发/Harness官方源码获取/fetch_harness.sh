@@ -2,7 +2,7 @@
 set -euo pipefail
 
 repo_url="https://github.com/deepseek-ai/deepseek-harness.git"
-locked_commit="47f943859bef60e4160492346772ded9b24f765a"
+locked_commit="b150a551b8d465e31e418e1b2eaf5e79bbb7d28e"
 target_dir="runtime/deepseek-harness-official"
 
 if [[ -e "$target_dir" ]]; then

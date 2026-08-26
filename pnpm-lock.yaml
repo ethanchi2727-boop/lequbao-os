@@ -55,6 +55,12 @@ importers:
       '@lequ/contracts':
         specifier: workspace:*
         version: link:../../packages/contracts
+      '@lequ/harness-adapter':
+        specifier: workspace:*
+        version: link:../../runtime/harness-adapter
+      '@lequ/tool-gateway':
+        specifier: workspace:*
+        version: link:../../runtime/tool-gateway
       fastify:
         specifier: 5.12.0
         version: 5.12.0
@@ -68,6 +74,9 @@ importers:
         specifier: 4.4.3
         version: 4.4.3
     devDependencies:
+      '@types/node':
+        specifier: 26.2.0
+        version: 26.2.0
       '@types/pg':
         specifier: 8.21.0
         version: 8.21.0
@@ -161,6 +170,32 @@ importers:
       zod:
         specifier: 4.4.3
         version: 4.4.3
+
+  runtime/harness-adapter:
+    dependencies:
+      '@lequ/contracts':
+        specifier: workspace:*
+        version: link:../../packages/contracts
+      zod:
+        specifier: 4.4.3
+        version: 4.4.3
+    devDependencies:
+      '@types/node':
+        specifier: 26.2.0
+        version: 26.2.0
+
+  runtime/tool-gateway:
+    dependencies:
+      '@lequ/contracts':
+        specifier: workspace:*
+        version: link:../../packages/contracts
+      zod:
+        specifier: 4.4.3
+        version: 4.4.3
+    devDependencies:
+      '@types/node':
+        specifier: 26.2.0
+        version: 26.2.0
 
 packages:
 

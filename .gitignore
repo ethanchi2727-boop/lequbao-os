@@ -22,6 +22,8 @@ yarn-error.log*
 .env.local
 .env.*.local
 .devcontainer/runtime/
+# Harness 官方源码由 fetch_harness.sh 拉取，不入库（SOURCE_REFERENCE.json source_included=false）
+runtime/deepseek-harness-official/
 !.env.test
 !.env.example
 apps/api/data/*.sqlite

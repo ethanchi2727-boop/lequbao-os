@@ -22,6 +22,7 @@ import {
   createHttpCustomerServiceModelGateway,
   createHttpCustomerServiceNotificationDispatcher,
 } from './customer-service-http-adapters.js';
+import { createHarnessCustomerServiceModelGateway } from './customer-service-ai-harness.js';
 import { createCustomerService } from './customer-service.js';
 import { createHttpCommerceAdapters } from './commerce-http-adapters.js';
 import { createCommerceOrderService } from './commerce-order-service.js';
@@ -86,6 +87,13 @@ import {
 } from './wecom-intake-callback.js';
 import { createHttpWeComConfigResolver } from './wecom-intake-http-adapter.js';
 import { validateApiRuntimeConfiguration } from './runtime-configuration.js';
+import {
+  HarnessAdapter,
+  RemoteHarnessBackend,
+  InMemoryHarnessEventSink,
+  InMemoryHarnessBudgetLedger,
+  InMemoryHarnessCheckpointStore,
+} from '@lequ/harness-adapter';
 
 validateApiRuntimeConfiguration(process.env);
 
@@ -217,6 +225,19 @@ const customerServiceGateways = {
   businessUrl: process.env.CUSTOMER_SERVICE_BUSINESS_TOOLS_URL,
   businessToken: process.env.CUSTOMER_SERVICE_BUSINESS_TOOLS_TOKEN,
 };
+// DeepSeek Harness endpoint（如 http://127.0.0.1:2345）。设置后客服 AI 模型调用
+// 走 Harness Adapter；不设置则保持原 HTTP 直连模型网关路径。
+// Harness runtime 不可达时 Adapter 抛 HarnessBackendUnavailableError，编排器自动
+// retry/handoff，普通客服、支付、核销不受影响。
+const deepseekHarnessEndpoint = process.env.DEEPSEEK_HARNESS_ENDPOINT;
+const harnessAdapter = deepseekHarnessEndpoint
+  ? new HarnessAdapter({
+      backend: new RemoteHarnessBackend({ endpoint: deepseekHarnessEndpoint }),
+      events: new InMemoryHarnessEventSink(),
+      budget: new InMemoryHarnessBudgetLedger(),
+      checkpoints: new InMemoryHarnessCheckpointStore(),
+    })
+  : undefined;
 const customerServiceAi = Object.values(customerServiceGateways).every(Boolean)
   ? createCustomerServiceAiOrchestrator({
       pool,
@@ -226,10 +247,16 @@ const customerServiceAi = Object.values(customerServiceGateways).every(Boolean)
         baseUrl: customerServiceGateways.knowledgeUrl!,
         serviceToken: customerServiceGateways.knowledgeToken!,
       }),
-      model: createHttpCustomerServiceModelGateway({
-        baseUrl: customerServiceGateways.modelUrl!,
-        serviceToken: customerServiceGateways.modelToken!,
-      }),
+      model:
+        harnessAdapter !== undefined
+          ? createHarnessCustomerServiceModelGateway({
+              adapter: harnessAdapter,
+              promptVersion: 'customer-service-grounded-v1',
+            })
+          : createHttpCustomerServiceModelGateway({
+              baseUrl: customerServiceGateways.modelUrl!,
+              serviceToken: customerServiceGateways.modelToken!,
+            }),
       tools: createHttpCustomerServiceBusinessToolGateway({
         baseUrl: customerServiceGateways.businessUrl!,
         serviceToken: customerServiceGateways.businessToken!,
