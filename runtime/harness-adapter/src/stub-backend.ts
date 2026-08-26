@@ -26,9 +26,14 @@ export class StubHarnessBackend implements HarnessBackend {
     this.modelRoutingVersion = modelRoutingVersion;
   }
 
-  async initialize(input: {
+  async initialize(_input: {
     cwd: string;
-    modelStrategy: { routingKey: string; visionEnabled: boolean; maxTokens: number; temperatureCenti: number };
+    modelStrategy: {
+      routingKey: string;
+      visionEnabled: boolean;
+      maxTokens: number;
+      temperatureCenti: number;
+    };
     availableTools: readonly string[];
   }): Promise<{ harnessRunId: string; modelRoutingVersion: string }> {
     const harnessRunId = `stub-run-${++stubRunCounter}`;
@@ -64,7 +69,10 @@ export class StubHarnessBackend implements HarnessBackend {
     }
   }
 
-  async cancelRun(input: { runId: string; reason: string }): Promise<{ cancelled: boolean; detail: string }> {
+  async cancelRun(input: {
+    runId: string;
+    reason: string;
+  }): Promise<{ cancelled: boolean; detail: string }> {
     this.cancelled.add(input.runId);
     return { cancelled: true, detail: input.reason };
   }
@@ -91,7 +99,10 @@ export class StubHarnessBackend implements HarnessBackend {
       commit: 'b150a551b8d465e31e418e1b2eaf5e79bbb7d28e',
       status: 'OK',
       queuedTasks: 0,
-      plugins: [{ name: 'goal', healthy: true }, { name: 'attachment', healthy: true }],
+      plugins: [
+        { name: 'goal', healthy: true },
+        { name: 'attachment', healthy: true },
+      ],
       modelRoutingVersion: this.modelRoutingVersion,
       dependencies: [{ name: 'llm-router', healthy: true, detail: 'stub' }],
     };
@@ -130,7 +141,11 @@ export class StubHarnessBackend implements HarnessBackend {
         ...base,
         {
           method: 'tool.requested',
-          params: { toolName: 'verify.merchant.profile', arguments: { merchantId: 'stub' }, idempotencyKey: `idem-${++stubRunCounter}` },
+          params: {
+            toolName: 'verify.merchant.profile',
+            arguments: { merchantId: 'stub' },
+            idempotencyKey: `idem-${++stubRunCounter}`,
+          },
         },
         {
           method: 'approval.requested',
@@ -141,7 +156,10 @@ export class StubHarnessBackend implements HarnessBackend {
             impacts: ['24 小时有效', '仅管理员可操作'],
           },
         },
-        { method: 'task.paused', params: { reason: '等待商家授权', checkpoint: { sequence: base.length } } },
+        {
+          method: 'task.paused',
+          params: { reason: '等待商家授权', checkpoint: { sequence: base.length } },
+        },
       ];
     }
     // AUTO
@@ -149,11 +167,18 @@ export class StubHarnessBackend implements HarnessBackend {
       ...base,
       {
         method: 'artifact.created',
-        params: { artifactId: `art-${++stubRunCounter}`, kind: 'verification_report', ref: 'stub://artifact/1' },
+        params: {
+          artifactId: `art-${++stubRunCounter}`,
+          kind: 'verification_report',
+          ref: 'stub://artifact/1',
+        },
       },
       {
         method: 'task.completed',
-        params: { finalSummary: '上线前核验已完成', artifacts: [{ artifactId: 'art-1', kind: 'verification_report' }] },
+        params: {
+          finalSummary: '上线前核验已完成',
+          artifacts: [{ artifactId: 'art-1', kind: 'verification_report' }],
+        },
       },
     ];
   }

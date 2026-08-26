@@ -123,13 +123,15 @@ export const HarnessCancelResultSchema = z.object({
 });
 export type HarnessCancelResult = z.infer<typeof HarnessCancelResultSchema>;
 
-export const HarnessSubscribeInputSchema = z.object({
-  sessionId: HarnessSessionIdSchema.optional(),
-  taskId: HarnessTaskIdSchema.optional(),
-  lastSequence: z.int().nonnegative().default(0),
-}).refine((value) => value.sessionId !== undefined || value.taskId !== undefined, {
-  message: 'subscribe 需要 sessionId 或 taskId 之一',
-});
+export const HarnessSubscribeInputSchema = z
+  .object({
+    sessionId: HarnessSessionIdSchema.optional(),
+    taskId: HarnessTaskIdSchema.optional(),
+    lastSequence: z.int().nonnegative().default(0),
+  })
+  .refine((value) => value.sessionId !== undefined || value.taskId !== undefined, {
+    message: 'subscribe 需要 sessionId 或 taskId 之一',
+  });
 export type HarnessSubscribeInput = z.infer<typeof HarnessSubscribeInputSchema>;
 
 export const HarnessHealthResultSchema = z.object({
@@ -140,7 +142,11 @@ export const HarnessHealthResultSchema = z.object({
   plugins: z.array(z.object({ name: z.string().min(1).max(120), healthy: z.boolean() })),
   modelRoutingVersion: z.string().min(1).max(40),
   dependencies: z.array(
-    z.object({ name: z.string().min(1).max(120), healthy: z.boolean(), detail: z.string().max(255) }),
+    z.object({
+      name: z.string().min(1).max(120),
+      healthy: z.boolean(),
+      detail: z.string().max(255),
+    }),
   ),
 });
 export type HarnessHealthResult = z.infer<typeof HarnessHealthResultSchema>;

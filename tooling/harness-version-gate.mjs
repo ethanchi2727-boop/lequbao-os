@@ -28,9 +28,7 @@ export async function verifyHarnessVersionGate() {
     );
   }
   if (sourceRef.tag !== 'dsh-v0.1.1-rc.2') {
-    failures.push(
-      `SOURCE_REFERENCE.json tag 偏离：期望 dsh-v0.1.1-rc.2，实际 ${sourceRef.tag}`,
-    );
+    failures.push(`SOURCE_REFERENCE.json tag 偏离：期望 dsh-v0.1.1-rc.2，实际 ${sourceRef.tag}`);
   }
   if (sourceRef.verified_at !== '2026-08-26') {
     failures.push(
@@ -93,10 +91,12 @@ export async function verifyHarnessVersionGate() {
   }
 
   const contractTest = await read('runtime/harness-adapter/src/adapter.contract.test.ts');
-  if (!contractTest.includes("expect(health.harnessCommit).toMatch(/^b150a551/)")) {
+  if (!contractTest.includes('expect(health.harnessCommit).toMatch(/^b150a551/)')) {
     failures.push('契约测试未断言 health.harnessCommit 以 b150a551 开头');
   }
-  if (!contractTest.includes('expect(health.modelRoutingVersion).toMatch(/^stub-v0\\.1\\.1-rc\\.2$/)')) {
+  if (
+    !contractTest.includes('expect(health.modelRoutingVersion).toMatch(/^stub-v0\\.1\\.1-rc\\.2$/)')
+  ) {
     failures.push('契约测试未断言 modelRoutingVersion 为 stub-v0.1.1-rc.2');
   }
   if (!contractTest.includes('expect(HARNESS_EVENT_TYPES).toHaveLength(16)')) {

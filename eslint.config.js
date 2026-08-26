@@ -4,7 +4,15 @@ import tseslint from 'typescript-eslint';
 
 export default tseslint.config(
   {
-    ignores: ['**/dist/**', '**/coverage/**', 'docs/v6.1/source-package/**', 'database/**/*.sql'],
+    ignores: [
+      '**/dist/**',
+      '**/coverage/**',
+      'docs/v6.1/source-package/**',
+      'database/**/*.sql',
+      '**/node_modules/**',
+      '**/.pnpm-store/**',
+      'runtime/deepseek-harness-official/**',
+    ],
   },
   eslint.configs.recommended,
   ...tseslint.configs.recommended,
@@ -12,6 +20,16 @@ export default tseslint.config(
     files: ['**/*.{js,mjs,ts}'],
     languageOptions: {
       globals: globals.node,
+    },
+    rules: {
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        {
+          argsIgnorePattern: '^_',
+          varsIgnorePattern: '^_',
+          caughtErrorsIgnorePattern: '^_',
+        },
+      ],
     },
   },
   {

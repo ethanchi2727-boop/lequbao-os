@@ -17,7 +17,11 @@ import {
   type HarnessHealthResult,
   type HarnessAttachment,
 } from './types.js';
-import type { HarnessBackend, HarnessBackendNotification, HarnessBackendPromptBlock } from './backend.js';
+import type {
+  HarnessBackend,
+  HarnessBackendNotification,
+  HarnessBackendPromptBlock,
+} from './backend.js';
 import { HarnessBackendUnavailableError } from './backend.js';
 import { buildHarnessEvent, type HarnessEventSink, type HarnessEventEnvelope } from './events.js';
 import type { HarnessBudgetLedger } from './budget.js';
@@ -89,15 +93,18 @@ export class HarnessAdapter {
       preAuthorizedMinor: '0', // 由 api 层按 modelStrategy 估价后传入；Adapter 不自定金额
     });
     const blocks: HarnessBackendPromptBlock[] = parsed.message
-      ? [{ type: 'text' as const, text: parsed.message }, ...parsed.attachments.map((attachment: HarnessAttachment): HarnessBackendPromptBlock => {
-          const block: HarnessBackendPromptBlock = {
-            type: attachment.kind === 'text' ? ('text' as const) : attachment.kind,
-            mediaType: attachment.mediaType,
-          };
-          if (attachment.inline !== undefined) block.text = attachment.inline;
-          if (attachment.objectKey !== undefined) block.objectKey = attachment.objectKey;
-          return block;
-        })]
+      ? [
+          { type: 'text' as const, text: parsed.message },
+          ...parsed.attachments.map((attachment: HarnessAttachment): HarnessBackendPromptBlock => {
+            const block: HarnessBackendPromptBlock = {
+              type: attachment.kind === 'text' ? ('text' as const) : attachment.kind,
+              mediaType: attachment.mediaType,
+            };
+            if (attachment.inline !== undefined) block.text = attachment.inline;
+            if (attachment.objectKey !== undefined) block.objectKey = attachment.objectKey;
+            return block;
+          }),
+        ]
       : [];
     let lastSequence = 0;
     try {
@@ -130,7 +137,7 @@ export class HarnessAdapter {
               taskId,
               sequence: stored.sequence,
               state: {
-                ...(stored.payload as { checkpoint?: Record<string, unknown> }).checkpoint ?? {},
+                ...((stored.payload as { checkpoint?: Record<string, unknown> }).checkpoint ?? {}),
                 sessionId: parsed.sessionId,
                 taskId,
                 runId: handle.harnessRunId,
@@ -265,40 +272,147 @@ export class HarnessAdapter {
     const base = { tenantId, actorId, sessionId, taskId, traceId };
     switch (notification.method) {
       case 'session.created':
-        return buildHarnessEvent({ ...base, eventType: 'session.created', payload: { harnessRunId: String(params.harnessRunId ?? '') } });
+        return buildHarnessEvent({
+          ...base,
+          eventType: 'session.created',
+          payload: { harnessRunId: String(params.harnessRunId ?? '') },
+        });
       case 'message.started':
       case 'session.message.started':
-        return buildHarnessEvent({ ...base, eventType: 'message.started', payload: { messageId: String(params.messageId ?? '') } });
+        return buildHarnessEvent({
+          ...base,
+          eventType: 'message.started',
+          payload: { messageId: String(params.messageId ?? '') },
+        });
       case 'message.delta':
       case 'session.message.delta':
-        return buildHarnessEvent({ ...base, eventType: 'message.delta', payload: { messageId: String(params.messageId ?? ''), delta: String(params.delta ?? '') } });
+        return buildHarnessEvent({
+          ...base,
+          eventType: 'message.delta',
+          payload: { messageId: String(params.messageId ?? ''), delta: String(params.delta ?? '') },
+        });
       case 'message.completed':
       case 'session.message.completed':
-        return buildHarnessEvent({ ...base, eventType: 'message.completed', payload: { messageId: String(params.messageId ?? ''), finishReason: String(params.finishReason ?? 'stop') } });
+        return buildHarnessEvent({
+          ...base,
+          eventType: 'message.completed',
+          payload: {
+            messageId: String(params.messageId ?? ''),
+            finishReason: String(params.finishReason ?? 'stop'),
+          },
+        });
       case 'tool.requested':
-        return buildHarnessEvent({ ...base, eventType: 'tool.requested', payload: { toolName: String(params.toolName ?? ''), arguments: params.arguments ?? {}, idempotencyKey: String(params.idempotencyKey ?? '') } });
+        return buildHarnessEvent({
+          ...base,
+          eventType: 'tool.requested',
+          payload: {
+            toolName: String(params.toolName ?? ''),
+            arguments: params.arguments ?? {},
+            idempotencyKey: String(params.idempotencyKey ?? ''),
+          },
+        });
       case 'tool.started':
-        return buildHarnessEvent({ ...base, eventType: 'tool.started', payload: { toolName: String(params.toolName ?? ''), attempt: Number(params.attempt ?? 1) } });
+        return buildHarnessEvent({
+          ...base,
+          eventType: 'tool.started',
+          payload: {
+            toolName: String(params.toolName ?? ''),
+            attempt: Number(params.attempt ?? 1),
+          },
+        });
       case 'tool.completed':
-        return buildHarnessEvent({ ...base, eventType: 'tool.completed', payload: { toolName: String(params.toolName ?? ''), result: params.result } });
+        return buildHarnessEvent({
+          ...base,
+          eventType: 'tool.completed',
+          payload: { toolName: String(params.toolName ?? ''), result: params.result },
+        });
       case 'tool.failed':
-        return buildHarnessEvent({ ...base, eventType: 'tool.failed', payload: { toolName: String(params.toolName ?? ''), error: String(params.error ?? ''), retryable: Boolean(params.retryable) } });
+        return buildHarnessEvent({
+          ...base,
+          eventType: 'tool.failed',
+          payload: {
+            toolName: String(params.toolName ?? ''),
+            error: String(params.error ?? ''),
+            retryable: Boolean(params.retryable),
+          },
+        });
       case 'approval.requested':
-        return buildHarnessEvent({ ...base, eventType: 'approval.requested', payload: { approvalId: String(params.approvalId ?? ''), decisionKind: String(params.decisionKind ?? ''), summary: String(params.summary ?? ''), impacts: Array.isArray(params.impacts) ? (params.impacts as string[]) : [] } });
+        return buildHarnessEvent({
+          ...base,
+          eventType: 'approval.requested',
+          payload: {
+            approvalId: String(params.approvalId ?? ''),
+            decisionKind: String(params.decisionKind ?? ''),
+            summary: String(params.summary ?? ''),
+            impacts: Array.isArray(params.impacts) ? (params.impacts as string[]) : [],
+          },
+        });
       case 'approval.resolved':
-        return buildHarnessEvent({ ...base, eventType: 'approval.resolved', payload: { approvalId: String(params.approvalId ?? ''), decision: params.decision === 'REJECTED' ? 'REJECTED' : 'APPROVED', operatorId: String(params.operatorId ?? '') } });
+        return buildHarnessEvent({
+          ...base,
+          eventType: 'approval.resolved',
+          payload: {
+            approvalId: String(params.approvalId ?? ''),
+            decision: params.decision === 'REJECTED' ? 'REJECTED' : 'APPROVED',
+            operatorId: String(params.operatorId ?? ''),
+          },
+        });
       case 'artifact.created':
-        return buildHarnessEvent({ ...base, eventType: 'artifact.created', payload: { artifactId: String(params.artifactId ?? ''), kind: String(params.kind ?? ''), ref: String(params.ref ?? '') } });
+        return buildHarnessEvent({
+          ...base,
+          eventType: 'artifact.created',
+          payload: {
+            artifactId: String(params.artifactId ?? ''),
+            kind: String(params.kind ?? ''),
+            ref: String(params.ref ?? ''),
+          },
+        });
       case 'task.paused':
-        return buildHarnessEvent({ ...base, eventType: 'task.paused', payload: { reason: String(params.reason ?? ''), checkpoint: (params.checkpoint as Record<string, unknown>) ?? {} } });
+        return buildHarnessEvent({
+          ...base,
+          eventType: 'task.paused',
+          payload: {
+            reason: String(params.reason ?? ''),
+            checkpoint: (params.checkpoint as Record<string, unknown>) ?? {},
+          },
+        });
       case 'task.resumed':
-        return buildHarnessEvent({ ...base, eventType: 'task.resumed', payload: { fromSequence: Number(params.fromSequence ?? 0) } });
+        return buildHarnessEvent({
+          ...base,
+          eventType: 'task.resumed',
+          payload: { fromSequence: Number(params.fromSequence ?? 0) },
+        });
       case 'task.completed':
-        return buildHarnessEvent({ ...base, eventType: 'task.completed', payload: { finalSummary: String(params.finalSummary ?? ''), artifacts: Array.isArray(params.artifacts) ? (params.artifacts as { artifactId: string; kind: string }[]) : [] } });
+        return buildHarnessEvent({
+          ...base,
+          eventType: 'task.completed',
+          payload: {
+            finalSummary: String(params.finalSummary ?? ''),
+            artifacts: Array.isArray(params.artifacts)
+              ? (params.artifacts as { artifactId: string; kind: string }[])
+              : [],
+          },
+        });
       case 'task.failed':
-        return buildHarnessEvent({ ...base, eventType: 'task.failed', payload: { error: String(params.error ?? ''), partialArtifacts: Array.isArray(params.partialArtifacts) ? (params.partialArtifacts as { artifactId: string; kind: string }[]) : [] } });
+        return buildHarnessEvent({
+          ...base,
+          eventType: 'task.failed',
+          payload: {
+            error: String(params.error ?? ''),
+            partialArtifacts: Array.isArray(params.partialArtifacts)
+              ? (params.partialArtifacts as { artifactId: string; kind: string }[])
+              : [],
+          },
+        });
       case 'task.cancelled':
-        return buildHarnessEvent({ ...base, eventType: 'task.cancelled', payload: { reason: String(params.reason ?? ''), operatorId: String(params.operatorId ?? '') } });
+        return buildHarnessEvent({
+          ...base,
+          eventType: 'task.cancelled',
+          payload: {
+            reason: String(params.reason ?? ''),
+            operatorId: String(params.operatorId ?? ''),
+          },
+        });
       default:
         return null; // 未知通知忽略；契约测试覆盖所有已知类型
     }

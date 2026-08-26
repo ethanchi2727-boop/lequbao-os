@@ -8,7 +8,6 @@ import {
   InMemoryToolRegistry,
   buildStubRegistry,
   buildStubObjectStateLookup,
-  ToolPolicyViolationError,
   ToolNotFoundError,
   TOOL_POLICY_CODES,
   type ToolInvocationRequest,
@@ -40,7 +39,10 @@ function buildGateway(overrides?: { objectState?: ReturnType<typeof buildStubObj
   return { gateway, registry, audit, idempotency };
 }
 
-function identity(role: ToolServerIdentity['role'], availableTools: string[] = []): ToolServerIdentity {
+function identity(
+  role: ToolServerIdentity['role'],
+  availableTools: string[] = [],
+): ToolServerIdentity {
   return {
     tenantId: tenantId(),
     actorId: actorId(),
@@ -142,7 +144,9 @@ describe('Tool Gateway 契约', () => {
     expect(result.approvalRequested).not.toBeNull();
     expect(result.approvalRequested?.kind).toBe('PAYOUT_ACCOUNT');
     expect(result.receipt).toBeNull();
-    const auditEntries = await audit.find(expect.any(String), expect.any(String)).catch(() => undefined);
+    const auditEntries = await audit
+      .find(expect.any(String), expect.any(String))
+      .catch(() => undefined);
     expect(auditEntries).toBeUndefined();
   });
 
@@ -176,10 +180,16 @@ describe('Tool Gateway 契约', () => {
       claimedObjectId: 'stub-merchant',
       requestedAt: now(),
     };
-    const result = await gateway.invoke(callRequest, identity('SALES', ['send.payout.authorization.link']));
+    const result = await gateway.invoke(
+      callRequest,
+      identity('SALES', ['send.payout.authorization.link']),
+    );
     expect(result.receipt?.status).toBe('ACCEPTED');
     // 相同 idempotencyKey 重放——taskId 也须相同
-    const replayed = await gateway.invoke(callRequest, identity('SALES', ['send.payout.authorization.link']));
+    const replayed = await gateway.invoke(
+      callRequest,
+      identity('SALES', ['send.payout.authorization.link']),
+    );
     expect(replayed.receipt?.status).toBe('REPLAYED');
     expect(replayed.result).toEqual(result.result);
   });
@@ -264,7 +274,10 @@ describe('Tool Gateway 契约', () => {
       claimedAmountMinor: '1000',
       requestedAt: now(),
     };
-    const result = await gateway.invoke(callRequest, identity('CUSTOMER_SERVICE', ['issue.refund']));
+    const result = await gateway.invoke(
+      callRequest,
+      identity('CUSTOMER_SERVICE', ['issue.refund']),
+    );
     expect(result.receipt?.status).toBe('ACCEPTED');
     const found = await audit.find(taskId, 'idem-refund-compensate-1');
     expect(found).toBeDefined();

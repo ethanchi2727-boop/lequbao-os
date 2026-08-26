@@ -1,6 +1,10 @@
 import { z } from 'zod';
 import { MinorCurrencyAmountSchema, UuidSchema } from '@lequ/contracts';
-import { HarnessTaskIdSchema, HarnessBudgetSettlementSchema, type HarnessBudgetSettlement } from './types.js';
+import {
+  HarnessTaskIdSchema,
+  HarnessBudgetSettlementSchema,
+  type HarnessBudgetSettlement,
+} from './types.js';
 
 /**
  * 预算与失败策略。
@@ -9,7 +13,7 @@ import { HarnessTaskIdSchema, HarnessBudgetSettlementSchema, type HarnessBudgetS
  * 可返部分（不可返部分记为已耗）。模型/插件超时采用有限重试，超过次数进入异常中心。
  */
 
-const BudgetLedgerEntrySchema = z.object({
+const _BudgetLedgerEntrySchema = z.object({
   taskId: HarnessTaskIdSchema,
   tenantId: UuidSchema,
   preAuthorizedMinor: MinorCurrencyAmountSchema,
@@ -18,7 +22,7 @@ const BudgetLedgerEntrySchema = z.object({
   status: z.enum(['PRE_AUTHORIZED', 'SETTLED', 'REFUNDED']),
   settledAt: z.string().nullable(),
 });
-type BudgetLedgerEntry = z.infer<typeof BudgetLedgerEntrySchema>;
+type BudgetLedgerEntry = z.infer<typeof _BudgetLedgerEntrySchema>;
 
 export interface HarnessBudgetLedger {
   /** 预占额度（调用前）。 */
@@ -119,7 +123,10 @@ export interface HarnessRetryPolicy {
 export class DefaultHarnessRetryPolicy implements HarnessRetryPolicy {
   readonly maxAttempts: number;
   private readonly retryableKinds: ReadonlySet<string>;
-  constructor(maxAttempts = 3, retryableKinds = ['TIMEOUT', 'RATE_LIMITED', 'BACKEND_UNAVAILABLE']) {
+  constructor(
+    maxAttempts = 3,
+    retryableKinds = ['TIMEOUT', 'RATE_LIMITED', 'BACKEND_UNAVAILABLE'],
+  ) {
     this.maxAttempts = maxAttempts;
     this.retryableKinds = new Set(retryableKinds);
   }

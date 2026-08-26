@@ -8,7 +8,6 @@ import {
   type ToolInvocationRequest,
   type ToolInvocationResult,
   type ToolServerIdentity,
-  type ToolDescriptor,
   ToolPolicyViolationError,
   ToolNotFoundError,
 } from './types.js';
@@ -83,7 +82,10 @@ export class ToolGateway {
       request: policyRequest,
     });
     if (!decision.allowed) {
-      throw new ToolPolicyViolationError(decision.code ?? 'POLICY_VIOLATION', decision.message ?? '');
+      throw new ToolPolicyViolationError(
+        decision.code ?? 'POLICY_VIOLATION',
+        decision.message ?? '',
+      );
     }
 
     // 3. 写工具：先看幂等记录，已有则返回 REPLAYED
@@ -141,7 +143,8 @@ export class ToolGateway {
       arguments: request.arguments,
       requestedAt: request.requestedAt,
     };
-    if (request.idempotencyKey !== undefined) handlerRequest.idempotencyKey = request.idempotencyKey;
+    if (request.idempotencyKey !== undefined)
+      handlerRequest.idempotencyKey = request.idempotencyKey;
     if (request.claimedAmountMinor !== undefined)
       handlerRequest.claimedAmountMinor = request.claimedAmountMinor;
     if (request.claimedObjectId !== undefined)

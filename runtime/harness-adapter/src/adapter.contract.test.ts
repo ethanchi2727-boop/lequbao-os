@@ -10,11 +10,7 @@ import {
   HarnessBackendUnavailableError,
   HARNESS_EVENT_TYPES,
   type HarnessBackend,
-  type HarnessBackendNotification,
-  type HarnessBackendPromptBlock,
-  type HarnessBackendRunHandle,
   type HarnessEventEnvelope,
-  type HarnessRunInput,
 } from './index.js';
 
 function tenantId() {
@@ -31,12 +27,23 @@ function buildAdapter(backend: HarnessBackend = new StubHarnessBackend()) {
   const events = new InMemoryHarnessEventSink();
   const budget = new InMemoryHarnessBudgetLedger();
   const checkpoints = new InMemoryHarnessCheckpointStore();
-  const adapter = new HarnessAdapter({ backend, events, budget, checkpoints, adapterVersion: '0.1.0-test' });
+  const adapter = new HarnessAdapter({
+    backend,
+    events,
+    budget,
+    checkpoints,
+    adapterVersion: '0.1.0-test',
+  });
   return { adapter, events, budget, checkpoints };
 }
 
 function modelStrategy() {
-  return { routingKey: 'deepseek-v4-flash', visionEnabled: true, maxTokens: 8192, temperatureCenti: 100 };
+  return {
+    routingKey: 'deepseek-v4-flash',
+    visionEnabled: true,
+    maxTokens: 8192,
+    temperatureCenti: 100,
+  };
 }
 function budgetInput() {
   return { estimatedMaxCostMinor: '1000', preAuthorizedMinor: '1000' };
@@ -44,7 +51,7 @@ function budgetInput() {
 
 describe('Harness Adapter 契约', () => {
   it('createSession 落 session.created 并返回会话与运行 ID', async () => {
-    const { adapter, events } = buildAdapter();
+    const { adapter } = buildAdapter();
     const result = await adapter.createSession({
       tenantId: tenantId(),
       actorId: actorId(),
@@ -68,7 +75,7 @@ describe('Harness Adapter 契约', () => {
   });
 
   it('AUTO run 产出 message.* + artifact.created + task.completed 并结算预算', async () => {
-    const { adapter, events, budget } = buildAdapter();
+    const { adapter, budget } = buildAdapter();
     const session = await adapter.createSession({
       tenantId: tenantId(),
       actorId: actorId(),
@@ -183,7 +190,9 @@ describe('Harness Adapter 契约', () => {
     expect(resumed.taskId).toBe(run.taskId);
     const after = await adapter.subscribe({ sessionId: session.sessionId, lastSequence: 0 });
     expect(after.length).toBeGreaterThan(before.length);
-    expect(after.some((event: HarnessEventEnvelope) => event.eventType === 'task.resumed')).toBe(true);
+    expect(after.some((event: HarnessEventEnvelope) => event.eventType === 'task.resumed')).toBe(
+      true,
+    );
   });
 
   it('cancel 落 task.cancelled 且取消后状态正确', async () => {
@@ -205,7 +214,11 @@ describe('Harness Adapter 契约', () => {
       idempotencyKey: 'idem-cancel-1',
       traceId: traceId(),
     });
-    const result = await adapter.cancel({ taskId: run.taskId, reason: '商家撤回', operatorId: actorId() });
+    const result = await adapter.cancel({
+      taskId: run.taskId,
+      reason: '商家撤回',
+      operatorId: actorId(),
+    });
     expect(['CANCELLED', 'NOT_CANCELLABLE']).toContain(result.status);
     const all = await adapter.subscribe({ sessionId: session.sessionId, lastSequence: 0 });
     // AUTO 已完成可能无运行态可取消；此处至少不抛错
@@ -275,7 +288,7 @@ describe('Harness Adapter 契约', () => {
         };
       },
     };
-    const { adapter, budget } = buildAdapter(failingBackend);
+    const { adapter } = buildAdapter(failingBackend);
     const session = await adapter.createSession({
       tenantId: tenantId(),
       actorId: actorId(),

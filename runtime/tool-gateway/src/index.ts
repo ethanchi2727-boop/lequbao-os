@@ -5,11 +5,7 @@ export {
   type ToolHandler,
   InMemoryToolRegistry,
 } from './registry.js';
-export {
-  type ToolAuditEntry,
-  type ToolAuditSink,
-  InMemoryToolAuditSink,
-} from './audit.js';
+export { type ToolAuditEntry, type ToolAuditSink, InMemoryToolAuditSink } from './audit.js';
 export {
   type ToolIdempotencyRecord,
   type ToolIdempotencyStore,

@@ -68,7 +68,11 @@ export interface HarnessEventSink {
     input: Omit<HarnessEventEnvelope, 'sequence' | 'occurredAt'> & { occurredAt?: string },
   ): Promise<HarnessEventEnvelope>;
   /** 从 lastSequence 之后按序重放。 */
-  replay(input: { sessionId?: string; taskId?: string; afterSequence: number }): AsyncIterable<HarnessEventEnvelope>;
+  replay(input: {
+    sessionId?: string;
+    taskId?: string;
+    afterSequence: number;
+  }): AsyncIterable<HarnessEventEnvelope>;
 }
 
 export interface HarnessEventPayloads {
@@ -86,7 +90,11 @@ export interface HarnessEventPayloads {
     summary: string;
     impacts: string[];
   };
-  'approval.resolved': { approvalId: string; decision: 'APPROVED' | 'REJECTED'; operatorId: string };
+  'approval.resolved': {
+    approvalId: string;
+    decision: 'APPROVED' | 'REJECTED';
+    operatorId: string;
+  };
   'artifact.created': { artifactId: string; kind: string; ref: string };
   'task.paused': { reason: string; checkpoint: Record<string, unknown> };
   'task.resumed': { fromSequence: number };
@@ -99,17 +107,15 @@ export interface HarnessEventPayloads {
  * 构造一个标准事件信封（不分配 sequence；由 sink.append 落盘时分配）。
  * payload 形状由调用方保证与事件类型匹配；契约测试覆盖每种类型的载荷。
  */
-export function buildHarnessEvent<K extends HarnessEventType>(
-  base: {
-    tenantId: string;
-    actorId: string;
-    sessionId: string;
-    taskId: string | null;
-    traceId: string;
-    eventType: K;
-    payload: HarnessEventPayloads[K];
-  },
-): Omit<HarnessEventEnvelope, 'sequence' | 'occurredAt'> & { occurredAt?: string } {
+export function buildHarnessEvent<K extends HarnessEventType>(base: {
+  tenantId: string;
+  actorId: string;
+  sessionId: string;
+  taskId: string | null;
+  traceId: string;
+  eventType: K;
+  payload: HarnessEventPayloads[K];
+}): Omit<HarnessEventEnvelope, 'sequence' | 'occurredAt'> & { occurredAt?: string } {
   assertHarnessEventType(base.eventType);
   const { tenantId, actorId, sessionId, taskId, traceId, eventType, payload } = base;
   return {
@@ -127,7 +133,8 @@ export function buildHarnessEvent<K extends HarnessEventType>(
 export function attachmentSummary(attachments: readonly HarnessAttachment[]): string {
   if (attachments.length === 0) return '无附件';
   const counts: Record<string, number> = {};
-  for (const attachment of attachments) counts[attachment.kind] = (counts[attachment.kind] ?? 0) + 1;
+  for (const attachment of attachments)
+    counts[attachment.kind] = (counts[attachment.kind] ?? 0) + 1;
   return Object.entries(counts)
     .map(([kind, count]) => `${kind}:${count}`)
     .join(' ');

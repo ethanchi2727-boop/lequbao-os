@@ -1,7 +1,10 @@
 import { createHash, randomUUID } from 'node:crypto';
 import type { HarnessAdapter } from '@lequ/harness-adapter';
 import type { ToolGateway } from '@lequ/tool-gateway';
-import type { CustomerServiceBusinessToolGateway, CustomerServiceModelGateway } from './customer-service-ai.js';
+import type {
+  CustomerServiceBusinessToolGateway,
+  CustomerServiceModelGateway,
+} from './customer-service-ai.js';
 import type { CustomerServiceCitation } from './customer-service-ai.js';
 
 /**
@@ -65,7 +68,11 @@ export function createHarnessCustomerServiceModelGateway(
           temperatureCenti: 70,
         },
         budget: { estimatedMaxCostMinor: '500', preAuthorizedMinor: '500' },
-        availableTools: ['verify.merchant.profile', 'issue.refund', 'send.payout.authorization.link'],
+        availableTools: [
+          'verify.merchant.profile',
+          'issue.refund',
+          'send.payout.authorization.link',
+        ],
       });
       const prompt = buildPrompt(input.query, input.citations, input.toolResult, promptVersion);
       const run = await options.adapter.run({
@@ -116,14 +123,13 @@ export function createHarnessCustomerServiceModelGateway(
 function buildPrompt(
   query: string,
   citations: readonly CustomerServiceCitation[],
-  toolResult:
-    | { toolCode: string; data: Record<string, unknown>; observedAt: string }
-    | undefined,
+  toolResult: { toolCode: string; data: Record<string, unknown>; observedAt: string } | undefined,
   promptVersion: string,
 ): string {
   const citationBlock = citations
-    .map((citation, index) =>
-      `[${index + 1}] ${citation.title}\n来源：${citation.sourceType}\n摘要：${citation.excerpt}`,
+    .map(
+      (citation, index) =>
+        `[${index + 1}] ${citation.title}\n来源：${citation.sourceType}\n摘要：${citation.excerpt}`,
     )
     .join('\n\n');
   const toolBlock = toolResult
@@ -161,10 +167,9 @@ export interface HarnessCustomerServiceToolOptions {
   actorId: string;
   spaceRef: string;
   // 工具码 → Tool Gateway descriptor 名称
-  toolCodeMap?: Partial<Record<
-    'STORE_STATUS' | 'PRICE' | 'INVENTORY' | 'ORDER' | 'REFUND_STATUS',
-    string
-  >>;
+  toolCodeMap?: Partial<
+    Record<'STORE_STATUS' | 'PRICE' | 'INVENTORY' | 'ORDER' | 'REFUND_STATUS', string>
+  >;
 }
 
 const DEFAULT_TOOL_CODE_MAP: Record<

@@ -89,11 +89,14 @@ export class RemoteHarnessBackend implements HarnessBackend {
     if (input.signal) input.signal.addEventListener('abort', () => controller.abort());
     const timeout = setTimeout(() => controller.abort(), this.timeoutMs);
     try {
-      const streamResponse = await this.fetchImpl(`${this.endpoint}/notifications?sessionId=${encodeURIComponent(input.sessionId)}&runId=${encodeURIComponent(input.runId)}`, {
-        method: 'GET',
-        signal: controller.signal,
-        headers: { accept: 'application/x-ndjson' },
-      });
+      const streamResponse = await this.fetchImpl(
+        `${this.endpoint}/notifications?sessionId=${encodeURIComponent(input.sessionId)}&runId=${encodeURIComponent(input.runId)}`,
+        {
+          method: 'GET',
+          signal: controller.signal,
+          headers: { accept: 'application/x-ndjson' },
+        },
+      );
       if (!streamResponse.ok || !streamResponse.body) {
         throw new HarnessBackendUnavailableError(`通知流不可用：HTTP ${streamResponse.status}`);
       }
@@ -121,7 +124,10 @@ export class RemoteHarnessBackend implements HarnessBackend {
     }
   }
 
-  async cancelRun(input: { runId: string; reason: string }): Promise<{ cancelled: boolean; detail: string }> {
+  async cancelRun(input: {
+    runId: string;
+    reason: string;
+  }): Promise<{ cancelled: boolean; detail: string }> {
     const response = await this.rpc('run.cancel', { runId: input.runId, reason: input.reason });
     const result = response.result as { cancelled?: boolean; detail?: string } | null;
     return { cancelled: result?.cancelled === true, detail: result?.detail ?? input.reason };
@@ -194,7 +200,9 @@ export class RemoteHarnessBackend implements HarnessBackend {
         body: JSON.stringify({ jsonrpc: '2.0', id: crypto.randomUUID(), method, params }),
       });
       if (!response.ok) {
-        throw new HarnessBackendUnavailableError(`JSON-RPC ${method} 失败：HTTP ${response.status}`);
+        throw new HarnessBackendUnavailableError(
+          `JSON-RPC ${method} 失败：HTTP ${response.status}`,
+        );
       }
       const body = (await response.json()) as { result?: unknown; error?: { message?: string } };
       if (body.error) {

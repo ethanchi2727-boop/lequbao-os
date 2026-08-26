@@ -1,7 +1,7 @@
 {
   "bomFormat": "CycloneDX",
   "specVersion": "1.6",
-  "serialNumber": "urn:uuid:6f9cd1d2-0b87-4dca-8afa-e93fe5ee767a",
+  "serialNumber": "urn:uuid:2ed24ca2-9040-44a8-8b74-117247de7eb5",
   "version": 1,
   "metadata": {
     "component": {
@@ -12,7 +12,7 @@
     "properties": [
       {
         "name": "lequ:pnpm-lock-sha256",
-        "value": "6f9cd1d20b87ddca4afae93fe5ee767afd59d8b6d6f954136599c20bccbf8eac"
+        "value": "2ed24ca2904084a85b74117247de7eb5befbf93d0033930f377f1e62bee45adc"
       }
     ]
   },

@@ -117,9 +117,7 @@ function harnessFixture(options: { queryText?: string; answerClaimed?: boolean }
     return result();
   });
   const client = { query, release: vi.fn() };
-  const getText = vi
-    .fn()
-    .mockResolvedValue(options.queryText ?? '请问你们几点营业？');
+  const getText = vi.fn().mockResolvedValue(options.queryText ?? '请问你们几点营业？');
   const putText = vi.fn().mockResolvedValue(undefined);
   const requestHumanBySystem = vi.fn().mockResolvedValue({ id: conversationId });
   const knowledge = {

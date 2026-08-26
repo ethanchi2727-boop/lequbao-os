@@ -1,4 +1,8 @@
-import { HarnessEventEnvelopeSchema, type HarnessEventEnvelope, type HarnessEventSink } from './events.js';
+import {
+  HarnessEventEnvelopeSchema,
+  type HarnessEventEnvelope,
+  type HarnessEventSink,
+} from './events.js';
 
 /**
  * 内存事件 sink（测试/开发与单进程运行用）。

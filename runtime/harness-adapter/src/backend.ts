@@ -51,7 +51,10 @@ export interface HarnessBackend {
   }): AsyncIterable<HarnessBackendNotification>;
 
   /** 取消运行；上游返回是否可取消。 */
-  cancelRun(input: { runId: string; reason: string }): Promise<{ cancelled: boolean; detail: string }>;
+  cancelRun(input: {
+    runId: string;
+    reason: string;
+  }): Promise<{ cancelled: boolean; detail: string }>;
 
   /** 恢复运行（带检查点）；上游从最近安全点继续。 */
   resumeRun(input: {

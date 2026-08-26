@@ -1,6 +1,11 @@
 import { z } from 'zod';
 import { UuidSchema, TenantIdSchema } from '@lequ/contracts';
-import { ToolActorIdSchema, ToolSessionIdSchema, ToolTaskIdSchema, ToolTraceIdSchema } from './types.js';
+import {
+  ToolActorIdSchema,
+  ToolSessionIdSchema,
+  ToolTaskIdSchema,
+  ToolTraceIdSchema,
+} from './types.js';
 
 /**
  * 写工具审计 sink。
