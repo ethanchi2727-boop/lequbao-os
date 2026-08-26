@@ -45,8 +45,8 @@
     { "path": "pages/page-264/index", "style": { "navigationBarTitleText": "我的工单" } }
   ],
   "tabBar": {
-    "color": "#84908a",
-    "selectedColor": "#0B8F66",
+    "color": "#66736D",
+    "selectedColor": "#0D8B62",
     "backgroundColor": "#ffffff",
     "list": [
       {
@@ -83,7 +83,7 @@
   },
   "globalStyle": {
     "navigationBarTextStyle": "black",
-    "navigationBarBackgroundColor": "#f5f7f5",
-    "backgroundColor": "#f5f7f5"
+    "navigationBarBackgroundColor": "#F8F7F3",
+    "backgroundColor": "#F8F7F3"
   }
 }

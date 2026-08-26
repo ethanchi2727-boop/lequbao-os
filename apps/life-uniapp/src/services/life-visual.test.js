@@ -9,16 +9,16 @@ import {
 describe('乐趣生活 V6.3 visual runtime', () => {
   it('locks the three official banner-linked theme ramps', () => {
     expect(resolveLifeBannerTheme('green')).toEqual({
-      top: '#078e64',
-      mid: '#22c98f',
-      soft: '#e6faef',
+      top: '#096948',
+      mid: '#0D8B62',
+      soft: '#E7F7F0',
     });
     expect(lifeBannerThemeStyle('coral')).toEqual({
-      '--tone-top': '#ef3b43',
-      '--tone-mid': '#ff756c',
-      '--tone-soft': '#fff0e9',
+      '--tone-top': '#D8431F',
+      '--tone-mid': '#FF5A36',
+      '--tone-soft': '#FFF0EA',
     });
-    expect(resolveLifeBannerTheme('blue').top).toBe('#0878b6');
+    expect(resolveLifeBannerTheme('blue').top).toBe('#0D6F96');
     expect(resolveLifeBannerTheme('unknown')).toBe(resolveLifeBannerTheme('green'));
   });
 

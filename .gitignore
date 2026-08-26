@@ -40,3 +40,4 @@ test-tmp/
 yarn.lock
 *.lockb
 quality-gate-report.txt
+.pnpm-store

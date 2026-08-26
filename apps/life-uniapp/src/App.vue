@@ -16,28 +16,35 @@ export default {
 
 <style>
 page {
-  --life-brand: #0aa76d;
-  --life-brand-deep: #067a52;
-  --life-brand-soft: #e8fbf3;
-  --life-coral: #ff4f55;
-  --life-coral-soft: #fff0ed;
-  --life-red: #f02f36;
-  --life-yellow: #ffcf2f;
-  --life-yellow-soft: #fff7d7;
-  --life-blue: #20bfe2;
-  --life-blue-soft: #e9fbff;
-  --life-paper: #ffffff;
-  --life-bg: #f3f4f3;
-  --life-ink: #18231f;
-  --life-muted: #7b8883;
-  --life-line: #e8ecea;
-  --life-wash: #f8faf9;
-  --life-overlay: rgba(24, 35, 31, 0.46);
-  --life-glass: rgba(255, 255, 255, 0.2);
-  --life-shadow: 0 16rpx 52rpx rgba(31, 68, 54, 0.1);
-  --life-shadow-soft: 0 8rpx 30rpx rgba(31, 68, 54, 0.07);
-  --life-shadow-card: 0 5rpx 18rpx rgba(31, 68, 54, 0.08);
-  --life-shadow-float: 0 10rpx 24rpx rgba(10, 167, 109, 0.28);
+  /* 乐趣生活 V6.3 正式主题 Token（按 乐趣生活鲜活视觉设计系统 / ADR-0013）：
+   * 生活绿 #0D8B62（服务/信任/溯源/AI助手/正常）
+   * 交易橙 #FF5A36（价格/立即购买/领券/限时优惠）
+   * 暖米白 #FFF9EC（首页氛围和生活温度）
+   * 中性灰 #F5F7F6（商城/购物车/列表背景）
+   * 深墨色 #17201C（主文字/重要数字）
+   */
+  --life-brand: #0D8B62;           /* 松石绿/生活绿 主色 */
+  --life-brand-deep: #066B4C;      /* 深墨绿 主文字辅强 */
+  --life-brand-soft: #E7F7F0;      /* 绿色软底 */
+  --life-coral: #FF5A36;           /* 交易橙（原设计稿），用于价格/购买/优惠 */
+  --life-coral-soft: #FFF0EA;      /* 橙色软底 */
+  --life-red: #E03B36;             /* 砖红，仅用于错误/拒绝 */
+  --life-yellow: #FFC93E;          /* 明黄，优惠权益 */
+  --life-yellow-soft: #FFF8E1;
+  --life-blue: #1596C9;            /* 湖蓝，活动氛围 */
+  --life-blue-soft: #E8F7FD;
+  --life-paper: #ffffff;           /* 卡片底色 */
+  --life-bg: #FFF9EC;              /* 暖米白，整体页面底色 */
+  --life-ink: #17201C;             /* 深墨色 主文字 */
+  --life-muted: #66736D;           /* 次文字：灰绿（按设计系统） */
+  --life-line: #E8EBE9;
+  --life-wash: #FAFBF9;
+  --life-overlay: rgba(23, 32, 28, 0.46);
+  --life-glass: rgba(255, 255, 255, 0.22);
+  --life-shadow: 0 16rpx 52rpx rgba(23, 65, 50, 0.12);
+  --life-shadow-soft: 0 8rpx 30rpx rgba(23, 65, 50, 0.08);
+  --life-shadow-card: 0 5rpx 18rpx rgba(23, 65, 50, 0.09);
+  --life-shadow-float: 0 10rpx 24rpx rgba(13, 139, 98, 0.3);
   --life-radius-xl: 48rpx;
   --life-radius-lg: 36rpx;
   --life-radius-md: 28rpx;

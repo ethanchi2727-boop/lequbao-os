@@ -1,7 +1,8 @@
 export const lifeBannerThemes = Object.freeze({
-  green: Object.freeze({ top: '#078e64', mid: '#22c98f', soft: '#e6faef' }),
-  coral: Object.freeze({ top: '#ef3b43', mid: '#ff756c', soft: '#fff0e9' }),
-  blue: Object.freeze({ top: '#0878b6', mid: '#27c4df', soft: '#e7f9ff' }),
+  // 与 App.vue 全局主题 Token 一致：生活绿 #0D8B62 / 交易橙 #FF5A36 / 湖蓝 #1596C9
+  green: Object.freeze({ top: '#096948', mid: '#0D8B62', soft: '#E7F7F0' }),
+  coral: Object.freeze({ top: '#D8431F', mid: '#FF5A36', soft: '#FFF0EA' }),
+  blue: Object.freeze({ top: '#0D6F96', mid: '#1596C9', soft: '#E8F7FD' }),
 });
 
 export function resolveLifeBannerTheme(themeColor = 'green') {
