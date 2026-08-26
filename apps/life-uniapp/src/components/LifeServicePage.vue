@@ -534,8 +534,42 @@ onShow(load);
 
 <template>
   <LifeSurface
-    :compact="['242', '252'].includes(pageId)"
-    :show-assurance="!['242', '252'].includes(pageId)"
+    :compact="
+      [
+        '219',
+        '242',
+        '243',
+        '245',
+        '246',
+        '248',
+        '250',
+        '252',
+        '254',
+        '255',
+        '258',
+        '259',
+        '262',
+        '264',
+      ].includes(pageId)
+    "
+    :show-assurance="
+      ![
+        '219',
+        '242',
+        '243',
+        '245',
+        '246',
+        '248',
+        '250',
+        '252',
+        '254',
+        '255',
+        '258',
+        '259',
+        '262',
+        '264',
+      ].includes(pageId)
+    "
     :eyebrow="`PAGE-${pageId}`"
     :title="meta[0]"
     :detail="meta[1]"
@@ -583,27 +617,36 @@ onShow(load);
 
     <view
       v-if="merchantContext && ['254', '255'].includes(pageId) && state === 'ready'"
-      class="section"
-      ><view class="section-head"
-        ><text>{{ pageId === '254' ? '商户隐私档案' : '商户消息授权' }}</text
+      class="consent-surface"
+      ><view class="privacy-summary" :class="{ subscription: pageId === '255' }"
+        ><view class="privacy-shield"><view></view></view
+        ><view
+          ><text>{{ pageId === '254' ? '商户隐私档案' : '商户消息授权' }}</text
+          ><text>商户与门店上下文已验证</text></view
         ><text>{{ detail.status }}</text></view
-      ><view class="boundary-facts"
-        ><text>商户上下文已验证</text><text>门店范围已确认</text
-        ><text>持续档案授权 {{ detail.profileMemoryConsent }}</text></view
-      ><text class="context-note"
+      ><view class="consent-trust-grid"
+        ><view><text>已验证</text><text>商户上下文</text></view
+        ><view><text>已确认</text><text>门店范围</text></view
+        ><view
+          ><text>{{ detail.profileMemoryConsent }}</text
+          ><text>持续档案</text></view
+        ></view
+      ><text class="context-note privacy-context-note"
         >当前内容由短期商户消费者会话读取；平台令牌未发送到商户档案接口。</text
       >
-      <view v-if="pageId === '254'" class="card-list"
+      <view v-if="pageId === '254'" class="privacy-fact-list"
         ><view class="privacy-note"
           >最新持续档案授权：{{ profileConsent?.status || '暂无记录'
           }}<text v-if="profileConsent">
             · {{ profileConsent.policyVersion }} · {{ profileConsent.occurredAt }}</text
           ></view
-        ><view v-for="fact in records" :key="fact.id" class="row"
+        ><view v-for="fact in records" :key="fact.id" class="privacy-fact-card"
+          ><view class="privacy-fact-mark"></view
           ><view
             ><text>{{ fact.factType }}</text
-            ><text>{{ fact.value }} · {{ fact.purpose }} · {{ fact.status }}</text></view
-          ></view
+            ><text>{{ fact.value }}</text
+            ><text>{{ fact.purpose }}</text></view
+          ><text>{{ fact.status }}</text></view
         ><view class="consent-actions"
           ><button class="secondary" :loading="busy" @click="requestProfileCopy">
             申请查看档案副本</button
@@ -616,12 +659,17 @@ onShow(load);
             撤回持续档案授权
           </button></view
         ></view
-      ><view v-else
-        ><view v-if="subscriptionConsent" class="privacy-note blue"
-          >最新订阅授权：{{ subscriptionConsent.status }} ·
-          {{ subscriptionConsent.policyVersion }} · {{ subscriptionConsent.occurredAt }}</view
-        ><view v-else class="privacy-note blue"
-          >暂无服务端订阅授权记录。首次授权必须绑定已发布政策版本与微信侧订阅结果，因此此处不提供伪造开关。</view
+      ><view v-else class="subscription-state"
+        ><view v-if="subscriptionConsent" class="subscription-record"
+          ><view
+            ><text>最新订阅授权</text><text>{{ subscriptionConsent.status }}</text></view
+          ><text>政策版本 {{ subscriptionConsent.policyVersion }}</text
+          ><text>记录时间 {{ subscriptionConsent.occurredAt }}</text></view
+        ><view v-else class="subscription-empty"
+          ><view class="subscription-bell"><view></view></view><text>暂无服务端订阅授权记录</text
+          ><text
+            >首次授权必须绑定已发布政策版本与微信侧订阅结果，因此此处不提供伪造开关。</text
+          ></view
         ><button
           v-if="subscriptionConsent?.status === 'GRANTED'"
           class="danger"
@@ -639,8 +687,16 @@ onShow(load);
         ['258', '262', '264'].includes(pageId) &&
         ['ready', 'empty'].includes(state)
       "
-      class="section card-list"
-      ><view class="context-note"
+      class="support-surface"
+      ><view class="support-summary"
+        ><view class="support-mark"><view></view></view
+        ><view
+          ><text>{{
+            pageId === '258' ? '生活助手会话' : pageId === '264' ? '我的人工工单' : '商户客服会话'
+          }}</text
+          ><text>当前商户与门店范围已验证</text></view
+        ><text>{{ records.length }} 条</text></view
+      ><view class="context-note support-context-note"
         >仅展示当前商户和门店下由服务端授权的会话；人工接管与工单状态保持同源。</view
       ><scroll-view v-if="records.length" class="conversation-filters" scroll-x
         ><button
@@ -657,11 +713,16 @@ onShow(load);
       }}</view
       ><view v-else-if="!visibleConversations.length" class="privacy-note blue"
         >当前筛选条件下没有会话。</view
-      ><view v-for="conversation in visibleConversations" :key="conversation.id" class="row"
-        ><view @click="openConversation(conversation)"
-          ><text>{{ conversation.ticket?.id || conversation.id }}</text
+      ><view
+        v-for="conversation in visibleConversations"
+        :key="conversation.id"
+        class="support-conversation-card"
+        ><view class="support-conversation-copy" @click="openConversation(conversation)"
+          ><view
+            ><text>{{ conversation.ticket?.id || conversation.id }}</text
+            ><text>{{ conversationStatusLabel(conversation.status) }}</text></view
           ><text
-            >{{ conversationStatusLabel(conversation.status) }} · {{ conversation.riskLevel }} ·
+            >{{ conversation.riskLevel }} ·
             {{
               conversation.ticket ? ticketStatusLabel(conversation.ticket.status) : '暂无人工工单'
             }}</text
@@ -669,7 +730,12 @@ onShow(load);
           ><text v-if="conversation.ticket?.dueAt"
             >处理时限 {{ conversation.ticket.dueAt }}</text
           ></view
-        ><button size="mini" :loading="busy" @click="openConversation(conversation)">
+        ><button
+          class="support-open-button"
+          size="mini"
+          :loading="busy"
+          @click="openConversation(conversation)"
+        >
           查看
         </button></view
       ><view v-if="selectedConversation" class="conversation-detail"
@@ -719,19 +785,33 @@ onShow(load);
       ></view
     >
 
-    <view v-if="pageId === '219' && state === 'ready'" class="map-grid"
-      ><view v-for="store in records" :key="store.id" class="map-card"
-        ><view
-          ><text>{{ store.name }}</text
-          ><text>{{ store.cityCode || '城市未标注' }} · {{ store.productCount }} 件在售</text
-          ><text>{{
-            store.latitude === null || store.longitude === null
-              ? '坐标尚未核验'
-              : '坐标来自门店主档'
-          }}</text></view
-        ><button size="mini" @click="openStore(store)">地图</button></view
-      ></view
-    >
+    <view v-if="pageId === '219' && state === 'ready'" class="map-surface">
+      <view class="map-summary">
+        <view class="map-pin"><view></view></view>
+        <view
+          ><text>附近服务门店</text><text>{{ records.length }} 家门店已接入实时主档</text></view
+        >
+        <text>地图导航</text>
+      </view>
+      <view class="map-grid">
+        <view v-for="store in records" :key="store.id" class="map-card">
+          <view class="map-photo"><view class="map-photo-pin"></view></view>
+          <view class="map-card-copy">
+            <view
+              ><text>{{ store.name }}</text
+              ><text>{{ store.productCount }} 件在售</text></view
+            >
+            <text>{{ store.cityCode || '城市未标注' }} · 门店服务范围</text>
+            <text>{{
+              store.latitude === null || store.longitude === null
+                ? '坐标尚未核验'
+                : '坐标来自门店主档，可直接导航'
+            }}</text>
+          </view>
+          <button size="mini" @click="openStore(store)">去这里</button>
+        </view>
+      </view>
+    </view>
     <view v-if="pageId === '242' && ['ready', 'empty'].includes(state)" class="voucher-surface">
       <view class="voucher-summary">
         <text>我的待使用券</text>
@@ -768,77 +848,134 @@ onShow(load);
         ><text>购买到店团购并由服务端确认支付后，可在这里查看核销凭证</text></view
       >
     </view>
-    <view v-if="pageId === '243' && state === 'ready'" class="credential-grid"
-      ><view v-for="token in records" :key="token.entitlementId" class="credential-card"
+    <view v-if="pageId === '243' && state === 'ready'" class="verification-result-surface">
+      <view class="verification-summary">
+        <view class="verification-seal"><view></view></view>
+        <view><text>服务端核销结果</text><text>订单凭证与剩余次数实时同步</text></view>
+        <text>{{ credentialSummary.remaining }} 次</text>
+      </view>
+      <view class="credential-grid verification-grid">
+        <view v-for="token in records" :key="token.entitlementId" class="credential-card">
+          <view>
+            <view class="voucher-state"
+              ><text>{{ token.remainingUses > 0 ? '仍可使用' : '核销完成' }}</text
+              ><text>{{ token.status }}</text></view
+            >
+            <text>订单 {{ token.orderId }}</text>
+            <text
+              >剩余 {{ token.remainingUses }} 次 · {{ token.validUntil || '有效期未标注' }}</text
+            >
+          </view>
+          <button size="mini" :disabled="token.remainingUses < 1" @click="copyToken(token)">
+            复制凭证
+          </button>
+        </view>
+      </view>
+      <view class="verification-note">核销状态、有效期和剩余次数均以当前服务端签发记录为准</view>
+    </view>
+    <view v-if="pageId === '245' && detail" class="aftercare-apply-surface"
+      ><view class="aftercare-order-summary"
+        ><view class="aftercare-mark"><view></view></view
         ><view
-          ><text>订单 {{ token.orderId }}</text
-          ><text>剩余 {{ token.remainingUses }} 次 · {{ token.status }}</text></view
-        ><button size="mini" :disabled="token.remainingUses < 1" @click="copyToken(token)">
-          复制
-        </button></view
-      ></view
-    >
-    <view v-if="pageId === '245' && detail" class="section"
-      ><view class="section-head"
-        ><text>{{ detail.orderNumber || detail.orderNo || detail.id }}</text
+          ><text>订单 {{ detail.orderNumber || detail.orderNo || detail.id }}</text
+          ><text>可申请项目由服务端订单快照计算</text></view
         ><text>{{ detail.status }}</text></view
-      ><view class="facts"
-        ><text>已付 {{ money(detail.paidAmountCents) }}</text
-        ><text>已退 {{ money(detail.refundedAmountCents) }}</text
-        ><text>履约 {{ detail.fulfillmentStatus }}</text></view
-      ><view class="aftercare-note"
-        >申请范围和金额由服务端按订单快照重新计算；客户端不会直接改变支付、履约或退款状态。</view
-      >
-      ><picker
-        :range="[
-          'UNSHIPPED_REFUND',
-          'RETURN_REFUND',
-          'UNUSED_GROUP_BUY_REFUND',
-          'SERVICE_DISPUTE',
-          'OTHER',
-        ]"
-        @change="
-          refundDraft.requestType = [
+      ><view class="aftercare-money-grid"
+        ><view
+          ><text>已支付</text><text>{{ money(detail.paidAmountCents) }}</text></view
+        ><view
+          ><text>已退款</text><text>{{ money(detail.refundedAmountCents) }}</text></view
+        ><view
+          ><text>履约状态</text><text>{{ detail.fulfillmentStatus }}</text></view
+        ></view
+      ><view v-if="detail.items?.length" class="aftercare-items"
+        ><view class="section-head"
+          ><text>申请商品</text><text>{{ detail.items.length }} 项</text></view
+        ><view v-for="item in detail.items" :key="item.id"
+          ><view
+            ><text>{{ item.title }}</text
+            ><text>购买 {{ item.quantity }} · 已退 {{ item.refundedQuantity || 0 }}</text></view
+          ><text>{{ money(item.lineAmountCents) }}</text></view
+        ></view
+      ><view class="aftercare-form"
+        ><view class="section-head"><text>申请信息</text><text>提交前请核对</text></view
+        ><view class="aftercare-note"
+          >申请范围和金额由服务端按订单快照重新计算；客户端不会直接改变支付、履约或退款状态。</view
+        >
+        <picker
+          :range="[
             'UNSHIPPED_REFUND',
             'RETURN_REFUND',
             'UNUSED_GROUP_BUY_REFUND',
             'SERVICE_DISPUTE',
             'OTHER',
-          ][$event.detail.value]
-        "
-        ><view class="field">申请类型：{{ refundDraft.requestType }}</view></picker
-      ><input
-        v-model="refundDraft.reasonCode"
-        class="field"
-        maxlength="120"
-        placeholder="原因代码"
-      /><textarea
-        v-model="refundDraft.description"
-        class="field textarea"
-        maxlength="2000"
-        placeholder="补充说明（可选）"
-      /><button class="danger" :loading="busy" @click="submitRefund">确认提交售后申请</button></view
+          ]"
+          @change="
+            refundDraft.requestType = [
+              'UNSHIPPED_REFUND',
+              'RETURN_REFUND',
+              'UNUSED_GROUP_BUY_REFUND',
+              'SERVICE_DISPUTE',
+              'OTHER',
+            ][$event.detail.value]
+          "
+          ><view class="field select-field"
+            ><text>申请类型</text><text>{{ refundDraft.requestType }}</text></view
+          ></picker
+        ><input
+          v-model="refundDraft.reasonCode"
+          class="field"
+          maxlength="120"
+          placeholder="原因代码"
+        /><textarea
+          v-model="refundDraft.description"
+          class="field textarea"
+          maxlength="2000"
+          placeholder="补充说明（可选）"
+        /><button class="danger aftercare-submit" :loading="busy" @click="submitRefund">
+          确认提交售后申请
+        </button></view
+      ></view
     >
-    <view v-if="pageId === '246' && state === 'ready'" class="aftercare-grid"
-      ><view v-for="item in records" :key="item.id" class="aftercare-card"
-        ><view
-          ><text>{{ item.refundNo || item.id }}</text
-          ><text>{{ item.status }}</text></view
-        ><text>{{ item.reasonCode }}</text>
-        <view
-          ><text>{{ money(item.amountCents) }}</text
-          ><text>渠道结果以服务端为准</text></view
+    <view v-if="pageId === '246' && state === 'ready'" class="aftercare-detail-surface"
+      ><view class="aftercare-summary"
+        ><text>售后记录</text><text>{{ records.length }}</text
+        ><text>审批与渠道状态均来自服务端</text></view
+      ><view class="aftercare-grid"
+        ><view v-for="item in records" :key="item.id" class="aftercare-card"
+          ><view
+            ><text>{{ item.refundNo || item.id }}</text
+            ><text>{{ item.status }}</text></view
+          ><text>{{ item.reasonCode }}</text>
+          <view
+            ><text>{{ money(item.amountCents) }}</text
+            ><text>渠道结果以服务端为准</text></view
+          ></view
         ></view
       ></view
     >
-    <view v-if="pageId === '248' && ['ready', 'empty'].includes(state)" class="section"
-      ><view class="privacy-note">地址仅在当前消费者鉴权后解密；历史订单继续保留原地址快照。</view>
-      <view v-for="item in records" :key="item.id" class="row account-record"
+    <view
+      v-if="pageId === '248' && ['ready', 'empty'].includes(state)"
+      class="account-manage-surface"
+      ><view class="account-safe-banner"
+        ><view class="safe-mark"></view
         ><view
-          ><text>{{ item.recipientName }} {{ item.mobile }}</text
-          ><text>{{ item.addressLine }}</text></view
+          ><text>地址安全保护</text
+          ><text>仅在当前消费者鉴权后解密，历史订单保留地址快照</text></view
+        ></view
+      ><view class="account-list-head"
+        ><text>已保存地址</text><text>{{ records.length }} 个</text></view
+      >
+      <view v-for="item in records" :key="item.id" class="address-card"
+        ><view
+          ><view
+            ><text>{{ item.recipientName }}</text
+            ><text>{{ item.mobile }}</text></view
+          ><text>{{ item.addressLine }}</text
+          ><text>{{ item.isDefault ? '默认地址' : '配送地址' }}</text></view
         ><button size="mini" @click="archiveAddress(item.id)">归档</button></view
-      ><view class="form"
+      ><view class="form account-form-panel"
+        ><view class="section-head"><text>新增配送地址</text><text>加密保存</text></view
         ><input
           v-model="addressDraft.recipientName"
           class="field"
@@ -877,18 +1014,36 @@ onShow(load);
         ><button class="primary" :loading="busy" @click="saveAddress">保存新地址</button></view
       ></view
     >
-    <view v-if="pageId === '250' && ['ready', 'empty'].includes(state)" class="section"
-      ><view class="privacy-note blue">发票抬头与税号加密保存；归档不会删除历史开票引用。</view>
-      <view v-for="item in records" :key="item.id" class="row account-record"
+    <view
+      v-if="pageId === '250' && ['ready', 'empty'].includes(state)"
+      class="account-manage-surface"
+      ><view class="account-safe-banner blue"
+        ><view class="safe-mark"></view
+        ><view
+          ><text>发票信息保护</text><text>抬头与税号加密保存，归档不删除历史开票引用</text></view
+        ></view
+      ><view class="account-list-head"
+        ><text>发票抬头</text><text>{{ records.length }} 个</text></view
+      >
+      <view v-for="item in records" :key="item.id" class="invoice-card"
         ><view
           ><text>{{ item.title }}</text
-          ><text>{{ item.profileType }} · {{ item.taxIdentifier || '无税号' }}</text></view
+          ><text
+            >{{ item.profileType === 'ENTERPRISE' ? '企业抬头' : '个人抬头' }} ·
+            {{ item.taxIdentifier || '无税号' }}</text
+          ><text>{{ item.isDefault ? '默认抬头' : '普通抬头' }}</text></view
         ><button size="mini" @click="archiveInvoice(item.id)">归档</button></view
-      ><view class="form"
+      ><view class="form account-form-panel"
+        ><view class="section-head"><text>新增发票抬头</text><text>加密保存</text></view
         ><picker
           :range="['PERSONAL', 'ENTERPRISE']"
           @change="invoiceDraft.profileType = ['PERSONAL', 'ENTERPRISE'][$event.detail.value]"
-          ><view class="field">类型：{{ invoiceDraft.profileType }}</view></picker
+          ><view class="field select-field"
+            ><text>抬头类型</text
+            ><text>{{
+              invoiceDraft.profileType === 'ENTERPRISE' ? '企业抬头' : '个人抬头'
+            }}</text></view
+          ></picker
         ><input
           v-model="invoiceDraft.title"
           class="field"
@@ -958,12 +1113,19 @@ onShow(load);
         ><text>暂无消费奖励明细</text><text>奖励记录产生后会按服务端账本状态展示在这里</text></view
       >
     </view>
-    <view v-if="pageId === '259' && state === 'ready'" class="section card-list"
-      ><view v-for="order in records" :key="order.id" class="row"
-        ><view @click="go('238', { orderId: order.id })"
+    <view v-if="pageId === '259' && state === 'ready'" class="order-tools-surface"
+      ><view class="order-tools-summary"
+        ><view class="order-tools-mark"><view></view></view
+        ><view><text>订单与售后工具</text><text>从真实订单进入售后或当前商户客服</text></view
+        ><text>{{ records.length }} 笔</text></view
+      ><view v-for="order in records" :key="order.id" class="order-tool-card"
+        ><view class="order-tool-copy" @click="go('238', { orderId: order.id })"
+          ><view
+            ><text>{{ order.storeName || '商家订单' }}</text
+            ><text>{{ order.status }}</text></view
           ><text>{{ order.orderNumber || order.orderNo || order.id }}</text
-          ><text>{{ order.storeName || '商家订单' }} · {{ order.status }}</text></view
-        ><view class="row-actions"
+          ><text>查看订单详情与服务端履约状态</text></view
+        ><view class="order-tool-actions"
           ><button size="mini" @click="go('245', { orderId: order.id })">售后</button
           ><button
             size="mini"
@@ -1142,10 +1304,131 @@ onShow(load);
 .consent-actions button {
   width: 100%;
 }
+.support-surface {
+  display: grid;
+  margin-top: 20rpx;
+  gap: 14rpx;
+}
+.support-summary {
+  display: flex;
+  padding: 24rpx;
+  border-radius: var(--life-radius-lg);
+  align-items: center;
+  gap: 16rpx;
+  color: var(--life-paper);
+  background: linear-gradient(135deg, #087b8d, #075d70);
+  box-shadow: var(--life-shadow);
+}
+.support-mark {
+  display: flex;
+  width: 58rpx;
+  height: 48rpx;
+  border: 3rpx solid var(--life-paper);
+  border-radius: 19rpx;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  box-sizing: border-box;
+}
+.support-mark::after {
+  position: absolute;
+  width: 10rpx;
+  height: 10rpx;
+  margin: 48rpx 0 0 -25rpx;
+  border-bottom: 3rpx solid var(--life-paper);
+  border-left: 3rpx solid var(--life-paper);
+  transform: skew(-25deg);
+  content: '';
+}
+.support-mark view {
+  width: 24rpx;
+  height: 4rpx;
+  border-radius: 99rpx;
+  background: var(--life-paper);
+  box-shadow:
+    0 -9rpx 0 var(--life-paper),
+    0 9rpx 0 var(--life-paper);
+}
+.support-summary > view:nth-child(2) {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: 4rpx;
+}
+.support-summary > view:nth-child(2) text:first-child {
+  font-size: 24rpx;
+  font-weight: 900;
+}
+.support-summary > view:nth-child(2) text:last-child {
+  opacity: 0.82;
+  font-size: 15rpx;
+}
+.support-summary > text {
+  flex: 0 0 auto;
+  font-size: 17rpx;
+  font-weight: 900;
+}
+.support-context-note {
+  margin: 0;
+}
+.support-conversation-card {
+  display: flex;
+  padding: 18rpx;
+  border: 1rpx solid var(--life-line);
+  border-radius: var(--life-radius-md);
+  align-items: center;
+  gap: 13rpx;
+  background: var(--life-paper);
+  box-shadow: var(--life-shadow-soft);
+}
+.support-conversation-copy {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: 5rpx;
+}
+.support-conversation-copy > view {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12rpx;
+}
+.support-conversation-copy > view text:first-child {
+  overflow: hidden;
+  font-size: 18rpx;
+  font-weight: 900;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.support-conversation-copy > view text:last-child {
+  flex: 0 0 auto;
+  color: var(--life-brand-deep);
+  font-size: 14rpx;
+  font-weight: 800;
+}
+.support-conversation-copy > text {
+  overflow: hidden;
+  color: var(--life-muted);
+  font-size: 14rpx;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.support-open-button {
+  margin: 0;
+  flex: 0 0 auto;
+  border-radius: 999rpx;
+  color: var(--life-paper);
+  background: var(--life-brand);
+  font-size: 14rpx;
+}
 .conversation-detail {
-  margin-top: 22rpx;
-  padding-top: 22rpx;
-  border-top: 1rpx solid var(--life-line);
+  padding: 20rpx;
+  border: 1rpx solid var(--life-line);
+  border-radius: var(--life-radius-md);
+  background: var(--life-paper);
+  box-shadow: var(--life-shadow-soft);
 }
 .conversation-filters {
   width: 100%;
@@ -1520,6 +1803,272 @@ onShow(load);
   font-size: 17rpx;
   line-height: 1.55;
 }
+.consent-surface,
+.order-tools-surface {
+  display: grid;
+  margin-top: 20rpx;
+  gap: 16rpx;
+}
+.privacy-summary,
+.order-tools-summary {
+  display: flex;
+  padding: 24rpx;
+  border-radius: var(--life-radius-lg);
+  align-items: center;
+  gap: 16rpx;
+  color: var(--life-paper);
+  background: linear-gradient(135deg, var(--life-brand), var(--life-brand-deep));
+  box-shadow: var(--life-shadow);
+}
+.privacy-summary.subscription {
+  background: linear-gradient(135deg, #087b8d, #075d70);
+}
+.privacy-shield {
+  display: flex;
+  width: 56rpx;
+  height: 64rpx;
+  border: 3rpx solid var(--life-paper);
+  border-radius: 25rpx 25rpx 32rpx 32rpx;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  box-sizing: border-box;
+}
+.privacy-shield view {
+  width: 13rpx;
+  height: 22rpx;
+  border-right: 5rpx solid var(--life-paper);
+  border-bottom: 5rpx solid var(--life-paper);
+  transform: rotate(45deg) translate(-3rpx, -3rpx);
+}
+.privacy-summary > view:nth-child(2),
+.order-tools-summary > view:nth-child(2) {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: 4rpx;
+}
+.privacy-summary > view:nth-child(2) text:first-child,
+.order-tools-summary > view:nth-child(2) text:first-child {
+  font-size: 24rpx;
+  font-weight: 900;
+}
+.privacy-summary > view:nth-child(2) text:last-child,
+.order-tools-summary > view:nth-child(2) text:last-child {
+  opacity: 0.82;
+  font-size: 15rpx;
+}
+.privacy-summary > text,
+.order-tools-summary > text {
+  flex: 0 0 auto;
+  font-size: 17rpx;
+  font-weight: 900;
+}
+.consent-trust-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10rpx;
+}
+.consent-trust-grid > view {
+  display: flex;
+  min-width: 0;
+  padding: 16rpx 6rpx;
+  border-radius: 17rpx;
+  align-items: center;
+  flex-direction: column;
+  gap: 5rpx;
+  background: var(--life-brand-soft);
+}
+.consent-trust-grid text:first-child {
+  overflow: hidden;
+  max-width: 100%;
+  color: var(--life-brand-deep);
+  font-size: 17rpx;
+  font-weight: 900;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.consent-trust-grid text:last-child {
+  color: var(--life-muted);
+  font-size: 13rpx;
+}
+.privacy-context-note {
+  margin: 0;
+}
+.privacy-fact-list,
+.subscription-state {
+  display: grid;
+  gap: 13rpx;
+}
+.privacy-fact-card {
+  display: flex;
+  padding: 18rpx;
+  border: 1rpx solid var(--life-line);
+  border-radius: var(--life-radius-md);
+  align-items: center;
+  gap: 13rpx;
+  background: var(--life-paper);
+  box-shadow: var(--life-shadow-soft);
+}
+.privacy-fact-mark {
+  width: 39rpx;
+  height: 39rpx;
+  border: 8rpx solid var(--life-brand-soft);
+  border-radius: 50%;
+  box-sizing: border-box;
+  flex: 0 0 auto;
+  background: var(--life-brand);
+}
+.privacy-fact-card > view:nth-child(2) {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: 3rpx;
+}
+.privacy-fact-card > view:nth-child(2) text:first-child {
+  font-size: 18rpx;
+  font-weight: 900;
+}
+.privacy-fact-card > view:nth-child(2) text:not(:first-child) {
+  overflow: hidden;
+  color: var(--life-muted);
+  font-size: 14rpx;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.privacy-fact-card > text {
+  flex: 0 0 auto;
+  color: var(--life-brand-deep);
+  font-size: 14rpx;
+  font-weight: 800;
+}
+.subscription-record,
+.subscription-empty {
+  display: grid;
+  padding: 22rpx;
+  border: 1rpx solid var(--life-line);
+  border-radius: var(--life-radius-md);
+  gap: 7rpx;
+  background: var(--life-paper);
+  box-shadow: var(--life-shadow-soft);
+}
+.subscription-record > view {
+  display: flex;
+  justify-content: space-between;
+  gap: 16rpx;
+}
+.subscription-record > view text:first-child,
+.subscription-empty > text:nth-child(2) {
+  font-size: 20rpx;
+  font-weight: 900;
+}
+.subscription-record > view text:last-child {
+  color: var(--life-brand-deep);
+  font-size: 16rpx;
+  font-weight: 800;
+}
+.subscription-record > text,
+.subscription-empty > text:last-child {
+  color: var(--life-muted);
+  font-size: 15rpx;
+  line-height: 1.55;
+}
+.subscription-empty {
+  justify-items: center;
+  text-align: center;
+}
+.subscription-bell {
+  position: relative;
+  width: 48rpx;
+  height: 48rpx;
+  border: 4rpx solid #075d70;
+  border-radius: 25rpx 25rpx 12rpx 12rpx;
+  box-sizing: border-box;
+}
+.subscription-bell view {
+  position: absolute;
+  right: 13rpx;
+  bottom: -10rpx;
+  width: 13rpx;
+  height: 7rpx;
+  border-radius: 0 0 9rpx 9rpx;
+  background: #075d70;
+}
+.order-tools-summary {
+  background: linear-gradient(135deg, #087b8d, #075d70);
+}
+.order-tools-mark {
+  display: flex;
+  width: 56rpx;
+  height: 56rpx;
+  border: 3rpx solid var(--life-paper);
+  border-radius: 16rpx;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  box-sizing: border-box;
+}
+.order-tools-mark view {
+  width: 24rpx;
+  height: 18rpx;
+  border-bottom: 5rpx solid var(--life-paper);
+  border-left: 5rpx solid var(--life-paper);
+  transform: rotate(-45deg) translate(2rpx, -2rpx);
+}
+.order-tool-card {
+  display: flex;
+  padding: 19rpx;
+  border: 1rpx solid var(--life-line);
+  border-radius: var(--life-radius-md);
+  align-items: center;
+  gap: 14rpx;
+  background: var(--life-paper);
+  box-shadow: var(--life-shadow-soft);
+}
+.order-tool-copy {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: 5rpx;
+}
+.order-tool-copy > view {
+  display: flex;
+  justify-content: space-between;
+  gap: 12rpx;
+}
+.order-tool-copy > view text:first-child {
+  overflow: hidden;
+  font-size: 19rpx;
+  font-weight: 900;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.order-tool-copy > view text:last-child {
+  color: var(--life-brand-deep);
+  font-size: 14rpx;
+}
+.order-tool-copy > text {
+  overflow: hidden;
+  color: var(--life-muted);
+  font-size: 14rpx;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.order-tool-actions {
+  display: flex;
+  flex: 0 0 auto;
+  flex-direction: column;
+  gap: 7rpx;
+}
+.order-tool-actions button {
+  margin: 0;
+  color: var(--life-brand-deep);
+  background: var(--life-brand-soft);
+  font-size: 14rpx;
+}
 .privacy-note.blue {
   color: #075d70;
   background: var(--life-blue-soft);
@@ -1549,37 +2098,182 @@ onShow(load);
   margin-top: 20rpx;
   gap: 14rpx;
 }
-.map-card {
-  display: flex;
-  padding: 22rpx;
-  border-radius: var(--life-radius-md);
-  align-items: center;
-  justify-content: space-between;
-  gap: 18rpx;
-  background: linear-gradient(135deg, var(--life-blue-soft), var(--life-paper));
-  box-shadow: var(--life-shadow-soft);
+.map-surface,
+.verification-result-surface {
+  display: grid;
+  margin-top: 20rpx;
+  gap: 16rpx;
 }
-.map-card > view {
+.map-summary,
+.verification-summary {
+  display: flex;
+  padding: 24rpx;
+  border-radius: var(--life-radius-lg);
+  align-items: center;
+  gap: 16rpx;
+  color: var(--life-paper);
+  background: linear-gradient(135deg, #087b8d, #075d70);
+  box-shadow: var(--life-shadow);
+}
+.map-pin,
+.verification-seal {
+  display: flex;
+  width: 58rpx;
+  height: 58rpx;
+  border: 2rpx solid rgba(255, 255, 255, 0.6);
+  border-radius: 50% 50% 50% 10rpx;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  transform: rotate(-45deg);
+  background: rgba(255, 255, 255, 0.16);
+}
+.map-pin view,
+.verification-seal view {
+  width: 16rpx;
+  height: 16rpx;
+  border-radius: 50%;
+  transform: rotate(45deg);
+  background: var(--life-paper);
+}
+.map-summary > view:nth-child(2),
+.verification-summary > view:nth-child(2) {
   display: flex;
   min-width: 0;
   flex: 1;
   flex-direction: column;
-  gap: 6rpx;
+  gap: 5rpx;
 }
-.map-card view text:first-child {
-  font-size: 24rpx;
+.map-summary > view:nth-child(2) text:first-child,
+.verification-summary > view:nth-child(2) text:first-child {
+  font-size: 25rpx;
   font-weight: 900;
 }
-.map-card view text:not(:first-child) {
+.map-summary > view:nth-child(2) text:last-child,
+.verification-summary > view:nth-child(2) text:last-child {
+  opacity: 0.82;
+  font-size: 16rpx;
+}
+.map-summary > text,
+.verification-summary > text {
+  font-size: 18rpx;
+  font-weight: 800;
+}
+.map-card {
+  display: flex;
+  overflow: hidden;
+  padding: 14rpx;
+  border: 1rpx solid var(--life-line);
+  border-radius: var(--life-radius-md);
+  align-items: center;
+  gap: 14rpx;
+  background: var(--life-paper);
+  box-shadow: var(--life-shadow-soft);
+}
+.map-photo {
+  display: flex;
+  position: relative;
+  width: 94rpx;
+  height: 94rpx;
+  overflow: hidden;
+  border-radius: 19rpx;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  background:
+    linear-gradient(35deg, transparent 48%, rgba(255, 255, 255, 0.7) 49% 53%, transparent 54%),
+    linear-gradient(145deg, var(--life-blue-soft), #8cd9d3);
+}
+.map-photo::before,
+.map-photo::after {
+  position: absolute;
+  background: rgba(7, 93, 112, 0.2);
+  content: '';
+}
+.map-photo::before {
+  width: 120%;
+  height: 12rpx;
+  transform: rotate(-24deg);
+}
+.map-photo::after {
+  width: 12rpx;
+  height: 120%;
+  transform: rotate(20deg);
+}
+.map-photo-pin {
+  z-index: 1;
+  width: 27rpx;
+  height: 27rpx;
+  border: 7rpx solid var(--life-paper);
+  border-radius: 50% 50% 50% 5rpx;
+  transform: rotate(-45deg);
+  background: var(--life-brand);
+  box-shadow: 0 5rpx 12rpx rgba(17, 119, 136, 0.24);
+}
+.map-card-copy {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: 5rpx;
+}
+.map-card-copy > view {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10rpx;
+}
+.map-card-copy > view text:first-child {
+  overflow: hidden;
+  font-size: 22rpx;
+  font-weight: 900;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.map-card-copy > view text:last-child {
+  flex: 0 0 auto;
+  color: var(--life-brand-deep);
+  font-size: 15rpx;
+}
+.map-card-copy > text {
   color: var(--life-muted);
-  font-size: 17rpx;
+  font-size: 15rpx;
 }
 .map-card button {
   margin: 0;
   border-radius: 999rpx;
-  color: #075d70;
-  background: var(--life-paper);
-  font-size: 18rpx;
+  flex: 0 0 auto;
+  color: var(--life-paper);
+  background: var(--life-brand);
+  font-size: 16rpx;
+}
+.verification-summary {
+  background: linear-gradient(135deg, var(--life-coral), var(--life-red));
+}
+.verification-seal {
+  border-radius: 50%;
+  transform: none;
+}
+.verification-seal view {
+  width: 25rpx;
+  height: 12rpx;
+  border: 0;
+  border-bottom: 5rpx solid var(--life-paper);
+  border-left: 5rpx solid var(--life-paper);
+  border-radius: 0;
+  transform: rotate(-45deg) translate(2rpx, -2rpx);
+  background: transparent;
+}
+.verification-grid {
+  margin-top: 0;
+}
+.verification-note {
+  padding: 17rpx 20rpx;
+  border-radius: 16rpx;
+  color: #9b3f20;
+  background: var(--life-coral-soft);
+  text-align: center;
+  font-size: 16rpx;
 }
 .aftercare-note {
   margin: 18rpx 0;
@@ -1589,6 +2283,273 @@ onShow(load);
   background: var(--life-coral-soft);
   font-size: 17rpx;
   line-height: 1.55;
+}
+.aftercare-apply-surface,
+.aftercare-detail-surface,
+.account-manage-surface {
+  display: grid;
+  margin-top: 20rpx;
+  gap: 16rpx;
+}
+.aftercare-order-summary {
+  display: flex;
+  padding: 22rpx;
+  border-radius: var(--life-radius-lg);
+  align-items: center;
+  gap: 18rpx;
+  background: var(--life-paper);
+  box-shadow: var(--life-shadow-soft);
+}
+.aftercare-mark {
+  display: flex;
+  width: 66rpx;
+  height: 66rpx;
+  border-radius: 20rpx;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  background: var(--life-coral-soft);
+}
+.aftercare-mark > view {
+  width: 27rpx;
+  height: 27rpx;
+  border: 5rpx solid var(--life-red);
+  border-radius: 50%;
+  border-right-color: transparent;
+}
+.aftercare-order-summary > view:nth-child(2) {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: 6rpx;
+}
+.aftercare-order-summary > view:nth-child(2) text:first-child {
+  overflow: hidden;
+  font-size: 22rpx;
+  font-weight: 900;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.aftercare-order-summary > view:nth-child(2) text:last-child {
+  color: var(--life-muted);
+  font-size: 16rpx;
+}
+.aftercare-order-summary > text:last-child {
+  padding: 5rpx 9rpx;
+  border-radius: 999rpx;
+  color: #9b3f20;
+  background: var(--life-coral-soft);
+  font-size: 15rpx;
+  font-weight: 800;
+}
+.aftercare-money-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10rpx;
+}
+.aftercare-money-grid > view {
+  display: flex;
+  padding: 17rpx 8rpx;
+  border-radius: 16rpx;
+  align-items: center;
+  flex-direction: column;
+  gap: 5rpx;
+  background: var(--life-paper);
+  box-shadow: var(--life-shadow-soft);
+}
+.aftercare-money-grid text:first-child {
+  color: var(--life-muted);
+  font-size: 14rpx;
+}
+.aftercare-money-grid text:last-child {
+  color: #9b3f20;
+  font-size: 18rpx;
+  font-weight: 900;
+}
+.aftercare-items,
+.aftercare-form,
+.account-form-panel {
+  padding: 22rpx;
+  border-radius: var(--life-radius-lg);
+  background: var(--life-paper);
+  box-shadow: var(--life-shadow-soft);
+}
+.aftercare-items > view:not(.section-head) {
+  display: flex;
+  padding: 15rpx 0;
+  border-bottom: 1rpx solid var(--life-line);
+  align-items: center;
+  justify-content: space-between;
+  gap: 16rpx;
+}
+.aftercare-items > view:not(.section-head) > view {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 5rpx;
+}
+.aftercare-items > view:not(.section-head) text:first-child {
+  font-weight: 900;
+}
+.aftercare-items > view:not(.section-head) > view text:last-child {
+  color: var(--life-muted);
+  font-size: 16rpx;
+}
+.aftercare-items > view:not(.section-head) > text:last-child {
+  color: var(--life-red);
+  font-weight: 900;
+}
+.select-field {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.select-field text:first-child {
+  color: var(--life-muted);
+}
+.select-field text:last-child {
+  color: var(--life-brand-deep);
+  font-weight: 900;
+}
+.aftercare-submit {
+  width: 100%;
+}
+.aftercare-summary {
+  padding: 28rpx;
+  border-radius: var(--life-radius-lg);
+  color: var(--life-paper);
+  background: linear-gradient(135deg, var(--life-coral), var(--life-red));
+  box-shadow: var(--life-shadow);
+}
+.aftercare-summary > text {
+  display: block;
+}
+.aftercare-summary > text:first-child {
+  font-size: 20rpx;
+  opacity: 0.86;
+}
+.aftercare-summary > text:nth-child(2) {
+  margin: 4rpx 0;
+  font-size: 50rpx;
+  font-weight: 900;
+}
+.aftercare-summary > text:last-child {
+  font-size: 17rpx;
+  opacity: 0.86;
+}
+.account-safe-banner {
+  display: flex;
+  padding: 20rpx;
+  border-radius: var(--life-radius-lg);
+  align-items: center;
+  gap: 16rpx;
+  color: var(--life-brand-deep);
+  background: var(--life-brand-soft);
+}
+.account-safe-banner.blue {
+  color: #075d70;
+  background: var(--life-blue-soft);
+}
+.safe-mark {
+  position: relative;
+  width: 56rpx;
+  height: 56rpx;
+  border: 5rpx solid currentColor;
+  border-radius: 50% 50% 14rpx 14rpx;
+  flex: none;
+  box-sizing: border-box;
+}
+.safe-mark::after {
+  position: absolute;
+  right: 15rpx;
+  bottom: 11rpx;
+  width: 15rpx;
+  height: 8rpx;
+  border-bottom: 4rpx solid currentColor;
+  border-left: 4rpx solid currentColor;
+  content: '';
+  transform: rotate(-45deg);
+}
+.account-safe-banner > view:last-child {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 5rpx;
+}
+.account-safe-banner > view:last-child text:first-child {
+  font-size: 22rpx;
+  font-weight: 900;
+}
+.account-safe-banner > view:last-child text:last-child {
+  font-size: 16rpx;
+  line-height: 1.5;
+}
+.account-list-head {
+  display: flex;
+  margin-top: 8rpx;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 24rpx;
+  font-weight: 900;
+}
+.account-list-head text:last-child {
+  color: var(--life-muted);
+  font-size: 17rpx;
+  font-weight: 500;
+}
+.address-card,
+.invoice-card {
+  display: flex;
+  padding: 20rpx;
+  border: 1rpx solid var(--life-line);
+  border-radius: var(--life-radius-md);
+  align-items: center;
+  justify-content: space-between;
+  gap: 16rpx;
+  background: var(--life-paper);
+  box-shadow: var(--life-shadow-soft);
+}
+.address-card > view,
+.invoice-card > view {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: 7rpx;
+}
+.address-card > view > view {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+}
+.address-card > view > view text:first-child,
+.invoice-card > view > text:first-child {
+  font-size: 23rpx;
+  font-weight: 900;
+}
+.address-card > view > text:nth-child(2),
+.invoice-card > view > text:nth-child(2) {
+  color: var(--life-muted);
+  font-size: 18rpx;
+  line-height: 1.5;
+}
+.address-card > view > text:last-child,
+.invoice-card > view > text:last-child {
+  align-self: flex-start;
+  padding: 4rpx 8rpx;
+  border-radius: 999rpx;
+  color: var(--life-brand-deep);
+  background: var(--life-brand-soft);
+  font-size: 14rpx;
+}
+.address-card button,
+.invoice-card button {
+  margin: 0;
+  border-radius: 999rpx;
+  color: var(--life-muted);
+  background: var(--life-bg);
+  font-size: 16rpx;
 }
 .aftercare-card,
 .ledger-card {

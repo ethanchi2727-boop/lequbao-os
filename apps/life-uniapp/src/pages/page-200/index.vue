@@ -11,12 +11,14 @@ function openCategory(category) {
 
 <template>
   <LifeSurface
+    compact
+    :show-assurance="false"
     eyebrow="PAGE-200 · 生活分类"
     title="按今天要做的事来找"
     detail="分类映射到服务端冻结商品类型，切换不会改变真实库存与价格"
   >
     <button class="search-entry" @click="uni.navigateTo({ url: '/pages/page-203/index' })">
-      搜索商品、服务或附近门店
+      <view class="search-entry-mark"></view><text>搜索商品、服务或附近门店</text><text>搜索</text>
     </button>
     <view class="category-grid">
       <button
@@ -58,36 +60,59 @@ function openCategory(category) {
 
 <style scoped>
 .search-entry {
-  margin: 4rpx 0 24rpx;
-  padding: 0 26rpx;
+  display: grid;
+  width: 100%;
+  margin: 20rpx 0 24rpx;
+  padding: 8rpx 8rpx 8rpx 22rpx;
+  border: 1rpx solid var(--life-line);
+  grid-template-columns: 28rpx 1fr auto;
+  align-items: center;
+  gap: 10rpx;
   color: var(--life-muted);
   text-align: left;
   background: var(--life-paper);
-  border-radius: var(--life-radius-md);
+  border-radius: 999rpx;
   box-shadow: var(--life-shadow-soft);
   font-size: 23rpx;
 }
+.search-entry-mark {
+  width: 19rpx;
+  height: 19rpx;
+  border: 4rpx solid var(--life-muted);
+  border-radius: 50%;
+  box-sizing: border-box;
+}
+.search-entry > text:last-child {
+  padding: 11rpx 24rpx;
+  border-radius: 999rpx;
+  color: var(--life-paper);
+  background: var(--life-brand);
+  font-size: 18rpx;
+  font-weight: 900;
+}
 .category-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 18rpx;
+  padding: 22rpx 12rpx;
+  border-radius: var(--life-radius-lg);
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20rpx 8rpx;
+  background: var(--life-paper);
+  box-shadow: var(--life-shadow-soft);
 }
 .category-card {
   display: flex;
-  min-height: 244rpx;
+  min-height: 154rpx;
   margin: 0;
-  padding: 18rpx 12rpx;
+  padding: 4rpx;
   align-items: center;
   flex-direction: column;
   text-align: center;
-  background: var(--life-paper);
-  border-radius: var(--life-radius-md);
-  box-shadow: var(--life-shadow-soft);
+  background: transparent;
 }
 .category-icon {
-  width: 116rpx;
-  height: 116rpx;
-  margin-bottom: 14rpx;
+  width: 94rpx;
+  height: 94rpx;
+  margin-bottom: 9rpx;
   border-radius: 50%;
   background-image: url('../../assets/v63-retail/category-sprite.webp');
   background-repeat: no-repeat;
@@ -96,11 +121,11 @@ function openCategory(category) {
   box-shadow: 0 6rpx 16rpx rgba(0, 0, 0, 0.08);
 }
 .category-card > text:nth-child(2) {
-  font-size: 23rpx;
+  font-size: 19rpx;
   font-weight: 900;
 }
 .category-card > text:last-child {
-  margin-top: 10rpx;
+  display: none;
   color: var(--life-muted);
   font-size: 16rpx;
   line-height: 1.4;
@@ -108,13 +133,13 @@ function openCategory(category) {
 .scene-strip {
   display: grid;
   margin-top: 20rpx;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: 1.2fr 1fr 1fr;
   gap: 12rpx;
 }
 .scene-strip button {
   display: flex;
   min-width: 0;
-  min-height: 128rpx;
+  min-height: 142rpx;
   margin: 0;
   padding: 18rpx 12rpx;
   border-radius: var(--life-radius-md);

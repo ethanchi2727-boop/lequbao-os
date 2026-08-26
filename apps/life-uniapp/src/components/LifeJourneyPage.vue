@@ -1,6 +1,7 @@
 <script setup>
 import { computed, ref } from 'vue';
 import { onShow } from '@dcloudio/uni-app';
+import LifeRetailProductCard from './LifeRetailProductCard.vue';
 import LifeSurface from './LifeSurface.vue';
 import {
   lifeSession,
@@ -40,6 +41,7 @@ const deliveryMode = ref('STORE_PICKUP');
 const selectedAddressId = ref('');
 const notice = ref('');
 const orderFilter = ref('ALL');
+const orderSearch = ref('');
 const orderFilters = Object.freeze([
   ['ALL', '全部'],
   ['PENDING_PAYMENT', '待付款'],
@@ -52,12 +54,28 @@ const state = computed(() =>
   lifeSurfaceState({ loading: loading.value, error: error.value, records: records.value }),
 );
 const cartItems = computed(() => (cart.value.groups || []).flatMap((group) => group.items || []));
+const cartSummary = computed(() => ({
+  stores: cart.value.groups?.length || 0,
+  items: cartItems.value.reduce((sum, item) => sum + Number(item.quantity || 0), 0),
+  subtotal: (cart.value.groups || []).reduce(
+    (sum, group) => sum + Number(group.subtotalCents || 0),
+    0,
+  ),
+}));
 const orderId = computed(() => query().orderId || detail.value?.id || records.value[0]?.id || '');
-const filteredOrders = computed(() =>
-  props.pageId !== '237' || orderFilter.value === 'ALL'
-    ? records.value
-    : records.value.filter((order) => order.status === orderFilter.value),
-);
+const filteredOrders = computed(() => {
+  const filtered =
+    props.pageId !== '237' || orderFilter.value === 'ALL'
+      ? records.value
+      : records.value.filter((order) => order.status === orderFilter.value);
+  const keyword = orderSearch.value.trim().toLocaleLowerCase();
+  if (!keyword) return filtered;
+  return filtered.filter((order) =>
+    [order.orderNumber, order.orderNo, order.id, order.storeName]
+      .filter(Boolean)
+      .some((value) => String(value).toLocaleLowerCase().includes(keyword)),
+  );
+});
 const money = (cents) => `¥${(Number(cents || 0) / 100).toFixed(2)}`;
 const orderStatusText = Object.freeze({
   PENDING_PAYMENT: '待付款',
@@ -69,6 +87,37 @@ const orderStatusText = Object.freeze({
   REFUNDED: '已退款',
 });
 const statusText = (status) => orderStatusText[status] || status || '状态更新中';
+const paymentStatusText = (status) =>
+  ({ PENDING: '待支付', PROCESSING: '支付处理中', PAID: '已支付', FAILED: '支付失败' })[status] ||
+  status ||
+  '待确认';
+const fulfillmentStatusText = (status) =>
+  ({
+    NOT_STARTED: '待履约',
+    PREPARING: '备货中',
+    IN_PROGRESS: '履约中',
+    COMPLETED: '已完成',
+    CANCELLED: '已取消',
+  })[status] ||
+  status ||
+  '待确认';
+const aftercareStatusText = (status) =>
+  ({ NONE: '暂无售后', REQUESTED: '已申请', PROCESSING: '处理中', COMPLETED: '已完成' })[status] ||
+  status ||
+  '暂无售后';
+const refundStatusText = (status) =>
+  ({
+    REQUESTED: '已提交',
+    APPROVED: '已批准',
+    PROCESSING: '渠道处理中',
+    SUCCEEDED: '退款成功',
+    REJECTED: '已拒绝',
+    FAILED: '退款失败',
+  })[status] ||
+  status ||
+  '状态更新中';
+const refundProgress = (status) =>
+  ({ REQUESTED: 1, APPROVED: 2, PROCESSING: 2, SUCCEEDED: 3 })[status] || 1;
 const key = (scope) => `${scope}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
 const go = (id, parameters = {}) => {
   const suffix = Object.entries(parameters)
@@ -333,49 +382,70 @@ onShow(load);
       >当前没有可展示的数据</view
     >
 
-    <view v-if="pageId === '216' && state === 'ready'" class="section card-list">
-      <view
-        v-for="store in records"
+    <view v-if="pageId === '216' && state === 'ready'" class="store-discovery">
+      <view class="section-head"
+        ><text>附近好店</text><text>{{ records.length }} 家在营</text></view
+      >
+      <button
+        v-for="(store, index) in records"
         :key="store.id"
-        class="journey-row"
+        class="journey-store-card"
         @click="go('218', { storeId: store.id, storeName: store.name })"
+      >
+        <view class="journey-store-photo" :style="{ '--store-x': `${(index % 4) * 25}%` }"
+          ><text v-if="store.distanceKm !== null">{{ store.distanceKm }}km</text></view
         ><view
           ><text>{{ store.name }}</text
-          ><text>{{ store.cityCode || '当前城市' }} · {{ store.productCount }} 件在售</text></view
-        ><text>{{ store.distanceKm === null ? '查看' : `${store.distanceKm}km` }}</text></view
-      >
-    </view>
-    <view v-if="pageId === '218' && state === 'ready'" class="section"
-      ><view class="section-head"
-        ><text>{{ detail.name }}</text
-        ><text>{{ records.length }} 件在售</text></view
-      ><view class="card-list"
-        ><view
-          v-for="product in records"
-          :key="product.id"
-          class="journey-row"
-          @click="
-            product.productType === 'GROUP_BUY'
-              ? go('221', { productId: product.id })
-              : addToCart(product)
-          "
+          ><text>{{ store.cityCode || '当前城市' }} · 当前在营</text
           ><view
-            ><text>{{ product.title }}</text
-            ><text>{{ product.variantTitle }} · 库存 {{ product.availableQuantity }}</text></view
-          ><text>{{ money(product.salePriceCents) }}</text></view
+            ><text>{{ store.productCount }} 件在售</text><text>进店 ›</text></view
+          ></view
+        >
+      </button>
+    </view>
+    <view v-if="pageId === '218' && state === 'ready'" class="store-detail-surface"
+      ><view class="store-detail-head"
+        ><view class="store-detail-photo"></view
+        ><view
+          ><text>{{ detail.name }}</text
+          ><text>真实在营 · 服务范围已确认</text
+          ><text>{{ records.length }} 件商品与服务在售</text></view
         ></view
-      ></view
-    >
-    <view v-if="pageId === '221' && detail" class="section"
-      ><view class="section-head"
-        ><text>{{ detail.title }}</text
-        ><text>{{ money(detail.salePriceCents) }}</text></view
-      ><view class="facts"
-        ><text>{{ detail.variantTitle }}</text
-        ><text>库存 {{ detail.availableQuantity }}</text
-        ><text>成交前服务端再次校验</text></view
+      ><view class="section-head"><text>门店在售</text><text>库存实时更新</text></view
+      ><view class="journey-product-grid"
+        ><LifeRetailProductCard
+          v-for="(product, index) in records"
+          :key="product.id"
+          :product="product"
+          :index="index"
+          @select="
+            (selectedProduct) =>
+              selectedProduct.productType === 'GROUP_BUY'
+                ? go('221', { productId: selectedProduct.id })
+                : go('209', { productId: selectedProduct.id })
+          "
+          @add="addToCart" /></view
+    ></view>
+    <view v-if="pageId === '221' && detail" class="group-detail-surface"
+      ><view class="group-detail-photo"
+        ><text>到店团购</text
+        ><text>{{ detail.availableQuantity > 0 ? '实时可售' : '当前售罄' }}</text></view
+      ><view class="group-detail-copy"
+        ><view class="group-price"
+          ><text>{{ money(detail.salePriceCents) }}</text
+          ><text>服务端实时成交价</text></view
+        ><text class="group-title">{{ detail.title }}</text
+        ><text class="group-store">{{ detail.storeName || '适用门店以核价结果为准' }}</text
+        ><view class="group-rule-grid"
+          ><view
+            ><text>规格</text><text>{{ detail.variantTitle }}</text></view
+          ><view
+            ><text>库存</text><text>{{ detail.availableQuantity }}</text></view
+          ><view><text>履约</text><text>到店核销</text></view></view
+        ><text class="group-notice">成交前服务端会再次校验价格、库存与适用门店。</text></view
+      >
       ><button
-        class="primary"
+        class="primary group-buy-button"
         :loading="busy"
         :disabled="detail.availableQuantity < 1"
         @click="addToCart(detail)"
@@ -383,22 +453,44 @@ onShow(load);
         加入购物车
       </button></view
     >
-    <view v-if="pageId === '224' && state === 'ready'" class="section"
-      ><view v-for="group in cart.groups" :key="group.storeId"
-        ><view class="section-head"
-          ><text>{{ group.storeName || '当前门店' }}</text
-          ><text>{{ money(group.subtotalCents) }}</text></view
-        ><view v-for="item in group.items" :key="item.id" class="journey-row"
-          ><view
-            ><text>{{ item.productTitle }} × {{ item.quantity }}</text
-            ><text>{{ item.available ? item.variantTitle : '库存或价格已变化' }}</text></view
-          ><button size="mini" @click="removeItem(item)">移除</button></view
-        ></view
-      ><button class="primary" @click="go('227')">去结算</button></view
-    >
-    <view v-if="pageId === '227' && state === 'ready'" class="section"
-      ><view class="section-head"><text>履约方式</text><text>按门店分别履约</text></view
-      ><view class="tabs delivery-tabs"
+    <view v-if="pageId === '224' && state === 'ready'" class="journey-cart-surface">
+      <view class="journey-cart-summary">
+        <view class="journey-basket-mark"><view></view></view>
+        <view
+          ><text>{{ cartSummary.items }} 件商品</text
+          ><text>{{ cartSummary.stores }} 家门店分别履约</text></view
+        >
+        <text>{{ money(cartSummary.subtotal) }}</text>
+      </view>
+      <view v-for="group in cart.groups" :key="group.storeId" class="journey-cart-group">
+        <view class="journey-cart-store">
+          <view class="journey-store-mark"></view>
+          <text>{{ group.storeName || '当前门店' }}</text
+          ><text>{{ money(group.subtotalCents) }}</text>
+        </view>
+        <view v-for="item in group.items" :key="item.id" class="journey-cart-item">
+          <view class="journey-item-photo"><view></view></view>
+          <view class="journey-item-copy">
+            <text>{{ item.productTitle }}</text>
+            <text>{{ item.available ? item.variantTitle : '库存或价格已变化' }}</text>
+            <text>数量 × {{ item.quantity }}</text>
+          </view>
+          <button size="mini" @click="removeItem(item)">移除</button>
+        </view>
+      </view>
+      <view class="journey-cart-rail">
+        <view
+          ><text>合计</text><text>{{ money(cartSummary.subtotal) }}</text></view
+        >
+        <button class="primary" @click="go('227')">去结算</button>
+      </view>
+    </view>
+    <view v-if="pageId === '227' && state === 'ready'" class="fulfillment-surface">
+      <view class="fulfillment-summary">
+        <view><text>选择履约方式</text><text>每家门店按服务端规则分别确认</text></view>
+        <text>{{ cartSummary.stores }} 组</text>
+      </view>
+      <view class="tabs delivery-tabs"
         ><button
           :class="{ active: deliveryMode === 'STORE_PICKUP' }"
           @click="deliveryMode = 'STORE_PICKUP'"
@@ -410,7 +502,15 @@ onShow(load);
         >
           <text>配送到家</text><text>按地址安排履约</text>
         </button></view
-      ><picker
+      ><view class="fulfillment-tip">
+        <text>{{ deliveryMode === 'STORE_PICKUP' ? '到店自提' : '配送到家' }}</text>
+        <text>{{
+          deliveryMode === 'STORE_PICKUP'
+            ? '下单后按订单中的门店信息到店核验取货'
+            : '配送范围、运费和时效将在服务端核价时确认'
+        }}</text>
+      </view>
+      <picker
         v-if="deliveryMode === 'PHYSICAL_DELIVERY' && addresses.length"
         :range="addresses"
         range-key="addressLine"
@@ -420,23 +520,39 @@ onShow(load);
         }}</view></picker
       ><view v-else-if="deliveryMode === 'PHYSICAL_DELIVERY'" class="empty-safe"
         >请先在“我的”维护配送地址</view
-      ><button class="primary" :loading="busy" @click="quote">确认履约并核价</button></view
+      ><button class="primary" :loading="busy" @click="quote">确认履约并核价</button>
+    </view>
+    <view
+      v-if="pageId === '228' && ['ready', 'empty'].includes(state)"
+      class="reward-choice-surface"
     >
-    <view v-if="pageId === '228' && ['ready', 'empty'].includes(state)" class="section"
-      ><view class="section-head"><text>消费奖励</text><text>独立账本</text></view
-      ><view v-for="reward in records" :key="reward.id" class="journey-row"
-        ><view
-          ><text>{{ reward.ruleVersion || '消费奖励' }}</text
-          ><text>可用 {{ money(reward.availableAmountCents) }}</text></view
-        ><text>{{ reward.status }}</text></view
-      ><view v-if="!records.length" class="empty-safe"
-        >当前没有可用奖励，本次仍可按服务端核价结算</view
-      ><text class="notice">奖励不会被客户端擅自抵扣；本次订单优惠以服务端核价为准。</text
-      ><button class="primary" @click="go('229')">查看订单确认</button></view
-    >
-    <view v-if="pageId === '229' && state === 'ready'" class="section"
-      ><view class="section-head"
-        ><text>服务端核价</text
+      <view class="reward-choice-summary">
+        <view><text>消费奖励</text><text>与订单支付资金独立记账</text></view>
+        <text>{{ records.length }} 笔</text>
+      </view>
+      <view v-if="records.length" class="reward-choice-list">
+        <view v-for="reward in records" :key="reward.id" class="reward-choice-card">
+          <view class="reward-choice-mark"><view></view></view>
+          <view>
+            <view
+              ><text>{{ reward.ruleVersion || '消费奖励' }}</text
+              ><text>{{ reward.status }}</text></view
+            >
+            <text>可用 {{ money(reward.availableAmountCents) }}</text>
+            <text>服务端奖励流水，不由客户端自动抵扣</text>
+          </view>
+        </view>
+      </view>
+      <view v-else class="empty-safe">当前没有可用奖励，本次仍可按服务端核价结算</view
+      ><view class="reward-choice-note"
+        >奖励不会被客户端擅自抵扣；本次订单优惠以服务端核价为准。</view
+      >
+      <button class="primary" @click="go('229')">查看订单确认</button>
+    </view>
+    <view v-if="pageId === '229' && state === 'ready'" class="checkout-confirm-surface"
+      ><view class="checkout-confirm-summary"
+        ><view class="checkout-confirm-mark"><view></view></view
+        ><view><text>确认订单</text><text>价格、库存与履约规则由服务端最终确认</text></view
         ><text>{{ checkout ? money(checkout.payableAmountCents) : '待核价' }}</text></view
       ><view class="checkout-truth"
         ><view
@@ -447,45 +563,84 @@ onShow(load);
         ><view
           ><text>价格状态</text><text>{{ checkout ? '已核价' : '待重新核价' }}</text></view
         ></view
+      ><view v-if="checkout?.groups?.length" class="checkout-group-list"
+        ><view v-for="(group, index) in checkout.groups" :key="group.id" class="checkout-group-card"
+          ><view
+            ><text>履约分组 {{ index + 1 }}</text
+            ><text>{{
+              group.orderType === 'PHYSICAL_DELIVERY' ? '配送到家' : '到店自提'
+            }}</text></view
+          ><text
+            >{{ group.items?.length || 0 }} 项商品 · 规则
+            {{ group.policy?.version || '未标注' }}</text
+          ><view class="checkout-group-benefit"
+            ><text>{{ group.discount?.name || '无可用优惠' }}</text
+            ><text>{{ money(group.payableAmountCents) }}</text></view
+          ></view
+        ></view
       ><view class="checkout-amounts"
         ><view
           ><text>商品金额</text
-          ><text>{{
-            money(cart.groups.reduce((sum, group) => sum + Number(group.subtotalCents || 0), 0))
-          }}</text></view
-        ><view><text>配送与优惠</text><text>服务端规则计算</text></view
+          ><text>{{ money(checkout?.goodsAmountCents ?? cartSummary.subtotal) }}</text></view
+        ><view
+          ><text>配送费用</text
+          ><text>{{ checkout ? money(checkout.shippingAmountCents) : '待核价' }}</text></view
+        ><view
+          ><text>订单优惠</text
+          ><text>{{ checkout ? `-${money(checkout.discountAmountCents)}` : '待核价' }}</text></view
         ><view class="checkout-payable"
           ><text>应付金额</text
           ><text>{{ checkout ? money(checkout.payableAmountCents) : '待核价' }}</text></view
         ></view
-      ><view class="facts"
-        ><text>购物车版本 {{ cart.version }}</text
-        ><text>{{ checkout?.groups?.length || cart.groups.length }} 个履约分组</text
-        ><text>提交后按商家分别创建订单</text></view
+      ><view class="checkout-confirm-note"
+        >提交后按商家分别创建订单；部分分组失败时，服务端会保留已成功结果并支持安全重试。</view
+      >
       ><button class="primary" :loading="busy" @click="submit">
         {{ checkout ? '确认创建订单' : '重新核价' }}
       </button></view
     >
-    <view v-if="['231', '232', '238'].includes(pageId) && detail" class="section"
-      ><view class="section-head"
+    <view
+      v-if="['231', '232', '238'].includes(pageId) && detail"
+      :class="pageId === '238' ? 'order-detail-surface' : 'section'"
+      ><view v-if="pageId !== '238'" class="section-head"
         ><text>订单 {{ detail.orderNumber || detail.id }}</text
         ><text>{{ statusText(detail.status) }}</text></view
+      ><view v-else class="order-detail-summary"
+        ><view class="order-detail-mark"><view></view></view
+        ><view
+          ><text>{{ detail.storeName || '商家订单' }}</text
+          ><text>订单 {{ detail.orderNumber || detail.id }}</text></view
+        ><text>{{ statusText(detail.status) }}</text></view
+      ><view
+        v-if="['231', '232'].includes(pageId)"
+        class="payment-status-panel"
+        :class="{ paid: detail.paymentStatus === 'PAID' }"
+        ><view class="payment-seal"><view></view></view
+        ><view
+          ><text>{{ detail.paymentStatus === 'PAID' ? '支付已确认' : '等待服务端确认支付' }}</text
+          ><text>{{ money(detail.payableAmountCents) }}</text
+          ><text>订单状态只以服务端支付回调为准</text></view
+        ></view
       ><view v-if="pageId === '238'" class="order-truth-grid"
         ><view
-          ><text>支付状态</text><text>{{ detail.paymentStatus }}</text></view
+          ><text>支付状态</text><text>{{ paymentStatusText(detail.paymentStatus) }}</text></view
         ><view
-          ><text>履约状态</text><text>{{ detail.fulfillmentStatus }}</text></view
+          ><text>履约状态</text
+          ><text>{{ fulfillmentStatusText(detail.fulfillmentStatus) }}</text></view
         ><view
-          ><text>售后状态</text><text>{{ detail.aftercareStatus || '暂无售后' }}</text></view
+          ><text>售后状态</text><text>{{ aftercareStatusText(detail.aftercareStatus) }}</text></view
         ><view
           ><text>订单应付</text><text>{{ money(detail.payableAmountCents) }}</text></view
         ></view
       ><view v-if="pageId === '238' && detail.items?.length" class="order-item-list"
-        ><view v-for="item in detail.items" :key="item.id"
-          ><text>{{ item.title }} × {{ item.quantity }}</text
+        ><view v-for="item in detail.items" :key="item.id" class="order-detail-item"
+          ><view class="order-detail-photo"><view></view></view
+          ><view
+            ><text>{{ item.title || item.productTitle }}</text
+            ><text>数量 × {{ item.quantity }}</text></view
           ><text>{{ money(item.lineAmountCents) }}</text></view
         ></view
-      ><view class="facts"
+      ><view v-if="pageId !== '238'" class="facts"
         ><text>应付 {{ money(detail.payableAmountCents) }}</text
         ><text>支付 {{ detail.paymentStatus }}</text
         ><text>履约 {{ detail.fulfillmentStatus }}</text
@@ -516,24 +671,59 @@ onShow(load);
         申请未履约退款
       </button></view
     >
-    <view v-if="pageId === '235' && detail" class="section"
-      ><view class="section-head"
-        ><text>{{ detail.levelName || detail.level || '会员账户' }}</text
-        ><text>{{ detail.status || '有效' }}</text></view
-      ><view class="member-benefit-grid"
-        ><view
-          ><text>{{ rewards.length }}</text
-          ><text>奖励记录</text></view
-        ><view
-          ><text>{{ records.length }}</text
-          ><text>会员账户</text></view
-        ><view><text>独立</text><text>订单与奖励账本</text></view></view
-      ><view class="facts"
-        ><text>会员权益来自服务端账户</text><text>奖励流水 {{ rewards.length }} 条</text
-        ><text>订单支付与奖励独立记账</text></view
-      ></view
-    >
+    <view v-if="pageId === '235' && detail" class="member-surface">
+      <view class="member-card">
+        <view class="member-card-head">
+          <view class="member-emblem"><view></view></view>
+          <view
+            ><text>{{ detail.levelName || detail.level || '乐趣生活会员' }}</text
+            ><text>账户状态 {{ detail.status || '以服务端为准' }}</text></view
+          >
+          <text>MEMBER</text>
+        </view>
+        <view class="member-balance">
+          <view
+            ><text>{{ money(detail.availableRewardCents) }}</text
+            ><text>可用消费奖励</text></view
+          >
+          <view
+            ><text>{{ rewards.length }}</text
+            ><text>奖励流水</text></view
+          >
+        </view>
+        <text class="member-since">加入时间 {{ detail.memberSince || '服务端暂未标注' }}</text>
+      </view>
+      <view class="member-benefit-grid">
+        <view><text>真实</text><text>会员账户</text></view>
+        <view
+          ><text>{{ detail.grants?.length || 0 }}</text
+          ><text>奖励批次</text></view
+        >
+        <view><text>独立</text><text>资金与奖励</text></view>
+      </view>
+      <view class="member-rules">
+        <view
+          ><text>权益说明</text><text>当前账户权益、状态和奖励余额均来自服务端会员主档</text></view
+        >
+        <view><text>奖励分账</text><text>消费奖励单独记账，不替代订单优惠或支付资金</text></view>
+        <view
+          ><text>长期留存</text><text>奖励流水按真实账户持续保存，并可在奖励明细中查询</text></view
+        >
+      </view>
+    </view>
     <view v-if="pageId === '237' && state === 'ready'" class="order-list-surface">
+      <view class="order-list-summary">
+        <view class="order-list-mark"><view></view></view>
+        <view
+          ><text>我的订单</text><text>{{ records.length }} 笔服务端订单</text></view
+        >
+        <text>{{ filteredOrders.length }} 笔</text>
+      </view>
+      <view class="order-search">
+        <view class="order-search-mark"></view>
+        <input v-model="orderSearch" type="text" placeholder="搜索订单号或商家" />
+        <text v-if="orderSearch" @click="orderSearch = ''">清除</text>
+      </view>
       <scroll-view scroll-x class="order-filters">
         <button
           v-for="filter in orderFilters"
@@ -566,7 +756,7 @@ onShow(load);
           >
         </view>
       </view>
-      <view v-else class="empty-safe">当前筛选下没有订单</view>
+      <view v-else class="empty-safe">当前筛选或搜索下没有订单</view>
     </view>
     <view v-if="['239', '240'].includes(pageId) && state === 'ready'" class="section card-list"
       ><view
@@ -578,8 +768,16 @@ onShow(load);
         "
         ><view class="refund-card-head"
           ><text>退款 {{ refundItem.id }}</text
-          ><text>{{ refundItem.status }}</text></view
+          ><text>{{ refundStatusText(refundItem.status) }}</text></view
         ><text>{{ refundItem.reasonCode || refundItem.requestType }}</text>
+        <view class="refund-progress"
+          ><view
+            v-for="step in 3"
+            :key="step"
+            :class="{ active: step <= refundProgress(refundItem.status) }"
+            ><text></text><text>{{ ['提交申请', '渠道处理', '退款完成'][step - 1] }}</text></view
+          ></view
+        >
         <view class="refund-card-foot"
           ><text>{{ money(refundItem.amountCents) }}</text
           ><text>{{ pageId === '239' ? '查看退款详情 ›' : '渠道进度以服务端为准' }}</text></view
@@ -598,6 +796,188 @@ onShow(load);
   gap: 20rpx;
   padding: 20rpx 0;
   border-bottom: 1rpx solid #e6ebe8;
+}
+.store-discovery,
+.store-detail-surface,
+.group-detail-surface {
+  margin-top: 20rpx;
+}
+.store-discovery {
+  padding: 24rpx;
+  border-radius: var(--life-radius-lg);
+  background: var(--life-paper);
+  box-shadow: var(--life-shadow-soft);
+}
+.journey-store-card {
+  display: flex;
+  width: 100%;
+  margin: 0;
+  padding: 17rpx 0;
+  border-bottom: 1rpx solid var(--life-line);
+  align-items: center;
+  gap: 18rpx;
+  text-align: left;
+  background: transparent;
+}
+.journey-store-card:last-child {
+  border-bottom: 0;
+}
+.journey-store-photo,
+.store-detail-photo {
+  width: 146rpx;
+  height: 116rpx;
+  border-radius: 18rpx;
+  flex: none;
+  background: url('../assets/v63-retail/category-sprite.webp') var(--store-x, 50%) 100% / 500% 300%
+    no-repeat;
+}
+.journey-store-photo {
+  position: relative;
+}
+.journey-store-photo > text {
+  position: absolute;
+  right: 7rpx;
+  bottom: 7rpx;
+  padding: 3rpx 7rpx;
+  border-radius: 999rpx;
+  color: var(--life-paper);
+  background: rgba(7, 68, 49, 0.8);
+  font-size: 13rpx;
+}
+.journey-store-card > view:last-child {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: 8rpx;
+}
+.journey-store-card > view:last-child > text:first-child {
+  font-size: 25rpx;
+  font-weight: 900;
+}
+.journey-store-card > view:last-child > text:nth-child(2) {
+  color: var(--life-muted);
+  font-size: 18rpx;
+}
+.journey-store-card > view:last-child > view {
+  display: flex;
+  justify-content: space-between;
+  color: var(--life-brand-deep);
+  font-size: 18rpx;
+  font-weight: 800;
+}
+.store-detail-head {
+  display: flex;
+  margin-bottom: 22rpx;
+  padding: 20rpx;
+  border-radius: var(--life-radius-lg);
+  align-items: center;
+  gap: 20rpx;
+  background: var(--life-paper);
+  box-shadow: var(--life-shadow-soft);
+}
+.store-detail-head > view:last-child {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 7rpx;
+}
+.store-detail-head > view:last-child text:first-child {
+  font-size: 28rpx;
+  font-weight: 900;
+}
+.store-detail-head > view:last-child text:not(:first-child) {
+  color: var(--life-muted);
+  font-size: 17rpx;
+}
+.journey-product-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16rpx;
+}
+.group-detail-surface {
+  overflow: hidden;
+  border-radius: var(--life-radius-lg);
+  background: var(--life-paper);
+  box-shadow: var(--life-shadow);
+}
+.group-detail-photo {
+  display: flex;
+  height: 360rpx;
+  padding: 20rpx;
+  align-items: flex-start;
+  justify-content: space-between;
+  background: url('../assets/v63-retail/product-sprite.webp') 33.333% 100% / 400% 200% no-repeat;
+  box-sizing: border-box;
+}
+.group-detail-photo > text {
+  padding: 6rpx 11rpx;
+  border-radius: 999rpx;
+  color: var(--life-paper);
+  background: rgba(108, 39, 17, 0.84);
+  font-size: 16rpx;
+  font-weight: 900;
+}
+.group-detail-copy {
+  padding: 24rpx;
+}
+.group-price {
+  display: flex;
+  align-items: baseline;
+  gap: 12rpx;
+}
+.group-price text:first-child {
+  color: var(--life-red);
+  font-size: 40rpx;
+  font-weight: 900;
+}
+.group-price text:last-child,
+.group-store,
+.group-notice {
+  color: var(--life-muted);
+  font-size: 17rpx;
+}
+.group-title {
+  display: block;
+  margin-top: 10rpx;
+  font-size: 30rpx;
+  font-weight: 900;
+}
+.group-store {
+  display: block;
+  margin-top: 7rpx;
+}
+.group-rule-grid {
+  display: grid;
+  margin-top: 20rpx;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10rpx;
+}
+.group-rule-grid > view {
+  display: flex;
+  padding: 15rpx 8rpx;
+  border-radius: 16rpx;
+  align-items: center;
+  flex-direction: column;
+  gap: 5rpx;
+  background: var(--life-coral-soft);
+}
+.group-rule-grid text:first-child {
+  color: var(--life-muted);
+  font-size: 14rpx;
+}
+.group-rule-grid text:last-child {
+  color: #9b3f20;
+  font-size: 18rpx;
+  font-weight: 900;
+}
+.group-notice {
+  display: block;
+  margin-top: 17rpx;
+  line-height: 1.55;
+}
+.group-buy-button {
+  margin: 0 24rpx 24rpx;
 }
 .journey-row > view {
   display: flex;
@@ -675,6 +1055,204 @@ onShow(load);
   color: #fff;
   background: #076c50;
 }
+.journey-cart-surface,
+.fulfillment-surface,
+.reward-choice-surface {
+  display: grid;
+  margin-top: 20rpx;
+  gap: 16rpx;
+}
+.journey-cart-summary,
+.fulfillment-summary,
+.reward-choice-summary {
+  display: flex;
+  padding: 22rpx;
+  border-radius: var(--life-radius-lg);
+  align-items: center;
+  gap: 16rpx;
+  color: var(--life-paper);
+  background: linear-gradient(135deg, var(--life-brand), var(--life-brand-deep));
+  box-shadow: var(--life-shadow);
+}
+.journey-basket-mark {
+  position: relative;
+  width: 54rpx;
+  height: 45rpx;
+  border: 4rpx solid var(--life-paper);
+  border-top: 0;
+  border-radius: 7rpx 7rpx 13rpx 13rpx;
+  box-sizing: border-box;
+  flex: 0 0 auto;
+}
+.journey-basket-mark::before,
+.journey-basket-mark::after {
+  position: absolute;
+  bottom: -14rpx;
+  width: 7rpx;
+  height: 7rpx;
+  border-radius: 50%;
+  background: var(--life-paper);
+  content: '';
+}
+.journey-basket-mark::before {
+  left: 7rpx;
+}
+.journey-basket-mark::after {
+  right: 7rpx;
+}
+.journey-basket-mark view {
+  position: absolute;
+  top: -12rpx;
+  left: -12rpx;
+  width: 18rpx;
+  height: 4rpx;
+  border-radius: 99rpx;
+  background: var(--life-paper);
+}
+.journey-cart-summary > view:nth-child(2),
+.fulfillment-summary > view,
+.reward-choice-summary > view {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: 4rpx;
+}
+.journey-cart-summary > view:nth-child(2) text:first-child,
+.fulfillment-summary > view text:first-child,
+.reward-choice-summary > view text:first-child {
+  font-size: 24rpx;
+  font-weight: 900;
+}
+.journey-cart-summary > view:nth-child(2) text:last-child,
+.fulfillment-summary > view text:last-child,
+.reward-choice-summary > view text:last-child {
+  opacity: 0.82;
+  font-size: 15rpx;
+}
+.journey-cart-summary > text,
+.fulfillment-summary > text,
+.reward-choice-summary > text {
+  flex: 0 0 auto;
+  font-size: 22rpx;
+  font-weight: 900;
+}
+.journey-cart-group {
+  overflow: hidden;
+  border: 1rpx solid var(--life-line);
+  border-radius: var(--life-radius-md);
+  background: var(--life-paper);
+  box-shadow: var(--life-shadow-soft);
+}
+.journey-cart-store {
+  display: flex;
+  padding: 17rpx 20rpx;
+  align-items: center;
+  gap: 10rpx;
+  background: var(--life-bg);
+}
+.journey-store-mark {
+  width: 23rpx;
+  height: 19rpx;
+  border: 3rpx solid var(--life-brand-deep);
+  border-radius: 3rpx;
+  box-sizing: border-box;
+}
+.journey-cart-store text:nth-child(2) {
+  overflow: hidden;
+  flex: 1;
+  font-size: 19rpx;
+  font-weight: 900;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.journey-cart-store text:last-child {
+  color: var(--life-red);
+  font-size: 18rpx;
+  font-weight: 900;
+}
+.journey-cart-item {
+  display: flex;
+  padding: 17rpx;
+  border-top: 1rpx solid var(--life-line);
+  align-items: center;
+  gap: 13rpx;
+}
+.journey-item-photo {
+  display: flex;
+  width: 78rpx;
+  height: 78rpx;
+  border-radius: 17rpx;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  background: linear-gradient(145deg, var(--life-yellow-soft), var(--life-coral-soft));
+}
+.journey-item-photo view {
+  width: 32rpx;
+  height: 32rpx;
+  border-radius: 50% 45% 55% 40%;
+  background: var(--life-coral);
+  transform: rotate(-18deg);
+}
+.journey-item-copy {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: 4rpx;
+}
+.journey-item-copy text:first-child {
+  overflow: hidden;
+  font-size: 19rpx;
+  font-weight: 900;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.journey-item-copy text:not(:first-child) {
+  color: var(--life-muted);
+  font-size: 14rpx;
+}
+.journey-cart-item button {
+  margin: 0;
+  flex: 0 0 auto;
+  color: #9b3f20;
+  background: var(--life-coral-soft);
+  font-size: 14rpx;
+}
+.journey-cart-rail {
+  display: flex;
+  padding: 14rpx 16rpx;
+  border: 1rpx solid var(--life-line);
+  border-radius: 999rpx;
+  align-items: center;
+  gap: 16rpx;
+  background: var(--life-paper);
+  box-shadow: var(--life-shadow);
+}
+.journey-cart-rail > view {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+}
+.journey-cart-rail > view text:first-child {
+  color: var(--life-muted);
+  font-size: 14rpx;
+}
+.journey-cart-rail > view text:last-child {
+  color: var(--life-red);
+  font-size: 25rpx;
+  font-weight: 900;
+}
+.journey-cart-rail button {
+  width: auto;
+  margin: 0;
+  padding: 0 32rpx;
+}
+.fulfillment-summary {
+  background: linear-gradient(135deg, #087b8d, #075d70);
+}
 .delivery-tabs button {
   display: flex;
   min-height: 108rpx;
@@ -692,6 +1270,93 @@ onShow(load);
   font-size: 16rpx;
   opacity: 0.74;
 }
+.fulfillment-tip {
+  display: grid;
+  padding: 18rpx 20rpx;
+  border-radius: var(--life-radius-md);
+  gap: 5rpx;
+  color: var(--life-brand-deep);
+  background: var(--life-brand-soft);
+}
+.fulfillment-tip text:first-child {
+  font-size: 19rpx;
+  font-weight: 900;
+}
+.fulfillment-tip text:last-child {
+  font-size: 15rpx;
+  line-height: 1.5;
+}
+.reward-choice-summary {
+  background: linear-gradient(135deg, #f39a42, var(--life-red));
+}
+.reward-choice-list {
+  display: grid;
+  gap: 12rpx;
+}
+.reward-choice-card {
+  display: flex;
+  padding: 19rpx;
+  border: 1rpx solid var(--life-line);
+  border-radius: var(--life-radius-md);
+  align-items: center;
+  gap: 14rpx;
+  background: var(--life-paper);
+  box-shadow: var(--life-shadow-soft);
+}
+.reward-choice-mark {
+  display: flex;
+  width: 58rpx;
+  height: 58rpx;
+  border-radius: 50%;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  background: var(--life-yellow-soft);
+}
+.reward-choice-mark view {
+  width: 25rpx;
+  height: 25rpx;
+  border: 5rpx solid #c87908;
+  border-radius: 50%;
+  box-sizing: border-box;
+}
+.reward-choice-card > view:last-child {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: 5rpx;
+}
+.reward-choice-card > view:last-child > view {
+  display: flex;
+  justify-content: space-between;
+  gap: 12rpx;
+}
+.reward-choice-card > view:last-child > view text:first-child {
+  font-size: 19rpx;
+  font-weight: 900;
+}
+.reward-choice-card > view:last-child > view text:last-child {
+  color: #9b5c00;
+  font-size: 14rpx;
+}
+.reward-choice-card > view:last-child > text:nth-child(2) {
+  color: var(--life-red);
+  font-size: 22rpx;
+  font-weight: 900;
+}
+.reward-choice-card > view:last-child > text:last-child {
+  color: var(--life-muted);
+  font-size: 14rpx;
+}
+.reward-choice-note {
+  padding: 17rpx 20rpx;
+  border-radius: 16rpx;
+  color: #9b3f20;
+  background: var(--life-coral-soft);
+  font-size: 16rpx;
+  line-height: 1.5;
+}
 .picker {
   margin-top: 18rpx;
   padding: 22rpx;
@@ -706,11 +1371,104 @@ onShow(load);
   line-height: 1.7;
 }
 .order-list-surface {
+  display: grid;
   margin-top: 20rpx;
+  gap: 14rpx;
+}
+.order-list-summary,
+.checkout-confirm-summary,
+.order-detail-summary {
+  display: flex;
+  padding: 24rpx;
+  border-radius: var(--life-radius-lg);
+  align-items: center;
+  gap: 16rpx;
+  color: var(--life-paper);
+  background: linear-gradient(135deg, var(--life-brand), var(--life-brand-deep));
+  box-shadow: var(--life-shadow);
+}
+.order-list-mark,
+.checkout-confirm-mark,
+.order-detail-mark {
+  display: flex;
+  width: 56rpx;
+  height: 56rpx;
+  border: 3rpx solid var(--life-paper);
+  border-radius: 17rpx;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  box-sizing: border-box;
+}
+.order-list-mark view,
+.checkout-confirm-mark view,
+.order-detail-mark view {
+  width: 24rpx;
+  height: 17rpx;
+  border-bottom: 5rpx solid var(--life-paper);
+  border-left: 5rpx solid var(--life-paper);
+  transform: rotate(-45deg) translate(2rpx, -2rpx);
+}
+.order-list-summary > view:nth-child(2),
+.checkout-confirm-summary > view:nth-child(2),
+.order-detail-summary > view:nth-child(2) {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: 4rpx;
+}
+.order-list-summary > view:nth-child(2) text:first-child,
+.checkout-confirm-summary > view:nth-child(2) text:first-child,
+.order-detail-summary > view:nth-child(2) text:first-child {
+  overflow: hidden;
+  font-size: 24rpx;
+  font-weight: 900;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.order-list-summary > view:nth-child(2) text:last-child,
+.checkout-confirm-summary > view:nth-child(2) text:last-child,
+.order-detail-summary > view:nth-child(2) text:last-child {
+  opacity: 0.82;
+  font-size: 15rpx;
+}
+.order-list-summary > text,
+.checkout-confirm-summary > text,
+.order-detail-summary > text {
+  flex: 0 0 auto;
+  font-size: 18rpx;
+  font-weight: 900;
+}
+.order-search {
+  display: grid;
+  padding: 13rpx 18rpx;
+  border: 1rpx solid var(--life-line);
+  border-radius: 999rpx;
+  grid-template-columns: 25rpx 1fr auto;
+  align-items: center;
+  gap: 10rpx;
+  background: var(--life-paper);
+  box-shadow: var(--life-shadow-soft);
+}
+.order-search-mark {
+  width: 18rpx;
+  height: 18rpx;
+  border: 4rpx solid var(--life-muted);
+  border-radius: 50%;
+  box-sizing: border-box;
+}
+.order-search input {
+  min-width: 0;
+  color: var(--life-ink);
+  font-size: 18rpx;
+}
+.order-search > text {
+  color: var(--life-brand-deep);
+  font-size: 15rpx;
 }
 .order-filters {
   width: 100%;
-  padding-bottom: 16rpx;
   white-space: nowrap;
 }
 .order-filters button {
@@ -776,6 +1534,67 @@ onShow(load);
   font-size: 18rpx;
   font-weight: 800;
 }
+.checkout-confirm-surface,
+.order-detail-surface {
+  display: grid;
+  margin-top: 20rpx;
+  gap: 16rpx;
+}
+.checkout-confirm-summary {
+  background: linear-gradient(135deg, var(--life-coral), var(--life-red));
+}
+.checkout-group-list {
+  display: grid;
+  gap: 12rpx;
+}
+.checkout-group-card {
+  display: grid;
+  padding: 19rpx;
+  border: 1rpx solid var(--life-line);
+  border-radius: var(--life-radius-md);
+  gap: 8rpx;
+  background: var(--life-paper);
+  box-shadow: var(--life-shadow-soft);
+}
+.checkout-group-card > view:first-child,
+.checkout-group-benefit {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12rpx;
+}
+.checkout-group-card > view:first-child text:first-child {
+  font-size: 19rpx;
+  font-weight: 900;
+}
+.checkout-group-card > view:first-child text:last-child {
+  color: var(--life-brand-deep);
+  font-size: 15rpx;
+}
+.checkout-group-card > text {
+  color: var(--life-muted);
+  font-size: 15rpx;
+}
+.checkout-group-benefit text:first-child {
+  color: var(--life-red);
+  font-size: 16rpx;
+}
+.checkout-group-benefit text:last-child {
+  color: var(--life-red);
+  font-size: 23rpx;
+  font-weight: 900;
+}
+.checkout-confirm-note {
+  padding: 17rpx 20rpx;
+  border-radius: 16rpx;
+  color: var(--life-brand-deep);
+  background: var(--life-brand-soft);
+  font-size: 15rpx;
+  line-height: 1.55;
+}
+.order-detail-summary {
+  background: linear-gradient(135deg, var(--life-brand), var(--life-brand-deep));
+}
 .order-truth-grid {
   display: grid;
   margin-top: 18rpx;
@@ -806,14 +1625,53 @@ onShow(load);
 }
 .order-item-list > view {
   display: flex;
-  padding: 16rpx 0;
+  padding: 14rpx;
   border-bottom: 1rpx solid var(--life-line);
+  border-radius: 16rpx;
+  align-items: center;
   justify-content: space-between;
-  gap: 18rpx;
-  font-size: 20rpx;
+  gap: 13rpx;
+  background: var(--life-paper);
 }
-.order-item-list text:last-child {
+.order-detail-photo {
+  display: flex;
+  width: 68rpx;
+  height: 68rpx;
+  border-radius: 15rpx;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  background: var(--life-yellow-soft);
+}
+.order-detail-photo view {
+  width: 27rpx;
+  height: 27rpx;
+  border-radius: 50% 45% 55% 40%;
+  transform: rotate(-18deg);
+  background: var(--life-coral);
+}
+.order-detail-item > view:nth-child(2) {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: 5rpx;
+}
+.order-detail-item > view:nth-child(2) text:first-child {
+  overflow: hidden;
+  font-size: 18rpx;
+  font-weight: 900;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.order-detail-item > view:nth-child(2) text:last-child {
+  color: var(--life-muted);
+  font-size: 14rpx;
+}
+.order-detail-item > text:last-child {
   color: var(--life-red);
+  flex: 0 0 auto;
+  font-size: 19rpx;
   font-weight: 900;
 }
 .checkout-truth {
@@ -876,6 +1734,64 @@ onShow(load);
   font-size: 18rpx;
   line-height: 1.55;
 }
+.payment-status-panel {
+  display: flex;
+  margin-top: 18rpx;
+  padding: 24rpx;
+  border-radius: var(--life-radius-lg);
+  align-items: center;
+  gap: 20rpx;
+  background: var(--life-blue-soft);
+}
+.payment-seal {
+  display: flex;
+  width: 82rpx;
+  height: 82rpx;
+  border: 5rpx solid #1687a0;
+  border-radius: 50%;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+}
+.payment-seal > view {
+  width: 29rpx;
+  height: 14rpx;
+  border-bottom: 6rpx solid #1687a0;
+  border-left: 6rpx solid #1687a0;
+  transform: rotate(-45deg) translate(2rpx, -2rpx);
+}
+.payment-status-panel.paid {
+  background: var(--life-brand-soft);
+}
+.payment-status-panel.paid .payment-seal {
+  border-color: var(--life-brand);
+}
+.payment-status-panel.paid .payment-seal > view {
+  border-color: var(--life-brand);
+}
+.payment-status-panel > view:last-child {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 5rpx;
+}
+.payment-status-panel > view:last-child text:first-child {
+  color: #075d70;
+  font-size: 24rpx;
+  font-weight: 900;
+}
+.payment-status-panel.paid > view:last-child text:first-child {
+  color: var(--life-brand-deep);
+}
+.payment-status-panel > view:last-child text:nth-child(2) {
+  color: var(--life-red);
+  font-size: 34rpx;
+  font-weight: 900;
+}
+.payment-status-panel > view:last-child text:last-child {
+  color: var(--life-muted);
+  font-size: 16rpx;
+}
 .refund-card {
   padding: 22rpx;
   border-radius: var(--life-radius-md);
@@ -888,6 +1804,57 @@ onShow(load);
   align-items: center;
   justify-content: space-between;
   gap: 16rpx;
+}
+.refund-progress {
+  display: grid;
+  margin: 16rpx 0;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+.refund-progress > view {
+  display: flex;
+  position: relative;
+  align-items: center;
+  flex-direction: column;
+  gap: 7rpx;
+  color: var(--life-muted);
+  font-size: 14rpx;
+}
+.refund-progress > view::before {
+  position: absolute;
+  z-index: 0;
+  top: 8rpx;
+  left: 0;
+  width: 100%;
+  height: 3rpx;
+  background: var(--life-line);
+  content: '';
+}
+.refund-progress > view:first-child::before {
+  left: 50%;
+  width: 50%;
+}
+.refund-progress > view:last-child::before {
+  width: 50%;
+}
+.refund-progress > view > text:first-child {
+  z-index: 1;
+  width: 18rpx;
+  height: 18rpx;
+  border: 4rpx solid var(--life-paper);
+  border-radius: 50%;
+  background: var(--life-line);
+  box-shadow: 0 0 0 2rpx var(--life-line);
+}
+.refund-progress > view.active {
+  color: var(--life-brand-deep);
+  font-weight: 800;
+}
+.refund-progress > view.active::before {
+  background: var(--life-brand);
+}
+.refund-progress > view.active > text:first-child {
+  background: var(--life-brand);
+  box-shadow: 0 0 0 2rpx var(--life-brand);
 }
 .refund-card-head text:first-child {
   overflow: hidden;
@@ -923,6 +1890,111 @@ onShow(load);
   margin-top: 18rpx;
   grid-template-columns: repeat(3, 1fr);
   gap: 10rpx;
+}
+.member-surface {
+  display: grid;
+  margin-top: 20rpx;
+  gap: 16rpx;
+}
+.member-card {
+  overflow: hidden;
+  padding: 28rpx;
+  border-radius: var(--life-radius-lg);
+  color: var(--life-paper);
+  background:
+    radial-gradient(circle at 85% 5%, rgba(255, 255, 255, 0.22), transparent 34%),
+    linear-gradient(135deg, #f39a42, var(--life-red));
+  box-shadow: var(--life-shadow);
+}
+.member-card-head,
+.member-balance {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16rpx;
+}
+.member-emblem {
+  display: flex;
+  width: 56rpx;
+  height: 56rpx;
+  border: 2rpx solid rgba(255, 255, 255, 0.65);
+  border-radius: 18rpx;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  transform: rotate(45deg);
+  background: rgba(255, 255, 255, 0.14);
+}
+.member-emblem view {
+  width: 17rpx;
+  height: 17rpx;
+  border-radius: 50%;
+  background: var(--life-paper);
+}
+.member-card-head > view:nth-child(2) {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: 4rpx;
+}
+.member-card-head > view:nth-child(2) text:first-child {
+  font-size: 25rpx;
+  font-weight: 900;
+}
+.member-card-head > view:nth-child(2) text:last-child,
+.member-card-head > text,
+.member-since {
+  opacity: 0.82;
+  font-size: 14rpx;
+}
+.member-card-head > text {
+  letter-spacing: 2rpx;
+}
+.member-balance {
+  margin: 32rpx 0 22rpx;
+  justify-content: flex-start;
+  gap: 58rpx;
+}
+.member-balance > view {
+  display: flex;
+  flex-direction: column;
+  gap: 5rpx;
+}
+.member-balance text:first-child {
+  font-size: 32rpx;
+  font-weight: 900;
+}
+.member-balance text:last-child {
+  opacity: 0.82;
+  font-size: 15rpx;
+}
+.member-rules {
+  display: grid;
+  padding: 6rpx 20rpx;
+  border: 1rpx solid var(--life-line);
+  border-radius: var(--life-radius-md);
+  background: var(--life-paper);
+  box-shadow: var(--life-shadow-soft);
+}
+.member-rules > view {
+  display: grid;
+  padding: 17rpx 0;
+  border-bottom: 1rpx solid var(--life-line);
+  gap: 5rpx;
+}
+.member-rules > view:last-child {
+  border-bottom: 0;
+}
+.member-rules text:first-child {
+  color: var(--life-ink);
+  font-size: 19rpx;
+  font-weight: 900;
+}
+.member-rules text:last-child {
+  color: var(--life-muted);
+  font-size: 15rpx;
+  line-height: 1.55;
 }
 .member-benefit-grid > view {
   display: flex;

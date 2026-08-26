@@ -1,6 +1,7 @@
 <script setup>
 import { computed, ref } from 'vue';
 import { onLoad } from '@dcloudio/uni-app';
+import LifeRetailProductCard from '../../components/LifeRetailProductCard.vue';
 import LifeSurface from '../../components/LifeSurface.vue';
 import { lifeSession } from '../../services/life-session.js';
 import { lifeSurfaceState } from '../../surface-contract.js';
@@ -30,18 +31,41 @@ function openProduct(product) {
   uni.navigateTo({ url: `/pages/page-209/index?productId=${encodeURIComponent(product.id)}` });
 }
 
+async function addToCart(product) {
+  if (product.availableQuantity < 1) return;
+  try {
+    await lifeSession.request('/api/v1/life/cart/items', {
+      method: 'PUT',
+      data: {
+        merchantTenantId: product.merchantTenantId,
+        storeId: product.storeId,
+        variantId: product.variantId,
+        quantity: 1,
+      },
+    });
+    uni.showToast({ title: '已加入购物车', icon: 'success' });
+  } catch {
+    uni.showToast({ title: '库存或价格已变化', icon: 'none' });
+  }
+}
+
 onLoad(() => void load());
 </script>
 
 <template>
   <LifeSurface
+    compact
+    :show-assurance="false"
     eyebrow="PAGE-213 · 活动会场"
     title="正在进行的真实优惠"
     detail="会场只聚合当前可售团购商品，不虚构活动倒计时或原价"
     theme-color="coral"
   >
-    <view class="truth-note"
-      ><text>实时规则</text><text>库存、成交价与履约条件以下单时服务端确认结果为准</text></view
+    <view class="event-banner"
+      ><view
+        ><text>本地团购</text><text>到店好价，真实可核销</text
+        ><text>库存、成交价与履约条件以下单时服务端确认结果为准</text></view
+      ><view class="event-badge"><text>团</text><text>实时在售</text></view></view
     >
     <view v-if="state === 'loading'" class="section empty-safe">正在读取活动商品…</view>
     <view v-else-if="state === 'unauthenticated'" class="section empty-safe"
@@ -56,75 +80,99 @@ onLoad(() => void load());
     <view v-else-if="state === 'empty'" class="section empty-safe"
       >当前没有进行中的真实团购活动</view
     >
-    <view v-else class="section"
+    <view v-else class="event-section"
       ><view class="section-head"
         ><text>团购精选</text><text>{{ products.length }} 项</text></view
-      ><button
-        v-for="product in products"
-        :key="product.id"
-        class="event-card"
-        @click="openProduct(product)"
-      >
-        <view class="event-photo" /><view
-          ><text>{{ product.title }}</text
-          ><text>{{ product.storeName }} · {{ product.variantTitle }}</text
-          ><text class="price">¥{{ (product.salePriceCents / 100).toFixed(2) }}</text
-          ><text>{{
-            product.availableQuantity > 0 ? `可售 ${product.availableQuantity}` : '当前售罄'
-          }}</text></view
-        >
-      </button></view
-    >
+      ><view class="event-grid"
+        ><LifeRetailProductCard
+          v-for="(product, index) in products"
+          :key="product.id"
+          :product="product"
+          :index="index"
+          @select="openProduct"
+          @add="addToCart" /></view
+    ></view>
   </LifeSurface>
 </template>
 
 <style scoped>
-.truth-note {
+.event-banner {
   display: flex;
-  padding: 22rpx;
-  gap: 12rpx;
+  min-height: 210rpx;
+  margin-top: 20rpx;
+  padding: 28rpx;
+  border-radius: var(--life-radius-lg);
+  align-items: center;
+  justify-content: space-between;
+  color: var(--life-paper);
+  background-image:
+    linear-gradient(
+      90deg,
+      rgba(108, 39, 17, 0.96) 0%,
+      rgba(226, 103, 65, 0.84) 62%,
+      rgba(226, 103, 65, 0.18) 100%
+    ),
+    url('../../assets/v63-retail/product-sprite.webp');
+  background-position:
+    0 0,
+    100% 100%;
+  background-repeat: no-repeat;
+  background-size:
+    100% 100%,
+    400% 200%;
+  box-shadow: var(--life-shadow);
+  box-sizing: border-box;
+}
+.event-banner > view:first-child {
+  display: flex;
+  max-width: 70%;
   flex-direction: column;
-  color: #7b4f00;
+}
+.event-banner > view:first-child text:first-child {
+  align-self: flex-start;
+  padding: 5rpx 10rpx;
+  border-radius: 999rpx;
+  background: rgba(255, 255, 255, 0.18);
+  font-size: 16rpx;
+  font-weight: 900;
+}
+.event-banner > view:first-child text:nth-child(2) {
+  margin-top: 10rpx;
+  font-size: 31rpx;
+  font-weight: 900;
+}
+.event-banner > view:first-child text:last-child {
+  margin-top: 8rpx;
+  font-size: 16rpx;
+  opacity: 0.86;
+}
+.event-badge {
+  display: flex;
+  width: 112rpx;
+  height: 112rpx;
+  border: 8rpx solid rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
   background: #fff5d6;
-  border-radius: 22rpx;
+  color: #9b3f20;
+  box-sizing: border-box;
 }
-.truth-note text:first-child {
+.event-badge text:first-child {
+  font-size: 34rpx;
   font-weight: 900;
 }
-.truth-note text:last-child {
-  font-size: 20rpx;
+.event-badge text:last-child {
+  font-size: 14rpx;
+  font-weight: 800;
 }
-.event-card {
-  display: flex;
-  width: 100%;
-  margin: 14rpx 0;
-  padding: 16rpx;
-  gap: 18rpx;
-  text-align: left;
-  background: #f8faf9;
-  border-radius: 22rpx;
+.event-section {
+  margin-top: 22rpx;
 }
-.event-photo {
-  width: 180rpx;
-  height: 150rpx;
-  border-radius: 18rpx;
-  flex: none;
-  background: url('../../assets/v63-retail/product-sprite.webp') 33.333% 100% / 400% 200% no-repeat;
-}
-.event-card view {
-  display: flex;
-  min-width: 0;
-  flex: 1;
-  flex-direction: column;
-  gap: 8rpx;
-}
-.event-card view text:first-child {
-  font-size: 26rpx;
-  font-weight: 900;
-}
-.event-card view text:nth-child(2),
-.event-card view text:last-child {
-  color: #66736d;
-  font-size: 19rpx;
+.event-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16rpx;
 }
 </style>
