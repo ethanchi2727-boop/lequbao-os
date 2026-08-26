@@ -48,10 +48,40 @@ export function parsePaymentCredential(value) {
   return credential;
 }
 
+function mockConsumerSession(provider, assertion) {
+  const uuid = () =>
+    '11111111-1111-4111-8111-' +
+    Math.random().toString(16).slice(2, 10) +
+    Math.random().toString(16).slice(2, 6);
+  const accountId = uuid();
+  const sessionId = uuid();
+  const expires = new Date(Date.now() + 5 * 60 * 60 * 1000).toISOString();
+  const tokenTail = Math.random().toString(36).slice(2);
+  return {
+    accessToken: `development-life-${accountId}-${sessionId}-${tokenTail}`.slice(0, 160),
+    refreshToken: `development-life-refresh-${sessionId}-${tokenTail}`.slice(0, 128),
+    accessTokenExpiresAt: expires,
+    sessionExpiresAt: expires,
+    identity: {
+      accountId,
+      sessionId,
+      authLevel: provider === 'MOBILE_OTP' ? 'PHONE_BOUND' : 'WECHAT',
+      provider,
+      assertionId: `development-mock-${String(assertion ?? provider).slice(0, 32)}`,
+      deviceIdSha256: 'development-mock-life-device-hash',
+      mobileHash: provider === 'MOBILE_OTP' ? 'development-mock-mobile-hash' : undefined,
+      unionIdentifierHash: 'development-mock-union-hash',
+      authSubjectHash: 'development-mock-subject-hash',
+      issuedAt: new Date().toISOString(),
+    },
+  };
+}
+
 export function createLifeSessionClient({
   transport = uniRuntime,
   storage = uniRuntime,
   apiBase = typeof globalThis.location === 'undefined' ? 'https://bao.lequ.com' : '',
+  developmentMocks = lifeRuntimeProfile.developmentMocks,
 } = {}) {
   const apiUrl = (path) => `${apiBase.replace(/\/$/u, '')}${path}`;
   const load = () => storage.getStorageSync(SESSION_KEY) || null;
@@ -73,29 +103,40 @@ export function createLifeSessionClient({
 
   async function exchange(provider, assertion) {
     return save(
-      await rawRequest({
-        url: apiUrl('/api/v1/life/auth/sessions/exchange'),
-        method: 'POST',
-        data: { provider, assertion, deviceId: deviceId(storage) },
-      }),
+      developmentMocks
+        ? mockConsumerSession(provider, assertion)
+        : await rawRequest({
+            url: apiUrl('/api/v1/life/auth/sessions/exchange'),
+            method: 'POST',
+            data: { provider, assertion, deviceId: deviceId(storage) },
+          }),
     );
   }
 
   async function requestMobileOtp(mobile) {
-    return rawRequest({
-      url: apiUrl('/api/v1/life/auth/mobile-otp/challenges'),
-      method: 'POST',
-      data: { mobile, deviceId: deviceId(storage) },
-    });
+    return developmentMocks
+      ? {
+          challengeId: `development-mobile-otp-${Math.random().toString(36).slice(2, 10)}`,
+          maskedDestination: '138****0000',
+          expiresAt: new Date(Date.now() + 5 * 60_000).toISOString(),
+          resendAfterSeconds: 60,
+        }
+      : rawRequest({
+          url: apiUrl('/api/v1/life/auth/mobile-otp/challenges'),
+          method: 'POST',
+          data: { mobile, deviceId: deviceId(storage) },
+        });
   }
 
   async function exchangeMobileOtp(challengeId, code) {
     return save(
-      await rawRequest({
-        url: apiUrl('/api/v1/life/auth/mobile-otp/assertions/exchange'),
-        method: 'POST',
-        data: { challengeId, code, deviceId: deviceId(storage) },
-      }),
+      developmentMocks
+        ? mockConsumerSession('MOBILE_OTP', `${challengeId}:${code}`)
+        : await rawRequest({
+            url: apiUrl('/api/v1/life/auth/mobile-otp/assertions/exchange'),
+            method: 'POST',
+            data: { challengeId, code, deviceId: deviceId(storage) },
+          }),
     );
   }
 

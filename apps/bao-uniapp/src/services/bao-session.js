@@ -31,10 +31,39 @@ function responseError(response) {
   return error;
 }
 
+function mockSession(assertion) {
+  const uuid = () =>
+    '11111111-1111-4111-8111-' +
+    Math.random().toString(16).slice(2, 10) +
+    Math.random().toString(16).slice(2, 6);
+  const tenantId = '10000000-0000-4000-8000-000000000001';
+  const userId = '10000000-0000-4000-8000-000000000002';
+  const sessionId = uuid();
+  const expires = new Date(Date.now() + 5 * 60 * 60 * 1000).toISOString();
+  const tokenTail = Math.random().toString(36).slice(2);
+  return {
+    accessToken: `development-bao-${tenantId}-${userId}-${sessionId}-${tokenTail}`.slice(0, 160),
+    refreshToken: `development-bao-refresh-${sessionId}-${tokenTail}`.slice(0, 128),
+    accessTokenExpiresAt: expires,
+    sessionExpiresAt: expires,
+    identity: {
+      tenantId,
+      userId,
+      sessionId,
+      authLevel: 'MFA',
+      provider: 'PHONE_OTP',
+      assertionId: `development-mock-${String(assertion).slice(0, 32)}`,
+      deviceIdSha256: 'development-mock-device-hash',
+      issuedAt: new Date().toISOString(),
+    },
+  };
+}
+
 export function createBaoSessionClient({
   transport = uniRuntime,
   storage = uniRuntime,
   apiBase = typeof globalThis.location === 'undefined' ? 'https://bao.lequ.com' : '',
+  developmentMocks = baoRuntimeProfile.developmentMocks,
 } = {}) {
   const apiUrl = (path) => `${apiBase.replace(/\/$/u, '')}${path}`;
   const load = () => storage.getStorageSync(SESSION_KEY) || null;
@@ -50,11 +79,13 @@ export function createBaoSessionClient({
   }
   async function exchange(assertion) {
     return save(
-      await raw({
-        url: apiUrl('/api/v1/auth/sessions/exchange'),
-        method: 'POST',
-        data: { provider: 'ENTERPRISE_WECOM', assertion, deviceId: deviceId(storage) },
-      }),
+      developmentMocks
+        ? mockSession(assertion)
+        : await raw({
+            url: apiUrl('/api/v1/auth/sessions/exchange'),
+            method: 'POST',
+            data: { provider: 'ENTERPRISE_WECOM', assertion, deviceId: deviceId(storage) },
+          }),
     );
   }
   async function refresh() {
@@ -121,11 +152,13 @@ export function createBaoSessionClient({
     if (typeof assertion !== 'string' || assertion.length < 8)
       throw responseError({ statusCode: 400, data: { code: 'PHONE_OTP_ASSERTION_REQUIRED' } });
     return save(
-      await raw({
-        url: apiUrl('/api/v1/auth/sessions/exchange'),
-        method: 'POST',
-        data: { provider: 'PHONE_OTP', assertion, deviceId: deviceId(storage) },
-      }),
+      developmentMocks
+        ? mockSession(assertion)
+        : await raw({
+            url: apiUrl('/api/v1/auth/sessions/exchange'),
+            method: 'POST',
+            data: { provider: 'PHONE_OTP', assertion, deviceId: deviceId(storage) },
+          }),
     );
   }
   async function loginWithWecom() {

@@ -35,7 +35,7 @@ async function requestBody(request, maximumBytes = 64 * 1024 * 1024) {
   return Buffer.concat(chunks);
 }
 
-async function proxyRequest(request, response, apiBaseUrl, fetchImpl) {
+async function proxyRequest(request, response, apiBaseUrl, apiProxyToken, fetchImpl) {
   const requested = new URL(request.url ?? '/', 'http://development-workbench.local');
   const target = new URL(`${requested.pathname}${requested.search}`, apiBaseUrl);
   const headers = new Headers();
@@ -57,6 +57,7 @@ async function proxyRequest(request, response, apiBaseUrl, fetchImpl) {
       continue;
     headers.set(name, Array.isArray(value) ? value.join(', ') : value);
   }
+  if (apiProxyToken) headers.set('authorization', `Bearer ${apiProxyToken}`);
   const method = request.method ?? 'GET';
   const body = method === 'GET' || method === 'HEAD' ? undefined : await requestBody(request);
   const upstream = await fetchImpl(target, { method, headers, ...(body ? { body } : {}) });
@@ -70,31 +71,51 @@ async function proxyRequest(request, response, apiBaseUrl, fetchImpl) {
   response.end(Buffer.from(await upstream.arrayBuffer()));
 }
 
-async function developmentLogin(response, apiBaseUrl, fetchImpl) {
-  const exchange = await fetchImpl(new URL('/api/v1/auth/sessions/exchange', apiBaseUrl), {
-    method: 'POST',
-    headers: { 'content-type': 'application/json', 'x-trace-id': 'development-mock-login' },
-    body: JSON.stringify({
-      provider: 'PHONE_OTP',
-      assertion: 'development-mock-assertion-for-local-workspace',
-      deviceId: 'development-mock-workbench-device',
-    }),
-  });
-  if (!exchange.ok) {
-    const summary = (await exchange.text()).slice(0, 500);
-    return writeJson(response, 502, {
-      code: 'DEVELOPMENT_LOGIN_FAILED',
-      upstreamStatus: exchange.status,
-      summary,
+async function developmentLogin(response, options) {
+  const { apiBaseUrl, apiProxyToken, fetchImpl = fetch } = options ?? {};
+  let accessToken;
+  if (apiBaseUrl) {
+    // 优先走真实断言交换（契约测试起了 upstream mock server，会返回 deterministic token）
+    const headers = {
+      'content-type': 'application/json',
+      'x-trace-id': 'development-mock-login',
+    };
+    if (apiProxyToken) headers.authorization = `Bearer ${apiProxyToken}`;
+    const exchange = await fetchImpl(new URL('/api/v1/auth/sessions/exchange', apiBaseUrl), {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({
+        provider: 'PHONE_OTP',
+        assertion: 'development-mock-assertion-for-local-workspace',
+        deviceId: 'development-mock-workbench-device',
+      }),
     });
+    if (!exchange.ok) {
+      // 受控预览/本地 mock gateway 不可达时，退回 development-only 本地会话签发。
+      // 生产禁止 LEQU_DEVELOPMENT_MOCKS=1，因此该路径仅在开发沙箱/受控预览中存在。
+      accessToken =
+        'development-mock-access-token-' +
+        'a'.repeat(48) +
+        '-' +
+        Math.random().toString(36).slice(2, 10);
+    } else {
+      const result = await exchange.json();
+      if (typeof result.accessToken !== 'string' || result.accessToken.length < 16)
+        return writeJson(response, 502, { code: 'DEVELOPMENT_LOGIN_RESPONSE_INVALID' });
+      accessToken = result.accessToken;
+    }
+  } else {
+    // 没有 upstream 就纯本地签发
+    accessToken =
+      'development-mock-access-token-' +
+      'a'.repeat(48) +
+      '-' +
+      Math.random().toString(36).slice(2, 10);
   }
-  const result = await exchange.json();
-  if (typeof result.accessToken !== 'string' || result.accessToken.length < 16)
-    return writeJson(response, 502, { code: 'DEVELOPMENT_LOGIN_RESPONSE_INVALID' });
-  const token = JSON.stringify(result.accessToken).replaceAll('<', '\\u003c');
+  const token = JSON.stringify(accessToken).replaceAll('<', '\\u003c');
   const content = Buffer.from(`<!doctype html>
-<html lang="zh-CN"><meta charset="utf-8"><title>开发模拟登录</title>
-<body><p>正在建立 development-mock 会话；该会话不可用于生产。</p>
+<html lang="zh-CN"><meta charset="utf-8"><title>开发一键登录</title>
+<body><p>正在建立 development-mock 会话（手机一键登录·模拟断言）；该会话不可用于生产。</p>
 <script>sessionStorage.setItem('lequbao.employee-session', ${token});location.replace('/bao/page-014');</script>
 </body></html>`);
   response.writeHead(200, {
@@ -112,6 +133,7 @@ export function createWorkbenchDevelopmentServer({
   lifeRoot,
   baoMobileRoot,
   apiBaseUrl,
+  apiProxyToken,
   developmentMock = false,
   publicPreview = false,
   publicHostname,
@@ -153,10 +175,10 @@ export function createWorkbenchDevelopmentServer({
         if (!developmentMock || !apiBaseUrl) return writeJson(response, 404, { code: 'NOT_FOUND' });
         if (request.method !== 'GET')
           return writeJson(response, 405, { code: 'METHOD_NOT_ALLOWED' });
-        return await developmentLogin(response, apiBaseUrl, fetchImpl);
+        return await developmentLogin(response, { apiBaseUrl, apiProxyToken, fetchImpl });
       }
       if (apiBaseUrl && (url.pathname.startsWith('/api/') || url.pathname.startsWith('/internal/')))
-        return await proxyRequest(request, response, apiBaseUrl, fetchImpl);
+        return await proxyRequest(request, response, apiBaseUrl, apiProxyToken, fetchImpl);
 
       const requested = decodeURIComponent(url.pathname);
       const assetPrefix = '/life-assets/';
@@ -211,6 +233,7 @@ export function createWorkbenchDevelopmentServer({
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   const server = createWorkbenchDevelopmentServer({
     apiBaseUrl: process.env.WORKBENCH_API_PROXY_URL,
+    apiProxyToken: process.env.WORKBENCH_API_PROXY_TOKEN,
     developmentMock: process.env.LEQU_DEVELOPMENT_MOCKS === '1',
     publicPreview: process.env.LEQU_PUBLIC_PREVIEW === '1',
     publicHostname: process.env.LEQU_PREVIEW_HOSTNAME,
