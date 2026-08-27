@@ -1,15 +1,16 @@
 :root {
-  --life-green: #0f9d72;
-  --life-green-dark: #076c50;
-  --life-green-soft: #e8f7f0;
-  --life-orange: #ff6038;
-  --life-yellow: #ffc94a;
-  --life-red: #e5484d;
-  --life-ink: #18231f;
+  /* 乐趣生活 V6.3 官方色值，与 apps/life-uniapp/src/App.vue Theme Tokens 对齐（ADR-0013）。 */
+  --life-green: #0d8b62;
+  --life-green-dark: #066b4c;
+  --life-green-soft: #e7f7f0;
+  --life-orange: #ff5a36;
+  --life-yellow: #ffc93e;
+  --life-red: #e03b36;
+  --life-ink: #17201c;
   --life-muted: #66736d;
   --life-surface: #ffffff;
-  --life-bg: #f5f7f5;
-  --life-line: #e6ebe8;
+  --life-bg: #fff9ec;
+  --life-line: #e8ebe9;
   --life-radius-sm: 10px;
   --life-radius-md: 18px;
   --life-radius-lg: 28px;
