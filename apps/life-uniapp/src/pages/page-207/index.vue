@@ -169,8 +169,8 @@ onLoad(() => void load());
   margin: 0;
   padding: 0 20rpx;
   border-radius: 999rpx;
-  color: #9b3f20;
-  background: #fff5d6;
+  color: var(--life-coral-ink);
+  background: var(--life-yellow-soft);
   font-size: 18rpx;
   font-weight: 900;
 }

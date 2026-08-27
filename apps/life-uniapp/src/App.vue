@@ -28,11 +28,32 @@ page {
   --life-brand-soft: #e7f7f0; /* 绿色软底 */
   --life-coral: #ff5a36; /* 交易橙（原设计稿），用于价格/购买/优惠 */
   --life-coral-soft: #fff0ea; /* 橙色软底 */
+  --life-coral-ink: #9b3f20; /* 棕红文字：到手价/原价深色（保留原视觉，集中管理） */
   --life-red: #e03b36; /* 砖红，仅用于错误/拒绝 */
   --life-yellow: #ffc93e; /* 明黄，优惠权益 */
   --life-yellow-soft: #fff8e1;
   --life-blue: #1596c9; /* 湖蓝，活动氛围 */
   --life-blue-soft: #e8f7fd;
+  --life-blue-deep: #087b8d; /* 湖蓝深色：服务/旅程页渐变 top（保留原视觉，集中管理） */
+  --life-blue-ink: #075d70; /* 湖蓝文字：更深辅文（保留原视觉，集中管理） */
+  --life-blue-mist: #edfafa; /* 极浅蓝雾：溯源/服务页浅蓝渐变起色 */
+  --life-blue-bright: #8cd9d3; /* 亮青蓝：地图/社区渐变收色 */
+  --life-coral-deep: #d92636; /* 深红渐变起色：商城 hero 顶部 */
+  --life-coral-bright: #ff9c68; /* 浅橙渐变收色：商城 hero / 节日徽章 */
+  --life-coral-amber: #f39a42; /* 橙黄渐变起色：会员卡/权益汇总（精确保留原视觉） */
+  --life-coral-line: #ffd2cb; /* 浅橙描边：商城输入条 */
+  --life-ink-soft: #46534d; /* 深灰次文字：表单/卡片深色辅文 */
+  --life-muted-bright: #84908a; /* 浅灰次文字：分割线/占位辅文 */
+  --life-yellow-deep: #d38a00; /* 暖金：图标边/装饰圆点 */
+  --life-yellow-ink: #7b4f00; /* 棕黄文字：说明/标签/权益深色（统一 #7b4f00 #9b5c00 #7a4300） */
+  --life-channel-green-soft: #e7f8c8; /* 装饰渠道卡：绿调起色 */
+  --life-channel-green-bright: #b9df66; /* 装饰渠道卡：绿调收色 */
+  --life-channel-yellow-soft: #fff0d0; /* 装饰渠道卡：黄调起色 */
+  --life-channel-yellow-bright: #ffd072; /* 装饰渠道卡：黄调收色 */
+  --life-channel-coral-soft: #ffe5df; /* 装饰渠道卡：橙调起色 */
+  --life-channel-coral-bright: #ffc1ad; /* 装饰渠道卡：橙调收色 */
+  --life-channel-blue-soft: #dff9ff; /* 装饰渠道卡：蓝调起色 */
+  --life-channel-blue-bright: #82ddee; /* 装饰渠道卡：蓝调收色 */
   --life-paper: #ffffff; /* 卡片底色 */
   --life-bg: #fff9ec; /* 暖米白，整体页面底色 */
   --life-ink: #17201c; /* 深墨色 主文字 */

@@ -226,7 +226,7 @@ onLoad((options) => {
   gap: 18rpx;
   text-align: left;
   border: 1rpx solid var(--life-line);
-  background: #f8faf9;
+  background: var(--life-wash);
   border-radius: 20rpx;
   box-sizing: border-box;
 }
@@ -249,11 +249,11 @@ onLoad((options) => {
   font-weight: 900;
 }
 .store-result view text:nth-child(2) {
-  color: #66736d;
+  color: var(--life-muted);
   font-size: 19rpx;
 }
 .store-result > text:last-child {
-  color: #076c50;
+  color: var(--life-brand-deep);
   font-size: 20rpx;
   font-weight: 800;
 }

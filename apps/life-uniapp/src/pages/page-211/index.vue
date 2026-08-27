@@ -105,14 +105,14 @@ onLoad((options) => {
   border-radius: var(--life-radius-lg);
   align-items: center;
   gap: 20rpx;
-  background: linear-gradient(135deg, #edfafa, var(--life-blue-soft));
+  background: linear-gradient(135deg, var(--life-blue-mist), var(--life-blue-soft));
   box-shadow: var(--life-shadow-soft);
 }
 .trace-seal {
   display: flex;
   width: 86rpx;
   height: 86rpx;
-  border: 5rpx solid #1687a0;
+  border: 5rpx solid var(--life-blue-deep);
   border-radius: 50%;
   align-items: center;
   justify-content: center;
@@ -121,8 +121,8 @@ onLoad((options) => {
 .trace-seal > view {
   width: 32rpx;
   height: 17rpx;
-  border-bottom: 6rpx solid #1687a0;
-  border-left: 6rpx solid #1687a0;
+  border-bottom: 6rpx solid var(--life-blue-deep);
+  border-left: 6rpx solid var(--life-blue-deep);
   transform: rotate(-45deg) translate(2rpx, -2rpx);
 }
 .trace-pass > view:last-child {
@@ -132,12 +132,12 @@ onLoad((options) => {
   gap: 6rpx;
 }
 .trace-pass > view:last-child text:first-child {
-  color: #075d70;
+  color: var(--life-blue-ink);
   font-size: 28rpx;
   font-weight: 900;
 }
 .trace-pass > view:last-child text:nth-child(2) {
-  color: #1687a0;
+  color: var(--life-blue-deep);
   font-size: 17rpx;
   font-weight: 800;
 }
@@ -162,7 +162,7 @@ onLoad((options) => {
   box-shadow: var(--life-shadow-soft);
 }
 .trace-dates text:first-child {
-  color: #1687a0;
+  color: var(--life-blue-deep);
   font-size: 17rpx;
   font-weight: 900;
 }
@@ -181,7 +181,7 @@ onLoad((options) => {
 }
 .trace-missing text:last-child,
 .report-summary text:nth-child(n + 2) {
-  color: #66736d;
+  color: var(--life-muted);
   font-size: 21rpx;
   line-height: 1.7;
 }
@@ -212,8 +212,8 @@ onLoad((options) => {
   border: 5rpx solid var(--life-paper);
   border-radius: 50%;
   flex: none;
-  background: #1687a0;
-  box-shadow: 0 0 0 2rpx #1687a0;
+  background: var(--life-blue-deep);
+  box-shadow: 0 0 0 2rpx var(--life-blue-deep);
 }
 .evidence-item > view:last-child text:first-child {
   font-weight: 900;

@@ -83,8 +83,8 @@ const themeStyle = computed(() => lifeBannerThemeStyle(props.themeColor));
   border-radius: 18rpx;
   align-items: center;
   justify-content: space-between;
-  color: #7b4f00;
-  background: #fff5d6;
+  color: var(--life-yellow-ink);
+  background: var(--life-yellow-soft);
   font-size: 18rpx;
 }
 .preview-note text:first-child {

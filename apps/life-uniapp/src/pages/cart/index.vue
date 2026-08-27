@@ -359,7 +359,7 @@ onShow(load);
   align-self: flex-start;
   padding: 5rpx 10rpx;
   border-radius: 8rpx;
-  background: #f1f4f2;
+  background: var(--life-wash);
 }
 .cart-action {
   display: flex;
@@ -392,15 +392,15 @@ onShow(load);
 }
 .cart-action button {
   margin: 0;
-  color: #9b3f20;
-  background: #fff0eb;
+  color: var(--life-coral-ink);
+  background: var(--life-coral-soft);
   border-radius: 999rpx;
   font-size: 20rpx;
 }
 .checkout-button {
   margin-top: 24rpx;
-  color: #fff;
-  background: #076c50;
+  color: var(--life-paper);
+  background: var(--life-brand-deep);
   border-radius: 999rpx;
   font-size: 26rpx;
   font-weight: 800;
@@ -409,14 +409,14 @@ onShow(load);
   display: flex;
   margin-top: 24rpx;
   padding-top: 22rpx;
-  border-top: 1rpx solid #e6ebe8;
+  border-top: 1rpx solid var(--life-line);
   flex-direction: column;
   gap: 10rpx;
-  color: #66736d;
+  color: var(--life-muted);
   font-size: 22rpx;
 }
 .checkout-confirm text:first-child {
-  color: #18231f;
+  color: var(--life-ink);
   font-size: 30rpx;
   font-weight: 900;
 }
@@ -427,27 +427,27 @@ onShow(load);
   margin-bottom: 22rpx;
 }
 .fulfillment-tabs button {
-  color: #66736d;
-  background: #f1f5f3;
+  color: var(--life-muted);
+  background: var(--life-wash);
   border-radius: 18rpx;
   font-size: 23rpx;
 }
 .fulfillment-tabs button.active {
-  color: #fff;
-  background: #076c50;
+  color: var(--life-paper);
+  background: var(--life-brand-deep);
 }
 .address-picker {
   display: flex;
   margin-bottom: 26rpx;
   padding: 22rpx;
-  border: 1rpx solid #dce5e0;
+  border: 1rpx solid var(--life-line);
   border-radius: 20rpx;
   flex-direction: column;
   gap: 8rpx;
-  background: #f8faf9;
+  background: var(--life-wash);
 }
 .address-picker text:first-child {
-  color: #076c50;
+  color: var(--life-brand-deep);
   font-size: 20rpx;
   font-weight: 800;
 }

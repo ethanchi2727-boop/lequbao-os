@@ -165,7 +165,7 @@ onShow(() => {
   display: block;
   width: 18rpx;
   height: 18rpx;
-  border: 4rpx solid #9aa49f;
+  border: 4rpx solid var(--life-muted-bright);
   border-radius: 50%;
 }
 .hot-mark {
@@ -183,8 +183,8 @@ onShow(() => {
   margin: 0;
   padding: 8rpx 22rpx;
   border-radius: 999rpx;
-  color: #59645f;
-  background: #f1f4f2;
+  color: var(--life-ink-soft);
+  background: var(--life-wash);
   font-size: 20rpx;
 }
 .search-chips button.hot {

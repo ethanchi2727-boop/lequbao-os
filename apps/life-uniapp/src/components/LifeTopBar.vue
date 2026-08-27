@@ -108,7 +108,7 @@ function openSearch() {
   flex: 1;
   gap: 10rpx;
   overflow: hidden;
-  color: #98a19d;
+  color: var(--life-muted-bright);
   background: rgba(255, 255, 255, 0.96);
   box-shadow: 0 6rpx 24rpx rgba(16, 72, 53, 0.09);
   font-size: 20rpx;

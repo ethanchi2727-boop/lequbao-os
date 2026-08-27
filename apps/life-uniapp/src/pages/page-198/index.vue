@@ -172,7 +172,7 @@ onShow(() => load());
   transform: rotate(45deg);
 }
 .location-card view:nth-child(2) text:first-child {
-  color: #076c50;
+  color: var(--life-brand-deep);
   font-size: 20rpx;
   font-weight: 900;
 }
@@ -187,18 +187,18 @@ onShow(() => load());
 .city-search button,
 .quick-actions button {
   margin: 0;
-  color: #fff;
-  background: #076c50;
+  color: var(--life-paper);
+  background: var(--life-brand-deep);
   border-radius: 999rpx;
   font-size: 22rpx;
 }
 .city-search input {
   height: 78rpx;
   padding: 0 22rpx;
-  border: 1rpx solid #dce5e0;
+  border: 1rpx solid var(--life-line);
   border-radius: 999rpx;
   flex: 1;
-  background: #fff;
+  background: var(--life-paper);
   box-sizing: border-box;
   font-size: 23rpx;
 }
@@ -283,7 +283,7 @@ onShow(() => load());
   font-weight: 900;
 }
 .store-card view text:not(:first-child) {
-  color: #66736d;
+  color: var(--life-muted);
   font-size: 20rpx;
 }
 .store-card-foot {

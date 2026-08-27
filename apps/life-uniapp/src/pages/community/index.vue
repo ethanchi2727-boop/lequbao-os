@@ -179,7 +179,12 @@ onShow(load);
   margin: 8rpx 20rpx 0;
   border-radius: var(--life-radius-lg);
   overflow: hidden;
-  background: linear-gradient(135deg, #087f9b, var(--life-blue) 62%, #8ae6ec);
+  background: linear-gradient(
+    135deg,
+    var(--life-blue-deep),
+    var(--life-blue) 62%,
+    var(--life-blue-bright)
+  );
   box-shadow: var(--life-shadow);
 }
 .community-copy {
@@ -217,7 +222,7 @@ onShow(load);
   margin: 20rpx 0 0;
   padding: 0 22rpx;
   border-radius: 24rpx;
-  color: #075d70;
+  color: var(--life-blue-ink);
   background: var(--life-paper);
   font-size: 19rpx;
   font-weight: 900;
@@ -284,7 +289,7 @@ onShow(load);
   border-radius: 24rpx;
   align-items: center;
   justify-content: space-around;
-  color: #075d70;
+  color: var(--life-blue-ink);
   background: var(--life-blue-soft);
   font-size: 16rpx;
 }
@@ -372,7 +377,7 @@ onShow(load);
   margin-top: 16rpx;
   align-items: center;
   justify-content: space-between;
-  color: #087f9b;
+  color: var(--life-blue-deep);
   font-size: 17rpx;
   font-weight: 800;
 }
@@ -418,7 +423,7 @@ onShow(load);
 .store-heading button {
   margin: 0;
   border-radius: 999rpx;
-  color: #075d70;
+  color: var(--life-blue-ink);
   background: var(--life-blue-soft);
   font-size: 19rpx;
 }
@@ -431,7 +436,7 @@ onShow(load);
 .store-facts text {
   padding: 8rpx 14rpx;
   border-radius: 999rpx;
-  color: #075d70;
+  color: var(--life-blue-ink);
   background: var(--life-blue-soft);
   font-size: 17rpx;
 }

@@ -147,7 +147,7 @@ const confirm = (content) =>
     uni.showModal({
       title: '请确认',
       content,
-      confirmColor: '#9b3f20',
+      confirmColor: 'var(--life-coral-ink)',
       success: (result) => resolve(result.confirm),
       fail: () => resolve(false),
     }),
@@ -1214,7 +1214,7 @@ onShow(load);
   justify-content: space-between;
   gap: 18rpx;
   padding: 20rpx 0;
-  border-bottom: 1rpx solid #e6ebe8;
+  border-bottom: 1rpx solid var(--life-line);
 }
 .row > view {
   display: flex;
@@ -1230,19 +1230,19 @@ onShow(load);
 .row view text:not(:first-child),
 .notice,
 .boundary > text {
-  color: #66736d;
+  color: var(--life-muted);
   font-size: 21rpx;
   line-height: 1.7;
 }
 .row > text {
-  color: #0f9d72;
+  color: var(--life-brand);
   font-size: 22rpx;
   font-weight: 800;
 }
 .row button {
   margin: 0;
-  color: #076c50;
-  background: #e8f7f0;
+  color: var(--life-brand-deep);
+  background: var(--life-brand-soft);
   border-radius: 999rpx;
   font-size: 20rpx;
 }
@@ -1252,15 +1252,15 @@ onShow(load);
   gap: 14rpx;
   margin-top: 28rpx;
   padding-top: 24rpx;
-  border-top: 1rpx solid #e6ebe8;
+  border-top: 1rpx solid var(--life-line);
 }
 .field {
   box-sizing: border-box;
   width: 100%;
   padding: 20rpx;
-  border: 1rpx solid #dce5e0;
+  border: 1rpx solid var(--life-line);
   border-radius: 18rpx;
-  background: #f8faf9;
+  background: var(--life-wash);
   font-size: 22rpx;
 }
 .textarea {
@@ -1272,7 +1272,7 @@ onShow(load);
   gap: 10rpx;
 }
 .check {
-  color: #46534d;
+  color: var(--life-ink-soft);
   font-size: 22rpx;
 }
 .facts {
@@ -1284,8 +1284,8 @@ onShow(load);
 .facts text {
   padding: 10rpx 14rpx;
   border-radius: 999rpx;
-  color: #076c50;
-  background: #e8f7f0;
+  color: var(--life-brand-deep);
+  background: var(--life-brand-soft);
   font-size: 20rpx;
 }
 .primary,
@@ -1316,7 +1316,7 @@ onShow(load);
   align-items: center;
   gap: 16rpx;
   color: var(--life-paper);
-  background: linear-gradient(135deg, #087b8d, #075d70);
+  background: linear-gradient(135deg, var(--life-blue-deep), var(--life-blue-ink));
   box-shadow: var(--life-shadow);
 }
 .support-mark {
@@ -1445,7 +1445,7 @@ onShow(load);
   font-size: 18rpx;
 }
 .conversation-filters button.active {
-  color: #fff;
+  color: var(--life-paper);
   background: var(--life-brand);
 }
 .ticket-facts,
@@ -1457,7 +1457,7 @@ onShow(load);
 .ticket-facts text {
   padding: 9rpx 13rpx;
   border-radius: 999rpx;
-  color: #9b5c00;
+  color: var(--life-yellow-ink);
   background: var(--life-yellow-soft);
   font-size: 18rpx;
 }
@@ -1505,16 +1505,16 @@ onShow(load);
   }
 }
 .primary {
-  color: #fff;
-  background: #076c50;
+  color: var(--life-paper);
+  background: var(--life-brand-deep);
 }
 .secondary {
-  color: #076c50;
-  background: #e8f7f0;
+  color: var(--life-brand-deep);
+  background: var(--life-brand-soft);
 }
 .danger {
-  color: #9b3f20;
-  background: #fff0eb;
+  color: var(--life-coral-ink);
+  background: var(--life-coral-soft);
 }
 .notice {
   display: block;
@@ -1522,7 +1522,7 @@ onShow(load);
 .context-note {
   display: block;
   margin: 14rpx 0;
-  color: #66736d;
+  color: var(--life-muted);
   font-size: 21rpx;
   line-height: 1.7;
 }
@@ -1536,10 +1536,10 @@ onShow(load);
   margin: 0;
 }
 .boundary {
-  border: 1rpx solid #d8e3dd;
+  border: 1rpx solid var(--life-line);
 }
 .boundary .section-head text:last-child {
-  color: #9b3f20;
+  color: var(--life-coral-ink);
 }
 .credential-grid {
   display: grid;
@@ -1790,7 +1790,7 @@ onShow(load);
 .credential-card button {
   margin: 0;
   border-radius: 999rpx;
-  color: #9b5c00;
+  color: var(--life-yellow-ink);
   background: var(--life-yellow);
   font-size: 18rpx;
 }
@@ -1821,7 +1821,7 @@ onShow(load);
   box-shadow: var(--life-shadow);
 }
 .privacy-summary.subscription {
-  background: linear-gradient(135deg, #087b8d, #075d70);
+  background: linear-gradient(135deg, var(--life-blue-deep), var(--life-blue-ink));
 }
 .privacy-shield {
   display: flex;
@@ -1983,7 +1983,7 @@ onShow(load);
   position: relative;
   width: 48rpx;
   height: 48rpx;
-  border: 4rpx solid #075d70;
+  border: 4rpx solid var(--life-blue-ink);
   border-radius: 25rpx 25rpx 12rpx 12rpx;
   box-sizing: border-box;
 }
@@ -1994,10 +1994,10 @@ onShow(load);
   width: 13rpx;
   height: 7rpx;
   border-radius: 0 0 9rpx 9rpx;
-  background: #075d70;
+  background: var(--life-blue-ink);
 }
 .order-tools-summary {
-  background: linear-gradient(135deg, #087b8d, #075d70);
+  background: linear-gradient(135deg, var(--life-blue-deep), var(--life-blue-ink));
 }
 .order-tools-mark {
   display: flex;
@@ -2070,7 +2070,7 @@ onShow(load);
   font-size: 14rpx;
 }
 .privacy-note.blue {
-  color: #075d70;
+  color: var(--life-blue-ink);
   background: var(--life-blue-soft);
 }
 .account-record {
@@ -2112,7 +2112,7 @@ onShow(load);
   align-items: center;
   gap: 16rpx;
   color: var(--life-paper);
-  background: linear-gradient(135deg, #087b8d, #075d70);
+  background: linear-gradient(135deg, var(--life-blue-deep), var(--life-blue-ink));
   box-shadow: var(--life-shadow);
 }
 .map-pin,
@@ -2182,7 +2182,7 @@ onShow(load);
   flex: 0 0 auto;
   background:
     linear-gradient(35deg, transparent 48%, rgba(255, 255, 255, 0.7) 49% 53%, transparent 54%),
-    linear-gradient(145deg, var(--life-blue-soft), #8cd9d3);
+    linear-gradient(145deg, var(--life-blue-soft), var(--life-blue-bright));
 }
 .map-photo::before,
 .map-photo::after {
@@ -2270,7 +2270,7 @@ onShow(load);
 .verification-note {
   padding: 17rpx 20rpx;
   border-radius: 16rpx;
-  color: #9b3f20;
+  color: var(--life-coral-ink);
   background: var(--life-coral-soft);
   text-align: center;
   font-size: 16rpx;
@@ -2279,7 +2279,7 @@ onShow(load);
   margin: 18rpx 0;
   padding: 18rpx;
   border-radius: 18rpx;
-  color: #9b3f20;
+  color: var(--life-coral-ink);
   background: var(--life-coral-soft);
   font-size: 17rpx;
   line-height: 1.55;
@@ -2338,7 +2338,7 @@ onShow(load);
 .aftercare-order-summary > text:last-child {
   padding: 5rpx 9rpx;
   border-radius: 999rpx;
-  color: #9b3f20;
+  color: var(--life-coral-ink);
   background: var(--life-coral-soft);
   font-size: 15rpx;
   font-weight: 800;
@@ -2363,7 +2363,7 @@ onShow(load);
   font-size: 14rpx;
 }
 .aftercare-money-grid text:last-child {
-  color: #9b3f20;
+  color: var(--life-coral-ink);
   font-size: 18rpx;
   font-weight: 900;
 }
@@ -2448,7 +2448,7 @@ onShow(load);
   background: var(--life-brand-soft);
 }
 .account-safe-banner.blue {
-  color: #075d70;
+  color: var(--life-blue-ink);
   background: var(--life-blue-soft);
 }
 .safe-mark {
@@ -2574,7 +2574,7 @@ onShow(load);
 .aftercare-card > view:first-child text:last-child {
   padding: 6rpx 10rpx;
   border-radius: 10rpx;
-  color: #9b3f20;
+  color: var(--life-coral-ink);
   background: var(--life-coral-soft);
   font-size: 15rpx;
 }

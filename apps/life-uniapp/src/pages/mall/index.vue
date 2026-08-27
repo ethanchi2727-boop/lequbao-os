@@ -184,7 +184,12 @@ onShow(load);
   margin: 8rpx 20rpx 0;
   border-radius: var(--life-radius-lg);
   overflow: hidden;
-  background: linear-gradient(135deg, #d92636, var(--life-coral) 58%, #ff9c68);
+  background: linear-gradient(
+    135deg,
+    var(--life-coral-deep),
+    var(--life-coral) 58%,
+    var(--life-coral-bright)
+  );
   box-shadow: var(--life-shadow);
 }
 .hero-copy {
@@ -222,7 +227,7 @@ onShow(load);
   margin: 20rpx 0 0;
   padding: 0 20rpx;
   border-radius: 24rpx;
-  color: #9b3f20;
+  color: var(--life-coral-ink);
   background: var(--life-yellow);
   font-size: 19rpx;
   font-weight: 900;
@@ -252,7 +257,7 @@ onShow(load);
   align-items: center;
   justify-content: center;
   flex-direction: column;
-  color: #9b3f20;
+  color: var(--life-coral-ink);
   background: var(--life-yellow);
   font-size: 16rpx;
   font-weight: 900;
@@ -280,7 +285,7 @@ onShow(load);
   line-height: 1.3;
 }
 .mall-quick-grid text:first-child {
-  color: #9b3f20;
+  color: var(--life-coral-ink);
   font-size: 20rpx;
   font-weight: 900;
 }
@@ -295,7 +300,7 @@ onShow(load);
   border-radius: 24rpx;
   align-items: center;
   justify-content: space-around;
-  color: #9b3f20;
+  color: var(--life-coral-ink);
   background: var(--life-coral-soft);
   font-size: 16rpx;
 }
@@ -304,7 +309,7 @@ onShow(load);
   height: 78rpx;
   margin-top: 18rpx;
   padding: 0 20rpx;
-  border: 1rpx solid #ffd2cb;
+  border: 1rpx solid var(--life-coral-line);
   border-radius: 24rpx;
   align-items: center;
   gap: 12rpx;
@@ -322,7 +327,7 @@ onShow(load);
 .retail-search button {
   margin: 0;
   padding: 0 8rpx;
-  color: #9b3f20;
+  color: var(--life-coral-ink);
   background: transparent;
   font-size: 18rpx;
 }
@@ -416,7 +421,7 @@ onShow(load);
 }
 .sheet-kicker {
   margin-top: 18rpx;
-  color: #9b3f20;
+  color: var(--life-coral-ink);
   font-size: 20rpx;
   font-weight: 800;
 }
@@ -441,7 +446,7 @@ onShow(load);
   background: var(--life-yellow-soft);
 }
 .trace-note text:first-child {
-  color: #7b4f00;
+  color: var(--life-yellow-ink);
   font-weight: 900;
 }
 .sheet-action {
@@ -470,7 +475,7 @@ onShow(load);
   margin-top: 12rpx;
   border-radius: 999rpx;
   color: var(--life-muted);
-  background: #f1f5f3;
+  background: var(--life-wash);
   font-size: 21rpx;
 }
 </style>

@@ -155,8 +155,8 @@ onLoad(() => void load());
   align-items: center;
   justify-content: center;
   flex-direction: column;
-  background: #fff5d6;
-  color: #9b3f20;
+  background: var(--life-yellow-soft);
+  color: var(--life-coral-ink);
   box-sizing: border-box;
 }
 .event-badge text:first-child {

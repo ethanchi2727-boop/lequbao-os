@@ -223,7 +223,7 @@ onLoad((options) => {
   font-weight: 900;
 }
 .product-main > text:nth-child(3) {
-  color: #66736d;
+  color: var(--life-muted);
   font-size: 21rpx;
 }
 .detail-link {
@@ -271,14 +271,14 @@ onLoad((options) => {
 }
 .purchase-actions button {
   margin: 0;
-  color: #076c50;
-  background: #e8f7f0;
+  color: var(--life-brand-deep);
+  background: var(--life-brand-soft);
   border-radius: 999rpx;
   font-size: 23rpx;
 }
 .purchase-actions button:last-child {
-  color: #fff;
-  background: #076c50;
+  color: var(--life-paper);
+  background: var(--life-brand-deep);
 }
 .purchase-actions button:first-child {
   color: var(--life-muted);

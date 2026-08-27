@@ -147,7 +147,7 @@ onLoad((options) => {
   flex-direction: column;
   gap: 6rpx;
   text-align: left;
-  background: #f8faf9;
+  background: var(--life-wash);
   border: 2rpx solid transparent;
   border-radius: 20rpx;
 }
@@ -157,14 +157,14 @@ onLoad((options) => {
   gap: 12rpx;
 }
 .variant.active {
-  border-color: #0f9d72;
-  background: #e8f7f0;
+  border-color: var(--life-brand);
+  background: var(--life-brand-soft);
 }
 .variant > text:first-child {
   font-weight: 900;
 }
 .variant > text:last-child {
-  color: #66736d;
+  color: var(--life-muted);
   font-size: 16rpx;
 }
 .variant .price {
@@ -228,7 +228,7 @@ onLoad((options) => {
   margin: 0;
   padding: 0;
   line-height: 64rpx;
-  background: #e8f7f0;
+  background: var(--life-brand-soft);
   border-radius: 50%;
 }
 .confirm-rail {
@@ -261,8 +261,8 @@ onLoad((options) => {
 .confirm {
   margin: 0;
   padding: 0 34rpx;
-  color: #fff;
-  background: #076c50;
+  color: var(--life-paper);
+  background: var(--life-brand-deep);
   border-radius: 999rpx;
   font-size: 24rpx;
   font-weight: 900;

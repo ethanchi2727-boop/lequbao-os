@@ -7,6 +7,10 @@ import {
   lifeSession,
   parsePaymentCredential,
 } from '../../services/life-session.js';
+// 乐趣生活 V6.3 主题色字面值：与 App.vue Theme Token --life-brand-deep (#066b4c) 对齐。
+// uni-app <switch color> 为原生组件属性，仅接受具体颜色字符串，无法使用 CSS 变量，
+// 故以常量集中管理，避免散落 hex，并保证与 --life-brand-deep 同步。
+const LIFE_BRAND_DEEP_HEX = '#066b4c';
 
 const session = ref(null);
 const orders = ref([]);
@@ -569,7 +573,7 @@ async function requestUnshippedRefund() {
         <label class="form-check"
           ><switch
             :checked="addressForm.isDefault"
-            color="#076c50"
+            :color="LIFE_BRAND_DEEP_HEX"
             @change="addressForm.isDefault = $event.detail.value"
           />设为默认地址</label
         >
@@ -614,7 +618,7 @@ async function requestUnshippedRefund() {
         <label class="form-check"
           ><switch
             :checked="invoiceForm.isDefault"
-            color="#076c50"
+            :color="LIFE_BRAND_DEEP_HEX"
             @change="invoiceForm.isDefault = $event.detail.value"
           />设为默认抬头</label
         >
@@ -792,24 +796,24 @@ async function requestUnshippedRefund() {
   background: var(--life-red);
 }
 .reward-icon {
-  background: #fff5d6;
+  background: var(--life-yellow-soft);
 }
 .reward-icon::before {
-  border-color: #d38a00;
+  border-color: var(--life-yellow-deep);
   transform: rotate(45deg);
 }
 .reward-icon::after {
-  background: #d38a00;
+  background: var(--life-yellow-deep);
 }
 .privacy-icon {
   background: var(--life-blue-soft);
 }
 .privacy-icon::before {
-  border-color: #1687a0;
+  border-color: var(--life-blue-deep);
   border-radius: 50% 50% 8rpx 8rpx;
 }
 .privacy-icon::after {
-  background: #1687a0;
+  background: var(--life-blue-deep);
 }
 .account-order {
   border: 1rpx solid var(--life-line);
@@ -841,20 +845,20 @@ async function requestUnshippedRefund() {
   font-weight: 900;
 }
 .account-button {
-  color: #fff;
-  background: #076c50;
+  color: var(--life-paper);
+  background: var(--life-brand-deep);
   border-radius: 999rpx;
   font-size: 26rpx;
   font-weight: 800;
 }
 .account-button.secondary {
-  color: #076c50;
-  background: #e8f7f0;
+  color: var(--life-brand-deep);
+  background: var(--life-brand-soft);
 }
 .account-message {
   display: block;
   margin-top: 18rpx;
-  color: #66736d;
+  color: var(--life-muted);
   text-align: center;
   font-size: 22rpx;
 }
@@ -864,16 +868,16 @@ async function requestUnshippedRefund() {
   gap: 18rpx;
 }
 .login-divider {
-  color: #84908a;
+  color: var(--life-muted-bright);
   text-align: center;
   font-size: 20rpx;
 }
 .login-input {
   height: 82rpx;
   padding: 0 24rpx;
-  border: 1rpx solid #dce5e0;
+  border: 1rpx solid var(--life-line);
   border-radius: 20rpx;
-  background: #f8faf9;
+  background: var(--life-wash);
   box-sizing: border-box;
   font-size: 26rpx;
 }
@@ -884,16 +888,16 @@ async function requestUnshippedRefund() {
 }
 .otp-button {
   margin: 0;
-  color: #fff;
-  background: #076c50;
+  color: var(--life-paper);
+  background: var(--life-brand-deep);
   border-radius: 20rpx;
   font-size: 22rpx;
 }
 .pay-button {
   width: 100%;
   margin-top: 14rpx;
-  color: #fff;
-  background: #076c50;
+  color: var(--life-paper);
+  background: var(--life-brand-deep);
   border-radius: 999rpx;
   font-size: 23rpx;
 }
@@ -906,7 +910,7 @@ async function requestUnshippedRefund() {
   display: flex;
   justify-content: space-between;
   gap: 20rpx;
-  color: #66736d;
+  color: var(--life-muted);
   font-size: 22rpx;
 }
 .detail-title {
@@ -916,17 +920,17 @@ async function requestUnshippedRefund() {
 }
 .refund-list {
   padding-top: 12rpx;
-  border-top: 1rpx solid #e6ebe8;
+  border-top: 1rpx solid var(--life-line);
 }
 .refund-button {
   margin-top: 14rpx;
-  color: #9b3f20;
-  background: #fff0eb;
+  color: var(--life-coral-ink);
+  background: var(--life-coral-soft);
   border-radius: 999rpx;
   font-size: 23rpx;
 }
 .detail-note {
-  color: #9b3f20;
+  color: var(--life-coral-ink);
   text-align: center;
   font-size: 22rpx;
 }
@@ -934,12 +938,12 @@ async function requestUnshippedRefund() {
 .account-record {
   display: flex;
   padding: 20rpx;
-  border: 1rpx solid #e6ebe8;
+  border: 1rpx solid var(--life-line);
   border-radius: 20rpx;
   align-items: center;
   justify-content: space-between;
   gap: 18rpx;
-  background: #f8faf9;
+  background: var(--life-wash);
 }
 .benefit-card > view,
 .account-record > view {
@@ -956,19 +960,19 @@ async function requestUnshippedRefund() {
 }
 .benefit-card view text:nth-child(2),
 .account-record view text:not(:first-child) {
-  color: #66736d;
+  color: var(--life-muted);
   font-size: 20rpx;
 }
 .benefit-card button,
 .account-record button {
   margin: 0;
-  color: #076c50;
-  background: #e8f7f0;
+  color: var(--life-brand-deep);
+  background: var(--life-brand-soft);
   border-radius: 999rpx;
   font-size: 20rpx;
 }
 .reward-status {
-  color: #9b3f20;
+  color: var(--life-coral-ink);
   font-size: 20rpx;
   font-weight: 800;
 }
@@ -981,15 +985,15 @@ async function requestUnshippedRefund() {
   gap: 16rpx;
   margin-top: 20rpx;
   padding-top: 20rpx;
-  border-top: 1rpx solid #e6ebe8;
+  border-top: 1rpx solid var(--life-line);
 }
 .account-form input,
 .form-picker {
   height: 78rpx;
   padding: 0 22rpx;
-  border: 1rpx solid #dce5e0;
+  border: 1rpx solid var(--life-line);
   border-radius: 18rpx;
-  background: #f8faf9;
+  background: var(--life-wash);
   box-sizing: border-box;
   font-size: 23rpx;
   line-height: 78rpx;
@@ -1003,7 +1007,7 @@ async function requestUnshippedRefund() {
   display: flex;
   align-items: center;
   gap: 12rpx;
-  color: #66736d;
+  color: var(--life-muted);
   font-size: 22rpx;
 }
 </style>

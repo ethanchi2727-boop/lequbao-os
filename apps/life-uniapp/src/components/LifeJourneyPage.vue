@@ -795,7 +795,7 @@ onShow(load);
   justify-content: space-between;
   gap: 20rpx;
   padding: 20rpx 0;
-  border-bottom: 1rpx solid #e6ebe8;
+  border-bottom: 1rpx solid var(--life-line);
 }
 .store-discovery,
 .store-detail-surface,
@@ -967,7 +967,7 @@ onShow(load);
   font-size: 14rpx;
 }
 .group-rule-grid text:last-child {
-  color: #9b3f20;
+  color: var(--life-coral-ink);
   font-size: 18rpx;
   font-weight: 900;
 }
@@ -992,18 +992,18 @@ onShow(load);
 }
 .journey-row view text:last-child,
 .notice {
-  color: #66736d;
+  color: var(--life-muted);
   font-size: 21rpx;
 }
 .journey-row > text {
-  color: #0f9d72;
+  color: var(--life-brand);
   font-size: 23rpx;
   font-weight: 800;
 }
 .journey-row button {
   margin: 0;
-  color: #9b3f20;
-  background: #fff0eb;
+  color: var(--life-coral-ink);
+  background: var(--life-coral-soft);
   border-radius: 999rpx;
   font-size: 20rpx;
 }
@@ -1016,8 +1016,8 @@ onShow(load);
 .facts text {
   padding: 10rpx 16rpx;
   border-radius: 999rpx;
-  color: #076c50;
-  background: #e8f7f0;
+  color: var(--life-brand-deep);
+  background: var(--life-brand-soft);
   font-size: 20rpx;
 }
 .primary,
@@ -1029,16 +1029,16 @@ onShow(load);
   font-weight: 800;
 }
 .primary {
-  color: #fff;
-  background: #076c50;
+  color: var(--life-paper);
+  background: var(--life-brand-deep);
 }
 .secondary {
-  color: #076c50;
-  background: #e8f7f0;
+  color: var(--life-brand-deep);
+  background: var(--life-brand-soft);
 }
 .danger {
-  color: #9b3f20;
-  background: #fff0eb;
+  color: var(--life-coral-ink);
+  background: var(--life-coral-soft);
 }
 .tabs {
   display: grid;
@@ -1046,14 +1046,14 @@ onShow(load);
   gap: 14rpx;
 }
 .tabs button {
-  color: #66736d;
-  background: #f1f5f3;
+  color: var(--life-muted);
+  background: var(--life-wash);
   border-radius: 18rpx;
   font-size: 23rpx;
 }
 .tabs button.active {
-  color: #fff;
-  background: #076c50;
+  color: var(--life-paper);
+  background: var(--life-brand-deep);
 }
 .journey-cart-surface,
 .fulfillment-surface,
@@ -1216,7 +1216,7 @@ onShow(load);
 .journey-cart-item button {
   margin: 0;
   flex: 0 0 auto;
-  color: #9b3f20;
+  color: var(--life-coral-ink);
   background: var(--life-coral-soft);
   font-size: 14rpx;
 }
@@ -1251,7 +1251,7 @@ onShow(load);
   padding: 0 32rpx;
 }
 .fulfillment-summary {
-  background: linear-gradient(135deg, #087b8d, #075d70);
+  background: linear-gradient(135deg, var(--life-blue-deep), var(--life-blue-ink));
 }
 .delivery-tabs button {
   display: flex;
@@ -1287,7 +1287,7 @@ onShow(load);
   line-height: 1.5;
 }
 .reward-choice-summary {
-  background: linear-gradient(135deg, #f39a42, var(--life-red));
+  background: linear-gradient(135deg, var(--life-coral-amber), var(--life-red));
 }
 .reward-choice-list {
   display: grid;
@@ -1316,7 +1316,7 @@ onShow(load);
 .reward-choice-mark view {
   width: 25rpx;
   height: 25rpx;
-  border: 5rpx solid #c87908;
+  border: 5rpx solid var(--life-yellow-deep);
   border-radius: 50%;
   box-sizing: border-box;
 }
@@ -1337,7 +1337,7 @@ onShow(load);
   font-weight: 900;
 }
 .reward-choice-card > view:last-child > view text:last-child {
-  color: #9b5c00;
+  color: var(--life-yellow-ink);
   font-size: 14rpx;
 }
 .reward-choice-card > view:last-child > text:nth-child(2) {
@@ -1352,7 +1352,7 @@ onShow(load);
 .reward-choice-note {
   padding: 17rpx 20rpx;
   border-radius: 16rpx;
-  color: #9b3f20;
+  color: var(--life-coral-ink);
   background: var(--life-coral-soft);
   font-size: 16rpx;
   line-height: 1.5;
@@ -1360,9 +1360,9 @@ onShow(load);
 .picker {
   margin-top: 18rpx;
   padding: 22rpx;
-  border: 1rpx solid #dce5e0;
+  border: 1rpx solid var(--life-line);
   border-radius: 20rpx;
-  background: #f8faf9;
+  background: var(--life-wash);
   font-size: 22rpx;
 }
 .notice {
@@ -1521,7 +1521,7 @@ onShow(load);
   border-radius: 14rpx;
   justify-content: space-between;
   color: var(--life-muted);
-  background: #f7f9f8;
+  background: var(--life-wash);
   font-size: 17rpx;
 }
 .order-card-foot text:first-child {
@@ -1706,7 +1706,7 @@ onShow(load);
   border: 1rpx solid var(--life-line);
   border-radius: var(--life-radius-md);
   gap: 13rpx;
-  background: #f9fbfa;
+  background: var(--life-wash);
 }
 .checkout-amounts > view {
   display: flex;
@@ -1729,7 +1729,7 @@ onShow(load);
   margin-top: 16rpx;
   padding: 18rpx;
   border-radius: 18rpx;
-  color: #075d70;
+  color: var(--life-blue-ink);
   background: var(--life-blue-soft);
   font-size: 18rpx;
   line-height: 1.55;
@@ -1747,7 +1747,7 @@ onShow(load);
   display: flex;
   width: 82rpx;
   height: 82rpx;
-  border: 5rpx solid #1687a0;
+  border: 5rpx solid var(--life-blue-deep);
   border-radius: 50%;
   align-items: center;
   justify-content: center;
@@ -1756,8 +1756,8 @@ onShow(load);
 .payment-seal > view {
   width: 29rpx;
   height: 14rpx;
-  border-bottom: 6rpx solid #1687a0;
-  border-left: 6rpx solid #1687a0;
+  border-bottom: 6rpx solid var(--life-blue-deep);
+  border-left: 6rpx solid var(--life-blue-deep);
   transform: rotate(-45deg) translate(2rpx, -2rpx);
 }
 .payment-status-panel.paid {
@@ -1776,7 +1776,7 @@ onShow(load);
   gap: 5rpx;
 }
 .payment-status-panel > view:last-child text:first-child {
-  color: #075d70;
+  color: var(--life-blue-ink);
   font-size: 24rpx;
   font-weight: 900;
 }
@@ -1866,7 +1866,7 @@ onShow(load);
 .refund-card-head text:last-child {
   padding: 6rpx 10rpx;
   border-radius: 10rpx;
-  color: #9b3f20;
+  color: var(--life-coral-ink);
   background: var(--life-coral-soft);
   font-size: 15rpx;
 }
@@ -1882,7 +1882,7 @@ onShow(load);
   font-weight: 900;
 }
 .refund-card-foot text:last-child {
-  color: #9b3f20;
+  color: var(--life-coral-ink);
   font-size: 16rpx;
 }
 .member-benefit-grid {
@@ -1903,7 +1903,7 @@ onShow(load);
   color: var(--life-paper);
   background:
     radial-gradient(circle at 85% 5%, rgba(255, 255, 255, 0.22), transparent 34%),
-    linear-gradient(135deg, #f39a42, var(--life-red));
+    linear-gradient(135deg, var(--life-coral-amber), var(--life-red));
   box-shadow: var(--life-shadow);
 }
 .member-card-head,
@@ -2006,7 +2006,7 @@ onShow(load);
   background: var(--life-yellow-soft);
 }
 .member-benefit-grid text:first-child {
-  color: #9b5c00;
+  color: var(--life-yellow-ink);
   font-size: 26rpx;
   font-weight: 900;
 }
