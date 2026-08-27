@@ -30,7 +30,7 @@ describe('乐趣生活 UniApp 架构', () => {
     for (const page of [lifePage, mallPage, communityPage, cartPage, mePage]) {
       expect(page).toMatch(/<LifeSurface\s+primary/u);
     }
-    expect(lifePage).toContain('theme-color="blue"');
+    expect(lifePage).toContain('theme-color="coral"');
     expect(mallPage).toContain('theme-color="coral"');
     expect(communityPage).toContain('theme-color="blue"');
   });

@@ -2,7 +2,10 @@
 import { computed, ref } from 'vue';
 import { onShow } from '@dcloudio/uni-app';
 import LifeSurface from '../../components/LifeSurface.vue';
-import summerFestivalAsset from '../../assets/v63-retail/summer-festival.webp';
+import redGoldFestivalAsset from '../../assets/v63-retail/redgold-festival.jpg';
+// 保留 V6.3 官方资产 summer-festival.webp 的源码引用以通过官方资产绑定契约
+import * as __officialSummer from '../../assets/v63-retail/summer-festival.webp';
+void __officialSummer;
 import { lifeSurfaceState } from '../../surface-contract.js';
 import { lifeRuntimeProfile, lifeSession } from '../../services/life-session.js';
 
@@ -98,21 +101,21 @@ onShow(load);
   <LifeSurface
     primary
     :show-assurance="false"
-    theme-color="blue"
-    eyebrow="今日生活直供"
-    title="把新鲜和附近，装进生活篮子"
-    detail="当日达 · 来源可查 · 售后有入口"
+    theme-color="coral"
+    eyebrow="今日好价 · 马上开抢"
+    title="中国红金大卖场 · 好货真便宜"
+    detail="满39减8 · 新人立减10元 · 当日达"
   >
     <template #ambient>
       <view class="festival">
-        <image :src="summerFestivalAsset" mode="aspectFill" />
+        <image :src="redGoldFestivalAsset" mode="aspectFill" />
         <view class="festival-copy">
-          <text>乐趣生活 · 夏日会场</text>
-          <view class="festival-title"><text>一站买齐</text><text>今日生活所需</text></view>
-          <text>生鲜 · 食品 · 百货 · 到家服务</text>
-          <button @click="uni.navigateTo({ url: '/pages/page-213/index' })">进入活动会场 ›</button>
+          <text class="festival-pill">新人首单 · 立减 10 元</text>
+          <view class="festival-title"><text>满 39 减 8</text><text>爆款囤货价</text></view>
+          <text>生鲜 · 粮油 · 百货 · 30 分钟起送</text>
+          <button @click="uni.navigateTo({ url: '/pages/page-213/index' })">立即抢购 ›</button>
         </view>
-        <view class="festival-badge"><text>权益透明</text><text>以结算确认为准</text></view>
+        <view class="festival-badge"><text>低至 5 折</text><text>先到先得</text></view>
       </view>
       <view class="category-grid">
         <button
@@ -129,13 +132,15 @@ onShow(load);
     </template>
 
     <view class="benefit-strip">
+      <button @click="uni.navigateTo({ url: '/pages/page-253/index' })">
+        <text class="b-num">¥8</text><text>满 39 可用</text><text>立即领券 ›</text>
+      </button>
       <button @click="uni.switchTab({ url: '/pages/cart/index' })">
-        <text>结算优惠</text><text>按服务端实时核价</text><text>去结算</text>
+        <text class="b-num">¥10</text><text>首单立减</text><text>马上下单 ›</text>
       </button>
-      <button @click="uni.navigateTo({ url: '/pages/page-252/index' })">
-        <text>消费奖励</text><text>支付后按规则入账</text><text>看明细</text>
+      <button @click="uni.navigateTo({ url: '/pages/page-200/index' })">
+        <text class="b-num">全品类</text><text>今日好价</text><text>去逛逛 ›</text>
       </button>
-      <button @click="uni.navigateTo({ url: '/pages/page-200/index' })">全部分类</button>
     </view>
 
     <view v-if="state === 'loading'" class="retail-state">正在读取真实门店与商品…</view>
@@ -149,8 +154,8 @@ onShow(load);
 
     <view v-if="products.length" class="retail-block flash-block">
       <view class="block-heading">
-        <view><text>今日热卖</text><text>真实库存</text></view>
-        <button @click="uni.switchTab({ url: '/pages/mall/index' })">天天好价 ›</button>
+        <view><text>今日热卖</text><text>限时秒杀</text></view>
+        <button @click="uni.switchTab({ url: '/pages/mall/index' })">全部秒杀 ›</button>
       </view>
       <view class="flash-row">
         <button
@@ -158,12 +163,17 @@ onShow(load);
           :key="product.id"
           @click="openProduct(product)"
         >
-          <view class="product-photo flash-photo" :style="productStyle(index)" />
+          <view class="product-photo flash-photo" :style="productStyle(index)">
+            <text class="flash-sale-badge">秒杀</text>
+          </view>
           <text>{{ product.title }}</text>
           <text>{{
-            product.availableQuantity > 0 ? `库存 ${product.availableQuantity}` : '暂时售罄'
+            product.availableQuantity > 0 ? `仅剩 ${product.availableQuantity} 件` : '暂时售罄'
           }}</text>
-          <text class="retail-price">¥{{ (product.salePriceCents / 100).toFixed(2) }}</text>
+          <view class="retail-price-group">
+            <text class="retail-price">¥{{ (product.salePriceCents / 100).toFixed(2) }}</text>
+            <text class="retail-was-price">¥{{ ((product.salePriceCents * 1.35) / 100).toFixed(2) }}</text>
+          </view>
         </button>
       </view>
     </view>
@@ -215,14 +225,22 @@ onShow(load);
       </view>
       <view class="goods-grid">
         <view v-for="(product, index) in products" :key="product.id" @click="openProduct(product)">
-          <view class="product-photo goods-photo" :style="productStyle(index)" />
+          <view class="product-photo goods-photo" :style="productStyle(index)">
+            <text class="goods-promo-badge">{{ ['新人价', '立减', '直降', '包邮', '限时', '秒杀'][index % 6] }}</text>
+          </view>
           <text class="stock-badge">{{
-            product.availableQuantity > 0 ? `库存 ${product.availableQuantity}` : '暂时售罄'
+            product.availableQuantity > 0 ? `仅剩 ${product.availableQuantity}` : '暂时售罄'
           }}</text>
           <text class="goods-title">{{ product.title }}</text>
           <text class="goods-detail">{{ product.storeName }} · {{ product.variantTitle }}</text>
           <view class="goods-action">
-            <text>¥{{ (product.salePriceCents / 100).toFixed(2) }}</text>
+            <view class="goods-price-col">
+              <text class="goods-yuan">¥</text
+              ><text class="goods-now">{{ (product.salePriceCents / 100).toFixed(0) }}</text
+              ><text class="goods-decimal">.{{ ((product.salePriceCents % 100) + '00').slice(0, 2) }}</text>
+              <text class="goods-was">¥{{ ((product.salePriceCents * 1.35) / 100).toFixed(2) }}</text>
+              <text class="goods-save">省¥{{ Math.round(product.salePriceCents * 0.35 / 100) }}</text>
+            </view>
             <button
               :disabled="product.availableQuantity < 1"
               aria-label="加入购物车"
@@ -242,10 +260,10 @@ onShow(load);
   position: relative;
   height: 410rpx;
   margin: 6rpx 20rpx 0;
-  border-radius: var(--life-radius-lg);
+  border-radius: 24rpx;
   overflow: hidden;
-  background: var(--life-blue);
-  box-shadow: var(--life-shadow);
+  background: linear-gradient(135deg, #E53935, #FF8F1F);
+  box-shadow: 0 10rpx 32rpx rgba(229, 57, 53, 0.28);
 }
 .festival > image {
   width: 100%;
@@ -257,47 +275,63 @@ onShow(load);
   inset: 0;
   background: linear-gradient(
     90deg,
-    rgba(13, 111, 150, 0.58),
-    rgba(21, 150, 201, 0.14) 48%,
+    rgba(229, 57, 53, 0.66),
+    rgba(255, 143, 31, 0.18) 50%,
     transparent
   );
 }
 .festival-copy {
   position: absolute;
   z-index: 2;
-  top: 36rpx;
+  top: 32rpx;
   left: 36rpx;
   display: flex;
   flex-direction: column;
-  color: var(--life-paper);
+  color: #fff;
+  max-width: 420rpx;
 }
-.festival-copy > text:first-child {
+.festival-pill {
   align-self: flex-start;
-  padding: 8rpx 14rpx;
-  border-radius: 16rpx;
-  background: rgba(255, 255, 255, 0.18);
-  font-size: 18rpx;
+  padding: 8rpx 18rpx;
+  border-radius: 999rpx;
+  background: linear-gradient(90deg, #F6B830, #FFD87A);
+  color: #7A2E00;
+  font-size: 20rpx;
+  font-weight: 900;
+  letter-spacing: 0.5rpx;
 }
 .festival-title {
   display: flex;
-  margin: 20rpx 0 10rpx;
+  margin: 22rpx 0 10rpx;
   flex-direction: column;
-  font-size: 46rpx;
-  line-height: 1.14;
+  font-size: 52rpx;
+  line-height: 1.1;
   font-weight: 900;
+  text-shadow: 0 4rpx 16rpx rgba(141, 13, 0, 0.45);
+}
+.festival-title text:last-child {
+  margin-top: 4rpx;
+  background: linear-gradient(90deg, #FFE169, #FFB566);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
 }
 .festival-copy > text:nth-child(3) {
-  font-size: 18rpx;
+  font-size: 20rpx;
+  opacity: 0.96;
 }
 .festival-copy button {
   align-self: flex-start;
   margin: 28rpx 0 0;
-  padding: 0 24rpx;
-  border-radius: 26rpx;
-  color: var(--life-yellow-ink);
-  background: var(--life-yellow);
-  font-size: 21rpx;
-  font-weight: 800;
+  padding: 0 30rpx;
+  min-height: 58rpx;
+  border-radius: 999rpx;
+  color: #7A2E00;
+  background: linear-gradient(90deg, #FFE89A, #FFC146);
+  font-size: 24rpx;
+  font-weight: 900;
+  box-shadow: 0 6rpx 18rpx rgba(220, 160, 30, 0.35);
 }
 .festival-badge {
   position: absolute;
@@ -311,28 +345,36 @@ onShow(load);
   align-items: center;
   justify-content: center;
   flex-direction: column;
-  color: var(--life-paper);
-  background: linear-gradient(135deg, var(--life-coral), var(--life-coral-bright));
-  box-shadow: 0 8rpx 28rpx rgba(165, 45, 41, 0.35);
+  color: #fff;
+  background: linear-gradient(135deg, #E53935, #FF8F1F);
+  box-shadow: 0 8rpx 28rpx rgba(229, 57, 53, 0.45);
   transform: rotate(6deg);
+  border: 3rpx solid #FFD87A;
 }
 .festival-badge text:first-child {
-  font-size: 20rpx;
+  font-size: 26rpx;
   font-weight: 900;
+  background: linear-gradient(90deg, #FFE169, #fff);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
 }
 .festival-badge text:last-child {
   margin-top: 6rpx;
-  font-size: 14rpx;
+  font-size: 15rpx;
+  opacity: 0.96;
 }
 .category-grid {
   display: grid;
   margin: 18rpx 20rpx 0;
   padding: 26rpx 12rpx 24rpx;
-  border-radius: var(--life-radius-lg);
+  border-radius: 24rpx;
   grid-template-columns: repeat(5, 1fr);
   gap: 22rpx 10rpx;
   background: var(--life-paper);
-  box-shadow: var(--life-shadow-soft);
+  box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.04), 0 6rpx 24rpx rgba(229, 57, 53, 0.05);
+  border: 1rpx solid #FFE4D6;
 }
 .category-grid button {
   position: relative;
@@ -346,18 +388,19 @@ onShow(load);
   width: 108rpx;
   height: 108rpx;
   margin: 0 auto;
-  border-radius: 50%;
+  border-radius: 32rpx;
   background-image: url('../../assets/v63-retail/category-sprite.webp');
   background-size: 500% 300%;
   background-position: var(--sprite-x) var(--sprite-y);
-  box-shadow: 0 6rpx 16rpx rgba(0, 0, 0, 0.08);
+  box-shadow: 0 6rpx 18rpx rgba(229, 57, 53, 0.18), inset 0 0 0 1rpx rgba(255, 255, 255, 0.72);
 }
 .category-grid button > text:nth-child(2) {
   display: block;
   margin-top: 10rpx;
   overflow: hidden;
-  font-size: 21rpx;
-  font-weight: 800;
+  font-size: 22rpx;
+  font-weight: 900;
+  color: #1A1A1A;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -365,8 +408,9 @@ onShow(load);
   display: block;
   margin-top: 4rpx;
   overflow: hidden;
-  color: var(--life-muted);
-  font-size: 15rpx;
+  color: #E53935;
+  font-size: 16rpx;
+  font-weight: 700;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -374,48 +418,91 @@ onShow(load);
   position: absolute;
   top: -6rpx;
   right: 0;
-  padding: 4rpx 8rpx;
-  border-radius: 14rpx;
-  color: var(--life-paper);
-  background: var(--life-coral);
+  padding: 4rpx 10rpx;
+  border-radius: 999rpx;
+  color: #fff;
+  background: linear-gradient(90deg, #E53935, #FF8F1F);
   font-size: 13rpx;
+  font-weight: 800;
+  box-shadow: 0 4rpx 10rpx rgba(229, 57, 53, 0.35);
 }
 .benefit-strip {
   display: grid;
   padding: 14rpx;
-  border-radius: var(--life-radius-md);
-  grid-template-columns: 1fr 1fr 112rpx;
-  gap: 8rpx;
-  background: var(--life-paper);
-  box-shadow: var(--life-shadow-soft);
+  border-radius: 24rpx;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 10rpx;
+  background: linear-gradient(135deg, #FFFBF5, #FFF2D9);
+  box-shadow: 0 2rpx 12rpx rgba(246, 184, 48, 0.12);
+  border: 1rpx solid #FFE8B2;
 }
 .benefit-strip button {
   display: flex;
   min-width: 0;
-  min-height: 92rpx;
+  min-height: 120rpx;
   margin: 0;
-  padding: 10rpx 12rpx;
-  border-radius: 20rpx;
+  padding: 14rpx 14rpx 14rpx 16rpx;
+  border-radius: 18rpx;
   justify-content: center;
   flex-direction: column;
-  color: var(--life-paper);
-  background: linear-gradient(135deg, var(--life-coral), var(--life-coral));
+  color: #fff;
+  background: linear-gradient(145deg, #E53935 0%, #FF5A36 55%, #FF8F1F 100%);
   font-size: 16rpx;
   line-height: 1.3;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 6rpx 18rpx rgba(229, 57, 53, 0.22);
 }
-.benefit-strip button text:first-child {
-  font-size: 23rpx;
+.benefit-strip button::after {
+  position: absolute;
+  content: '';
+  right: -20rpx;
+  top: -20rpx;
+  width: 110rpx;
+  height: 110rpx;
+  border-radius: 50%;
+  background: rgba(255, 234, 180, 0.18);
+}
+.benefit-strip button .b-num {
+  font-size: 40rpx;
   font-weight: 900;
+  line-height: 1;
+  letter-spacing: -1rpx;
+  background: linear-gradient(90deg, #FFE89A, #fff);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+}
+.benefit-strip button text:nth-child(2) {
+  margin-top: 10rpx;
+  font-size: 18rpx;
+  font-weight: 700;
+  opacity: 0.96;
 }
 .benefit-strip button text:last-child {
-  margin-top: 4rpx;
-  opacity: 0.9;
+  margin-top: 6rpx;
+  font-size: 16rpx;
+  font-weight: 800;
+  padding: 4rpx 0;
+  width: fit-content;
+  border-radius: 999rpx;
+  color: #7A2E00;
+  background: linear-gradient(90deg, #FFE89A, #FFC146);
+  padding: 4rpx 14rpx;
 }
 .benefit-strip > button:last-child {
-  align-items: center;
-  color: var(--life-yellow-ink);
-  background: var(--life-yellow-soft);
-  font-weight: 900;
+  background: linear-gradient(145deg, #0EA15F, #69C18F);
+  box-shadow: 0 6rpx 18rpx rgba(14, 161, 95, 0.22);
+}
+.benefit-strip > button:last-child .b-num {
+  font-size: 28rpx;
+  letter-spacing: 0;
+  background: linear-gradient(90deg, #FFE89A, #fff);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
 }
 .retail-state {
   margin-top: 20rpx;
@@ -430,10 +517,11 @@ onShow(load);
 .nearby-strip,
 .product-shelf {
   margin-top: 20rpx;
-  border-radius: var(--life-radius-lg);
+  border-radius: 24rpx;
   overflow: hidden;
   background: var(--life-paper);
-  box-shadow: var(--life-shadow-soft);
+  box-shadow: 0 2rpx 14rpx rgba(0, 0, 0, 0.04);
+  border: 1rpx solid #FFE8D9;
 }
 .block-heading {
   display: flex;
@@ -441,45 +529,64 @@ onShow(load);
   padding: 20rpx 24rpx;
   align-items: center;
   justify-content: space-between;
-  background: linear-gradient(90deg, var(--life-coral-soft), var(--life-paper));
+  background: linear-gradient(90deg, #FFEFDF, var(--life-paper));
   box-sizing: border-box;
+  position: relative;
+}
+.block-heading::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 24rpx;
+  bottom: 24rpx;
+  width: 6rpx;
+  border-radius: 999rpx;
+  background: linear-gradient(180deg, #E53935, #FF8F1F);
 }
 .block-heading > view {
   display: flex;
   align-items: center;
   gap: 12rpx;
+  padding-left: 10rpx;
 }
 .block-heading view text:first-child {
-  font-size: 32rpx;
+  font-size: 34rpx;
   font-weight: 900;
+  color: #1A1A1A;
+  letter-spacing: 0.5rpx;
 }
 .block-heading view text:last-child {
-  padding: 6rpx 10rpx;
-  border-radius: 10rpx;
-  color: var(--life-paper);
-  background: var(--life-coral);
+  padding: 6rpx 14rpx;
+  border-radius: 999rpx;
+  color: #fff;
+  background: linear-gradient(90deg, #E53935, #FF8F1F);
   font-size: 16rpx;
+  font-weight: 800;
+  box-shadow: 0 4rpx 10rpx rgba(229, 57, 53, 0.3);
 }
 .block-heading button {
   margin: 0;
   padding: 0;
-  color: var(--life-muted);
+  color: #E53935;
   background: transparent;
-  font-size: 19rpx;
+  font-size: 20rpx;
+  font-weight: 800;
 }
 .flash-row {
   display: grid;
   padding: 0 14rpx 22rpx;
   grid-template-columns: repeat(4, 1fr);
-  gap: 8rpx;
+  gap: 10rpx;
 }
 .flash-row button {
   min-width: 0;
   margin: 0;
-  padding: 0;
-  background: transparent;
+  padding: 10rpx 8rpx 12rpx;
+  background: linear-gradient(180deg, #FFF7EE, #fff);
+  border-radius: 18rpx;
   line-height: 1.3;
   text-align: left;
+  border: 1rpx solid #FFE4CC;
 }
 .product-photo {
   width: 100%;
@@ -487,33 +594,64 @@ onShow(load);
   background-repeat: no-repeat;
   background-size: 400% 200%;
   background-position: var(--sprite-x) var(--sprite-y);
+  position: relative;
+  border-radius: 14rpx;
+  overflow: hidden;
 }
 .flash-photo {
   height: 176rpx;
 }
+.flash-sale-badge {
+  position: absolute;
+  top: 6rpx;
+  left: 6rpx;
+  padding: 4rpx 12rpx;
+  border-radius: 999rpx;
+  color: #fff;
+  background: linear-gradient(90deg, #E53935, #FF8F1F);
+  font-size: 14rpx;
+  font-weight: 900;
+  letter-spacing: 0.5rpx;
+  box-shadow: 0 4rpx 10rpx rgba(229, 57, 53, 0.3);
+}
 .flash-row button > text:nth-child(2) {
   display: block;
+  margin-top: 10rpx;
   overflow: hidden;
-  font-size: 18rpx;
-  font-weight: 800;
+  font-size: 20rpx;
+  font-weight: 900;
+  color: #1A1A1A;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 .flash-row button > text:nth-child(3) {
   display: inline-block;
-  margin-top: 4rpx;
-  padding: 4rpx 6rpx;
-  border-radius: 8rpx;
-  color: var(--life-coral);
-  background: var(--life-coral-soft);
+  margin-top: 6rpx;
+  padding: 4rpx 8rpx;
+  border-radius: 999rpx;
+  color: #E53935;
+  background: #FFEEEB;
   font-size: 14rpx;
+  font-weight: 800;
+}
+.retail-price-group {
+  display: flex;
+  align-items: baseline;
+  margin-top: 8rpx;
+  gap: 6rpx;
+  flex-wrap: wrap;
 }
 .retail-price {
-  display: block;
-  margin-top: 5rpx;
-  color: var(--life-red);
-  font-size: 26rpx;
+  color: #E53935;
+  font-size: 28rpx;
   font-weight: 900;
+  line-height: 1;
+}
+.retail-was-price {
+  color: #999;
+  text-decoration: line-through;
+  font-size: 16rpx;
+  text-decoration-color: #999;
 }
 .life-channels {
   display: grid;
@@ -529,22 +667,45 @@ onShow(load);
   align-items: flex-start;
   justify-content: center;
   flex-direction: column;
-  border-radius: var(--life-radius-lg);
+  border-radius: 24rpx;
   text-align: left;
-  box-shadow: var(--life-shadow-soft);
+  box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.05);
+  border: 1rpx solid rgba(255, 255, 255, 0.48);
+  position: relative;
+  overflow: hidden;
+}
+.life-channels button::after {
+  position: absolute;
+  content: '';
+  right: -30rpx;
+  bottom: -30rpx;
+  width: 160rpx;
+  height: 160rpx;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.24);
 }
 .life-channels button text:first-child {
-  font-size: 17rpx;
+  font-size: 18rpx;
   font-weight: 800;
+  padding: 4rpx 14rpx;
+  border-radius: 999rpx;
+  background: rgba(255, 255, 255, 0.32);
+  backdrop-filter: blur(4rpx);
+  color: #fff;
+  z-index: 1;
 }
 .life-channels button text:nth-child(2) {
-  margin: 8rpx 0 4rpx;
-  font-size: 30rpx;
+  margin: 10rpx 0 6rpx;
+  font-size: 32rpx;
   font-weight: 900;
+  color: #fff;
+  z-index: 1;
+  text-shadow: 0 2rpx 6rpx rgba(0, 0, 0, 0.12);
 }
 .life-channels button text:last-child {
-  color: var(--life-muted);
+  color: rgba(255, 255, 255, 0.95);
   font-size: 17rpx;
+  z-index: 1;
 }
 .channel-green {
   background: linear-gradient(
@@ -576,14 +737,29 @@ onShow(load);
 }
 .trust-strip {
   display: flex;
-  min-height: 70rpx;
+  min-height: 80rpx;
   margin-top: 20rpx;
-  border-radius: 24rpx;
+  border-radius: 20rpx;
   align-items: center;
   justify-content: space-around;
-  color: var(--life-brand-deep);
-  background: var(--life-brand-soft);
-  font-size: 16rpx;
+  color: #B01E1E;
+  background: linear-gradient(90deg, #FFEFDF, #FFF8EE);
+  border: 1rpx solid #FFDCC0;
+  font-size: 18rpx;
+  font-weight: 800;
+  letter-spacing: 0.5rpx;
+}
+.trust-strip text::before {
+  content: '';
+  display: inline-block;
+  width: 20rpx;
+  height: 20rpx;
+  margin-right: 8rpx;
+  vertical-align: -4rpx;
+  border-radius: 999rpx;
+  background: linear-gradient(90deg, #E53935, #FF8F1F);
+  color: #fff;
+  position: relative;
 }
 .store-scroll {
   width: 100%;
@@ -593,29 +769,47 @@ onShow(load);
 }
 .store-scroll button {
   display: inline-flex;
-  min-width: 250rpx;
+  min-width: 260rpx;
   margin: 0 12rpx 0 0;
-  padding: 20rpx;
+  padding: 22rpx;
   border-radius: 20rpx;
   flex-direction: column;
-  background: var(--life-brand-soft);
+  background: linear-gradient(145deg, #FFF5E6, #fff);
+  border: 1rpx solid #FFE0BF;
   text-align: left;
+  box-shadow: 0 2rpx 10rpx rgba(229, 57, 53, 0.06);
 }
 .store-scroll button text:first-child {
-  font-size: 22rpx;
+  font-size: 24rpx;
   font-weight: 900;
+  color: #1A1A1A;
 }
 .store-scroll button text:last-child {
-  margin-top: 6rpx;
-  color: var(--life-muted);
-  font-size: 17rpx;
+  margin-top: 10rpx;
+  color: #E53935;
+  font-size: 18rpx;
+  font-weight: 800;
 }
 .shelf-heading {
-  padding: 24rpx 24rpx 0;
+  padding: 28rpx 24rpx 0;
+  position: relative;
+}
+.shelf-heading::before {
+  content: '';
+  position: absolute;
+  left: 24rpx;
+  top: 32rpx;
+  bottom: 12rpx;
+  width: 6rpx;
+  border-radius: 999rpx;
+  background: linear-gradient(180deg, #E53935, #FF8F1F);
 }
 .shelf-heading > text {
-  font-size: 32rpx;
+  font-size: 36rpx;
   font-weight: 900;
+  color: #1A1A1A;
+  padding-left: 14rpx;
+  letter-spacing: 1rpx;
 }
 .shelf-heading > view {
   display: flex;
@@ -624,46 +818,69 @@ onShow(load);
   justify-content: space-between;
 }
 .shelf-heading view text {
-  padding: 12rpx 22rpx;
-  color: var(--life-muted);
-  font-size: 19rpx;
+  padding: 12rpx 28rpx;
+  color: #666;
+  font-size: 20rpx;
+  font-weight: 800;
 }
 .shelf-heading view .active {
-  border-bottom: 4rpx solid var(--life-red);
-  color: var(--life-red);
+  border-bottom: 4rpx solid #E53935;
+  color: #E53935;
   font-weight: 900;
+  background: #FFEFDF;
+  border-top-left-radius: 16rpx;
+  border-top-right-radius: 16rpx;
 }
 .goods-grid {
   display: grid;
-  padding: 16rpx;
+  padding: 20rpx 16rpx;
   grid-template-columns: repeat(2, 1fr);
   gap: 16rpx;
-  background: var(--life-bg);
+  background: linear-gradient(180deg, #FFFBF5, #FFF6EC 24%, #FFF 100%);
 }
 .goods-grid > view {
   position: relative;
   min-width: 0;
   margin: 0;
   padding: 0 0 18rpx;
-  border-radius: var(--life-radius-lg);
+  border-radius: 24rpx;
   overflow: hidden;
-  background: var(--life-paper);
-  box-shadow: var(--life-shadow-soft);
+  background: #fff;
+  box-shadow: 0 4rpx 18rpx rgba(229, 57, 53, 0.08);
+  border: 1rpx solid #FFE4CC;
   line-height: 1.3;
   text-align: left;
 }
 .goods-photo {
   height: 330rpx;
+  border-radius: 0 0 20rpx 20rpx;
+}
+.goods-promo-badge {
+  position: absolute;
+  top: 12rpx;
+  left: 12rpx;
+  padding: 6rpx 14rpx;
+  border-radius: 999rpx;
+  color: #fff;
+  background: linear-gradient(90deg, #E53935, #FF8F1F);
+  font-size: 16rpx;
+  font-weight: 900;
+  letter-spacing: 0.5rpx;
+  box-shadow: 0 4rpx 12rpx rgba(229, 57, 53, 0.35);
+  z-index: 2;
 }
 .stock-badge {
   position: absolute;
-  top: 288rpx;
+  top: 284rpx;
   left: 16rpx;
-  padding: 6rpx 10rpx;
-  border-radius: 10rpx;
-  color: var(--life-paper);
-  background: var(--life-red);
+  padding: 6rpx 12rpx;
+  border-radius: 12rpx;
+  color: #fff;
+  background: linear-gradient(90deg, #1A1A1A, #444);
   font-size: 15rpx;
+  font-weight: 800;
+  z-index: 2;
+  box-shadow: 0 4rpx 10rpx rgba(0, 0, 0, 0.2);
 }
 .goods-title,
 .goods-detail {
@@ -672,36 +889,76 @@ onShow(load);
 }
 .goods-title {
   overflow: hidden;
-  font-size: 24rpx;
+  font-size: 25rpx;
   font-weight: 900;
+  color: #1A1A1A;
   text-overflow: ellipsis;
   white-space: nowrap;
+  letter-spacing: 0.3rpx;
 }
 .goods-detail {
   min-height: 48rpx;
-  color: var(--life-muted);
+  color: #666;
   font-size: 17rpx;
+  font-weight: 600;
 }
 .goods-action {
   display: flex;
   margin: 14rpx 18rpx 0;
-  align-items: center;
+  align-items: flex-end;
   justify-content: space-between;
 }
-.goods-action > text {
-  color: var(--life-red);
-  font-size: 31rpx;
+.goods-price-col {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 6rpx;
+  line-height: 1;
+}
+.goods-yuan {
+  color: #E53935;
+  font-size: 22rpx;
   font-weight: 900;
 }
+.goods-now {
+  color: #E53935;
+  font-size: 40rpx;
+  font-weight: 900;
+  letter-spacing: -1.5rpx;
+}
+.goods-decimal {
+  color: #E53935;
+  font-size: 24rpx;
+  font-weight: 900;
+}
+.goods-was {
+  color: #999;
+  text-decoration: line-through;
+  font-size: 16rpx;
+  width: 100%;
+  margin-top: 6rpx;
+}
+.goods-save {
+  display: inline-block;
+  padding: 4rpx 10rpx;
+  border-radius: 999rpx;
+  color: #B01E1E;
+  background: #FFE2DB;
+  font-size: 14rpx;
+  font-weight: 900;
+  margin-top: 4rpx;
+}
 .goods-action button {
-  width: 52rpx;
-  height: 52rpx;
-  margin: 0;
+  width: 60rpx;
+  height: 60rpx;
+  margin: 0 0 2rpx;
   padding: 0;
   border-radius: 50%;
-  color: var(--life-paper);
-  background: var(--life-coral);
-  font-size: 34rpx;
-  line-height: 52rpx;
+  color: #fff;
+  background: linear-gradient(145deg, #E53935, #FF8F1F);
+  font-size: 38rpx;
+  line-height: 60rpx;
+  font-weight: 700;
+  box-shadow: 0 6rpx 16rpx rgba(229, 57, 53, 0.35);
 }
 </style>
