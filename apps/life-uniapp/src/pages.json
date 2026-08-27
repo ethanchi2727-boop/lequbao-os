@@ -45,9 +45,13 @@
     { "path": "pages/page-264/index", "style": { "navigationBarTitleText": "我的工单" } }
   ],
   "tabBar": {
-    "color": "#66736D",
-    "selectedColor": "#0D8B62",
-    "backgroundColor": "#ffffff",
+    "color": "#6B7280",
+    "selectedColor": "#E53935",
+    "backgroundColor": "#FFFFFF",
+    "borderStyle": "white",
+    "fontSize": "12px",
+    "iconWidth": "26px",
+    "spacing": "4px",
     "list": [
       {
         "pagePath": "pages/life/index",

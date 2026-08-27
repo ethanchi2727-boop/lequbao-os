@@ -66,30 +66,32 @@ function openSearch() {
 .operation-row {
   display: flex;
   height: var(--life-navigation-height, 44px);
-  padding: 0 24rpx;
+  padding: 0 20rpx;
   align-items: center;
-  gap: 14rpx;
+  gap: 16rpx;
   box-sizing: border-box;
 }
 .city-trigger,
 .search-trigger {
-  height: 64rpx;
+  min-height: 88rpx;
   margin: 0;
+  padding: 0 16rpx;
   border: 0;
-  line-height: 64rpx;
+  line-height: 88rpx;
   box-sizing: border-box;
 }
 .city-trigger {
   display: flex;
-  max-width: 152rpx;
-  padding: 0;
+  max-width: 196rpx;
+  padding: 0 8rpx;
   align-items: center;
-  gap: 6rpx;
+  gap: 10rpx;
   overflow: hidden;
   color: var(--life-paper);
   background: transparent;
-  font-size: 24rpx;
-  font-weight: 700;
+  font-size: 30rpx;
+  font-weight: 800;
+  letter-spacing: 0.5rpx;
   white-space: nowrap;
 }
 .city-trigger text:first-child {
@@ -98,26 +100,29 @@ function openSearch() {
 }
 .chevron {
   flex: none;
+  font-size: 28rpx;
 }
 .search-trigger {
   display: flex;
   min-width: 0;
-  padding: 0 20rpx;
-  border-radius: 34rpx;
+  padding: 0 28rpx;
+  border-radius: 44rpx;
   align-items: center;
   flex: 1;
-  gap: 10rpx;
+  gap: 12rpx;
   overflow: hidden;
   color: var(--life-muted-bright);
-  background: rgba(255, 255, 255, 0.96);
-  box-shadow: 0 6rpx 24rpx rgba(16, 72, 53, 0.09);
-  font-size: 20rpx;
+  background: rgba(255, 255, 255, 0.98);
+  box-shadow: 0 6rpx 20rpx rgba(229, 57, 53, 0.16);
+  font-size: 26rpx;
+  font-weight: 600;
   text-align: left;
   white-space: nowrap;
 }
 .search-icon {
-  color: var(--life-brand);
-  font-size: 34rpx;
+  color: #E53935;
+  font-size: 40rpx;
+  line-height: 1;
 }
 .capsule-reserve {
   width: var(--life-capsule-width);

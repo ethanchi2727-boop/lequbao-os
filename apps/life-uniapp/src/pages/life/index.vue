@@ -258,12 +258,12 @@ onShow(load);
 <style scoped>
 .festival {
   position: relative;
-  height: 410rpx;
-  margin: 6rpx 20rpx 0;
-  border-radius: 24rpx;
+  height: 460rpx;
+  margin: 8rpx 24rpx 0;
+  border-radius: 30rpx;
   overflow: hidden;
   background: linear-gradient(135deg, #E53935, #FF8F1F);
-  box-shadow: 0 10rpx 32rpx rgba(229, 57, 53, 0.28);
+  box-shadow: 0 12rpx 40rpx rgba(229, 57, 53, 0.32);
 }
 .festival > image {
   width: 100%;
@@ -283,34 +283,35 @@ onShow(load);
 .festival-copy {
   position: absolute;
   z-index: 2;
-  top: 32rpx;
-  left: 36rpx;
+  top: 36rpx;
+  left: 40rpx;
   display: flex;
   flex-direction: column;
   color: #fff;
-  max-width: 420rpx;
+  max-width: 480rpx;
 }
 .festival-pill {
   align-self: flex-start;
-  padding: 8rpx 18rpx;
+  padding: 10rpx 22rpx;
   border-radius: 999rpx;
   background: linear-gradient(90deg, #F6B830, #FFD87A);
   color: #7A2E00;
-  font-size: 20rpx;
+  font-size: 26rpx;
   font-weight: 900;
   letter-spacing: 0.5rpx;
+  box-shadow: 0 6rpx 18rpx rgba(220, 160, 30, 0.45);
 }
 .festival-title {
   display: flex;
-  margin: 22rpx 0 10rpx;
+  margin: 26rpx 0 12rpx;
   flex-direction: column;
-  font-size: 52rpx;
-  line-height: 1.1;
+  font-size: 62rpx;
+  line-height: 1.08;
   font-weight: 900;
-  text-shadow: 0 4rpx 16rpx rgba(141, 13, 0, 0.45);
+  text-shadow: 0 4rpx 18rpx rgba(141, 13, 0, 0.48);
 }
 .festival-title text:last-child {
-  margin-top: 4rpx;
+  margin-top: 6rpx;
   background: linear-gradient(90deg, #FFE169, #FFB566);
   -webkit-background-clip: text;
   background-clip: text;
@@ -318,41 +319,43 @@ onShow(load);
   -webkit-text-fill-color: transparent;
 }
 .festival-copy > text:nth-child(3) {
-  font-size: 20rpx;
-  opacity: 0.96;
+  font-size: 24rpx;
+  opacity: 0.97;
+  font-weight: 600;
 }
 .festival-copy button {
   align-self: flex-start;
-  margin: 28rpx 0 0;
-  padding: 0 30rpx;
-  min-height: 58rpx;
+  margin: 32rpx 0 0;
+  padding: 0 38rpx;
+  min-height: 88rpx;
   border-radius: 999rpx;
   color: #7A2E00;
   background: linear-gradient(90deg, #FFE89A, #FFC146);
-  font-size: 24rpx;
+  font-size: 30rpx;
   font-weight: 900;
-  box-shadow: 0 6rpx 18rpx rgba(220, 160, 30, 0.35);
+  letter-spacing: 0.5rpx;
+  box-shadow: 0 8rpx 24rpx rgba(220, 160, 30, 0.5);
 }
 .festival-badge {
   position: absolute;
   z-index: 3;
-  top: 20rpx;
-  right: 20rpx;
+  top: 22rpx;
+  right: 22rpx;
   display: flex;
-  width: 136rpx;
-  height: 136rpx;
+  width: 156rpx;
+  height: 156rpx;
   border-radius: 50%;
   align-items: center;
   justify-content: center;
   flex-direction: column;
   color: #fff;
   background: linear-gradient(135deg, #E53935, #FF8F1F);
-  box-shadow: 0 8rpx 28rpx rgba(229, 57, 53, 0.45);
+  box-shadow: 0 10rpx 32rpx rgba(229, 57, 53, 0.55);
   transform: rotate(6deg);
   border: 3rpx solid #FFD87A;
 }
 .festival-badge text:first-child {
-  font-size: 26rpx;
+  font-size: 30rpx;
   font-weight: 900;
   background: linear-gradient(90deg, #FFE169, #fff);
   -webkit-background-clip: text;
@@ -361,17 +364,18 @@ onShow(load);
   -webkit-text-fill-color: transparent;
 }
 .festival-badge text:last-child {
-  margin-top: 6rpx;
-  font-size: 15rpx;
-  opacity: 0.96;
+  margin-top: 8rpx;
+  font-size: 18rpx;
+  opacity: 0.97;
+  font-weight: 800;
 }
 .category-grid {
   display: grid;
-  margin: 18rpx 20rpx 0;
-  padding: 26rpx 12rpx 24rpx;
+  margin: 24rpx 24rpx 0;
+  padding: 28rpx 14rpx 26rpx;
   border-radius: 24rpx;
   grid-template-columns: repeat(5, 1fr);
-  gap: 22rpx 10rpx;
+  gap: 26rpx 10rpx;
   background: var(--life-paper);
   box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.04), 0 6rpx 24rpx rgba(229, 57, 53, 0.05);
   border: 1rpx solid #FFE4D6;
@@ -379,16 +383,17 @@ onShow(load);
 .category-grid button {
   position: relative;
   min-width: 0;
+  min-height: 88rpx;
   margin: 0;
-  padding: 0;
+  padding: 4rpx 0 6rpx;
   background: transparent;
   line-height: 1.2;
 }
 .category-photo {
-  width: 108rpx;
-  height: 108rpx;
+  width: 116rpx;
+  height: 116rpx;
   margin: 0 auto;
-  border-radius: 32rpx;
+  border-radius: 36rpx;
   background-image: url('../../assets/v63-retail/category-sprite.webp');
   background-size: 500% 300%;
   background-position: var(--sprite-x) var(--sprite-y);
@@ -396,9 +401,9 @@ onShow(load);
 }
 .category-grid button > text:nth-child(2) {
   display: block;
-  margin-top: 10rpx;
+  margin-top: 12rpx;
   overflow: hidden;
-  font-size: 22rpx;
+  font-size: 26rpx;
   font-weight: 900;
   color: #1A1A1A;
   text-overflow: ellipsis;
@@ -406,10 +411,10 @@ onShow(load);
 }
 .category-grid button > text:nth-child(3) {
   display: block;
-  margin-top: 4rpx;
+  margin-top: 6rpx;
   overflow: hidden;
   color: #E53935;
-  font-size: 16rpx;
+  font-size: 22rpx;
   font-weight: 700;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -417,21 +422,22 @@ onShow(load);
 .fresh-badge {
   position: absolute;
   top: -6rpx;
-  right: 0;
-  padding: 4rpx 10rpx;
+  right: 2rpx;
+  padding: 6rpx 12rpx;
   border-radius: 999rpx;
   color: #fff;
   background: linear-gradient(90deg, #E53935, #FF8F1F);
-  font-size: 13rpx;
+  font-size: 20rpx;
   font-weight: 800;
   box-shadow: 0 4rpx 10rpx rgba(229, 57, 53, 0.35);
 }
 .benefit-strip {
   display: grid;
-  padding: 14rpx;
+  padding: 16rpx;
+  margin: 24rpx 24rpx 0;
   border-radius: 24rpx;
   grid-template-columns: 1fr 1fr 1fr;
-  gap: 10rpx;
+  gap: 12rpx;
   background: linear-gradient(135deg, #FFFBF5, #FFF2D9);
   box-shadow: 0 2rpx 12rpx rgba(246, 184, 48, 0.12);
   border: 1rpx solid #FFE8B2;
@@ -439,15 +445,15 @@ onShow(load);
 .benefit-strip button {
   display: flex;
   min-width: 0;
-  min-height: 120rpx;
+  min-height: 140rpx;
   margin: 0;
-  padding: 14rpx 14rpx 14rpx 16rpx;
-  border-radius: 18rpx;
+  padding: 16rpx 16rpx 16rpx 18rpx;
+  border-radius: 20rpx;
   justify-content: center;
   flex-direction: column;
   color: #fff;
   background: linear-gradient(145deg, #E53935 0%, #FF5A36 55%, #FF8F1F 100%);
-  font-size: 16rpx;
+  font-size: 22rpx;
   line-height: 1.3;
   position: relative;
   overflow: hidden;
@@ -464,7 +470,7 @@ onShow(load);
   background: rgba(255, 234, 180, 0.18);
 }
 .benefit-strip button .b-num {
-  font-size: 40rpx;
+  font-size: 48rpx;
   font-weight: 900;
   line-height: 1;
   letter-spacing: -1rpx;
@@ -475,28 +481,27 @@ onShow(load);
   -webkit-text-fill-color: transparent;
 }
 .benefit-strip button text:nth-child(2) {
-  margin-top: 10rpx;
-  font-size: 18rpx;
+  margin-top: 12rpx;
+  font-size: 22rpx;
   font-weight: 700;
   opacity: 0.96;
 }
 .benefit-strip button text:last-child {
-  margin-top: 6rpx;
-  font-size: 16rpx;
+  margin-top: 8rpx;
+  font-size: 22rpx;
   font-weight: 800;
-  padding: 4rpx 0;
   width: fit-content;
   border-radius: 999rpx;
   color: #7A2E00;
   background: linear-gradient(90deg, #FFE89A, #FFC146);
-  padding: 4rpx 14rpx;
+  padding: 6rpx 16rpx;
 }
 .benefit-strip > button:last-child {
   background: linear-gradient(145deg, #0EA15F, #69C18F);
   box-shadow: 0 6rpx 18rpx rgba(14, 161, 95, 0.22);
 }
 .benefit-strip > button:last-child .b-num {
-  font-size: 28rpx;
+  font-size: 34rpx;
   letter-spacing: 0;
   background: linear-gradient(90deg, #FFE89A, #fff);
   -webkit-background-clip: text;
@@ -516,7 +521,9 @@ onShow(load);
 .retail-block,
 .nearby-strip,
 .product-shelf {
-  margin-top: 20rpx;
+  margin-top: 24rpx;
+  margin-left: 24rpx;
+  margin-right: 24rpx;
   border-radius: 24rpx;
   overflow: hidden;
   background: var(--life-paper);
@@ -546,44 +553,46 @@ onShow(load);
 .block-heading > view {
   display: flex;
   align-items: center;
-  gap: 12rpx;
+  gap: 14rpx;
   padding-left: 10rpx;
 }
 .block-heading view text:first-child {
-  font-size: 34rpx;
+  font-size: 36rpx;
   font-weight: 900;
   color: #1A1A1A;
   letter-spacing: 0.5rpx;
 }
 .block-heading view text:last-child {
-  padding: 6rpx 14rpx;
+  padding: 8rpx 16rpx;
   border-radius: 999rpx;
   color: #fff;
   background: linear-gradient(90deg, #E53935, #FF8F1F);
-  font-size: 16rpx;
+  font-size: 22rpx;
   font-weight: 800;
   box-shadow: 0 4rpx 10rpx rgba(229, 57, 53, 0.3);
 }
 .block-heading button {
+  min-height: 64rpx;
   margin: 0;
-  padding: 0;
+  padding: 0 12rpx;
   color: #E53935;
   background: transparent;
-  font-size: 20rpx;
+  font-size: 24rpx;
   font-weight: 800;
 }
 .flash-row {
   display: grid;
-  padding: 0 14rpx 22rpx;
+  padding: 0 16rpx 24rpx;
   grid-template-columns: repeat(4, 1fr);
-  gap: 10rpx;
+  gap: 12rpx;
 }
 .flash-row button {
   min-width: 0;
+  min-height: 88rpx;
   margin: 0;
-  padding: 10rpx 8rpx 12rpx;
+  padding: 12rpx 10rpx 14rpx;
   background: linear-gradient(180deg, #FFF7EE, #fff);
-  border-radius: 18rpx;
+  border-radius: 20rpx;
   line-height: 1.3;
   text-align: left;
   border: 1rpx solid #FFE4CC;
@@ -603,22 +612,22 @@ onShow(load);
 }
 .flash-sale-badge {
   position: absolute;
-  top: 6rpx;
-  left: 6rpx;
-  padding: 4rpx 12rpx;
+  top: 8rpx;
+  left: 8rpx;
+  padding: 6rpx 14rpx;
   border-radius: 999rpx;
   color: #fff;
   background: linear-gradient(90deg, #E53935, #FF8F1F);
-  font-size: 14rpx;
+  font-size: 20rpx;
   font-weight: 900;
   letter-spacing: 0.5rpx;
   box-shadow: 0 4rpx 10rpx rgba(229, 57, 53, 0.3);
 }
 .flash-row button > text:nth-child(2) {
   display: block;
-  margin-top: 10rpx;
+  margin-top: 12rpx;
   overflow: hidden;
-  font-size: 20rpx;
+  font-size: 24rpx;
   font-weight: 900;
   color: #1A1A1A;
   text-overflow: ellipsis;
@@ -626,44 +635,46 @@ onShow(load);
 }
 .flash-row button > text:nth-child(3) {
   display: inline-block;
-  margin-top: 6rpx;
-  padding: 4rpx 8rpx;
+  margin-top: 8rpx;
+  padding: 6rpx 10rpx;
   border-radius: 999rpx;
   color: #E53935;
   background: #FFEEEB;
-  font-size: 14rpx;
+  font-size: 20rpx;
   font-weight: 800;
 }
 .retail-price-group {
   display: flex;
   align-items: baseline;
-  margin-top: 8rpx;
-  gap: 6rpx;
+  margin-top: 10rpx;
+  gap: 8rpx;
   flex-wrap: wrap;
 }
 .retail-price {
   color: #E53935;
-  font-size: 28rpx;
+  font-size: 34rpx;
   font-weight: 900;
   line-height: 1;
 }
 .retail-was-price {
   color: #999;
   text-decoration: line-through;
-  font-size: 16rpx;
+  font-size: 20rpx;
   text-decoration-color: #999;
 }
 .life-channels {
   display: grid;
-  margin-top: 20rpx;
+  margin-top: 24rpx;
+  margin-left: 24rpx;
+  margin-right: 24rpx;
   grid-template-columns: 1fr 1fr;
-  gap: 16rpx;
+  gap: 20rpx;
 }
 .life-channels button {
   display: flex;
-  min-height: 220rpx;
+  min-height: 260rpx;
   margin: 0;
-  padding: 24rpx;
+  padding: 28rpx;
   align-items: flex-start;
   justify-content: center;
   flex-direction: column;
@@ -685,9 +696,9 @@ onShow(load);
   background: rgba(255, 255, 255, 0.24);
 }
 .life-channels button text:first-child {
-  font-size: 18rpx;
+  font-size: 20rpx;
   font-weight: 800;
-  padding: 4rpx 14rpx;
+  padding: 6rpx 16rpx;
   border-radius: 999rpx;
   background: rgba(255, 255, 255, 0.32);
   backdrop-filter: blur(4rpx);
@@ -695,8 +706,8 @@ onShow(load);
   z-index: 1;
 }
 .life-channels button text:nth-child(2) {
-  margin: 10rpx 0 6rpx;
-  font-size: 32rpx;
+  margin: 14rpx 0 8rpx;
+  font-size: 34rpx;
   font-weight: 900;
   color: #fff;
   z-index: 1;
@@ -704,7 +715,7 @@ onShow(load);
 }
 .life-channels button text:last-child {
   color: rgba(255, 255, 255, 0.95);
-  font-size: 17rpx;
+  font-size: 22rpx;
   z-index: 1;
 }
 .channel-green {
@@ -737,25 +748,25 @@ onShow(load);
 }
 .trust-strip {
   display: flex;
-  min-height: 80rpx;
-  margin-top: 20rpx;
-  border-radius: 20rpx;
+  min-height: 88rpx;
+  margin: 24rpx 24rpx 0;
+  border-radius: 24rpx;
   align-items: center;
   justify-content: space-around;
   color: #B01E1E;
   background: linear-gradient(90deg, #FFEFDF, #FFF8EE);
   border: 1rpx solid #FFDCC0;
-  font-size: 18rpx;
+  font-size: 24rpx;
   font-weight: 800;
   letter-spacing: 0.5rpx;
 }
 .trust-strip text::before {
   content: '';
   display: inline-block;
-  width: 20rpx;
-  height: 20rpx;
-  margin-right: 8rpx;
-  vertical-align: -4rpx;
+  width: 24rpx;
+  height: 24rpx;
+  margin-right: 10rpx;
+  vertical-align: -6rpx;
   border-radius: 999rpx;
   background: linear-gradient(90deg, #E53935, #FF8F1F);
   color: #fff;
@@ -763,16 +774,17 @@ onShow(load);
 }
 .store-scroll {
   width: 100%;
-  padding: 0 20rpx 20rpx;
+  padding: 0 20rpx 24rpx;
   white-space: nowrap;
   box-sizing: border-box;
 }
 .store-scroll button {
   display: inline-flex;
-  min-width: 260rpx;
-  margin: 0 12rpx 0 0;
-  padding: 22rpx;
-  border-radius: 20rpx;
+  min-width: 280rpx;
+  min-height: 88rpx;
+  margin: 0 14rpx 0 0;
+  padding: 24rpx;
+  border-radius: 24rpx;
   flex-direction: column;
   background: linear-gradient(145deg, #FFF5E6, #fff);
   border: 1rpx solid #FFE0BF;
@@ -780,14 +792,14 @@ onShow(load);
   box-shadow: 0 2rpx 10rpx rgba(229, 57, 53, 0.06);
 }
 .store-scroll button text:first-child {
-  font-size: 24rpx;
+  font-size: 28rpx;
   font-weight: 900;
   color: #1A1A1A;
 }
 .store-scroll button text:last-child {
-  margin-top: 10rpx;
+  margin-top: 12rpx;
   color: #E53935;
-  font-size: 18rpx;
+  font-size: 24rpx;
   font-weight: 800;
 }
 .shelf-heading {
@@ -813,15 +825,17 @@ onShow(load);
 }
 .shelf-heading > view {
   display: flex;
-  margin-top: 18rpx;
+  margin-top: 20rpx;
   border-bottom: 1rpx solid var(--life-line);
   justify-content: space-between;
 }
 .shelf-heading view text {
-  padding: 12rpx 28rpx;
+  padding: 14rpx 28rpx;
   color: #666;
-  font-size: 20rpx;
+  font-size: 24rpx;
   font-weight: 800;
+  min-height: 56rpx;
+  line-height: 56rpx;
 }
 .shelf-heading view .active {
   border-bottom: 4rpx solid #E53935;
@@ -835,14 +849,14 @@ onShow(load);
   display: grid;
   padding: 20rpx 16rpx;
   grid-template-columns: repeat(2, 1fr);
-  gap: 16rpx;
+  gap: 20rpx;
   background: linear-gradient(180deg, #FFFBF5, #FFF6EC 24%, #FFF 100%);
 }
 .goods-grid > view {
   position: relative;
   min-width: 0;
   margin: 0;
-  padding: 0 0 18rpx;
+  padding: 0 0 22rpx;
   border-radius: 24rpx;
   overflow: hidden;
   background: #fff;
@@ -852,18 +866,18 @@ onShow(load);
   text-align: left;
 }
 .goods-photo {
-  height: 330rpx;
+  height: 340rpx;
   border-radius: 0 0 20rpx 20rpx;
 }
 .goods-promo-badge {
   position: absolute;
-  top: 12rpx;
-  left: 12rpx;
-  padding: 6rpx 14rpx;
+  top: 14rpx;
+  left: 14rpx;
+  padding: 8rpx 16rpx;
   border-radius: 999rpx;
   color: #fff;
   background: linear-gradient(90deg, #E53935, #FF8F1F);
-  font-size: 16rpx;
+  font-size: 22rpx;
   font-weight: 900;
   letter-spacing: 0.5rpx;
   box-shadow: 0 4rpx 12rpx rgba(229, 57, 53, 0.35);
@@ -871,13 +885,13 @@ onShow(load);
 }
 .stock-badge {
   position: absolute;
-  top: 284rpx;
+  top: 294rpx;
   left: 16rpx;
-  padding: 6rpx 12rpx;
+  padding: 6rpx 14rpx;
   border-radius: 12rpx;
   color: #fff;
   background: linear-gradient(90deg, #1A1A1A, #444);
-  font-size: 15rpx;
+  font-size: 20rpx;
   font-weight: 800;
   z-index: 2;
   box-shadow: 0 4rpx 10rpx rgba(0, 0, 0, 0.2);
@@ -885,11 +899,11 @@ onShow(load);
 .goods-title,
 .goods-detail {
   display: block;
-  margin: 12rpx 20rpx 0;
+  margin: 14rpx 22rpx 0;
 }
 .goods-title {
   overflow: hidden;
-  font-size: 25rpx;
+  font-size: 28rpx;
   font-weight: 900;
   color: #1A1A1A;
   text-overflow: ellipsis;
@@ -897,14 +911,14 @@ onShow(load);
   letter-spacing: 0.3rpx;
 }
 .goods-detail {
-  min-height: 48rpx;
+  min-height: 52rpx;
   color: #666;
-  font-size: 17rpx;
+  font-size: 22rpx;
   font-weight: 600;
 }
 .goods-action {
   display: flex;
-  margin: 14rpx 18rpx 0;
+  margin: 16rpx 20rpx 0;
   align-items: flex-end;
   justify-content: space-between;
 }
@@ -912,52 +926,54 @@ onShow(load);
   display: flex;
   align-items: baseline;
   flex-wrap: wrap;
-  gap: 6rpx;
+  gap: 8rpx;
   line-height: 1;
 }
 .goods-yuan {
   color: #E53935;
-  font-size: 22rpx;
+  font-size: 26rpx;
   font-weight: 900;
 }
 .goods-now {
   color: #E53935;
-  font-size: 40rpx;
+  font-size: 48rpx;
   font-weight: 900;
-  letter-spacing: -1.5rpx;
+  letter-spacing: -2rpx;
 }
 .goods-decimal {
   color: #E53935;
-  font-size: 24rpx;
+  font-size: 28rpx;
   font-weight: 900;
 }
 .goods-was {
   color: #999;
   text-decoration: line-through;
-  font-size: 16rpx;
+  font-size: 20rpx;
   width: 100%;
-  margin-top: 6rpx;
+  margin-top: 8rpx;
 }
 .goods-save {
   display: inline-block;
-  padding: 4rpx 10rpx;
+  padding: 6rpx 12rpx;
   border-radius: 999rpx;
   color: #B01E1E;
   background: #FFE2DB;
-  font-size: 14rpx;
+  font-size: 20rpx;
   font-weight: 900;
-  margin-top: 4rpx;
+  margin-top: 6rpx;
 }
 .goods-action button {
-  width: 60rpx;
-  height: 60rpx;
-  margin: 0 0 2rpx;
+  width: 72rpx;
+  height: 72rpx;
+  min-width: 88rpx;
+  min-height: 88rpx;
+  margin: 0 -8rpx -8rpx 0;
   padding: 0;
   border-radius: 50%;
   color: #fff;
   background: linear-gradient(145deg, #E53935, #FF8F1F);
-  font-size: 38rpx;
-  line-height: 60rpx;
+  font-size: 42rpx;
+  line-height: 72rpx;
   font-weight: 700;
   box-shadow: 0 6rpx 16rpx rgba(229, 57, 53, 0.35);
 }
