@@ -25,6 +25,98 @@ function deviceId(storage) {
   return generated;
 }
 
+function mockConsumerDiscoveryProducts(limitStr) {
+  const limit = Math.max(1, Math.min(100, parseInt(limitStr || '12', 10) || 12));
+  const storeTenants = [
+    ['lequ-market-main', '乐渠生鲜旗舰店', '优选区', '精品生活超市'],
+    ['lequ-gourmet', '乐生活好店', '美食区', '品质好店'],
+    ['lequ-home', '好物到家', '家居区', '家庭常备'],
+    ['lequ-fresh', '鲜源直供', '水果区', '产地直发'],
+  ];
+  const variants = [
+    ['冰镇麒麟西瓜 约5kg/个', '单果 约5kg', 3980, 4980, 128],
+    ['生态优质大米 5kg/袋', '东北产地·5kg装', 6990, 8990, 320],
+    ['鲜牛奶量贩三连装 750ml×3', '750ml×3瓶', 3580, 4580, 86],
+    ['办公室囤货零食套装', '多口味组合·420g', 2880, 3680, 256],
+    ['家庭装洗衣液 4.26kg×2', '深层洁净·8.52kg', 7980, 9980, 64],
+    ['鲜榨橙汁量贩装 1L×6', '1L×6瓶·冷链', 5980, 7280, 92],
+    ['原生木浆纸巾 3层×24包', '3层×24包·整箱', 4280, 5280, 180],
+    ['深海刺身三文鱼拼大虾', '三文鱼250g+大虾300g', 13880, 16880, 48],
+  ];
+  const uuid = () =>
+    'MOCK-' + Math.random().toString(16).slice(2, 10) + Math.random().toString(16).slice(2, 8);
+  return Array.from({ length: limit }, (_, i) => {
+    const v = variants[i % variants.length];
+    const s = storeTenants[i % storeTenants.length];
+    return {
+      id: uuid(),
+      merchantTenantId: s[0],
+      storeId: `${s[0]}-store-${(i % storeTenants.length) + 1}`,
+      variantId: `v-${Math.random().toString(36).slice(2, 10)}`,
+      title: v[0],
+      storeName: s[1],
+      categoryLabel: s[2],
+      storeTypeLabel: s[3],
+      variantTitle: v[1],
+      salePriceCents: v[2],
+      marketPriceCents: v[3],
+      availableQuantity: i % 6 === 5 ? 0 : v[4],
+      updatedAt: new Date(Date.now() - (i + 1) * 3_600_000).toISOString(),
+    };
+  });
+}
+
+function mockConsumerDiscoveryStores(limitStr) {
+  const limit = Math.max(1, Math.min(100, parseInt(limitStr || '6', 10) || 6));
+  const presets = [
+    ['乐渠生鲜旗舰店（生活广场店）', 86, '320m', '营业中 · 30分钟达'],
+    ['鲜源生活超市（朝阳门店）', 54, '560m', '营业中 · 当日达'],
+    ['乐趣邻里好店（美食街店）', 42, '890m', '营业中 · 支持自提'],
+    ['好物到家百货中心', 128, '1.2km', '营业中 · 次日达'],
+    ['乐生活优选（社区店）', 36, '430m', '营业中 · 到店自提'],
+    ['品质厨房体验馆', 28, '1.8km', '营业中 · 配送'],
+  ];
+  const uuid = () => 'MOCK-STORE-' + Math.random().toString(16).slice(2, 12);
+  return Array.from({ length: limit }, (_, i) => {
+    const s = presets[i % presets.length];
+    return {
+      id: uuid(),
+      merchantTenantId: `lequ-${['main', 'fresh', 'gourmet', 'home', 'community', 'kitchen'][i % 6]}`,
+      storeId: `store-${i + 1}`,
+      name: s[0],
+      productCount: s[1] + (i % 3) * 5,
+      distanceLabel: s[2],
+      statusLabel: s[3],
+    };
+  });
+}
+
+function mockCartPut() {
+  return {
+    cartLineId: `MOCK-CART-${Math.random().toString(36).slice(2, 10)}`,
+    quantity: 1,
+    state: 'ADDED',
+    note: '开发模式：未真实提交，实际以服务端购物车核算为准。',
+  };
+}
+
+function mockResponse(path, options, developmentMocks) {
+  if (!developmentMocks) return null;
+  const method = (options.method ?? 'GET').toUpperCase();
+  if (method === 'GET' && path.startsWith('/api/v1/life/discovery/products')) {
+    const m = path.match(/[?&]limit=(\d+)/);
+    return mockConsumerDiscoveryProducts(m?.[1]);
+  }
+  if (method === 'GET' && path.startsWith('/api/v1/life/discovery/stores')) {
+    const m = path.match(/[?&]limit=(\d+)/);
+    return mockConsumerDiscoveryStores(m?.[1]);
+  }
+  if (method === 'PUT' && path === '/api/v1/life/cart/items') {
+    return mockCartPut();
+  }
+  return null;
+}
+
 function responseError(response) {
   const error = new Error(response?.data?.code ?? `HTTP_${response?.statusCode ?? 0}`);
   error.status = response?.statusCode ?? 0;
@@ -164,6 +256,8 @@ export function createLifeSessionClient({
   }
 
   async function request(path, options = {}, retry = true) {
+    const mocked = mockResponse(path, options, developmentMocks);
+    if (mocked !== null) return Promise.resolve(mocked);
     const session = load();
     if (!session?.accessToken) throw responseError({ statusCode: 401 });
     try {

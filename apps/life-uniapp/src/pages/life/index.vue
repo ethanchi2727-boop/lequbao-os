@@ -98,7 +98,7 @@ onShow(load);
   <LifeSurface
     primary
     :show-assurance="false"
-    theme-color="green"
+    theme-color="blue"
     eyebrow="今日生活直供"
     title="把新鲜和附近，装进生活篮子"
     detail="当日达 · 来源可查 · 售后有入口"
@@ -257,8 +257,8 @@ onShow(load);
   inset: 0;
   background: linear-gradient(
     90deg,
-    rgba(0, 123, 131, 0.84),
-    rgba(0, 146, 154, 0.16) 64%,
+    rgba(13, 111, 150, 0.58),
+    rgba(21, 150, 201, 0.14) 48%,
     transparent
   );
 }
