@@ -13,7 +13,7 @@ defineProps({ eyebrow: String, title: String, detail: String });
         ><text class="title">{{ title }}</text
         ><text class="eyebrow">{{ eyebrow }}</text></view
       >
-      <view class="new-action">＋</view>
+      <view class="new-action"></view>
     </view>
     <text class="sr-only">{{ detail }}</text>
     <view class="mobile-content"><slot></slot></view>
@@ -22,75 +22,126 @@ defineProps({ eyebrow: String, title: String, detail: String });
 <style scoped>
 .page {
   min-height: 100vh;
-  padding-bottom: calc(122rpx + env(safe-area-inset-bottom));
+  padding-bottom: calc(132rpx + env(safe-area-inset-bottom));
   box-sizing: border-box;
   background: var(--bao-mobile-ink-50);
 }
 .preview-note {
   display: flex;
-  padding: 12rpx 24rpx;
+  padding: 10rpx 28rpx;
   align-items: center;
   justify-content: space-between;
   color: var(--bao-mobile-warning-700);
   background: var(--bao-mobile-warning-100);
-  font-size: 17rpx;
+  font-size: 20rpx;
+  letter-spacing: 0.01em;
 }
 .preview-note text:first-child {
-  font-weight: 900;
+  font-weight: 700;
 }
 .mobile-top {
   display: flex;
+  gap: 22rpx;
   align-items: center;
-  min-height: 116rpx;
-  padding: 0 24rpx;
+  min-height: 128rpx;
+  padding: 0 28rpx;
   border-bottom: 1rpx solid var(--bao-mobile-line);
   background: var(--bao-mobile-paper);
 }
-.app-grid,
-.new-action {
-  display: grid;
-  width: 68rpx;
-  height: 68rpx;
-  place-items: center;
-  border: 1rpx solid var(--bao-mobile-line);
-  border-radius: var(--bao-mobile-radius-control);
-  background: var(--bao-mobile-paper);
-}
 .app-grid {
-  grid-template-columns: repeat(2, 10rpx);
-  grid-template-rows: repeat(2, 10rpx);
-  gap: 6rpx;
+  display: grid;
+  width: 72rpx;
+  height: 72rpx;
+  place-items: center;
+  flex: none;
+  border-radius: 24rpx;
+  background: var(--bao-mobile-gradient-brand);
+  box-shadow: 0 8rpx 20rpx rgba(11, 149, 105, 0.32);
+  grid-template-columns: repeat(2, 14rpx);
+  grid-template-rows: repeat(2, 14rpx);
+  gap: 7rpx;
 }
 .app-grid text {
-  width: 10rpx;
-  height: 10rpx;
-  border: 2rpx solid var(--bao-mobile-ink-700);
-  border-radius: 3rpx;
+  width: 14rpx;
+  height: 14rpx;
+  border-radius: 5rpx;
+  background: rgba(255, 255, 255, 0.92);
+}
+.app-grid text:last-child {
+  background: rgba(255, 255, 255, 0.55);
 }
 .top-copy {
   display: flex;
+  min-width: 0;
   flex: 1;
   flex-direction: column;
-  text-align: center;
 }
 .title {
-  font-size: 24rpx;
-  font-weight: 900;
+  overflow: hidden;
+  font-size: 34rpx;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .eyebrow {
-  margin-top: 4rpx;
+  display: flex;
+  margin-top: 6rpx;
+  align-items: center;
   color: var(--bao-mobile-jade-600);
-  font-size: 15rpx;
+  font-size: 21rpx;
+  font-weight: 600;
+}
+.eyebrow::before {
+  width: 12rpx;
+  height: 12rpx;
+  margin-right: 10rpx;
+  border-radius: 50%;
+  background: var(--bao-mobile-jade-400);
+  box-shadow: 0 0 0 5rpx rgba(37, 174, 130, 0.18);
+  animation: bao-ping 2.4s ease-out infinite;
+  content: '';
+}
+@keyframes bao-ping {
+  0% {
+    box-shadow: 0 0 0 0 rgba(37, 174, 130, 0.35);
+  }
+  70% {
+    box-shadow: 0 0 0 12rpx rgba(37, 174, 130, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(37, 174, 130, 0);
+  }
 }
 .new-action {
-  border: 0;
-  color: var(--bao-mobile-paper);
-  background: var(--bao-mobile-ink-900);
-  font-size: 30rpx;
+  position: relative;
+  display: grid;
+  width: 72rpx;
+  height: 72rpx;
+  place-items: center;
+  flex: none;
+  border-radius: 50%;
+  background: var(--bao-mobile-gradient-brand);
+  box-shadow: 0 8rpx 20rpx rgba(11, 149, 105, 0.32);
+}
+.new-action::before,
+.new-action::after {
+  position: absolute;
+  border-radius: 999rpx;
+  background: var(--bao-mobile-paper);
+  content: '';
+}
+.new-action::before {
+  width: 28rpx;
+  height: 5rpx;
+}
+.new-action::after {
+  width: 5rpx;
+  height: 28rpx;
 }
 .mobile-content {
   position: relative;
-  padding: 26rpx 24rpx 30rpx;
+  padding: 28rpx 28rpx 36rpx;
 }
 .sr-only {
   position: absolute;

@@ -116,48 +116,52 @@ function toggleAgreement() {
 
 <style scoped>
 .login-hero {
+  position: relative;
   display: flex;
-  padding: 32rpx 26rpx 28rpx;
+  padding: 48rpx 32rpx 44rpx;
+  overflow: hidden;
   flex-direction: column;
   color: var(--bao-mobile-paper);
-  background: var(--bao-mobile-gradient-dark);
+  background: var(--bao-mobile-gradient-hero);
 }
 .login-hero-eyebrow {
-  color: var(--bao-mobile-jade-300);
-  font-size: 18rpx;
+  color: var(--bao-mobile-jade-200);
+  font-size: 22rpx;
+  font-weight: 600;
 }
 .login-hero-title {
-  margin-top: 12rpx;
-  font-size: 38rpx;
-  font-weight: 900;
+  margin-top: 14rpx;
+  font-size: 44rpx;
+  font-weight: 800;
+  letter-spacing: -0.01em;
 }
 .login-hero-detail {
-  margin-top: 12rpx;
-  color: var(--bao-mobile-ink-200);
-  font-size: 19rpx;
-  line-height: 1.55;
+  margin-top: 14rpx;
+  color: var(--bao-mobile-jade-100);
+  font-size: 24rpx;
+  line-height: 1.6;
 }
 .login-form {
   display: flex;
-  gap: 18rpx;
-  padding: 22rpx;
+  gap: 20rpx;
+  padding: 26rpx 28rpx 30rpx;
   flex-direction: column;
 }
 .login-meta {
   color: var(--bao-mobile-ink-500);
-  font-size: 18rpx;
+  font-size: 22rpx;
 }
 .login-agreement {
   display: flex;
   gap: 14rpx;
-  margin-top: 6rpx;
+  margin-top: 8rpx;
   align-items: flex-start;
 }
 .login-agreement-text {
   flex: 1;
   color: var(--bao-mobile-ink-600);
-  font-size: 18rpx;
-  line-height: 1.55;
+  font-size: 22rpx;
+  line-height: 1.6;
 }
 .session-note.failed {
   color: var(--bao-mobile-danger-500);

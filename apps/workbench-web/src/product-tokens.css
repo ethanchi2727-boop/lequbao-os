@@ -99,3 +99,14 @@
   --bao-radius-lg: var(--bao-pc-radius-xl);
   --bao-shadow: var(--bao-pc-shadow-card);
 }
+
+/* ============================================================
+   乐趣宝 V6.2 细节精修 Token（2026-08）
+   原 Token 与色值全部保留，本层仅将阴影收得更清脆、
+   补充统一的交互缓动，供 styles.css 精修层消费。
+   ============================================================ */
+:root {
+  --bao-pc-shadow-card: 0 1px 2px rgb(17 27 25 / 4%), 0 8px 24px rgb(17 27 25 / 5%);
+  --bao-pc-shadow-float: 0 2px 6px rgb(17 27 25 / 5%), 0 16px 40px rgb(17 27 25 / 9%);
+  --bao-pc-ease-standard: cubic-bezier(0.2, 0, 0, 1);
+}

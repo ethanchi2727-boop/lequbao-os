@@ -5,6 +5,16 @@
   "versionName": "6.1.0",
   "versionCode": 60100,
   "transformPx": false,
-  "h5": { "router": { "base": "/bao-mobile/" } },
-  "mp-weixin": { "appid": "touristappid", "setting": { "urlCheck": true } }
+  "h5": {
+    "router": {
+      "mode": "hash",
+      "base": "./"
+    }
+  },
+  "mp-weixin": {
+    "appid": "touristappid",
+    "setting": {
+      "urlCheck": true
+    }
+  }
 }

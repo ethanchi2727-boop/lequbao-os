@@ -1544,3 +1544,302 @@ main {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* ============================================================
+   乐趣宝 V6.2 细节精修层（PC · 清爽锐利，2026-08）
+   不改变 V6.2 视觉基底（玉石绿品牌 / 深色侧边栏 / 卡片布局），
+   仅收拢排版、按钮手感、滚动条与渲染细节；全部遵循既有的
+   移动端硬化契约与 prefers-reduced-motion 约定。
+   ============================================================ */
+
+/* —— 渲染清晰度 —— */
+body {
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+::selection {
+  background: rgb(11 149 105 / 16%);
+}
+
+/* —— 排版：标题紧排，数据数字等宽对齐 —— */
+.generic-page h1,
+.dedicated-page h1,
+.v62-page-header h1,
+.chat-heading h1 {
+  letter-spacing: -0.02em;
+}
+.live-data article strong,
+.generic-grid article b,
+.v62-kpis b,
+.v62-metrics b,
+.progress strong,
+.job-summary > span,
+.v62-merchant-table {
+  font-variant-numeric: tabular-nums;
+}
+
+/* —— 按钮手感：统一缓动，悬停轻浮起，按压有回弹 —— */
+button:not(:disabled) {
+  transition:
+    background-color 0.18s var(--bao-pc-ease-standard),
+    border-color 0.18s var(--bao-pc-ease-standard),
+    color 0.18s var(--bao-pc-ease-standard),
+    box-shadow 0.18s var(--bao-pc-ease-standard),
+    transform 0.18s var(--bao-pc-ease-standard);
+}
+button:not(:disabled):active {
+  transform: translateY(1px);
+}
+.top-actions button:not(:disabled):hover,
+.chat-heading button:not(:disabled):hover,
+.generic-grid article > button:not(:disabled):hover,
+.field-grid button:not(:disabled):hover {
+  transform: translateY(-1px);
+  box-shadow: var(--bao-pc-shadow-card);
+}
+.new-task:not(:disabled):hover,
+.primary:not(:disabled):hover,
+.v62-primary:not(:disabled):hover {
+  filter: brightness(1.05);
+}
+
+/* —— 链接与图标细节 —— */
+a {
+  transition: color 0.18s var(--bao-pc-ease-standard);
+}
+svg {
+  vertical-align: middle;
+}
+
+/* —— 纤细清脆的滚动条 —— */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  border: 2px solid transparent;
+  border-radius: 8px;
+  background: rgb(17 27 25 / 20%);
+  background-clip: content-box;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgb(17 27 25 / 32%);
+  background-clip: content-box;
+}
+
+/* ============================================================
+   乐趣宝 V6.3 设计师精修层 · PC（参考大鲲AI 的动效与细节手法）
+   页面级联入场、KPI 数字弹出、骨架屏流光、侧栏导航指示条、
+   品牌按钮极光流动、卡片悬浮提升、状态呼吸点。
+   全部为追加覆盖，不改 V6.2 原有规则；尊重 prefers-reduced-motion。
+   ============================================================ */
+
+@keyframes bao-pc-rise {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes bao-pc-num {
+  0% { opacity: 0; transform: translateY(10px) scale(0.96); }
+  60% { opacity: 1; transform: translateY(-1px) scale(1.012); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes bao-pc-shimmer {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(100%); }
+}
+@keyframes bao-pc-aurora {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+@keyframes bao-pc-ping {
+  0% { box-shadow: 0 0 0 0 rgb(11 149 105 / 32%); }
+  70% { box-shadow: 0 0 0 7px rgb(11 149 105 / 0%); }
+  100% { box-shadow: 0 0 0 0 rgb(11 149 105 / 0%); }
+}
+
+/* —— 页面与卡片级联入场 —— */
+.generic-page > *,
+.dedicated-page > * {
+  animation: bao-pc-rise 0.42s var(--bao-pc-ease-standard) both;
+}
+.generic-page > *:nth-child(2),
+.dedicated-page > *:nth-child(2) { animation-delay: 0.05s; }
+.generic-page > *:nth-child(3),
+.dedicated-page > *:nth-child(3) { animation-delay: 0.1s; }
+.generic-page > *:nth-child(4),
+.dedicated-page > *:nth-child(4) { animation-delay: 0.15s; }
+.generic-page > *:nth-child(n + 5),
+.dedicated-page > *:nth-child(n + 5) { animation-delay: 0.18s; }
+
+.generic-grid article,
+.live-data article,
+.v62-kpis > *,
+.capture-grid > * {
+  animation: bao-pc-rise 0.42s var(--bao-pc-ease-standard) both;
+}
+.generic-grid article:nth-child(2),
+.live-data article:nth-child(2),
+.v62-kpis > *:nth-child(2),
+.capture-grid > *:nth-child(2) { animation-delay: 0.05s; }
+.generic-grid article:nth-child(3),
+.live-data article:nth-child(3),
+.v62-kpis > *:nth-child(3),
+.capture-grid > *:nth-child(3) { animation-delay: 0.09s; }
+.generic-grid article:nth-child(4),
+.live-data article:nth-child(4),
+.v62-kpis > *:nth-child(4),
+.capture-grid > *:nth-child(4) { animation-delay: 0.13s; }
+.generic-grid article:nth-child(n + 5),
+.live-data article:nth-child(n + 5),
+.v62-kpis > *:nth-child(n + 5),
+.capture-grid > *:nth-child(n + 5) { animation-delay: 0.16s; }
+
+/* —— KPI 与经营数字弹出 —— */
+.v62-kpis b,
+.v62-metrics b,
+.live-data article strong,
+.generic-grid article b,
+.job-summary > span {
+  animation: bao-pc-num 0.55s 0.1s var(--bao-pc-ease-standard) both;
+}
+
+/* —— 骨架屏流光 —— */
+.loading-skeleton {
+  position: relative;
+  overflow: hidden;
+}
+.loading-skeleton::after {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgb(255 255 255 / 55%),
+    transparent
+  );
+  content: '';
+  transform: translateX(-100%);
+  animation: bao-pc-shimmer 1.4s ease-in-out infinite;
+}
+
+/* —— 侧栏导航：指示条 + 轻移 —— */
+.sidebar nav a {
+  position: relative;
+  transition: color 0.18s var(--bao-pc-ease-standard),
+    background-color 0.18s var(--bao-pc-ease-standard),
+    transform 0.18s var(--bao-pc-ease-standard);
+}
+.sidebar nav a::before {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 3px;
+  height: 0;
+  border-radius: 99px;
+  background: linear-gradient(180deg, #25ae82, #0b9569);
+  content: '';
+  opacity: 0;
+  transform: translateY(-50%);
+  transition: height 0.2s var(--bao-pc-ease-standard),
+    opacity 0.2s var(--bao-pc-ease-standard);
+}
+.sidebar nav a:hover {
+  transform: translateX(2px);
+}
+.sidebar nav a:hover::before {
+  height: 55%;
+  opacity: 0.55;
+}
+.sidebar nav a.active::before {
+  height: 68%;
+  opacity: 1;
+}
+
+/* —— 品牌主按钮：极光流动 —— */
+.new-task,
+.v62-primary {
+  background-size: 220% 220%;
+}
+.new-task:not(:disabled):hover,
+.v62-primary:not(:disabled):hover {
+  animation: bao-pc-aurora 2.4s ease-in-out infinite;
+  filter: brightness(1.06);
+}
+
+/* —— 卡片悬浮提升 —— */
+.generic-grid article,
+.live-data article,
+.v62-kpis > *,
+.v62-metrics > * {
+  transition: transform 0.2s var(--bao-pc-ease-standard),
+    box-shadow 0.2s var(--bao-pc-ease-standard),
+    border-color 0.2s var(--bao-pc-ease-standard);
+}
+.generic-grid article:hover,
+.live-data article:hover,
+.v62-kpis > *:hover,
+.v62-metrics > *:hover {
+  border-color: rgb(11 149 105 / 24%);
+  box-shadow: var(--bao-pc-shadow-float);
+  transform: translateY(-2px);
+}
+
+/* —— 商户表格行悬浮 —— */
+.v62-merchant-table tbody tr,
+.v62-merchant-table tr {
+  transition: background-color 0.15s var(--bao-pc-ease-standard);
+}
+.v62-merchant-table tbody tr:hover {
+  background: #f1fbf7;
+}
+
+/* —— 进行中状态呼吸点 —— */
+.state-symbol {
+  animation: bao-pc-ping 2.4s ease-out infinite;
+}
+
+/* —— 输入聚焦：玉石绿光环 —— */
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  border-color: #0b9569;
+  box-shadow: 0 0 0 3px rgb(11 149 105 / 14%);
+  outline: none;
+}
+
+/* —— 顶栏与标题轻微入屏 —— */
+.topbar,
+.chat-heading {
+  animation: bao-pc-rise 0.36s var(--bao-pc-ease-standard) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .generic-page > *,
+  .dedicated-page > *,
+  .generic-grid article,
+  .live-data article,
+  .v62-kpis > *,
+  .v62-metrics > *,
+  .capture-grid > *,
+  .v62-kpis b,
+  .v62-metrics b,
+  .live-data article strong,
+  .generic-grid article b,
+  .job-summary > span,
+  .loading-skeleton::after,
+  .new-task,
+  .v62-primary,
+  .state-symbol,
+  .topbar,
+  .chat-heading {
+    animation: none !important;
+  }
+  .sidebar nav a,
+  .sidebar nav a::before {
+    transition: none !important;
+  }
+}

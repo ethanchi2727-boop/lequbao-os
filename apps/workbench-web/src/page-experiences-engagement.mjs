@@ -76,7 +76,7 @@ const experiences = [
     layout: 'wecom-connection-health',
     kicker: '企业微信连接 · 连接健康',
     headline: '监控授权、回调、同步、消息和范围映射的真实健康状态',
-    description: '健康重试生成持久任务，不在前端直接调用 provider 或暴露凭据。',
+    description: '健康重试生成持久任务，不在前端直接调用服务商接口或暴露凭据。',
     panels: [
       ['授权健康', '展示有效、到期、撤销、能力变化和最近验证'],
       ['同步健康', '展示游标、延迟、失败批次、范围映射和数据新鲜度'],

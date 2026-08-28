@@ -255,7 +255,7 @@ function genericWorkbenchPage() {
         : view.state === 'empty'
           ? `<div class="generic-empty"><b>暂无数据</b><span>${livePageState.request?.status === 'missing-parameters' ? `需要链接参数：${livePageState.request.missing.map(escapeHtml).join('、')}` : '调整筛选或完成前置步骤后再试。'}</span></div>`
           : !demoMode && livePageState.request?.status === 'unsupported'
-            ? '<div class="generic-empty"><b>此页面尚未连接权威 API</b><span>生产模式不会展示模拟业务数据；完成服务端契约和权限验收后才能启用。</span></div>'
+            ? '<div class="generic-empty"><b>此页面尚未接入权威数据服务</b><span>生产模式不会展示模拟业务数据；完成服务端契约和权限验收后才能启用。</span></div>'
             : `<div class="generic-grid">${contract.components
                 .map(
                   (component, index) =>

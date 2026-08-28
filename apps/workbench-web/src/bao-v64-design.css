@@ -1,0 +1,957 @@
+/* ==========================================================================
+   乐趣宝 PC 工作台 · V6.4「玉衡」统一设计层
+   --------------------------------------------------------------------------
+   目标：全站视觉一致 + 文案自然 + 动效统一（延续移动端 V6.3.1 深玉高对比体系）
+   加载顺序：本文件在所有静态样式之后加载；选择器统一以 body 前缀提权，
+   确保压过 app.js 运行时动态注入的页面族样式。
+   仅做追加覆盖，不改动任何既有文件与测试契约。
+   ========================================================================== */
+
+:root {
+  /* V6.4 品牌渐变：纯正玉色（去除青蓝偏移，与移动端一致） */
+  --bao-v64-brand: linear-gradient(135deg, #0b9569, #087d59);
+  --bao-v64-brand-hover: linear-gradient(135deg, #0aa673, #0b9569);
+  /* V6.4 深色 Hero：深玉墨渐变（与移动端 --bao-mobile-gradient-hero 同构） */
+  --bao-v64-hero: radial-gradient(640px 260px at 84% -60px, rgb(11 149 105 / 30%), transparent 62%),
+    linear-gradient(155deg, #0b1312, #0e382c 58%, #0b4a36);
+  --bao-v64-hero-flat: linear-gradient(155deg, #0b1312, #0e382c 58%, #0b4a36);
+  --bao-v64-jade-glow: 0 10px 24px rgb(8 100 72 / 26%);
+  --bao-v64-jade-glow-soft: 0 6px 16px rgb(8 100 72 / 18%);
+  /* 语义状态色：运行=玉绿 / 等待=琥珀 / 失败=朱红 / 完成=深绿 */
+  --bao-v64-run-fg: #087d59;
+  --bao-v64-run-bg: #e4f6ef;
+  --bao-v64-wait-fg: #b95a17;
+  --bao-v64-wait-bg: #fff0e1;
+  --bao-v64-fail-fg: #c8433f;
+  --bao-v64-fail-bg: #feeaea;
+  --bao-v64-done-fg: #086448;
+  --bao-v64-done-bg: #e4f6ef;
+  /* 统一动效 */
+  --bao-v64-ease: cubic-bezier(0.2, 0, 0, 1);
+  --bao-v64-ease-spring: cubic-bezier(0.34, 1.4, 0.4, 1);
+}
+
+/* ==========================================================================
+   一、全局基底：画布、字体渲染、选区、链接色
+   ========================================================================== */
+
+body {
+  background: var(--bao-pc-canvas);
+  color: var(--bao-pc-ink-900);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+body a {
+  color: var(--bao-pc-jade-600);
+  text-decoration: none;
+  transition: color 0.16s var(--bao-v64-ease);
+}
+
+body a:hover {
+  color: var(--bao-pc-jade-700);
+}
+
+body ::selection {
+  background: rgb(11 149 105 / 18%);
+}
+
+/* ==========================================================================
+   二、工作台骨架：侧栏 / 顶栏 / 内容区
+   ========================================================================== */
+
+body .sidebar {
+  background: linear-gradient(180deg, #0b1312, #0d1a17);
+  border-right: 1px solid rgb(255 255 255 / 6%);
+}
+
+body .sidebar .brand {
+  letter-spacing: 0.01em;
+  color: #fff;
+}
+
+body .sidebar .brand small,
+body .sidebar .brand span {
+  color: rgb(255 255 255 / 48%);
+}
+
+body .sidebar nav a {
+  border-radius: 10px;
+  color: rgb(255 255 255 / 62%);
+  transition: background 0.16s var(--bao-v64-ease), color 0.16s var(--bao-v64-ease),
+    transform 0.16s var(--bao-v64-ease);
+}
+
+body .sidebar nav a:hover {
+  background: rgb(255 255 255 / 7%);
+  color: #fff;
+  transform: translateX(2px);
+}
+
+body .sidebar nav a.active {
+  background: rgb(11 149 105 / 24%);
+  color: #9fe8cd;
+  font-weight: 600;
+}
+
+body .sidebar .search,
+body .sidebar .search input {
+  background: rgb(255 255 255 / 6%);
+  border: 1px solid rgb(255 255 255 / 10%);
+  color: rgb(255 255 255 / 78%);
+}
+
+body .sidebar .search input::placeholder {
+  color: rgb(255 255 255 / 38%);
+}
+
+body .sidebar kbd {
+  background: rgb(255 255 255 / 10%);
+  color: rgb(255 255 255 / 55%);
+  border: 1px solid rgb(255 255 255 / 12%);
+}
+
+body .sidebar .recent,
+body .sidebar .recent b,
+body .sidebar .recent strong {
+  color: rgb(255 255 255 / 45%);
+}
+
+body .sidebar .recent a,
+body .sidebar .recent li {
+  color: rgb(255 255 255 / 62%);
+}
+
+body .sidebar .recent a:hover {
+  color: #fff;
+}
+
+body .sidebar .identity,
+body .sidebar .identity b,
+body .sidebar .identity strong {
+  color: #fff;
+}
+
+body .sidebar .identity small,
+body .sidebar .identity span {
+  color: rgb(255 255 255 / 45%);
+}
+
+body .topbar {
+  background: rgb(255 255 255 / 86%);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--bao-pc-line);
+}
+
+body .crumb {
+  color: var(--bao-pc-ink-500);
+  font-size: 13px;
+}
+
+body .crumb b,
+body .crumb strong {
+  color: var(--bao-pc-ink-900);
+  font-weight: 600;
+}
+
+/* ==========================================================================
+   三、按钮体系统一：38px 胶囊主按钮 + 玉色渐变 + 流光 Hover
+   ========================================================================== */
+
+body .new-task,
+body .v62-primary,
+body .primary,
+body .send,
+body .thread-send,
+body .ai-send,
+body .job-actions button,
+body .top-actions .new-task {
+  border-radius: 999px;
+  background: var(--bao-v64-brand);
+  background-size: 220% 220%;
+  color: #fff;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  box-shadow: var(--bao-v64-jade-glow-soft);
+  transition: transform 0.18s var(--bao-v64-ease), box-shadow 0.24s var(--bao-v64-ease),
+    background-position 0.6s var(--bao-v64-ease), filter 0.18s var(--bao-v64-ease);
+}
+
+body .new-task:hover,
+body .v62-primary:hover,
+body .primary:hover,
+body .send:hover,
+body .thread-send:hover,
+body .ai-send:hover,
+body .job-actions button:hover {
+  background-position: 100% 50%;
+  box-shadow: var(--bao-v64-jade-glow);
+  transform: translateY(-1px);
+  filter: brightness(1.04);
+}
+
+body .new-task:active,
+body .v62-primary:active,
+body .primary:active,
+body .send:active,
+body .thread-send:active,
+body .ai-send:active {
+  transform: translateY(0) scale(0.985);
+}
+
+/* 次级按钮：白底玉描边 */
+body .top-actions button:not(.new-task),
+body .thread-actions button,
+body .job-filters button,
+body .session-filters button,
+body .job-list-tools button,
+body .session-list-tools button,
+body .source-list-tools button,
+body .artifact-heading-actions button {
+  border-radius: 999px;
+  border: 1px solid var(--bao-pc-line-strong);
+  background: var(--bao-pc-paper);
+  color: var(--bao-pc-ink-700);
+  font-weight: 500;
+  transition: border-color 0.16s var(--bao-v64-ease), color 0.16s var(--bao-v64-ease),
+    background 0.16s var(--bao-v64-ease), transform 0.16s var(--bao-v64-ease);
+}
+
+body .top-actions button:not(.new-task):hover,
+body .thread-actions button:hover,
+body .job-filters button:hover,
+body .session-filters button:hover,
+body .job-list-tools button:hover,
+body .session-list-tools button:hover,
+body .source-list-tools button:hover,
+body .artifact-heading-actions button:hover {
+  border-color: rgb(11 149 105 / 40%);
+  color: var(--bao-pc-jade-700);
+  background: var(--bao-pc-jade-50);
+}
+
+/* 筛选选中态：玉色胶囊 */
+body .job-filters button.active,
+body .session-filters button.active,
+body .job-filters button[aria-pressed="true"],
+body .session-filters button[aria-pressed="true"] {
+  background: var(--bao-v64-brand);
+  border-color: transparent;
+  color: #fff;
+  box-shadow: var(--bao-v64-jade-glow-soft);
+}
+
+/* ==========================================================================
+   四、卡片体系统一：16px 圆角 + 发丝描边 + 柔影 + 悬浮上浮
+   ========================================================================== */
+
+body .generic-grid article,
+body .live-data article,
+body .capture-grid article,
+body .v62-kpis > *,
+body .v62-progress-card,
+body .v62-projects > *,
+body .v62-assets > *,
+body .v62-delivery-grid > *,
+body .ai-quick-start button,
+body .ai-recent-conversations li,
+body .ai-capabilities li,
+body .thread-message,
+body .confirmation-card,
+body .confirmation-receipt,
+body .job-inspector,
+body .job-list li,
+body .session-list li,
+body .source-list li,
+body .upload-item,
+body .artifact-canvas,
+body .artifact-inspector,
+body .artifact-files,
+body .evidence-list li,
+body .evidence-timeline li,
+body .step-record,
+body .identity-facts,
+body .identity-grid > *,
+body .provenance-list li,
+body .recognition-list li,
+body .missing-list li,
+body .report-paper,
+body .report-kpis > *,
+body .trace-summary,
+body .job-summary,
+body .session-queue-summary,
+body .task-result-preview,
+body .task-budget-grid > *,
+body .workspace-files,
+body .completion,
+body .state-panel {
+  border-radius: var(--bao-pc-radius-lg);
+  border: 1px solid var(--bao-pc-line);
+  background: var(--bao-pc-paper);
+  box-shadow: var(--bao-pc-shadow-card);
+  transition: transform 0.2s var(--bao-v64-ease), box-shadow 0.24s var(--bao-v64-ease),
+    border-color 0.2s var(--bao-v64-ease);
+}
+
+body .generic-grid article:hover,
+body .live-data article:hover,
+body .capture-grid article:hover,
+body .v62-kpis > *:hover,
+body .ai-quick-start button:hover,
+body .ai-recent-conversations li:hover,
+body .job-list li:hover,
+body .session-list li:hover,
+body .source-list li:hover,
+body .evidence-list li:hover,
+body .provenance-list li:hover,
+body .recognition-list li:hover,
+body .missing-list li:hover,
+body .step-record:hover,
+body .report-kpis > *:hover {
+  transform: translateY(-2px);
+  border-color: rgb(11 149 105 / 24%);
+  box-shadow: var(--bao-pc-shadow-float);
+}
+
+/* ==========================================================================
+   五、深色 Hero 统一：深玉墨渐变（与移动端同源），白字高对比
+   ========================================================================== */
+
+body .dark,
+body .v62-page__hero,
+body .dedicated-page .hero,
+body .income-hero,
+body .m-progress-hero {
+  background: var(--bao-v64-hero);
+  border: 1px solid rgb(255 255 255 / 8%);
+  color: #fff;
+}
+
+body .dark h1,
+body .dark h2,
+body .dark h3,
+body .v62-page__hero h1,
+body .v62-page__hero h2,
+body .dark strong,
+body .v62-page__hero strong {
+  color: #fff;
+}
+
+body .dark p,
+body .v62-page__hero p,
+body .dark span,
+body .v62-page__hero span {
+  color: rgb(255 255 255 / 78%);
+}
+
+/* Hero 上的强调数字与标签：玉色 300，保证深底对比 */
+body .dark b,
+body .v62-page__hero b,
+body .dark .v62-page__mark,
+body .v62-page__mark {
+  color: var(--bao-pc-jade-300);
+}
+
+/* 页面模式徽章：浅色上下文中的玉色胶囊（.v62-page__path 是“任务路径”卡片，不在此列） */
+body .v62-page__mode {
+  border-radius: 999px;
+  background: var(--bao-pc-jade-100);
+  color: var(--bao-pc-jade-700);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
+/* 范围/领域标签：中性灰胶囊 */
+body .v62-page__scope {
+  border-radius: 999px;
+  background: var(--bao-pc-ink-100);
+  color: var(--bao-pc-ink-600);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+/* 深色 Hero 内的徽章：半透明白描边 */
+body .dark .v62-page__mode,
+body .dark .v62-page__scope {
+  border: 1px solid rgb(255 255 255 / 16%);
+  background: rgb(255 255 255 / 8%);
+  color: rgb(255 255 255 / 88%);
+}
+
+/* 任务路径卡片：白底卡片 + 深字（修正胶囊规则误伤） */
+body .v62-page__path {
+  border-radius: var(--bao-pc-radius-lg);
+  border: 1px solid var(--bao-pc-line);
+  background: var(--bao-pc-paper);
+  box-shadow: var(--bao-pc-shadow-card);
+  color: var(--bao-pc-ink-600);
+}
+
+body .v62-page__path > header strong,
+body .v62-page__path li strong {
+  color: var(--bao-pc-ink-900);
+}
+
+body .v62-page__path > header small,
+body .v62-page__path li small {
+  color: var(--bao-pc-ink-500);
+}
+
+/* AI 身份徽章：全站唯一保留的 AI 紫，与玉色形成“人/机”双品牌色 */
+body .v62-page--ai .v62-page__mode,
+body .ai .v62-page__mode,
+body .v62-ai-main .v62-page__mode {
+  background: var(--bao-pc-gradient-ai);
+  border-color: transparent;
+  color: #fff;
+  box-shadow: 0 6px 16px rgb(102 87 232 / 30%);
+}
+
+/* ==========================================================================
+   六、状态语义统一：运行=玉绿 / 等待审批=琥珀 / 失败冲突=朱红 / 完成=深绿
+   ========================================================================== */
+
+body .status-succeeded,
+body .status-confirmed,
+body .status-corrected,
+body .job-status.done,
+body .job-status.running,
+body .artifact-status.done,
+body .session-row-status.done,
+body .done,
+body .complete,
+body .running,
+body .active {
+  border-radius: 999px;
+  background: var(--bao-v64-run-bg);
+  color: var(--bao-v64-run-fg);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+body .status-waiting_approval,
+body .status-paused,
+body .job-status.waiting,
+body .waiting,
+body .risk {
+  border-radius: 999px;
+  background: var(--bao-v64-wait-bg);
+  color: var(--bao-v64-wait-fg);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+body .status-failed,
+body .status-conflict,
+body .failed,
+body .blocked,
+body .security-failed,
+body .security-rejected,
+body .source-error {
+  border-radius: 999px;
+  background: var(--bao-v64-fail-bg);
+  color: var(--bao-v64-fail-fg);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+body .security-safe,
+body .safe-note {
+  border-radius: 999px;
+  background: var(--bao-v64-done-bg);
+  color: var(--bao-v64-done-fg);
+  font-weight: 600;
+}
+
+body .security-pending {
+  border-radius: 999px;
+  background: var(--bao-v64-wait-bg);
+  color: var(--bao-v64-wait-fg);
+  font-weight: 600;
+}
+
+/* 优先级标记：紧急=朱红 / 高=琥珀，统一胶囊 */
+body .priority-urgent,
+body .priority-high {
+  border-radius: 999px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
+body .priority-urgent {
+  background: var(--bao-v64-fail-bg);
+  color: var(--bao-v64-fail-fg);
+}
+
+body .priority-high {
+  background: var(--bao-v64-wait-bg);
+  color: var(--bao-v64-wait-fg);
+}
+
+/* 来源/领域标签：统一玉灰中性胶囊 */
+body .v62-source-chip,
+body .recognition-tags span,
+body .capture-types span,
+body .source-type,
+body .provenance-path {
+  border-radius: 999px;
+  background: var(--bao-pc-ink-100);
+  color: var(--bao-pc-ink-600);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+/* 运行中呼吸点：玉色脉冲，提示任务活着 */
+body .running::before,
+body .job-status.running::before,
+body .state-symbol {
+  animation: bao-pc-ping 2.4s var(--bao-v64-ease) infinite;
+}
+
+/* ==========================================================================
+   七、数据表格统一：玉色表头 + 行悬浮 + 数字等宽
+   ========================================================================== */
+
+body .v62-merchant-table {
+  border-radius: var(--bao-pc-radius-lg);
+  overflow: hidden;
+  border: 1px solid var(--bao-pc-line);
+  background: var(--bao-pc-paper);
+  box-shadow: var(--bao-pc-shadow-card);
+}
+
+body .v62-merchant-table thead th {
+  background: var(--bao-pc-jade-50);
+  color: var(--bao-pc-jade-700);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+}
+
+body .v62-merchant-table tbody tr:hover {
+  background: var(--bao-pc-jade-50);
+}
+
+body .v62-merchant-table td,
+body .v62-merchant-table th {
+  border-bottom: 1px solid var(--bao-pc-line);
+  font-variant-numeric: tabular-nums;
+}
+
+/* 条形图/占比条：统一玉色渐变 */
+body .v62-bars i,
+body .v62-bars b,
+body .v62-allocation i,
+body .v62-business-charts i {
+  background: var(--bao-v64-brand);
+  border-radius: 999px;
+}
+
+/* ==========================================================================
+   八、表单控件统一：玉色聚焦环
+   ========================================================================== */
+
+body input:focus-visible,
+body select:focus-visible,
+body textarea:focus-visible,
+body .composer textarea:focus,
+body .source-text-command textarea:focus,
+body .confirmation-field input:focus,
+body .field-grid input:focus,
+body .search input:focus {
+  outline: none;
+  border-color: rgb(11 149 105 / 55%);
+  box-shadow: 0 0 0 3px rgb(11 149 105 / 14%);
+}
+
+body input,
+body select,
+body textarea {
+  border-radius: var(--bao-pc-radius-md);
+  border: 1px solid var(--bao-pc-line-strong);
+  background: var(--bao-pc-paper);
+  color: var(--bao-pc-ink-900);
+  transition: border-color 0.16s var(--bao-v64-ease), box-shadow 0.2s var(--bao-v64-ease);
+}
+
+/* ==========================================================================
+   九、AI 对话页统一：用户气泡玉色渐变，AI 气泡白底发丝边
+   ========================================================================== */
+
+body .user-bubble,
+body .thread-message.user,
+body .v62-user-bubble {
+  background: var(--bao-v64-brand);
+  color: #fff;
+  border-radius: 18px 18px 6px 18px;
+  box-shadow: var(--bao-v64-jade-glow-soft);
+}
+
+body .thread-message.system,
+body .thread-message.running,
+body .agent-result,
+body .v62-agent-result,
+body .v62-agent-name {
+  border-radius: 18px 18px 18px 6px;
+}
+
+body .v62-agent-name,
+body .agent .agent-result b {
+  color: var(--bao-pc-ai-600);
+}
+
+/* 输入区：浮动胶囊质感 */
+body .composer,
+body .thread-composer,
+body .ai-start-composer,
+body .complex-composer,
+body .v62-composer {
+  border-radius: var(--bao-pc-radius-xl);
+  border: 1px solid var(--bao-pc-line);
+  background: var(--bao-pc-paper);
+  box-shadow: var(--bao-pc-shadow-float);
+}
+
+/* ==========================================================================
+   十、动效体系统一：级联入场 + 数字弹出 + 骨架流光 + 呼吸点
+   ========================================================================== */
+
+/* 级联入场：覆盖全部页面族（含运行时注入样式的 artifact 家族） */
+body .artifact-page > *,
+body .job-queue-page > *,
+body .confirmation-page > *,
+body .identity-page > *,
+body .provenance-page > *,
+body .recognition-page > *,
+body .missing-page > *,
+body .session-inbox-page > *,
+body .source-library-page > *,
+body .complex-layout > *,
+body .complex-main > *,
+body .ai-start > *,
+body .ai-thread > *,
+body .v62-page > *,
+body .dedicated-page > * {
+  animation: bao-pc-rise 0.5s var(--bao-v64-ease) both;
+}
+
+body .artifact-page > *:nth-child(2),
+body .job-queue-page > *:nth-child(2),
+body .confirmation-page > *:nth-child(2),
+body .identity-page > *:nth-child(2),
+body .provenance-page > *:nth-child(2),
+body .recognition-page > *:nth-child(2),
+body .missing-page > *:nth-child(2),
+body .session-inbox-page > *:nth-child(2),
+body .source-library-page > *:nth-child(2),
+body .complex-layout > *:nth-child(2),
+body .complex-main > *:nth-child(2),
+body .ai-start > *:nth-child(2),
+body .ai-thread > *:nth-child(2),
+body .v62-page > *:nth-child(2),
+body .dedicated-page > *:nth-child(2) {
+  animation-delay: 0.06s;
+}
+
+body .artifact-page > *:nth-child(3),
+body .job-queue-page > *:nth-child(3),
+body .confirmation-page > *:nth-child(3),
+body .identity-page > *:nth-child(3),
+body .provenance-page > *:nth-child(3),
+body .recognition-page > *:nth-child(3),
+body .missing-page > *:nth-child(3),
+body .session-inbox-page > *:nth-child(3),
+body .source-library-page > *:nth-child(3),
+body .complex-layout > *:nth-child(3),
+body .complex-main > *:nth-child(3),
+body .ai-start > *:nth-child(3),
+body .ai-thread > *:nth-child(3),
+body .v62-page > *:nth-child(3),
+body .dedicated-page > *:nth-child(3) {
+  animation-delay: 0.12s;
+}
+
+body .artifact-page > *:nth-child(4),
+body .job-queue-page > *:nth-child(4),
+body .confirmation-page > *:nth-child(4),
+body .identity-page > *:nth-child(4),
+body .provenance-page > *:nth-child(4),
+body .recognition-page > *:nth-child(4),
+body .missing-page > *:nth-child(4),
+body .session-inbox-page > *:nth-child(4),
+body .source-library-page > *:nth-child(4),
+body .complex-layout > *:nth-child(4),
+body .complex-main > *:nth-child(4),
+body .ai-start > *:nth-child(4),
+body .ai-thread > *:nth-child(4),
+body .v62-page > *:nth-child(4),
+body .dedicated-page > *:nth-child(4) {
+  animation-delay: 0.18s;
+}
+
+/* 数字弹出：关键经营数字/KPI/用量/汇总，一律带回弹的落位动画 */
+body .v62-kpis b,
+body .v62-metrics b,
+body .report-kpis b,
+body .job-usage b,
+body .job-summary > span,
+body .session-queue-summary b,
+body .session-queue-summary > span,
+body .identity-facts b,
+body .live-data article strong,
+body .generic-grid article b,
+body .capture-grid strong,
+body .trace-summary b,
+body .provenance-summary b,
+body .recognition-summary b,
+body .confirmation-summary b,
+body .missing-progress b {
+  animation: bao-pc-num 0.62s var(--bao-v64-ease-spring) both;
+  font-variant-numeric: tabular-nums;
+}
+
+/* 骨架屏流光（沿用 V6.3 定义，这里补 artifact 家族容器） */
+body .loading-skeleton {
+  border-radius: var(--bao-pc-radius-lg);
+}
+
+/* 时间线当前步：玉色高亮 + 呼吸 */
+body .v62-timeline .active,
+body .evidence-timeline .active,
+body .thread-timeline .active,
+body .step-record.active {
+  border-color: rgb(11 149 105 / 40%);
+  background: var(--bao-pc-jade-50);
+}
+
+/* ==========================================================================
+   十一、细节收束：页头、分隔、空态、警示
+   ========================================================================== */
+
+body .v62-page-header h1,
+body .artifact-heading h1,
+body .job-queue-heading h1,
+body .session-inbox-heading h1,
+body .source-library-heading h1,
+body .confirmation-heading h1,
+body .identity-heading h1,
+body .provenance-heading h1,
+body .recognition-heading h1,
+body .missing-heading h1,
+body .complex-heading h1,
+body .thread-heading h1,
+body .ai-start-intro h1 {
+  letter-spacing: -0.01em;
+  color: var(--bao-pc-ink-950);
+  font-weight: 700;
+}
+
+body .generic-empty,
+body .job-list-empty,
+body .session-list-empty,
+body .source-list-empty,
+body .trace-empty,
+body .missing-none,
+body .protected-empty,
+body .state-empty {
+  border-radius: var(--bao-pc-radius-lg);
+  border: 1px dashed var(--bao-pc-line-strong);
+  background: var(--bao-pc-paper);
+  color: var(--bao-pc-ink-500);
+}
+
+/* 安全护栏/免责声明：琥珀左 accent，全站统一 */
+body .v62-page__guardrail,
+body .artifact-disclaimer,
+body .job-warning,
+body .job-boundary,
+body .identity-boundary,
+body .identity-guard,
+body .provenance-guard,
+body .warning {
+  border-left: 3px solid var(--bao-pc-warning-500);
+  background: var(--bao-pc-warning-100);
+  color: var(--bao-pc-ink-700);
+  border-radius: 0 var(--bao-pc-radius-md) var(--bao-pc-radius-md) 0;
+}
+
+/* 进度环：玉色描边 */
+body .v62-ring {
+  color: var(--bao-pc-jade-500);
+}
+
+/* 头像：玉墨渐变底 */
+body .identity-avatar,
+body .session-avatar {
+  background: var(--bao-v64-hero-flat);
+  color: #fff;
+  border-radius: 12px;
+}
+
+/* ==========================================================================
+   十二、动效降级：系统开启“减弱动态效果”时全部关闭
+   ========================================================================== */
+
+@media (prefers-reduced-motion: reduce) {
+  body *,
+  body *::before,
+  body *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+/* ==========================================================================
+   补丁：实测修正（page-010 核验后追加）
+   ========================================================================== */
+
+/* 状态枚举补全：运行/排队/打开=玉绿；等待/待定=琥珀；失败/冲突/阻塞=朱红；完成/关闭=深绿 */
+body .status-running,
+body .status-active,
+body .status-open,
+body .status-queued,
+body .status-processing {
+  border-radius: 999px;
+  background: var(--bao-v64-run-bg);
+  color: var(--bao-v64-run-fg);
+  font-weight: 600;
+}
+
+body .status-waiting,
+body .status-pending {
+  border-radius: 999px;
+  background: var(--bao-v64-wait-bg);
+  color: var(--bao-v64-wait-fg);
+  font-weight: 600;
+}
+
+body .status-blocked,
+body .status-rejected {
+  border-radius: 999px;
+  background: var(--bao-v64-fail-bg);
+  color: var(--bao-v64-fail-fg);
+  font-weight: 600;
+}
+
+body .status-done,
+body .status-complete,
+body .status-closed {
+  border-radius: 999px;
+  background: var(--bao-v64-done-bg);
+  color: var(--bao-v64-done-fg);
+  font-weight: 600;
+}
+
+/* 运行中芯片：呼吸脉冲提示任务存活 */
+body .status-running,
+body .status-active,
+body .status-processing {
+  animation: bao-pc-ping 2.4s var(--bao-v64-ease) infinite;
+}
+
+/* 页头主按钮（无类名，实测为蓝色）：统一为玉色品牌渐变胶囊 */
+body .job-queue-heading button,
+body .session-inbox-heading button,
+body .source-library-heading button,
+body .artifact-heading button,
+body .confirmation-heading button,
+body .identity-heading button,
+body .provenance-heading button,
+body .recognition-heading button,
+body .missing-heading button {
+  border-radius: 999px;
+  border: none;
+  background: var(--bao-v64-brand);
+  background-size: 220% 220%;
+  color: #fff;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  box-shadow: var(--bao-v64-jade-glow-soft);
+  transition: transform 0.18s var(--bao-v64-ease), box-shadow 0.24s var(--bao-v64-ease),
+    background-position 0.6s var(--bao-v64-ease), filter 0.18s var(--bao-v64-ease);
+}
+
+body .job-queue-heading button:hover,
+body .session-inbox-heading button:hover,
+body .source-library-heading button:hover,
+body .artifact-heading button:hover,
+body .confirmation-heading button:hover,
+body .identity-heading button:hover,
+body .provenance-heading button:hover,
+body .recognition-heading button:hover,
+body .missing-heading button:hover {
+  background-position: 100% 50%;
+  box-shadow: var(--bao-v64-jade-glow);
+  transform: translateY(-1px);
+  filter: brightness(1.04);
+}
+
+/* 筛选胶囊为锚点元素（实测）：与按钮体系对齐 */
+body .job-filters a,
+body .session-filters a {
+  border-radius: 999px;
+  border: 1px solid var(--bao-pc-line-strong);
+  background: var(--bao-pc-paper);
+  color: var(--bao-pc-ink-700);
+  font-weight: 500;
+  transition: border-color 0.16s var(--bao-v64-ease), color 0.16s var(--bao-v64-ease),
+    background 0.16s var(--bao-v64-ease);
+}
+
+body .job-filters a:hover,
+body .session-filters a:hover {
+  border-color: rgb(11 149 105 / 40%);
+  color: var(--bao-pc-jade-700);
+  background: var(--bao-pc-jade-50);
+}
+
+body .job-filters a.active,
+body .session-filters a.active {
+  background: var(--bao-pc-jade-100);
+  border-color: rgb(11 149 105 / 32%);
+  color: var(--bao-pc-jade-700);
+  font-weight: 600;
+}
+
+/* 快捷入口箭头：紫改玉，统一品牌色 */
+body .ai-quick-start button::after,
+body .ai-recent-conversations li::after {
+  color: var(--bao-pc-jade-500);
+}
+
+/* 完整度/进度大卡：紫渐变统一为深玉墨 Hero（与移动端 income-hero 同源） */
+body .v62-progress-card,
+body .v62-page--ai .v62-progress-card {
+  border: 1px solid rgb(255 255 255 / 8%);
+  background: var(--bao-v64-hero);
+  color: #fff;
+}
+
+body .v62-progress-card b,
+body .v62-progress-card strong {
+  color: #fff;
+}
+
+body .v62-progress-card small,
+body .v62-progress-card span {
+  color: rgb(255 255 255 / 72%);
+}
+
+/* 建档完整度卡（styles.css .progress）：紫渐变统一为深玉墨 Hero，进度条改玉色 */
+body .progress {
+  border: 1px solid rgb(255 255 255 / 8%);
+  border-radius: var(--bao-pc-radius-lg);
+  background: var(--bao-v64-hero);
+  color: #fff;
+}
+
+body .progress progress {
+  accent-color: var(--bao-pc-jade-400);
+}
+
+body .progress small,
+body .progress span {
+  color: rgb(255 255 255 / 72%);
+}

@@ -1,5 +1,7 @@
 /* global uni */
 
+import { previewFixtureFor } from './preview-fixtures.js';
+
 const SESSION_KEY = 'lequ.bao.employee.session.v1';
 const DEVICE_KEY = 'lequ.bao.employee.device.v1';
 
@@ -64,6 +66,7 @@ export function createBaoSessionClient({
   storage = uniRuntime,
   apiBase = typeof globalThis.location === 'undefined' ? 'https://bao.lequ.com' : '',
   developmentMocks = baoRuntimeProfile.developmentMocks,
+  previewData = baoRuntimeProfile.previewData,
 } = {}) {
   const apiUrl = (path) => `${apiBase.replace(/\/$/u, '')}${path}`;
   const load = () => storage.getStorageSync(SESSION_KEY) || null;
@@ -73,6 +76,7 @@ export function createBaoSessionClient({
   };
   const clear = () => storage.removeStorageSync(SESSION_KEY);
   async function raw(options) {
+    if (previewData) return previewFixtureFor(options.url, options.method);
     const response = await transport.request(options);
     if (response.statusCode < 200 || response.statusCode >= 300) throw responseError(response);
     return response.data;
@@ -91,6 +95,7 @@ export function createBaoSessionClient({
   async function refresh() {
     const session = load();
     if (!session?.refreshToken || !session?.identity) throw responseError({ statusCode: 401 });
+    if (previewData) return save(session);
     try {
       return save(
         await raw({
