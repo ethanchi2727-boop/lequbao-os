@@ -1,16 +1,51 @@
 {
   "pages": [
-    { "path": "pages/workbench/index", "style": { "navigationStyle": "custom" } },
-    { "path": "pages/merchants/index", "style": { "navigationStyle": "custom" } },
-    { "path": "pages/orders/index", "style": { "navigationStyle": "custom" } },
-    { "path": "pages/service/index", "style": { "navigationStyle": "custom" } },
-    { "path": "pages/me/index", "style": { "navigationStyle": "custom" } },
-    { "path": "pages/detail/index", "style": { "navigationStyle": "custom" } },
-    { "path": "pages/login/index", "style": { "navigationStyle": "custom" } }
+    {
+      "path": "pages/workbench/index",
+      "style": {
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/merchants/index",
+      "style": {
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/orders/index",
+      "style": {
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/service/index",
+      "style": {
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/me/index",
+      "style": {
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/detail/index",
+      "style": {
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/login/index",
+      "style": {
+        "navigationStyle": "custom"
+      }
+    }
   ],
   "tabBar": {
-    "color": "#8C9A95",
-    "selectedColor": "#0B9569",
+    "color": "#756A58",
+    "selectedColor": "#006B36",
     "backgroundColor": "#ffffff",
     "list": [
       {

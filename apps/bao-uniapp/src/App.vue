@@ -17,46 +17,46 @@ export default {
 
 <style>
 /* ============================================================
-   乐趣宝移动端 V6.3 设计系统 · 玉石新生
-   在 V6.2 玉石绿品牌基调上整体重设计：
-   更轻的画布、更柔的卡片、更有层次的 Hero、
-   更精致的按钮与图标，手机阅读优先。
+   乐趣宝移动端 V6.5 设计系统 · 乐趣生活风
+   延续乐趣生活最终概念（日夜双主题）的日间主题：
+   米色纸感画布、乐趣生活绿渐变、鲜绿点缀、
+   暖墨文字阶（对比达标），Token 命名不变。
    ============================================================ */
 page,
 uni-app {
-  --bao-mobile-ink-950: #0b1312;
-  --bao-mobile-ink-900: #111b19;
-  --bao-mobile-ink-700: #33423e;
-  --bao-mobile-ink-600: #53645f;
-  --bao-mobile-ink-500: #74847f;
-  --bao-mobile-ink-400: #9ba8a4;
-  --bao-mobile-ink-300: #b9c3c0;
-  --bao-mobile-ink-200: #d8dfdc;
-  --bao-mobile-ink-100: #eef2f0;
-  --bao-mobile-ink-50: #f7f9f8;
+  --bao-mobile-ink-950: #16130f;
+  --bao-mobile-ink-900: #16130f;
+  --bao-mobile-ink-700: #3a342a;
+  --bao-mobile-ink-600: #4f4739;
+  --bao-mobile-ink-500: #756a58;
+  --bao-mobile-ink-400: #a39481;
+  --bao-mobile-ink-300: #c9c0ae;
+  --bao-mobile-ink-200: #e3dcc9;
+  --bao-mobile-ink-100: #f2eddf;
+  --bao-mobile-ink-50: #f6f1e6;
   --bao-mobile-paper: #ffffff;
-  --bao-mobile-jade-700: #086448;
-  --bao-mobile-jade-600: #087d59;
-  --bao-mobile-jade-500: #0b9569;
-  --bao-mobile-jade-400: #25ae82;
-  --bao-mobile-jade-300: #74d0af;
-  --bao-mobile-jade-200: #b9e8d7;
-  --bao-mobile-jade-100: #e4f6ef;
-  --bao-mobile-jade-50: #f1fbf7;
-  --bao-mobile-cyan-500: #25a7b8;
-  --bao-mobile-ai-700: #4b3cc4;
-  --bao-mobile-ai-600: #6657e8;
-  --bao-mobile-ai-100: #ece9ff;
-  --bao-mobile-warning-700: #a94e1d;
-  --bao-mobile-warning-100: #fff0e1;
-  --bao-mobile-danger-500: #df5a58;
-  --bao-mobile-line: rgba(17, 27, 25, 0.08);
-  --bao-mobile-line-strong: rgba(17, 27, 25, 0.16);
-  --bao-mobile-shadow-card: 0 2rpx 6rpx rgba(17, 27, 25, 0.03),
-    0 16rpx 40rpx rgba(17, 27, 25, 0.06);
-  --bao-mobile-shadow-float: 0 4rpx 12rpx rgba(17, 27, 25, 0.05),
-    0 24rpx 56rpx rgba(17, 27, 25, 0.12);
-  --bao-mobile-jade-glow: 0 12rpx 30rpx rgba(8, 100, 72, 0.34);
+  --bao-mobile-jade-700: #006b36;
+  --bao-mobile-jade-600: #009146;
+  --bao-mobile-jade-500: #12a458;
+  --bao-mobile-jade-400: #35c26e;
+  --bao-mobile-jade-300: #8fe04a;
+  --bao-mobile-jade-200: #cfecdb;
+  --bao-mobile-jade-100: #e6f4e9;
+  --bao-mobile-jade-50: #f2f9ee;
+  --bao-mobile-cyan-500: #43a016;
+  --bao-mobile-ai-700: #006b36;
+  --bao-mobile-ai-600: #009146;
+  --bao-mobile-ai-100: #e6f4e9;
+  --bao-mobile-warning-700: #b95a17;
+  --bao-mobile-warning-100: #fdf0e3;
+  --bao-mobile-danger-500: #d5342c;
+  --bao-mobile-line: rgba(22, 19, 15, 0.09);
+  --bao-mobile-line-strong: rgba(22, 19, 15, 0.16);
+  --bao-mobile-shadow-card: 0 2rpx 6rpx rgba(22, 19, 15, 0.05),
+    0 16rpx 40rpx rgba(22, 19, 15, 0.12);
+  --bao-mobile-shadow-float: 0 4rpx 12rpx rgba(22, 19, 15, 0.06),
+    0 24rpx 56rpx rgba(22, 19, 15, 0.18);
+  --bao-mobile-jade-glow: 0 12rpx 30rpx rgba(0, 107, 54, 0.3);
   --bao-mobile-radius-xl: 44rpx;
   --bao-mobile-radius-card: 36rpx;
   --bao-mobile-radius-control: 24rpx;
@@ -69,13 +69,13 @@ uni-app {
   --bao-mobile-gradient-hero: linear-gradient(
     155deg,
     var(--bao-mobile-ink-950),
-    #0e382c 58%,
-    #0b4a36
+    #0e3a26 58%,
+    #07231a
   );
   --bao-mobile-gradient-dark: linear-gradient(
     160deg,
     var(--bao-mobile-ink-950),
-    #0e382c
+    #0e3a26
   );
   --bao-mobile-gradient-ai: linear-gradient(
     135deg,
@@ -236,7 +236,7 @@ button:not([disabled]):active {
   border-radius: 32rpx 32rpx 10rpx 32rpx;
   color: var(--bao-mobile-paper);
   background: var(--bao-mobile-gradient-brand);
-  box-shadow: 0 8rpx 22rpx rgba(11, 149, 105, 0.2);
+  box-shadow: 0 8rpx 22rpx rgba(0, 145, 70, 0.2);
   font-size: 25rpx;
   line-height: 1.65;
 }

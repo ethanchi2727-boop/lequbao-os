@@ -56,7 +56,7 @@ defineProps({ eyebrow: String, title: String, detail: String });
   flex: none;
   border-radius: 24rpx;
   background: var(--bao-mobile-gradient-brand);
-  box-shadow: 0 8rpx 20rpx rgba(11, 149, 105, 0.32);
+  box-shadow: 0 8rpx 20rpx rgba(0, 145, 70, 0.32);
   grid-template-columns: repeat(2, 14rpx);
   grid-template-rows: repeat(2, 14rpx);
   gap: 7rpx;
@@ -98,19 +98,19 @@ defineProps({ eyebrow: String, title: String, detail: String });
   margin-right: 10rpx;
   border-radius: 50%;
   background: var(--bao-mobile-jade-400);
-  box-shadow: 0 0 0 5rpx rgba(37, 174, 130, 0.18);
+  box-shadow: 0 0 0 5rpx rgba(110, 199, 38, 0.16);
   animation: bao-ping 2.4s ease-out infinite;
   content: '';
 }
 @keyframes bao-ping {
   0% {
-    box-shadow: 0 0 0 0 rgba(37, 174, 130, 0.35);
+    box-shadow: 0 0 0 0 rgba(110, 199, 38, 0.32);
   }
   70% {
-    box-shadow: 0 0 0 12rpx rgba(37, 174, 130, 0);
+    box-shadow: 0 0 0 12rpx rgba(110, 199, 38, 0);
   }
   100% {
-    box-shadow: 0 0 0 0 rgba(37, 174, 130, 0);
+    box-shadow: 0 0 0 0 rgba(110, 199, 38, 0);
   }
 }
 .new-action {
@@ -122,7 +122,7 @@ defineProps({ eyebrow: String, title: String, detail: String });
   flex: none;
   border-radius: 50%;
   background: var(--bao-mobile-gradient-brand);
-  box-shadow: 0 8rpx 20rpx rgba(11, 149, 105, 0.32);
+  box-shadow: 0 8rpx 20rpx rgba(0, 145, 70, 0.32);
 }
 .new-action::before,
 .new-action::after {

@@ -1,0 +1,525 @@
+/* ==========================================================================
+   乐趣宝 PC 工作台 · V6.5「乐趣生活风」统一设计层
+   --------------------------------------------------------------------------
+   来源：已确认的《乐趣宝 × 乐趣生活 V2 精修概念稿》（bao-redesign/index.html）
+   原则：去黄色系 · 米色纸感画布 · 乐趣生活绿渐变 · 鲜绿点缀 · 文字对比达标
+   加载顺序：本文件在 bao-v64-design.css 之后加载；:root 变量按层叠覆盖，
+   选择器统一以 body 前缀提权，压过 app.js 运行时注入的页面族样式。
+   仅做追加覆盖，不改动任何既有文件与测试契约（product-tokens.css 原值保留）。
+   ========================================================================== */
+
+:root {
+  /* —— 画布：米色纸感 —— */
+  --bao-pc-canvas: #f6f1e6;
+
+  /* —— 暖墨色阶（对比实测：600 在米色上 8.1:1，500 在米色上 4.7:1） —— */
+  --bao-pc-ink-950: #16130f;
+  --bao-pc-ink-900: #16130f;
+  --bao-pc-ink-800: #2c2620;
+  --bao-pc-ink-700: #3a342a;
+  --bao-pc-ink-600: #4f4739;
+  --bao-pc-ink-500: #756a58;
+  --bao-pc-ink-400: #a39481;
+  --bao-pc-ink-300: #c9c0ae;
+  --bao-pc-ink-200: #e3dcc9;
+  --bao-pc-ink-150: #ece6d6;
+  --bao-pc-ink-100: #f2eddf;
+  --bao-pc-ink-50: #f8f4e9;
+
+  /* —— 乐趣生活绿（取代玉色，与概念稿 --grad-green 同源） —— */
+  --bao-pc-jade-700: #006b36;
+  --bao-pc-jade-600: #009146;
+  --bao-pc-jade-500: #12a458;
+  --bao-pc-jade-400: #35c26e;
+  --bao-pc-jade-300: #8fe04a; /* 鲜绿：全部用于深色 Hero 上的强调文字/描边 */
+  --bao-pc-jade-200: #cfecdb;
+  --bao-pc-jade-100: #e6f4e9;
+  --bao-pc-jade-50: #f2f9ee;
+
+  /* —— AI 强调色并入乐趣生活绿（product-tokens.css 原紫值保留供契约测试） —— */
+  --bao-pc-ai-700: #006b36;
+  --bao-pc-ai-600: #009146;
+  --bao-pc-ai-100: #e6f4e9;
+  --bao-pc-ai-50: #f2f9ee;
+  --bao-pc-ai-22: rgb(0 145 70 / 22%);
+
+  /* —— 语义色：琥珀警示 / 朱红失败（概念稿同款） —— */
+  --bao-pc-warning-600: #b95a17;
+  --bao-pc-warning-500: #d9742a;
+  --bao-pc-warning-100: #fdf0e3;
+  --bao-pc-danger-500: #d5342c;
+  --bao-pc-danger-100: #fdecea;
+
+  /* —— 线条与透明墨色：暖调 —— */
+  --bao-pc-line: rgb(22 19 15 / 9%);
+  --bao-pc-line-strong: rgb(22 19 15 / 16%);
+  --bao-pc-ink-06: rgb(22 19 15 / 5%);
+  --bao-pc-ink-10: rgb(22 19 15 / 9%);
+  --bao-pc-ink-18: rgb(22 19 15 / 16%);
+  --bao-pc-jade-18: rgb(0 145 70 / 18%);
+
+  /* —— 渐变：品牌绿 / 深绿 Hero / AI 徽标 —— */
+  --bao-pc-gradient-brand: linear-gradient(135deg, #12a458, #006b36);
+  --bao-pc-gradient-dark: linear-gradient(135deg, #0e3a26, #07231a);
+  --bao-pc-gradient-ai: linear-gradient(135deg, #12a458, #006b36);
+
+  /* —— 阴影：概念稿 sh-card / sh-pop —— */
+  --bao-pc-shadow-card: 0 1px 2px rgb(22 19 15 / 5%), 0 12px 28px -12px rgb(22 19 15 / 12%);
+  --bao-pc-shadow-float: 0 2px 6px rgb(22 19 15 / 6%), 0 18px 40px -14px rgb(22 19 15 / 18%);
+
+  /* —— 圆角：卡片更圆润（概念稿 20px 卡片语言） —— */
+  --bao-pc-radius-lg: 18px;
+  --bao-pc-radius-xl: 22px;
+
+  /* —— V6.4 变量重映射：品牌/Hero/状态全部切换到乐趣生活绿系 —— */
+  --bao-v64-brand: linear-gradient(135deg, #12a458, #006b36);
+  --bao-v64-brand-hover: linear-gradient(135deg, #1fb765, #0d7c43);
+  --bao-v64-hero: radial-gradient(560px 240px at 86% -70px, rgb(110 199 38 / 20%), transparent 62%),
+    linear-gradient(135deg, #0e3a26, #07231a);
+  --bao-v64-hero-flat: linear-gradient(135deg, #0e3a26, #07231a);
+  --bao-v64-jade-glow: 0 10px 24px rgb(0 107 54 / 26%);
+  --bao-v64-jade-glow-soft: 0 6px 16px rgb(0 107 54 / 18%);
+  --bao-v64-run-fg: #00733a;
+  --bao-v64-run-bg: #e6f4e9;
+  --bao-v64-wait-fg: #b95a17;
+  --bao-v64-wait-bg: #fdf0e3;
+  --bao-v64-fail-fg: #d5342c;
+  --bao-v64-fail-bg: #fdecea;
+  --bao-v64-done-fg: #4c8f10;
+  --bao-v64-done-bg: #eef7dc;
+
+  /* —— V6.5 自有鲜绿资产 —— */
+  --bao-v65-fresh: #6ec726;
+  --bao-v65-fresh-dark: #4c8f10;
+  --bao-v65-fresh-ink: #06281b;
+  --bao-v65-grad-fresh: linear-gradient(135deg, #8fe04a, #43a016);
+  --bao-v65-grad-deep: linear-gradient(135deg, #0e3a26, #07231a);
+}
+
+/* ==========================================================================
+   一、全局基底：米色画布 + 鲜绿选区
+   ========================================================================== */
+
+body {
+  background: var(--bao-pc-canvas);
+}
+
+body ::selection {
+  background: rgb(110 199 38 / 24%);
+}
+
+/* ==========================================================================
+   二、侧栏：深绿渐变 + 鲜绿光晕 + 激活指示条（概念稿 .side 同款）
+   ========================================================================== */
+
+body .sidebar {
+  background: var(--bao-v65-grad-deep);
+  border-right: 1px solid rgb(110 199 38 / 14%);
+}
+
+body .sidebar::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(300px 200px at 110% -60px, rgb(110 199 38 / 14%), transparent 60%);
+  pointer-events: none;
+}
+
+/* 品牌 Logo 章：鲜绿渐变 + 深绿字（去黄后的概念稿样式） */
+body .sidebar .brand > b {
+  background: var(--bao-v65-grad-fresh);
+  color: var(--bao-v65-fresh-ink);
+  box-shadow: 0 5px 12px -3px rgb(110 199 38 / 50%), inset 0 1.5px 0 rgb(255 255 255 / 40%);
+}
+
+/* 新建任务 CTA：鲜绿渐变胶囊 + 深绿字 */
+body .sidebar .new-task {
+  background: var(--bao-v65-grad-fresh);
+  color: var(--bao-v65-fresh-ink);
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  box-shadow: 0 10px 22px -8px rgb(110 199 38 / 55%), inset 0 1.5px 0 rgb(255 255 255 / 40%);
+}
+
+body .sidebar .new-task:hover {
+  box-shadow: 0 12px 26px -8px rgb(110 199 38 / 65%), inset 0 1.5px 0 rgb(255 255 255 / 40%);
+}
+
+body .sidebar nav a.active {
+  background: rgb(110 199 38 / 15%);
+  color: #d3f5a8;
+}
+
+body .sidebar nav a::before {
+  background: var(--bao-v65-fresh);
+}
+
+body .sidebar nav a.active::before {
+  box-shadow: 0 0 10px rgb(110 199 38 / 80%);
+}
+
+/* ==========================================================================
+   三、顶栏：米白磨砂（概念稿 .topbar 同款）
+   ========================================================================== */
+
+body .topbar {
+  background: rgb(255 255 255 / 76%);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--bao-pc-line);
+}
+
+/* ==========================================================================
+   四、深色 Hero：深绿渐变 + 装饰环（概念稿 .promo/.pc-hero 同款圆环）
+   ========================================================================== */
+
+body .dark,
+body .v62-page__hero,
+body .dedicated-page .hero,
+body .income-hero,
+body .m-progress-hero,
+body .v62-progress-card {
+  position: relative;
+  overflow: hidden;
+  border-color: rgb(110 199 38 / 20%);
+}
+
+body .dark::before,
+body .v62-page__hero::before,
+body .dedicated-page .hero::before,
+body .income-hero::before,
+body .m-progress-hero::before,
+body .v62-progress-card::before {
+  content: '';
+  position: absolute;
+  right: -70px;
+  top: -90px;
+  width: 260px;
+  height: 260px;
+  border-radius: 50%;
+  border: 34px solid rgb(110 199 38 / 12%);
+  pointer-events: none;
+}
+
+body .dark::after,
+body .v62-page__hero::after,
+body .dedicated-page .hero::after,
+body .income-hero::after,
+body .m-progress-hero::after,
+body .v62-progress-card::after {
+  content: '';
+  position: absolute;
+  right: 130px;
+  bottom: -110px;
+  width: 180px;
+  height: 180px;
+  border-radius: 50%;
+  border: 24px solid rgb(110 199 38 / 8%);
+  pointer-events: none;
+}
+
+body .dark > *,
+body .v62-page__hero > *,
+body .dedicated-page .hero > *,
+body .income-hero > *,
+body .m-progress-hero > *,
+body .v62-progress-card > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* ==========================================================================
+   五、进度与聚焦：鲜绿填充 + 乐趣生活绿聚焦环
+   ========================================================================== */
+
+body progress {
+  accent-color: #009146;
+}
+
+body progress::-webkit-progress-value {
+  background: var(--bao-v65-grad-fresh);
+  border-radius: 99px;
+}
+
+body progress::-moz-progress-bar {
+  background: var(--bao-v65-grad-fresh);
+  border-radius: 99px;
+}
+
+body input:focus-visible,
+body select:focus-visible,
+body textarea:focus-visible,
+body .composer textarea:focus,
+body .source-text-command textarea:focus,
+body .confirmation-field input:focus,
+body .field-grid input:focus,
+body .search input:focus {
+  border-color: rgb(0 145 70 / 55%);
+  box-shadow: 0 0 0 3px rgb(0 145 70 / 14%);
+}
+
+/* ==========================================================================
+   六、细节统一：悬浮描边、时间线、徽标、头像、小字色温
+   ========================================================================== */
+
+/* 卡片悬浮描边：乐趣生活绿 */
+body .generic-grid article:hover,
+body .live-data article:hover,
+body .capture-grid article:hover,
+body .v62-kpis > *:hover,
+body .ai-quick-start button:hover,
+body .ai-recent-conversations li:hover,
+body .job-list li:hover,
+body .session-list li:hover,
+body .source-list li:hover,
+body .evidence-list li:hover,
+body .provenance-list li:hover,
+body .recognition-list li:hover,
+body .missing-list li:hover,
+body .step-record:hover,
+body .report-kpis > *:hover {
+  border-color: rgb(0 145 70 / 24%);
+}
+
+/* 次级按钮悬浮：乐趣生活绿描边 */
+body .top-actions button:not(.new-task):hover,
+body .thread-actions button:hover,
+body .job-filters button:hover,
+body .session-filters button:hover,
+body .job-list-tools button:hover,
+body .session-list-tools button:hover,
+body .source-list-tools button:hover,
+body .artifact-heading-actions button:hover {
+  border-color: rgb(0 145 70 / 40%);
+}
+
+/* 时间线当前步：乐趣生活绿 */
+body .v62-timeline .active,
+body .evidence-timeline .active,
+body .thread-timeline .active,
+body .step-record.active {
+  border-color: rgb(0 145 70 / 40%);
+}
+
+/* AI 页面模式徽标：绿渐变投影（原紫投影替换） */
+body .v62-page--ai .v62-page__mode,
+body .ai .v62-page__mode,
+body .v62-ai-main .v62-page__mode {
+  box-shadow: 0 6px 16px rgb(0 107 54 / 30%);
+}
+
+/* 头像：品牌绿渐变方形圆角（概念稿 .avatar-x 同款，去黄） */
+body .identity-avatar,
+body .session-avatar {
+  background: var(--bao-v64-brand);
+  color: #fff;
+  box-shadow: 0 8px 18px -8px rgb(0 107 54 / 55%), inset 0 1.5px 0 rgb(255 255 255 / 28%);
+}
+
+/* 补丁段残留小字：冷灰绿 → 暖墨弱提示（米色画布上 4.7:1） */
+body .provenance-layout small,
+body .provenance-page small,
+body .confirmation-page small {
+  color: #756a58;
+}
+
+/* 补丁段残留状态色：玉绿 → 乐趣生活绿 */
+body .job-filters a.active {
+  border-bottom-color: #009146;
+}
+
+body .job-summary i.running {
+  background: #009146;
+}
+
+body .task-workspace progress {
+  accent-color: #009146;
+}
+
+/* ==========================================================================
+   七、动效降级（沿用 V6.4 策略）
+   ========================================================================== */
+
+@media (prefers-reduced-motion: reduce) {
+  body .sidebar::after {
+    background: none;
+  }
+}
+
+/* ==========================================================================
+   八、基底层残留色扫尾（styles.css 旧紫/旧黄 → 乐趣生活绿系）
+   ========================================================================== */
+
+/* 焦点 Outline：旧蓝 → 乐趣生活绿 */
+body :where(a, button, input, select, textarea, [tabindex]):focus-visible {
+  outline-color: #009146;
+}
+
+/* 步骤条当前步 / 模式徽章 / 图标章：旧淡紫 → 嫩绿底 + 深绿字 */
+body .intake-journey .current,
+body .experience-mode,
+body .live-data article > header b {
+  background: #e6f4e9;
+  color: #006b36;
+}
+
+/* 旧紫链接与强调：→ 深绿 */
+body .experience-scope b,
+body .dedicated-page > footer a,
+body .generic-page > header > a,
+body .generic-scope b,
+body .experience-panels article > b,
+body .generic-grid article small {
+  color: #006b36;
+}
+
+/* 旧紫渐变深色块：→ 深绿 Hero（含装饰环） */
+body .progress {
+  background: var(--bao-v64-hero);
+  border: 1px solid rgb(110 199 38 / 20%);
+  color: #fff;
+}
+
+/* 完成态面板：压掉旧紫渐变，维持 V6.4 白卡 */
+body .completion {
+  background: var(--bao-pc-paper);
+  color: var(--bao-pc-ink-900);
+  border: 1px solid var(--bao-pc-line);
+}
+
+/* 旧紫虚线/描边：→ 绿 */
+body .capture-grid button {
+  border-color: rgb(0 145 70 / 35%);
+}
+
+body .voice {
+  border-color: rgb(0 145 70 / 22%);
+}
+
+/* 状态圆标：旧黄 → 鲜绿渐变（去黄色系的最后一处） */
+body .state-symbol {
+  background: var(--bao-v65-grad-fresh);
+  color: var(--bao-v65-fresh-ink);
+}
+
+/* 等待状态点：旧橙黄 → 概念稿琥珀 */
+body .job-summary i.waiting {
+  background: #b95a17;
+}
+
+/* 录音红点：→ 概念稿朱红 */
+body .record.recording {
+  background: #d5342c;
+}
+
+/* 冷调浅描边：→ 暖墨发丝线 */
+body .generic-empty,
+body .loading-skeleton,
+body .live-data article,
+body .command-form {
+  border-color: var(--bao-pc-line);
+}
+
+body .chat-heading {
+  border-bottom-color: var(--bao-pc-line);
+}
+
+/* ==========================================================================
+   九、扫尾第二轮：语音行 / 资产卡 / 侧栏角标 / AI 起始页底色
+   ========================================================================== */
+
+/* 语音补充行：旧淡紫 → 嫩绿底 + 绿描边 + 绿按钮 */
+body .voice {
+  background: #f2f9ee;
+  border-color: rgb(0 145 70 / 22%);
+}
+
+body .voice button {
+  background: var(--bao-v64-brand);
+  color: #fff;
+  border-radius: 999px;
+  font-weight: 600;
+  box-shadow: var(--bao-v64-jade-glow-soft);
+}
+
+/* 附件卡：旧钢蓝/旧棕 → 乐趣生活绿 / 深绿 */
+body .photo {
+  background: linear-gradient(135deg, #12a458, #006b36);
+}
+
+body .storefront {
+  background: var(--bao-v65-grad-deep);
+}
+
+/* 侧栏消息角标：橙 → 概念稿朱红 */
+body .sidebar nav em {
+  background: #d5342c;
+}
+
+/* AI 起始页：旧紫晕白底 → 米色画布 + 鲜绿光晕 */
+body .ai-start {
+  background: radial-gradient(circle at 50% 25%, rgb(110 199 38 / 10%), transparent 33%),
+    var(--bao-pc-canvas);
+}
+
+/* 步骤数字圆圈：旧淡紫渐变+描边 → 暖墨底；当前步保持绿渐变 */
+body .intake-journey li > b {
+  background: #f2eddf;
+  border-color: var(--bao-pc-line-strong);
+  color: var(--bao-pc-ink-600);
+}
+
+body .intake-journey .current b {
+  background: var(--bao-v64-brand);
+  border-color: transparent;
+  color: #fff;
+}
+
+/* ==========================================================================
+   十、artifact 族冷调底扫尾：冷灰紫 → 米色/暖白/嫩绿
+   ========================================================================== */
+
+/* 页画布：冷灰 → 米色 */
+body .artifact-page,
+body .identity-page,
+body .recognition-page,
+body .missing-page {
+  background: var(--bao-pc-canvas);
+}
+
+/* 检查器/侧栏卡：冷白 → 暖白纸卡 */
+body .artifact-inspector > section,
+body .trace-inspector section,
+body .session-queue-summary > section,
+body .job-inspector > section,
+body .recognition-layout > aside > section,
+body .missing-layout > aside > section,
+body .source-inspector > section,
+body .confirmation-layout > aside > section,
+body .provenance-layout > aside > section {
+  background: var(--bao-pc-paper);
+}
+
+/* 代码/标签芯片：冷灰 → 暖米 */
+body .recognition-tags code {
+  background: #f2eddf;
+}
+
+/* 淡紫芯片/状态：→ 嫩绿 */
+body .identity-scope header > span,
+body .identity-boundary li > b,
+body .session-filters b,
+body .job-status,
+body .job-usage span,
+body .recognition-field footer span,
+body .recognition-layout nav a:last-child,
+body .missing-next,
+body .missing-list article em.optional,
+body .missing-recovery li b,
+body .source-type {
+  background: #e6f4e9;
+}
+
+body .job-summary i.running {
+  box-shadow: 0 0 0 4px #e6f4e9;
+}
