@@ -955,3 +955,148 @@ body .progress small,
 body .progress span {
   color: rgb(255 255 255 / 72%);
 }
+
+
+/* —— ⑬ 内页巡检收尾：artifact 家族动态注入层残留紫蓝 → 玉色（body 前缀压过 app.js 后置注入） —— */
+body .identity-grid aside button,
+body .identity-return,
+body .session-inbox-heading button,
+body .source-library-heading button,
+body .recognition-heading a,
+body .recognition-layout nav a,
+body .missing-layout aside button,
+body .missing-next,
+body .source-upload > button,
+body .source-text-command > button,
+body .source-inspector > section > button,
+body .confirmation-command button,
+body .session-row-status a {
+  background: var(--bao-v64-brand);
+  color: #fff;
+  border-color: transparent;
+  box-shadow: 0 10px 20px -10px rgb(8 100 72 / 52%);
+  transition: transform .28s var(--bao-v64-ease), box-shadow .28s var(--bao-v64-ease), filter .28s var(--bao-v64-ease);
+}
+body .identity-grid aside button:hover,
+body .identity-return:hover,
+body .session-inbox-heading button:hover,
+body .source-library-heading button:hover,
+body .recognition-heading a:hover,
+body .recognition-layout nav a:hover,
+body .missing-layout aside button:hover,
+body .missing-next:hover,
+body .source-upload > button:hover,
+body .source-text-command > button:hover,
+body .source-inspector > section > button:hover,
+body .confirmation-command button:hover,
+body .session-row-status a:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.06);
+  box-shadow: 0 14px 26px -10px rgb(8 100 72 / 58%);
+}
+
+/* 时间轴圆点 / 检查器选中页签 / 过滤计数 → 玉色 */
+body .evidence-timeline i::before {
+  background: #0b9569;
+  box-shadow: 0 0 0 1px #0b9569;
+}
+body .trace-inspector nav a:first-child,
+body .job-inspector nav a:first-child,
+body .source-inspector nav a:first-child {
+  border-color: #0b9569;
+  background: var(--bao-v64-brand);
+}
+body .session-filters a.active,
+body .job-filters a.active { border-bottom-color: #0b9569; }
+body .session-filters b { color: #087d59; }
+body .session-avatar { color: #087d59; }
+body .job-summary i.running { background: #0b9569; }
+
+/* 报告纸眉标 / 文件类型徽章 / 确认与溯源页注释 → 墨色与玉色 */
+body .report-paper > header small { color: #087d59; }
+body .artifact-files article > b { color: #087d59; }
+body .confirmation-layout small,
+body .provenance-layout small { color: rgb(35 52 48 / 68%); }
+
+/* 原生进度条 → 玉色 */
+body progress { accent-color: #0b9569; }
+body progress::-webkit-progress-value { background: var(--bao-v64-brand); border-radius: 999px; }
+body progress::-moz-progress-bar { background: var(--bao-v64-brand); border-radius: 999px; }
+
+
+/* —— ⑭ 巡检二轮：ai-conversation 注入层残留蓝 #2787ee + provenance 页眉注释 —— */
+body .complex-assistant > b,
+body .task-result-preview > b,
+body .task-workspace > header span {
+  background: var(--bao-v64-brand);
+  box-shadow: 0 6px 14px -8px rgb(8 100 72 / 55%);
+}
+body .complex-actions .thread-send {
+  background: var(--bao-v64-brand);
+  color: #fff;
+  border-color: transparent;
+  border-radius: 999px;
+  box-shadow: 0 10px 22px -10px rgb(8 100 72 / 55%);
+}
+body .task-workspace progress { accent-color: #0b9569; }
+body .task-workspace progress::-webkit-progress-value { background: var(--bao-v64-brand); border-radius: 999px; }
+body .task-workspace progress::-moz-progress-bar { background: var(--bao-v64-brand); border-radius: 999px; }
+body .provenance-page small,
+body .confirmation-page small { color: rgb(35 52 48 / 68%); }
+
+
+/* —— ⑮ 巡检三轮：artifact 家族 22 处游离靛蓝 → 官方 AI 紫 Token / 玉色链接 / 墨色页签 —— */
+body .identity-scope header > span,
+body .recognition-field header span,
+body .recognition-field footer span,
+body .confirmation-targets span,
+body .provenance-path > header span,
+body .provenance-path code,
+body .provenance-candidate > span,
+body .source-type,
+body .report-focus > span,
+body .missing-list article em.optional {
+  color: var(--bao-pc-ai-700);
+  background: var(--bao-pc-ai-100);
+  border-color: var(--bao-pc-ai-22);
+}
+body .identity-boundary li > b,
+body .recognition-field header b,
+body .step-record > b,
+body .missing-recovery li > b,
+body .provenance-candidate > b {
+  color: var(--bao-pc-ai-700);
+}
+body .artifact-heading-actions a,
+body .artifact-inspector header > a,
+body .evidence-list summary b,
+body .job-list article > footer a,
+body .recognition-layout nav a:last-child,
+body .missing-list article button {
+  color: #087d59;
+}
+body .trace-inspector nav a,
+body .job-inspector nav a,
+body .source-inspector nav a,
+body .confirmation-layout nav a,
+body .provenance-layout nav a {
+  color: #53645f;
+}
+body .trace-inspector nav a:first-child,
+body .job-inspector nav a:first-child,
+body .source-inspector nav a:first-child {
+  color: #fff;
+}
+
+
+/* —— ⑯ 巡检四轮：收尾状态徽章 / 计数 / 溯源代码 / 返回链接 —— */
+body .artifact-inspector header > span { color: #086448; }
+body .session-queue-summary section > div b { color: #087d59; }
+body .provenance-path > header code,
+body .provenance-path > header span { color: var(--bao-pc-ai-700); }
+body .confirmation-heading a,
+body .missing-heading a,
+body .provenance-heading a { color: #087d59; }
+
+/* 缺项处理进度条 → 玉色品牌渐变 */
+body .missing-progress > div span { background: var(--bao-v64-brand); }
