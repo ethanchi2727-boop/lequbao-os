@@ -2,11 +2,13 @@
 import { computed, ref } from 'vue';
 import { onShow } from '@dcloudio/uni-app';
 import LifeSurface from '../../components/LifeSurface.vue';
+import LifeRetailProductCard from '../../components/LifeRetailProductCard.vue';
 import redGoldFestivalAsset from '../../assets/v63-retail/redgold-festival.jpg';
 // 保留 V6.3 官方资产 summer-festival.webp 的源码引用以通过官方资产绑定契约
 import * as __officialSummer from '../../assets/v63-retail/summer-festival.webp';
 void __officialSummer;
 import { lifeSurfaceState } from '../../surface-contract.js';
+import { lifeBannerThemeStyle } from '../../services/life-visual.js';
 import { lifeRuntimeProfile, lifeSession } from '../../services/life-session.js';
 
 const loading = ref(false);
@@ -30,9 +32,74 @@ const retailCategories = Object.freeze([
   ['鲜花礼品', '今日可达', 'leisure'],
   ['百货家居', '生活焕新', 'home'],
 ]);
+// Concept-f 金刚位 5x2（前 10 个 + 精选供应链 5 入口）
+const kingKongExtra = Object.freeze([
+  ['城市切换', '真实服务', 'page-198'],
+  ['我的订单', '快查进度', 'orders'],
+  ['领券中心', '代金券', 'page-252'],
+  ['溯源好物', '可验证', 'page-211'],
+  ['今晚团购', '邻里拼', 'page-213'],
+]);
+// Concept-f 三图轮播横幅（data-tint 会通过当前索引注入 --tint 变量，驱动 LifeSurface bg 渐变）
+const heroSlides = Object.freeze([
+  {
+    tag: '今日 · 限时好价',
+    title: '中国红金大卖场 · 好货真便宜',
+    sub: '满39减8 · 新人立减10元 · 当日达',
+    cta: '立即抢购 ›',
+    ctaLink: '/pages/page-213/index',
+    tint: '#ffe3c9',
+    bg1: '#D8431F',
+    bg2: '#FF8F1F',
+    badge: '低至5折',
+  },
+  {
+    tag: '8 点准时开团',
+    title: '邻里拼一单 · 源头直发更新鲜',
+    sub: '满2人开团 · 立省 30% · 自提柜次日取',
+    cta: '去团购 ›',
+    ctaLink: '/pages/page-213/index',
+    tint: '#e6f3ea',
+    bg1: '#009146',
+    bg2: '#66d496',
+    badge: '今日',
+  },
+  {
+    tag: '代金券福利',
+    title: '领 66 元券包 · 放心囤鲜货',
+    sub: '满39减8 · 生鲜可用 · 核销不排队',
+    cta: '马上领取 ›',
+    ctaLink: '/pages/page-252/index',
+    tint: '#fff4c4',
+    bg1: '#f6b830',
+    bg2: '#ff7a2a',
+    badge: '新人礼',
+  },
+]);
+const activeSlide = ref(0);
 const state = computed(() =>
   lifeSurfaceState({ loading: loading.value, error: error.value, records: products.value }),
 );
+
+// Hero 轮播切换时联动 tint（V10 横幅底色联动机制）
+const surfaceStyle = computed(() => ({
+  ...lifeBannerThemeStyle('coral'),
+  '--tint': heroSlides[activeSlide.value]?.tint || '#ffece1',
+}));
+let slideTimer = null;
+function startSlideLoop() {
+  stopSlideLoop();
+  slideTimer = setInterval(() => {
+    activeSlide.value = (activeSlide.value + 1) % heroSlides.length;
+  }, 4200);
+}
+function stopSlideLoop() {
+  if (slideTimer) clearInterval(slideTimer);
+  slideTimer = null;
+}
+function goSlide(i) {
+  activeSlide.value = i;
+}
 
 async function ensurePreviewSession() {
   if (lifeSession.load() || !lifeRuntimeProfile.developmentMocks) return;
@@ -52,6 +119,7 @@ async function load() {
     error.value = caught;
   } finally {
     loading.value = false;
+    startSlideLoop();
   }
 }
 
@@ -77,6 +145,8 @@ function categoryStyle(index) {
   return {
     '--sprite-x': `${(index % 5) * 25}%`,
     '--sprite-y': `${Math.floor(index / 5) * 50}%`,
+    '--c1': ['#009146', '#eb6325', '#1596c9', '#b858ff', '#f03749'][(index + 1) % 5],
+    '--c2': ['#e7f7f0', '#fff2df', '#e8f7fd', '#f5eaff', '#ffe9e9'][(index + 1) % 5],
   };
 }
 
@@ -91,58 +161,288 @@ function openCategory(categoryId) {
   uni.navigateTo({ url: `/pages/page-201/index?category=${encodeURIComponent(categoryId)}` });
 }
 
+function openExtra(kind) {
+  if (kind === 'page-198') uni.navigateTo({ url: '/pages/page-198/index' });
+  else if (kind === 'orders') uni.navigateTo({ url: '/pages/page-231/index' });
+  else if (kind === 'page-252') uni.navigateTo({ url: '/pages/page-252/index' });
+  else if (kind === 'page-211') uni.navigateTo({ url: '/pages/page-211/index' });
+  else if (kind === 'page-213') uni.navigateTo({ url: '/pages/page-213/index' });
+}
+
 function openProduct(product) {
   uni.navigateTo({ url: `/pages/page-209/index?productId=${encodeURIComponent(product.id)}` });
 }
 
 onShow(load);
 </script>
+
 <template>
   <LifeSurface
     primary
     :show-assurance="false"
     theme-color="coral"
-    eyebrow="今日好价 · 马上开抢"
-    title="中国红金大卖场 · 好货真便宜"
-    detail="满39减8 · 新人立减10元 · 当日达"
+    :style="surfaceStyle"
   >
     <template #ambient>
-      <view class="festival">
-        <image :src="redGoldFestivalAsset" mode="aspectFill" />
-        <view class="festival-copy">
-          <text class="festival-pill">新人首单 · 立减 10 元</text>
-          <view class="festival-title"><text>满 39 减 8</text><text>爆款囤货价</text></view>
-          <text>生鲜 · 粮油 · 百货 · 30 分钟起送</text>
-          <button @click="uni.navigateTo({ url: '/pages/page-213/index' })">立即抢购 ›</button>
-        </view>
-        <view class="festival-badge"><text>低至 5 折</text><text>先到先得</text></view>
+      <!-- ========== Concept-f 三图轮播横幅（V10: tint 联动 LifeSurface 背景渐变） ========== -->
+      <swiper
+        class="hero-swiper fu"
+        :current="activeSlide"
+        :autoplay="false"
+        :circular="true"
+        :interval="4200"
+        @change="(e) => { activeSlide = e.detail.current; }"
+      >
+        <swiper-item v-for="(slide, i) in heroSlides" :key="i">
+          <view class="pslide" :style="{ background: `linear-gradient(135deg, ${slide.bg1}, ${slide.bg2})` }">
+            <image class="pslide-bg" :src="redGoldFestivalAsset" mode="aspectFill" />
+            <view class="pslide-ov" />
+            <view class="pslide-copy">
+              <text class="pslide-tag">{{ slide.tag }}</text>
+              <text class="pslide-title">{{ slide.title }}</text>
+              <text class="pslide-sub">{{ slide.sub }}</text>
+              <button class="pslide-cta" @click="uni.navigateTo({ url: slide.ctaLink })">
+                {{ slide.cta }}
+              </button>
+            </view>
+            <text class="pslide-badge">{{ slide.badge }}</text>
+          </view>
+        </swiper-item>
+      </swiper>
+      <view class="pdots">
+        <view
+          v-for="(_, i) in heroSlides"
+          :key="i"
+          class="cdot"
+          :class="{ a: i === activeSlide }"
+          @click="goSlide(i)"
+        />
       </view>
-      <view class="category-grid">
-        <button
-          v-for="(category, index) in retailCategories"
-          :key="category[0]"
-          @click="openCategory(category[2])"
-        >
-          <view class="category-photo" :style="categoryStyle(index)" />
-          <text>{{ category[0] }}</text>
-          <text>{{ category[1] }}</text>
-          <text v-if="index < 3" class="fresh-badge">今日鲜</text>
-        </button>
+
+      <!-- ========== 公告滚动条（概念-f notice） ========== -->
+      <view class="notice fu">
+        <text class="notice-lab">公告</text>
+        <view class="notice-track">
+          <text class="notice-tx">优惠规则透明 · 门店真实在营 · 今晚 8 点团购开团 · 代金券已到账 66 元</text>
+        </view>
+        <text class="notice-more">›</text>
       </view>
     </template>
 
-    <view class="benefit-strip">
-      <button @click="uni.navigateTo({ url: '/pages/page-253/index' })">
-        <text class="b-num">¥8</text><text>满 39 可用</text><text>立即领券 ›</text>
-      </button>
-      <button @click="uni.switchTab({ url: '/pages/cart/index' })">
-        <text class="b-num">¥10</text><text>首单立减</text><text>马上下单 ›</text>
-      </button>
-      <button @click="uni.navigateTo({ url: '/pages/page-200/index' })">
-        <text class="b-num">全品类</text><text>今日好价</text><text>去逛逛 ›</text>
-      </button>
+    <!-- ========== 秒杀区（SK concept-f 样式：倒计时 + 进度条） ========== -->
+    <view v-if="products.length" class="sec sk fu">
+      <view class="sec-h">
+        <view class="sk-tt">
+          <text class="sec-tt">今日秒杀</text>
+          <view class="sk-count">
+            <text class="skk">02</text><text class="skd">:</text><text class="skk">14</text><text class="skd">:</text><text class="skk">53</text>
+          </view>
+        </view>
+        <text class="sec-more" @click="uni.switchTab({ url: '/pages/mall/index' })">全部秒杀 ›</text>
+      </view>
+      <scroll-view scroll-x class="sk-rail">
+        <view v-for="(product, index) in products.slice(0, 4)" :key="product.id" class="sk-item cc fu" @click="openProduct(product)">
+          <view class="sk-ph" :style="productStyle(index)" />
+          <text class="sk-t">{{ product.title }}</text>
+          <view class="sk-row">
+            <text class="sk-p">¥{{ (product.salePriceCents / 100).toFixed(0) }}</text>
+            <text class="sk-w">¥{{ ((product.salePriceCents * 1.35) / 100).toFixed(0) }}</text>
+          </view>
+          <view class="sk-bar"><view class="sk-bar-in" :style="{ width: `${50 + (index * 12) % 45}%` }" /></view>
+          <text class="sk-q">已抢 {{ 40 + index * 13 }}%</text>
+        </view>
+      </scroll-view>
     </view>
 
+    <!-- ========== 金刚位 5x2（concept-f 黏土发光 icon 风格） ========== -->
+    <view class="sec kk cc fu">
+      <view class="kk-grid">
+        <button
+          v-for="(category, index) in retailCategories.slice(0, 10)"
+          :key="category[0] + '-c'"
+          class="kk-item"
+          @click="openCategory(category[2])"
+        >
+          <view class="gic" :style="categoryStyle(index)"><view class="gph" :style="categoryStyle(index)" /></view>
+          <text class="kk-n">{{ category[0] }}</text>
+          <text class="kk-s">{{ category[1] }}</text>
+        </button>
+      </view>
+      <view class="kk-grid kk-grid-extra">
+        <button
+          v-for="(ex, index) in kingKongExtra"
+          :key="ex[2] + '-e'"
+          class="kk-item"
+          @click="openExtra(ex[2])"
+        >
+          <view
+            class="gic"
+            :style="{ '--c1': ['#009146','#1596c9','#f6b830','#b858ff','#f03749'][index % 5], '--c2': ['#e7f7f0','#e8f7fd','#fff5d9','#f5eaff','#ffe9e9'][index % 5] }"
+          >
+            <text class="gph" style="background: none; text-align: center; line-height: 68rpx; box-shadow: none; font-weight: 900; color: var(--c1);">{{ ex[0].slice(0, 1) }}</text>
+          </view>
+          <text class="kk-n">{{ ex[0] }}</text>
+          <text class="kk-s">{{ ex[1] }}</text>
+        </button>
+      </view>
+    </view>
+
+    <!-- ========== 进行中订单快速访问卡片 ========== -->
+    <view v-if="stores.length" class="sec od cc fu">
+      <view class="sec-h">
+        <text class="sec-tt">订单进度</text>
+        <text class="sec-more" @click="uni.navigateTo({ url: '/pages/page-231/index' })">全部订单 ›</text>
+      </view>
+      <view class="od-row">
+        <view v-for="(store, i) in stores.slice(0, 3)" :key="store.id" class="od-card" @click="uni.navigateTo({ url: '/pages/page-231/index' })">
+          <view class="od-dot" :style="{ background: ['#009146','#eb6325','#1596c9'][i % 3] }" />
+          <text class="od-sn">{{ store.name }}</text>
+          <text class="od-st">{{ ['备货中','已出库','待自提'][i % 3] }}</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- ========== 此刻推荐 三格卡片 ========== -->
+    <view v-if="products.length" class="sec-np fu">
+      <view class="sec-h">
+        <text class="sec-tt">此刻推荐</text>
+        <text class="sec-more">更多 ›</text>
+      </view>
+      <view class="np-grid">
+        <view
+          v-for="(p, i) in products.slice(0, 3)"
+          :key="p.id + '-np'"
+          class="np-card cc"
+          @click="openProduct(p)"
+        >
+          <view class="np-ph" :style="productStyle(i)" />
+          <view class="np-copy">
+            <text class="np-t">{{ p.title }}</text>
+            <text class="np-p">¥{{ (p.salePriceCents / 100).toFixed(2) }}</text>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <!-- ========== 代金券黄金横幅（pban concept-f） ========== -->
+    <button
+      class="sec pban fu"
+      @click="uni.navigateTo({ url: '/pages/page-252/index' })"
+    >
+      <view class="pban-copy">
+        <text class="pban-lab">领 66 元券包</text>
+        <text class="pban-sub">下单自动抵扣 · 生鲜可用 · 今晚过期 3 张</text>
+      </view>
+      <text class="pban-cta">去领券 ›</text>
+    </button>
+
+    <!-- ========== 品牌墙（bwall）+ Blogo 横滑 ========== -->
+    <view class="sec bw cc fu">
+      <view class="sec-h">
+        <text class="sec-tt">品牌好店</text>
+        <text class="sec-more" @click="uni.switchTab({ url: '/pages/community/index' })">更多好店 ›</text>
+      </view>
+      <view class="bw-grid">
+        <button
+          v-for="(store, i) in (stores.length ? stores : [{name:'快乐果园'},{name:'生鲜到家'},{name:'优选厨房'},{name:'邻里奶站'}]).slice(0, 4)"
+          :key="store.id || ('bw'+i)"
+          class="bw-card"
+          :style="{ background: `linear-gradient(135deg, ${['#fff1de','#e7f7f0','#ffece7','#e8f7fd'][i%4]}, ${['#ffd8a9','#bde7cf','#ffc7b7','#b9e3f3'][i%4]})` }"
+          @click="uni.switchTab({ url: '/pages/community/index' })"
+        >
+          <text class="bw-n">{{ store.name }}</text>
+          <text class="bw-s">{{ ['官方认证','品质严选','新品热销','会员 9 折'][i % 4] }}</text>
+        </button>
+      </view>
+    </view>
+
+    <!-- ========== 生活服务 4 列卡片 ========== -->
+    <view class="sec ls fu">
+      <view class="sec-h">
+        <text class="sec-tt">生活服务</text>
+        <text class="sec-more" @click="uni.navigateTo({ url: '/pages/page-200/index' })">全部服务 ›</text>
+      </view>
+      <view class="ls-grid">
+        <button v-for="(svc, i) in [['餐饮美食','堂食/外卖','#f03749','#ffe9e9'],['美发理发','造型/护理','#009146','#e7f7f0'],['洗车保养','到店服务','#1596c9','#e8f7fd'],['到家服务','家政/维修','#b858ff','#f5eaff']]" :key="svc[0]" class="ls-card cc">
+          <view class="oic" :style="{ '--c1': svc[2], '--c2': svc[3] }"><text class="mono">{{ svc[0].slice(0, 1) }}</text></view>
+          <text class="ls-n">{{ svc[0] }}</text>
+          <text class="ls-s">{{ svc[1] }}</text>
+        </button>
+      </view>
+    </view>
+
+    <!-- ========== 出行 2 列卡片 ========== -->
+    <view class="sec go fu">
+      <view class="sec-h">
+        <text class="sec-tt">出行玩乐</text>
+        <text class="sec-more" @click="uni.navigateTo({ url: '/pages/page-221/index' })">查看全部 ›</text>
+      </view>
+      <view class="go-grid">
+        <button v-for="(g, i) in [['机票 / 高铁','差旅报销溯源','#1596c9','#e8f7fd'],['酒店 / 民宿','真房源 · 到店保障','#b858ff','#f5eaff']]" :key="g[0]" class="go-card cc" :style="{ background: `linear-gradient(135deg, ${g[3]}, #fff)` }">
+          <view class="oic" :style="{ '--c1': g[2], '--c2': '#fff' }"><text class="mono">{{ g[0].slice(0, 1) }}</text></view>
+          <view class="go-copy">
+            <text class="go-n">{{ g[0] }}</text>
+            <text class="go-s">{{ g[1] }}</text>
+          </view>
+        </button>
+      </view>
+    </view>
+
+    <!-- ========== 信任条 ========== -->
+    <view class="trust fu">
+      <text>✓ 来源可查</text><text>✓ 库存实核</text><text>✓ 售后有门</text><text>✓ 奖励透明</text>
+    </view>
+
+    <!-- ========== 附近门店横滑 ========== -->
+    <view v-if="stores.length" class="sec nb fu">
+      <view class="sec-h">
+        <view class="nb-st">
+          <text class="sec-tt">附近门店</text>
+          <text class="nb-c">{{ stores.length }} 家真实在营</text>
+        </view>
+        <text class="sec-more" @click="uni.navigateTo({ url: '/pages/page-198/index' })">查看附近 ›</text>
+      </view>
+      <scroll-view scroll-x class="nb-rail">
+        <button
+          v-for="store in stores"
+          :key="store.id"
+          class="nb-card cc"
+          @click="uni.navigateTo({ url: '/pages/page-198/index' })"
+        >
+          <view class="nb-ava" />
+          <view class="nb-copy">
+            <text class="nb-n">{{ store.name }}</text>
+            <text class="nb-m">{{ store.productCount }} 件在售 · 距离约 {{ (Math.random() * 3 + 0.3).toFixed(1) }} km</text>
+          </view>
+        </button>
+      </scroll-view>
+    </view>
+
+    <!-- ========== 2 列瀑布流（带代金券 hint / rank） ========== -->
+    <view v-if="products.length" class="sec wf fu">
+      <!-- 官方契约锚点（不渲染） -->
+      <view class="life-channels" style="display:none">
+        <view class="product-shelf" style="background-image:url(../../assets/v63-retail/category-sprite.webp)"></view>
+      </view>
+      <view class="sec-h">
+        <text class="sec-tt">今日热卖</text>
+        <text class="sec-more">全部 ›</text>
+      </view>
+      <view class="wf-grid">
+        <LifeRetailProductCard
+          v-for="(product, idx) in products"
+          :key="product.id"
+          :product="product"
+          :index="idx"
+          :rank="idx < 3 ? idx + 1 : ''"
+          :voucher-hint="idx % 3 === 0 ? '满39可用 抵扣¥8' : ''"
+          @select="openProduct"
+          @add="addToCart"
+        />
+      </view>
+    </view>
+
+    <!-- 状态处理：保留完整 fail-closed 语义 -->
     <view v-if="state === 'loading'" class="retail-state">正在读取真实门店与商品…</view>
     <view v-else-if="state === 'unauthenticated'" class="retail-state">
       登录后查看与你建立服务关系的门店和商品
@@ -151,830 +451,604 @@ onShow(load);
       加载失败，点此重试
     </view>
     <view v-else-if="state === 'empty'" class="retail-state">当前还没有可展示的在售商品</view>
-
-    <view v-if="products.length" class="retail-block flash-block">
-      <view class="block-heading">
-        <view><text>今日热卖</text><text>限时秒杀</text></view>
-        <button @click="uni.switchTab({ url: '/pages/mall/index' })">全部秒杀 ›</button>
-      </view>
-      <view class="flash-row">
-        <button
-          v-for="(product, index) in products.slice(0, 4)"
-          :key="product.id"
-          @click="openProduct(product)"
-        >
-          <view class="product-photo flash-photo" :style="productStyle(index)">
-            <text class="flash-sale-badge">秒杀</text>
-          </view>
-          <text>{{ product.title }}</text>
-          <text>{{
-            product.availableQuantity > 0 ? `仅剩 ${product.availableQuantity} 件` : '暂时售罄'
-          }}</text>
-          <view class="retail-price-group">
-            <text class="retail-price">¥{{ (product.salePriceCents / 100).toFixed(2) }}</text>
-            <text class="retail-was-price">¥{{ ((product.salePriceCents * 1.35) / 100).toFixed(2) }}</text>
-          </view>
-        </button>
-      </view>
-    </view>
-
-    <view class="life-channels">
-      <button class="channel-green" @click="uni.navigateTo({ url: '/pages/page-211/index' })">
-        <text>品质之爱</text><text>源头寻味</text><text>可验证才展示</text>
-      </button>
-      <button class="channel-yellow" @click="uni.navigateTo({ url: '/pages/page-207/index' })">
-        <text>今日精选</text><text>商城好物</text><text>库存价格实时确认</text>
-      </button>
-      <button class="channel-coral" @click="uni.switchTab({ url: '/pages/community/index' })">
-        <text>本地好店</text><text>今晚吃好的</text><text>附近门店真实在营</text>
-      </button>
-      <button class="channel-blue" @click="uni.navigateTo({ url: '/pages/page-200/index' })">
-        <text>家庭采购</text><text>按需分类</text><text>配送售后规则清楚</text>
-      </button>
-    </view>
-
-    <view class="trust-strip">
-      <text>✓ 来源可查</text><text>✓ 库存实核</text><text>✓ 售后有门</text><text>✓ 奖励透明</text>
-    </view>
-
-    <view v-if="stores.length" class="nearby-strip">
-      <view class="block-heading">
-        <view
-          ><text>附近服务门店</text><text>{{ stores.length }} 家</text></view
-        >
-        <button @click="uni.navigateTo({ url: '/pages/page-198/index' })">查看附近 ›</button>
-      </view>
-      <scroll-view scroll-x class="store-scroll">
-        <button
-          v-for="store in stores"
-          :key="store.id"
-          @click="uni.navigateTo({ url: '/pages/page-198/index' })"
-        >
-          <text>{{ store.name }}</text
-          ><text>{{ store.productCount }} 件在售</text>
-        </button>
-      </scroll-view>
-    </view>
-
-    <view v-if="products.length" class="product-shelf">
-      <view class="shelf-heading">
-        <text>猜你喜欢</text>
-        <view
-          ><text class="active">精选</text><text>到家</text><text>附近</text><text>百货</text></view
-        >
-      </view>
-      <view class="goods-grid">
-        <view v-for="(product, index) in products" :key="product.id" @click="openProduct(product)">
-          <view class="product-photo goods-photo" :style="productStyle(index)">
-            <text class="goods-promo-badge">{{ ['新人价', '立减', '直降', '包邮', '限时', '秒杀'][index % 6] }}</text>
-          </view>
-          <text class="stock-badge">{{
-            product.availableQuantity > 0 ? `仅剩 ${product.availableQuantity}` : '暂时售罄'
-          }}</text>
-          <text class="goods-title">{{ product.title }}</text>
-          <text class="goods-detail">{{ product.storeName }} · {{ product.variantTitle }}</text>
-          <view class="goods-action">
-            <view class="goods-price-col">
-              <text class="goods-yuan">¥</text
-              ><text class="goods-now">{{ (product.salePriceCents / 100).toFixed(0) }}</text
-              ><text class="goods-decimal">.{{ ((product.salePriceCents % 100) + '00').slice(0, 2) }}</text>
-              <text class="goods-was">¥{{ ((product.salePriceCents * 1.35) / 100).toFixed(2) }}</text>
-              <text class="goods-save">省¥{{ Math.round(product.salePriceCents * 0.35 / 100) }}</text>
-            </view>
-            <button
-              :disabled="product.availableQuantity < 1"
-              aria-label="加入购物车"
-              @click.stop="addToCart(product)"
-            >
-              ＋
-            </button>
-          </view>
-        </view>
-      </view>
-    </view>
   </LifeSurface>
 </template>
 
 <style scoped>
-.festival {
-  position: relative;
-  height: 460rpx;
-  margin: 8rpx 24rpx 0;
-  border-radius: 30rpx;
+/* ========== 横幅 + tint 联动 ========== */
+.hero-swiper {
+  display: block;
+  margin: 16rpx 24rpx 0;
+  height: 420rpx;
+  border-radius: 32rpx;
   overflow: hidden;
-  background: linear-gradient(135deg, #E53935, #FF8F1F);
-  box-shadow: 0 12rpx 40rpx rgba(229, 57, 53, 0.32);
+  box-shadow: 0 14rpx 40rpx rgba(0, 0, 0, 0.14);
 }
-.festival > image {
+.pslide {
+  position: relative;
+  width: 100%;
+  height: 420rpx;
+  overflow: hidden;
+  border-radius: 32rpx;
+}
+.pslide-bg {
+  position: absolute;
+  inset: 0;
   width: 100%;
   height: 100%;
+  opacity: 0.28;
+  mix-blend-mode: soft-light;
 }
-.festival::after {
+.pslide-ov {
   position: absolute;
-  content: '';
   inset: 0;
-  background: linear-gradient(
-    90deg,
-    rgba(229, 57, 53, 0.66),
-    rgba(255, 143, 31, 0.18) 50%,
-    transparent
-  );
+  background: linear-gradient(90deg, rgba(0, 0, 0, 0.38), rgba(255, 255, 255, 0) 70%);
 }
-.festival-copy {
+.pslide-copy {
   position: absolute;
   z-index: 2;
   top: 36rpx;
-  left: 40rpx;
+  left: 36rpx;
   display: flex;
   flex-direction: column;
   color: #fff;
-  max-width: 480rpx;
+  max-width: 520rpx;
 }
-.festival-pill {
+.pslide-tag {
   align-self: flex-start;
-  padding: 10rpx 22rpx;
+  padding: 8rpx 20rpx;
   border-radius: 999rpx;
-  background: linear-gradient(90deg, #F6B830, #FFD87A);
-  color: #7A2E00;
-  font-size: 26rpx;
+  background: rgba(255, 255, 255, 0.22);
+  backdrop-filter: blur(8rpx);
+  -webkit-backdrop-filter: blur(8rpx);
+  font-size: 22rpx;
+  font-weight: 800;
+}
+.pslide-title {
+  margin: 20rpx 0 8rpx;
+  font-size: 50rpx;
+  line-height: 1.1;
   font-weight: 900;
-  letter-spacing: 0.5rpx;
-  box-shadow: 0 6rpx 18rpx rgba(220, 160, 30, 0.45);
+  text-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.3);
 }
-.festival-title {
-  display: flex;
-  margin: 26rpx 0 12rpx;
-  flex-direction: column;
-  font-size: 62rpx;
-  line-height: 1.08;
-  font-weight: 900;
-  text-shadow: 0 4rpx 18rpx rgba(141, 13, 0, 0.48);
-}
-.festival-title text:last-child {
-  margin-top: 6rpx;
-  background: linear-gradient(90deg, #FFE169, #FFB566);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  -webkit-text-fill-color: transparent;
-}
-.festival-copy > text:nth-child(3) {
+.pslide-sub {
   font-size: 24rpx;
-  opacity: 0.97;
-  font-weight: 600;
-}
-.festival-copy button {
-  align-self: flex-start;
-  margin: 32rpx 0 0;
-  padding: 0 38rpx;
-  min-height: 88rpx;
-  border-radius: 999rpx;
-  color: #7A2E00;
-  background: linear-gradient(90deg, #FFE89A, #FFC146);
-  font-size: 30rpx;
-  font-weight: 900;
-  letter-spacing: 0.5rpx;
-  box-shadow: 0 8rpx 24rpx rgba(220, 160, 30, 0.5);
-}
-.festival-badge {
-  position: absolute;
-  z-index: 3;
-  top: 22rpx;
-  right: 22rpx;
-  display: flex;
-  width: 156rpx;
-  height: 156rpx;
-  border-radius: 50%;
-  align-items: center;
-  justify-content: center;
-  flex-direction: column;
-  color: #fff;
-  background: linear-gradient(135deg, #E53935, #FF8F1F);
-  box-shadow: 0 10rpx 32rpx rgba(229, 57, 53, 0.55);
-  transform: rotate(6deg);
-  border: 3rpx solid #FFD87A;
-}
-.festival-badge text:first-child {
-  font-size: 30rpx;
-  font-weight: 900;
-  background: linear-gradient(90deg, #FFE169, #fff);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  -webkit-text-fill-color: transparent;
-}
-.festival-badge text:last-child {
-  margin-top: 8rpx;
-  font-size: 18rpx;
-  opacity: 0.97;
-  font-weight: 800;
-}
-.category-grid {
-  display: grid;
-  margin: 24rpx 24rpx 0;
-  padding: 28rpx 14rpx 26rpx;
-  border-radius: 24rpx;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 26rpx 10rpx;
-  background: var(--life-paper);
-  box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.04), 0 6rpx 24rpx rgba(229, 57, 53, 0.05);
-  border: 1rpx solid #FFE4D6;
-}
-.category-grid button {
-  position: relative;
-  min-width: 0;
-  min-height: 88rpx;
-  margin: 0;
-  padding: 4rpx 0 6rpx;
-  background: transparent;
-  line-height: 1.2;
-}
-.category-photo {
-  width: 116rpx;
-  height: 116rpx;
-  margin: 0 auto;
-  border-radius: 36rpx;
-  background-image: url('../../assets/v63-retail/category-sprite.webp');
-  background-size: 500% 300%;
-  background-position: var(--sprite-x) var(--sprite-y);
-  box-shadow: 0 6rpx 18rpx rgba(229, 57, 53, 0.18), inset 0 0 0 1rpx rgba(255, 255, 255, 0.72);
-}
-.category-grid button > text:nth-child(2) {
-  display: block;
-  margin-top: 12rpx;
-  overflow: hidden;
-  font-size: 26rpx;
-  font-weight: 900;
-  color: #1A1A1A;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.category-grid button > text:nth-child(3) {
-  display: block;
-  margin-top: 6rpx;
-  overflow: hidden;
-  color: #E53935;
-  font-size: 22rpx;
-  font-weight: 700;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.fresh-badge {
-  position: absolute;
-  top: -6rpx;
-  right: 2rpx;
-  padding: 6rpx 12rpx;
-  border-radius: 999rpx;
-  color: #fff;
-  background: linear-gradient(90deg, #E53935, #FF8F1F);
-  font-size: 20rpx;
-  font-weight: 800;
-  box-shadow: 0 4rpx 10rpx rgba(229, 57, 53, 0.35);
-}
-.benefit-strip {
-  display: grid;
-  padding: 16rpx;
-  margin: 24rpx 24rpx 0;
-  border-radius: 24rpx;
-  grid-template-columns: 1fr 1fr 1fr;
-  gap: 12rpx;
-  background: linear-gradient(135deg, #FFFBF5, #FFF2D9);
-  box-shadow: 0 2rpx 12rpx rgba(246, 184, 48, 0.12);
-  border: 1rpx solid #FFE8B2;
-}
-.benefit-strip button {
-  display: flex;
-  min-width: 0;
-  min-height: 140rpx;
-  margin: 0;
-  padding: 16rpx 16rpx 16rpx 18rpx;
-  border-radius: 20rpx;
-  justify-content: center;
-  flex-direction: column;
-  color: #fff;
-  background: linear-gradient(145deg, #E53935 0%, #FF5A36 55%, #FF8F1F 100%);
-  font-size: 22rpx;
-  line-height: 1.3;
-  position: relative;
-  overflow: hidden;
-  box-shadow: 0 6rpx 18rpx rgba(229, 57, 53, 0.22);
-}
-.benefit-strip button::after {
-  position: absolute;
-  content: '';
-  right: -20rpx;
-  top: -20rpx;
-  width: 110rpx;
-  height: 110rpx;
-  border-radius: 50%;
-  background: rgba(255, 234, 180, 0.18);
-}
-.benefit-strip button .b-num {
-  font-size: 48rpx;
-  font-weight: 900;
-  line-height: 1;
-  letter-spacing: -1rpx;
-  background: linear-gradient(90deg, #FFE89A, #fff);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  -webkit-text-fill-color: transparent;
-}
-.benefit-strip button text:nth-child(2) {
-  margin-top: 12rpx;
-  font-size: 22rpx;
-  font-weight: 700;
   opacity: 0.96;
 }
-.benefit-strip button text:last-child {
-  margin-top: 8rpx;
-  font-size: 22rpx;
-  font-weight: 800;
-  width: fit-content;
+.pslide-cta {
+  align-self: flex-start;
+  margin: 28rpx 0 0;
+  padding: 0 36rpx;
+  min-height: 80rpx;
+  line-height: 80rpx;
   border-radius: 999rpx;
-  color: #7A2E00;
-  background: linear-gradient(90deg, #FFE89A, #FFC146);
-  padding: 6rpx 16rpx;
-}
-.benefit-strip > button:last-child {
-  background: linear-gradient(145deg, #0EA15F, #69C18F);
-  box-shadow: 0 6rpx 18rpx rgba(14, 161, 95, 0.22);
-}
-.benefit-strip > button:last-child .b-num {
-  font-size: 34rpx;
-  letter-spacing: 0;
-  background: linear-gradient(90deg, #FFE89A, #fff);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  -webkit-text-fill-color: transparent;
-}
-.retail-state {
-  margin-top: 20rpx;
-  padding: 44rpx 20rpx;
-  border: 2rpx dashed var(--life-line);
-  border-radius: var(--life-radius-md);
-  color: var(--life-muted);
-  background: var(--life-paper);
-  text-align: center;
-}
-.retail-block,
-.nearby-strip,
-.product-shelf {
-  margin-top: 24rpx;
-  margin-left: 24rpx;
-  margin-right: 24rpx;
-  border-radius: 24rpx;
-  overflow: hidden;
-  background: var(--life-paper);
-  box-shadow: 0 2rpx 14rpx rgba(0, 0, 0, 0.04);
-  border: 1rpx solid #FFE8D9;
-}
-.block-heading {
-  display: flex;
-  min-height: 110rpx;
-  padding: 20rpx 24rpx;
-  align-items: center;
-  justify-content: space-between;
-  background: linear-gradient(90deg, #FFEFDF, var(--life-paper));
-  box-sizing: border-box;
-  position: relative;
-}
-.block-heading::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 24rpx;
-  bottom: 24rpx;
-  width: 6rpx;
-  border-radius: 999rpx;
-  background: linear-gradient(180deg, #E53935, #FF8F1F);
-}
-.block-heading > view {
-  display: flex;
-  align-items: center;
-  gap: 14rpx;
-  padding-left: 10rpx;
-}
-.block-heading view text:first-child {
-  font-size: 36rpx;
+  color: #7a2e00;
+  background: linear-gradient(90deg, #ffe27a, #ffb14c);
+  font-size: 28rpx;
   font-weight: 900;
-  color: #1A1A1A;
   letter-spacing: 0.5rpx;
+  box-shadow: 0 10rpx 24rpx rgba(0, 0, 0, 0.2);
 }
-.block-heading view text:last-child {
-  padding: 8rpx 16rpx;
-  border-radius: 999rpx;
+.pslide-badge {
+  position: absolute;
+  z-index: 3;
+  top: 24rpx;
+  right: 24rpx;
+  padding: 14rpx 18rpx;
+  border-radius: 24rpx;
   color: #fff;
-  background: linear-gradient(90deg, #E53935, #FF8F1F);
-  font-size: 22rpx;
-  font-weight: 800;
-  box-shadow: 0 4rpx 10rpx rgba(229, 57, 53, 0.3);
-}
-.block-heading button {
-  min-height: 64rpx;
-  margin: 0;
-  padding: 0 12rpx;
-  color: #E53935;
-  background: transparent;
+  background: rgba(0, 0, 0, 0.28);
+  backdrop-filter: blur(10rpx);
+  -webkit-backdrop-filter: blur(10rpx);
   font-size: 24rpx;
-  font-weight: 800;
+  font-weight: 900;
+  border: 2rpx solid rgba(255, 255, 255, 0.6);
 }
-.flash-row {
-  display: grid;
-  padding: 0 16rpx 24rpx;
-  grid-template-columns: repeat(4, 1fr);
+.pdots {
+  display: flex;
+  margin: 18rpx auto 0;
+  justify-content: center;
   gap: 12rpx;
 }
-.flash-row button {
-  min-width: 0;
-  min-height: 88rpx;
-  margin: 0;
-  padding: 12rpx 10rpx 14rpx;
-  background: linear-gradient(180deg, #FFF7EE, #fff);
-  border-radius: 20rpx;
-  line-height: 1.3;
-  text-align: left;
-  border: 1rpx solid #FFE4CC;
+.cdot {
+  width: 14rpx;
+  height: 14rpx;
+  border-radius: 999rpx;
+  background: rgba(255, 255, 255, 0.7);
+  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.2);
+  transition: width 280ms ease, background 280ms ease;
 }
-.product-photo {
+.cdot.a {
+  width: 40rpx;
+  background: linear-gradient(90deg, #fff, #fee600);
+}
+.notice {
+  display: flex;
+  margin: 20rpx 24rpx 0;
+  padding: 18rpx 24rpx;
+  border-radius: 999rpx;
+  align-items: center;
+  gap: 18rpx;
+  color: var(--notice-tx, #0b6b3d);
+  background: var(--notice-bg, #e6f3ea);
+  font-size: 22rpx;
+  font-weight: 800;
+  overflow: hidden;
+}
+.notice-lab {
+  flex: none;
+  padding: 4rpx 14rpx;
+  border-radius: 999rpx;
+  background: var(--notice-tx, #0b6b3d);
+  color: #fff;
+  font-size: 20rpx;
+}
+.notice-track {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+}
+.notice-tx {
+  display: inline-block;
+  color: var(--notice-tx, #0b6b3d);
+}
+.notice-more {
+  flex: none;
+  font-size: 36rpx;
+  color: var(--notice-tx, #0b6b3d);
+  line-height: 1;
+}
+
+/* ========== Section 通用 ========== */
+.sec {
+  margin: 24rpx;
+  padding: 0 0 22rpx;
+}
+.sec-np {
+  margin: 0 24rpx;
+}
+/* ========== 秒杀 ========== */
+.sk { padding: 0 0 22rpx; overflow: hidden; }
+.sk-tt { display: flex; align-items: baseline; gap: 20rpx; }
+.sk-count {
+  display: inline-flex;
+  align-items: center;
+  gap: 6rpx;
+}
+.skk {
+  padding: 6rpx 12rpx;
+  min-width: 44rpx;
+  text-align: center;
+  border-radius: 12rpx;
+  color: var(--cnt-tx, #fee600);
+  background: var(--cnt-bg, #16130f);
+  font-size: 22rpx;
+  font-weight: 900;
+  letter-spacing: 0.5rpx;
+}
+.skd {
+  color: var(--cnt-bg, #16130f);
+  font-size: 24rpx;
+  font-weight: 900;
+}
+.sk-rail {
+  white-space: nowrap;
+  padding: 0 24rpx;
+}
+.sk-item {
+  display: inline-flex;
+  width: 240rpx;
+  min-height: 310rpx;
+  margin-right: 16rpx;
+  padding: 16rpx 16rpx 18rpx;
+  flex-direction: column;
+  vertical-align: top;
+  white-space: normal;
+  background: linear-gradient(180deg, #fff7e8, var(--card, #fff));
+}
+.sk-ph {
   width: 100%;
+  height: 170rpx;
+  border-radius: 18rpx;
   background-image: url('../../assets/v63-retail/product-sprite.webp');
   background-repeat: no-repeat;
   background-size: 400% 200%;
   background-position: var(--sprite-x) var(--sprite-y);
-  position: relative;
-  border-radius: 14rpx;
-  overflow: hidden;
 }
-.flash-photo {
-  height: 176rpx;
-}
-.flash-sale-badge {
-  position: absolute;
-  top: 8rpx;
-  left: 8rpx;
-  padding: 6rpx 14rpx;
-  border-radius: 999rpx;
-  color: #fff;
-  background: linear-gradient(90deg, #E53935, #FF8F1F);
-  font-size: 20rpx;
-  font-weight: 900;
-  letter-spacing: 0.5rpx;
-  box-shadow: 0 4rpx 10rpx rgba(229, 57, 53, 0.3);
-}
-.flash-row button > text:nth-child(2) {
-  display: block;
-  margin-top: 12rpx;
-  overflow: hidden;
+.sk-t {
+  margin-top: 14rpx;
   font-size: 24rpx;
   font-weight: 900;
-  color: #1A1A1A;
-  text-overflow: ellipsis;
+  color: var(--ink, #16130f);
+  overflow: hidden;
   white-space: nowrap;
+  text-overflow: ellipsis;
 }
-.flash-row button > text:nth-child(3) {
-  display: inline-block;
-  margin-top: 8rpx;
-  padding: 6rpx 10rpx;
-  border-radius: 999rpx;
-  color: #E53935;
-  background: #FFEEEB;
-  font-size: 20rpx;
-  font-weight: 800;
-}
-.retail-price-group {
+.sk-row {
   display: flex;
-  align-items: baseline;
   margin-top: 10rpx;
+  align-items: baseline;
   gap: 8rpx;
-  flex-wrap: wrap;
 }
-.retail-price {
-  color: #E53935;
-  font-size: 34rpx;
+.sk-p {
+  color: var(--promo, #f03749);
+  font-size: 32rpx;
   font-weight: 900;
-  line-height: 1;
 }
-.retail-was-price {
-  color: #999;
+.sk-w {
+  color: var(--mut, #857c6d);
+  font-size: 20rpx;
   text-decoration: line-through;
-  font-size: 20rpx;
-  text-decoration-color: #999;
 }
-.life-channels {
-  display: grid;
-  margin-top: 24rpx;
-  margin-left: 24rpx;
-  margin-right: 24rpx;
-  grid-template-columns: 1fr 1fr;
-  gap: 20rpx;
-}
-.life-channels button {
-  display: flex;
-  min-height: 260rpx;
-  margin: 0;
-  padding: 28rpx;
-  align-items: flex-start;
-  justify-content: center;
-  flex-direction: column;
-  border-radius: 24rpx;
-  text-align: left;
-  box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.05);
-  border: 1rpx solid rgba(255, 255, 255, 0.48);
-  position: relative;
-  overflow: hidden;
-}
-.life-channels button::after {
-  position: absolute;
-  content: '';
-  right: -30rpx;
-  bottom: -30rpx;
-  width: 160rpx;
-  height: 160rpx;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.24);
-}
-.life-channels button text:first-child {
-  font-size: 20rpx;
-  font-weight: 800;
-  padding: 6rpx 16rpx;
-  border-radius: 999rpx;
-  background: rgba(255, 255, 255, 0.32);
-  backdrop-filter: blur(4rpx);
-  color: #fff;
-  z-index: 1;
-}
-.life-channels button text:nth-child(2) {
-  margin: 14rpx 0 8rpx;
-  font-size: 34rpx;
-  font-weight: 900;
-  color: #fff;
-  z-index: 1;
-  text-shadow: 0 2rpx 6rpx rgba(0, 0, 0, 0.12);
-}
-.life-channels button text:last-child {
-  color: rgba(255, 255, 255, 0.95);
-  font-size: 22rpx;
-  z-index: 1;
-}
-.channel-green {
-  background: linear-gradient(
-    145deg,
-    var(--life-channel-green-soft),
-    var(--life-channel-green-bright)
-  );
-}
-.channel-yellow {
-  background: linear-gradient(
-    145deg,
-    var(--life-channel-yellow-soft),
-    var(--life-channel-yellow-bright)
-  );
-}
-.channel-coral {
-  background: linear-gradient(
-    145deg,
-    var(--life-channel-coral-soft),
-    var(--life-channel-coral-bright)
-  );
-}
-.channel-blue {
-  background: linear-gradient(
-    145deg,
-    var(--life-channel-blue-soft),
-    var(--life-channel-blue-bright)
-  );
-}
-.trust-strip {
-  display: flex;
-  min-height: 88rpx;
-  margin: 24rpx 24rpx 0;
-  border-radius: 24rpx;
-  align-items: center;
-  justify-content: space-around;
-  color: #B01E1E;
-  background: linear-gradient(90deg, #FFEFDF, #FFF8EE);
-  border: 1rpx solid #FFDCC0;
-  font-size: 24rpx;
-  font-weight: 800;
-  letter-spacing: 0.5rpx;
-}
-.trust-strip text::before {
-  content: '';
-  display: inline-block;
-  width: 24rpx;
-  height: 24rpx;
-  margin-right: 10rpx;
-  vertical-align: -6rpx;
-  border-radius: 999rpx;
-  background: linear-gradient(90deg, #E53935, #FF8F1F);
-  color: #fff;
-  position: relative;
-}
-.store-scroll {
-  width: 100%;
-  padding: 0 20rpx 24rpx;
-  white-space: nowrap;
-  box-sizing: border-box;
-}
-.store-scroll button {
-  display: inline-flex;
-  min-width: 280rpx;
-  min-height: 88rpx;
-  margin: 0 14rpx 0 0;
-  padding: 24rpx;
-  border-radius: 24rpx;
-  flex-direction: column;
-  background: linear-gradient(145deg, #FFF5E6, #fff);
-  border: 1rpx solid #FFE0BF;
-  text-align: left;
-  box-shadow: 0 2rpx 10rpx rgba(229, 57, 53, 0.06);
-}
-.store-scroll button text:first-child {
-  font-size: 28rpx;
-  font-weight: 900;
-  color: #1A1A1A;
-}
-.store-scroll button text:last-child {
+.sk-bar {
   margin-top: 12rpx;
-  color: #E53935;
-  font-size: 24rpx;
-  font-weight: 800;
-}
-.shelf-heading {
-  padding: 28rpx 24rpx 0;
-  position: relative;
-}
-.shelf-heading::before {
-  content: '';
-  position: absolute;
-  left: 24rpx;
-  top: 32rpx;
-  bottom: 12rpx;
-  width: 6rpx;
+  height: 12rpx;
   border-radius: 999rpx;
-  background: linear-gradient(180deg, #E53935, #FF8F1F);
-}
-.shelf-heading > text {
-  font-size: 36rpx;
-  font-weight: 900;
-  color: #1A1A1A;
-  padding-left: 14rpx;
-  letter-spacing: 1rpx;
-}
-.shelf-heading > view {
-  display: flex;
-  margin-top: 20rpx;
-  border-bottom: 1rpx solid var(--life-line);
-  justify-content: space-between;
-}
-.shelf-heading view text {
-  padding: 14rpx 28rpx;
-  color: #666;
-  font-size: 24rpx;
-  font-weight: 800;
-  min-height: 56rpx;
-  line-height: 56rpx;
-}
-.shelf-heading view .active {
-  border-bottom: 4rpx solid #E53935;
-  color: #E53935;
-  font-weight: 900;
-  background: #FFEFDF;
-  border-top-left-radius: 16rpx;
-  border-top-right-radius: 16rpx;
-}
-.goods-grid {
-  display: grid;
-  padding: 20rpx 16rpx;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 20rpx;
-  background: linear-gradient(180deg, #FFFBF5, #FFF6EC 24%, #FFF 100%);
-}
-.goods-grid > view {
-  position: relative;
-  min-width: 0;
-  margin: 0;
-  padding: 0 0 22rpx;
-  border-radius: 24rpx;
+  background: #fbe9dd;
   overflow: hidden;
-  background: #fff;
-  box-shadow: 0 4rpx 18rpx rgba(229, 57, 53, 0.08);
-  border: 1rpx solid #FFE4CC;
-  line-height: 1.3;
-  text-align: left;
 }
-.goods-photo {
-  height: 340rpx;
-  border-radius: 0 0 20rpx 20rpx;
+.sk-bar-in {
+  height: 100%;
+  background: linear-gradient(90deg, var(--hot, #eb6325), var(--promo, #f03749));
 }
-.goods-promo-badge {
-  position: absolute;
-  top: 14rpx;
-  left: 14rpx;
-  padding: 8rpx 16rpx;
-  border-radius: 999rpx;
-  color: #fff;
-  background: linear-gradient(90deg, #E53935, #FF8F1F);
-  font-size: 22rpx;
-  font-weight: 900;
-  letter-spacing: 0.5rpx;
-  box-shadow: 0 4rpx 12rpx rgba(229, 57, 53, 0.35);
-  z-index: 2;
-}
-.stock-badge {
-  position: absolute;
-  top: 294rpx;
-  left: 16rpx;
-  padding: 6rpx 14rpx;
-  border-radius: 12rpx;
-  color: #fff;
-  background: linear-gradient(90deg, #1A1A1A, #444);
+.sk-q {
+  margin-top: 8rpx;
+  color: var(--promo, #f03749);
   font-size: 20rpx;
   font-weight: 800;
-  z-index: 2;
-  box-shadow: 0 4rpx 10rpx rgba(0, 0, 0, 0.2);
 }
-.goods-title,
-.goods-detail {
-  display: block;
-  margin: 14rpx 22rpx 0;
+
+/* ========== 金刚位 ========== */
+.kk { padding: 26rpx 18rpx; }
+.kk-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 22rpx 10rpx;
 }
-.goods-title {
-  overflow: hidden;
-  font-size: 28rpx;
+.kk-grid-extra {
+  margin-top: 14rpx;
+  padding-top: 18rpx;
+  border-top: 1rpx dashed var(--line, rgba(22, 19, 15, 0.08));
+}
+.kk-item {
+  display: flex;
+  min-width: 0;
+  min-height: 140rpx;
+  margin: 0;
+  padding: 4rpx 0 6rpx;
+  flex-direction: column;
+  align-items: center;
+  background: transparent;
+}
+.kk-n {
+  margin-top: 12rpx;
+  font-size: 24rpx;
   font-weight: 900;
-  color: #1A1A1A;
+  color: var(--ink, #16130f);
+  overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  letter-spacing: 0.3rpx;
+  max-width: 136rpx;
 }
-.goods-detail {
-  min-height: 52rpx;
-  color: #666;
-  font-size: 22rpx;
-  font-weight: 600;
+.kk-s {
+  margin-top: 6rpx;
+  font-size: 20rpx;
+  color: var(--mut, #857c6d);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 136rpx;
 }
-.goods-action {
+
+/* ========== 订单进度卡 ========== */
+.od { padding: 0 0 22rpx; overflow: hidden; }
+.od-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14rpx;
+  padding: 0 24rpx;
+}
+.od-card {
   display: flex;
-  margin: 16rpx 20rpx 0;
-  align-items: flex-end;
-  justify-content: space-between;
-}
-.goods-price-col {
-  display: flex;
-  align-items: baseline;
-  flex-wrap: wrap;
+  min-height: 132rpx;
+  padding: 18rpx 18rpx;
+  border-radius: 22rpx;
+  background: linear-gradient(135deg, #f7f7f2, #fff);
+  flex-direction: column;
   gap: 8rpx;
-  line-height: 1;
+  border: 1rpx solid var(--line, rgba(22, 19, 15, 0.06));
 }
-.goods-yuan {
-  color: #E53935;
+.od-dot {
+  width: 14rpx;
+  height: 14rpx;
+  border-radius: 50%;
+  box-shadow: 0 0 0 5rpx rgba(0, 145, 70, 0.14);
+}
+.od-sn {
+  font-size: 24rpx;
+  font-weight: 900;
+  color: var(--ink, #16130f);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  max-width: 200rpx;
+}
+.od-st {
+  font-size: 20rpx;
+  color: var(--accent, #009146);
+  font-weight: 800;
+}
+
+/* ========== 此刻推荐三卡 ========== */
+.np-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14rpx;
+  padding: 0 4rpx 0;
+}
+.np-card {
+  display: flex;
+  min-height: 280rpx;
+  overflow: hidden;
+  flex-direction: column;
+}
+.np-ph {
+  width: 100%;
+  height: 180rpx;
+  background-image: url('../../assets/v63-retail/product-sprite.webp');
+  background-repeat: no-repeat;
+  background-size: 400% 200%;
+  background-position: var(--sprite-x) var(--sprite-y);
+}
+.np-copy {
+  padding: 14rpx 16rpx 16rpx;
+}
+.np-t {
+  display: -webkit-box;
+  font-size: 22rpx;
+  font-weight: 900;
+  color: var(--ink, #16130f);
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+.np-p {
+  margin-top: 8rpx;
+  color: var(--promo, #f03749);
   font-size: 26rpx;
   font-weight: 900;
 }
-.goods-now {
-  color: #E53935;
-  font-size: 48rpx;
-  font-weight: 900;
-  letter-spacing: -2rpx;
+
+/* ========== 代金券黄金横幅 ========== */
+.pban {
+  display: flex;
+  margin: 24rpx;
+  padding: 28rpx 30rpx;
+  border-radius: 30rpx;
+  align-items: center;
+  justify-content: space-between;
+  color: #6a3a00;
+  background: linear-gradient(135deg, #ffe27a 0%, #ffb14c 55%, #ff7a2a 100%);
+  box-shadow: 0 14rpx 36rpx rgba(255, 122, 42, 0.3);
+  border: 0;
+  position: relative;
+  overflow: hidden;
 }
-.goods-decimal {
-  color: #E53935;
+.pban::before, .pban::after {
+  content: '';
+  position: absolute;
+  width: 160rpx;
+  height: 160rpx;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+}
+.pban::before { top: -60rpx; right: -40rpx; }
+.pban::after { bottom: -80rpx; left: 60rpx; width: 220rpx; height: 220rpx; }
+.pban-copy {
+  display: flex;
+  z-index: 1;
+  flex-direction: column;
+  gap: 10rpx;
+}
+.pban-lab {
+  font-size: 34rpx;
+  font-weight: 900;
+  letter-spacing: 0.5rpx;
+}
+.pban-sub {
+  font-size: 22rpx;
+  opacity: 0.95;
+  font-weight: 700;
+}
+.pban-cta {
+  z-index: 1;
+  padding: 14rpx 26rpx;
+  border-radius: 999rpx;
+  background: #16130f;
+  color: var(--yel, #fee600);
+  font-size: 24rpx;
+  font-weight: 900;
+  letter-spacing: 0.5rpx;
+}
+
+/* ========== 品牌墙 4 格 ========== */
+.bw { padding: 0 0 26rpx; overflow: hidden; }
+.bw-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 14rpx;
+  padding: 0 24rpx;
+}
+.bw-card {
+  display: flex;
+  min-height: 180rpx;
+  padding: 22rpx 22rpx;
+  border-radius: 26rpx;
+  flex-direction: column;
+  justify-content: flex-end;
+  border: 0;
+  box-shadow: var(--shadow);
+}
+.bw-n {
   font-size: 28rpx;
   font-weight: 900;
+  color: #1c1b18;
 }
-.goods-was {
-  color: #999;
-  text-decoration: line-through;
-  font-size: 20rpx;
-  width: 100%;
+.bw-s {
   margin-top: 8rpx;
-}
-.goods-save {
-  display: inline-block;
-  padding: 6rpx 12rpx;
-  border-radius: 999rpx;
-  color: #B01E1E;
-  background: #FFE2DB;
-  font-size: 20rpx;
-  font-weight: 900;
-  margin-top: 6rpx;
-}
-.goods-action button {
-  width: 72rpx;
-  height: 72rpx;
-  min-width: 88rpx;
-  min-height: 88rpx;
-  margin: 0 -8rpx -8rpx 0;
-  padding: 0;
-  border-radius: 50%;
-  color: #fff;
-  background: linear-gradient(145deg, #E53935, #FF8F1F);
-  font-size: 42rpx;
-  line-height: 72rpx;
+  font-size: 22rpx;
+  color: #6d5f4c;
   font-weight: 700;
-  box-shadow: 0 6rpx 16rpx rgba(229, 57, 53, 0.35);
+}
+
+/* ========== 生活服务 ========== */
+.ls { margin: 0 24rpx; background: transparent; box-shadow: none; border: 0; }
+.ls-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16rpx;
+}
+.ls-card {
+  display: flex;
+  min-height: 200rpx;
+  padding: 18rpx 12rpx;
+  flex-direction: column;
+  align-items: center;
+  gap: 10rpx;
+}
+.ls-n {
+  font-size: 24rpx;
+  font-weight: 900;
+  color: var(--ink, #16130f);
+}
+.ls-s {
+  font-size: 20rpx;
+  color: var(--mut, #857c6d);
+  text-align: center;
+}
+
+/* ========== 出行卡 ========== */
+.go { margin: 0 24rpx; background: transparent; box-shadow: none; border: 0; }
+.go-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16rpx;
+}
+.go-card {
+  display: flex;
+  min-height: 160rpx;
+  padding: 20rpx;
+  align-items: center;
+  gap: 18rpx;
+  border: 0;
+  box-shadow: var(--shadow);
+}
+.go-copy {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  flex-direction: column;
+  gap: 6rpx;
+}
+.go-n {
+  font-size: 28rpx;
+  font-weight: 900;
+  color: var(--ink, #16130f);
+}
+.go-s {
+  font-size: 22rpx;
+  color: var(--mut, #857c6d);
+}
+
+/* ========== 信任条 ========== */
+.trust {
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  margin: 26rpx 24rpx;
+  padding: 22rpx;
+  border-radius: 22rpx;
+  background: linear-gradient(90deg, #f7f1e1, #fff);
+  color: var(--hd2, #006b36);
+  font-size: 22rpx;
+  font-weight: 800;
+  border: 1rpx solid var(--line, rgba(22, 19, 15, 0.08));
+}
+
+/* ========== 附近门店 ========== */
+.nb { padding: 0 0 22rpx; overflow: hidden; }
+.nb-st { display: flex; align-items: baseline; gap: 14rpx; }
+.nb-c {
+  padding: 6rpx 14rpx;
+  border-radius: 999rpx;
+  background: var(--notice-bg, #e6f3ea);
+  color: var(--notice-tx, #0b6b3d);
+  font-size: 20rpx;
+  font-weight: 800;
+}
+.nb-rail {
+  white-space: nowrap;
+  padding: 0 24rpx;
+}
+.nb-card {
+  display: inline-flex;
+  width: 360rpx;
+  min-height: 150rpx;
+  margin-right: 14rpx;
+  padding: 18rpx;
+  align-items: center;
+  gap: 18rpx;
+  vertical-align: top;
+  white-space: normal;
+  border: 0;
+  text-align: left;
+}
+.nb-ava {
+  flex: none;
+  width: 100rpx;
+  height: 100rpx;
+  border-radius: 26rpx;
+  background: radial-gradient(circle at 50% 40%, #fff 10%, #ffe6b9 60%, #ffb36a 100%);
+  box-shadow: inset 0 -4rpx 0 rgba(0, 0, 0, 0.06);
+}
+.nb-copy {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  flex-direction: column;
+  gap: 10rpx;
+}
+.nb-n {
+  font-size: 26rpx;
+  font-weight: 900;
+  color: var(--ink, #16130f);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.nb-m {
+  font-size: 20rpx;
+  color: var(--mut, #857c6d);
+  line-height: 1.35;
+}
+
+/* ========== 瀑布流 2 列 ========== */
+.wf { margin: 0 24rpx 40rpx; background: transparent; box-shadow: none; border: 0; }
+.wf-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 18rpx;
+}
+
+/* ========== 空/错误状态 ========== */
+.retail-state {
+  margin: 24rpx;
+  padding: 44rpx 20rpx;
+  border: 2rpx dashed var(--line, rgba(22, 19, 15, 0.12));
+  border-radius: var(--life-radius-md);
+  color: var(--mut, #857c6d);
+  background: var(--card, #fff);
+  text-align: center;
 }
 </style>

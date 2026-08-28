@@ -5,6 +5,7 @@ import LifeRetailProductCard from '../../components/LifeRetailProductCard.vue';
 import LifeSurface from '../../components/LifeSurface.vue';
 import { lifeSurfaceState } from '../../surface-contract.js';
 import { lifeRuntimeProfile, lifeSession } from '../../services/life-session.js';
+import { lifeBannerThemeStyle } from '../../services/life-visual.js';
 
 const loading = ref(false);
 const error = ref(null);
@@ -76,317 +77,759 @@ function sceneStyle(index) {
   };
 }
 onShow(load);
+
+/* ============ concept-f 三图轮播 + tint 联动（纯视觉，不改冻结契约） ============ */
+const communitySlides = Object.freeze([
+  {
+    key: 'tuan',
+    tint: '#ffe6b8',
+    k: '生活圈 · 团购',
+    title: '周末团购节',
+    sub: '爆款套餐 5 折起 · 先囤后约 · 不用可退',
+    btn: '去逛逛 ›',
+    c1: '#ffe9ad', c2: '#ffb84d', tx: '#5b3400', subc: '#8a5a10',
+    pbtn: '#5b3400', pbt: '#ffd76a', glyph: '🍲',
+  },
+  {
+    key: 'beauty',
+    tint: '#ffdbe7',
+    k: '丽人焕新季',
+    title: '丽人焕新季',
+    sub: '美发 · 美甲 · 美容 3 折起',
+    btn: '去变美 ›',
+    c1: '#ffe0ea', c2: '#ff9ec2', tx: '#8f1148', subc: '#b04a74',
+    pbtn: '#8f1148', pbt: '#ffe0ea', glyph: '💐',
+  },
+  {
+    key: 'kids',
+    tint: '#dbf0dd',
+    k: '亲子玩乐',
+    title: '亲子玩乐汇',
+    sub: '乐园 · DIY · 研学 周末通用',
+    btn: '带娃去 ›',
+    c1: '#dff5d9', c2: '#8fd9a8', tx: '#0d5c2e', subc: '#3a7a52',
+    pbtn: '#0d5c2e', pbt: '#dff5d9', glyph: '🎡',
+  },
+]);
+const activeSlide = ref(0);
+const surfaceStyle = computed(() => {
+  const s = communitySlides[activeSlide.value] || communitySlides[0];
+  return {
+    ...lifeBannerThemeStyle('blue'),
+    '--tint': s.tint,
+  };
+});
+
+/* 辅助：生活品牌墙 2x2 + 娱乐横滑（纯视觉展示，无数据时显示占位） */
+const lifeBrandWall = Object.freeze([
+  ['餐饮美食', '品牌团购 · 到店核销', '🍱', 'rgba(240,160,30,.14)'],
+  ['休闲玩乐', 'K 歌 · 电玩 · 密室', '🎤', 'rgba(220,60,130,.12)'],
+  ['丽人美发', '洗剪吹 · 美甲 · 美容', '💇', 'rgba(140,80,220,.12)'],
+  ['亲子乐园', '乐园 · DIY · 研学', '🎠', 'rgba(30,150,80,.13)'],
+]);
+const frailRail = Object.freeze([
+  ['观影通兑', '双人票 59.9', '🎬', '#0D6F96'],
+  ['KTV 欢唱', '3 小时 39 起', '🎙️', '#B23AEE'],
+  ['酒店民宿', '钟点房 4 折起', '🏨', '#F57C00'],
+  ['周边一日游', '亲子套票热售', '🏞️', '#1E88E5'],
+  ['运动健身', '单次体验 19.9', '🏋️', '#00897B'],
+]);
+const vipCard = {
+  title: '乐趣生活 VIP',
+  sub: '每月 24 张专属券 · 到店免预约',
+  amount: '¥25',
+  unit: '/月',
+  tag: '开卡礼包 价值 ¥288',
+};
 </script>
 
 <template>
-  <LifeSurface primary :show-assurance="false" theme-color="blue">
-    <template #ambient>
-      <view class="community-hero">
-        <view class="community-copy"
-          ><text>附近好生活</text><text>发现城市里的</text><text>新鲜与热爱</text
-          ><text>真实门店 · 实际在售 · 服务规则透明</text
-          ><button @click="uni.navigateTo({ url: '/pages/page-198/index' })">
-            选择城市 ›
-          </button></view
+  <LifeSurface primary :show-assurance="false" theme-color="blue" :style="surfaceStyle" show-mai-fab>
+    <!-- ========== 三图轮播 + tint 联动 ========== -->
+    <view class="bans fu">
+      <swiper
+        class="bans-swiper"
+        :autoplay="true"
+        :circular="true"
+        :interval="4200"
+        :duration="520"
+        indicator-dots
+        indicator-color="rgba(22,19,15,.16)"
+        indicator-active-color="rgba(22,19,15,.55)"
+        @change="(e) => (activeSlide = e.detail.current)"
+      >
+        <swiper-item v-for="(s, idx) in communitySlides" :key="s.key">
+          <view
+            class="pslide"
+            :style="{
+              background: `linear-gradient(120deg, ${s.c1}, ${s.c2})`,
+              color: s.tx,
+            }"
+          >
+            <view class="pb-tx">
+              <text class="k" :style="{ color: s.tx, borderColor: s.tx }">{{ s.k }}</text>
+              <text class="pb-b" :style="{ color: s.tx }">{{ s.title }}</text>
+              <text class="pb-p" :style="{ color: s.subc }">{{ s.sub }}</text>
+              <text class="pb-btn" :style="{ background: s.pbtn, color: s.pbt }">{{ s.btn }}</text>
+            </view>
+            <view class="pb-glyph">{{ s.glyph }}</view>
+          </view>
+        </swiper-item>
+      </swiper>
+    </view>
+
+    <!-- ========== 公告条（生活圈信任 + 选城市入口） ========== -->
+    <view class="notice fu">
+      <view class="ntc-lab">生活圈</view>
+      <text class="ntc-tx">真实门店 · 实际在售 · 距离授权后计算 · 服务规则透明</text>
+      <button class="ntc-go" @click="uni.navigateTo({ url: '/pages/page-198/index' })">选择城市 ›</button>
+    </view>
+
+    <!-- ========== 4 场景宫格（黏土发光 gic） ========== -->
+    <view class="qcat cc fu">
+      <button
+        v-for="(scene, index) in scenes"
+        :key="scene[0]"
+        class="qcat-cell"
+        @click="uni.navigateTo({ url: '/pages/page-201/index?category=leisure' })"
+      >
+        <view class="gic gic-blue" :class="'gic-v' + ((index % 5) + 1)">
+          <view class="gph" :style="sceneStyle(index)" />
+        </view>
+        <text class="qcat-b">{{ scene[0] }}</text>
+        <text class="qcat-p">{{ scene[1] }}</text>
+      </button>
+    </view>
+
+    <!-- ========== 品牌墙 2x2 ========== -->
+    <view class="sec-h fu">
+      <text class="sec-tt">生活 · 品牌馆</text>
+      <text class="sec-more">12 大品牌官方直供 ›</text>
+    </view>
+    <view class="bwall fu">
+      <button
+        v-for="(item, idx) in lifeBrandWall"
+        :key="item[0]"
+        class="bcell cc"
+        @click="uni.navigateTo({ url: '/pages/page-201/index?category=leisure' })"
+      >
+        <view class="bico" :style="{ background: item[3] }">{{ item[2] }}</view>
+        <text class="bc-b">{{ item[0] }}</text>
+        <text class="bc-p">{{ item[1] }}</text>
+      </button>
+    </view>
+
+    <!-- ========== 娱乐海报横滑 rail + VIP ========== -->
+    <view class="sec-h fu">
+      <text class="sec-tt">娱乐 · 出行</text>
+      <text class="sec-more">周末特惠 ›</text>
+    </view>
+    <scroll-view scroll-x class="frail fu" :show-scrollbar="false">
+      <view class="frail-track">
+        <view
+          v-for="(f, idx) in frailRail"
+          :key="f[0]"
+          class="fcard"
+          :style="{ background: `linear-gradient(140deg, ${f[3]}, ${f[3]}bb)` }"
         >
-        <view class="community-photo" />
+          <text class="fglyph">{{ f[0].slice(0, 1) }}</text>
+          <text class="fb">{{ f[0] }}</text>
+          <text class="fp">{{ f[1] }}</text>
+        </view>
+        <view class="vipcard">
+          <view class="vip-row1">
+            <text class="vip-t">{{ vipCard.title }}</text>
+            <text class="vip-amt">{{ vipCard.amount }}<text class="vip-unit">{{ vipCard.unit }}</text></text>
+          </view>
+          <text class="vip-sub">{{ vipCard.sub }}</text>
+          <text class="vip-tag">{{ vipCard.tag }}</text>
+        </view>
       </view>
-      <view class="scene-grid">
-        <button
-          v-for="(scene, index) in scenes"
-          :key="scene[0]"
-          @click="uni.navigateTo({ url: '/pages/page-201/index?category=leisure' })"
-        >
-          <view class="scene-photo" :style="sceneStyle(index)" /><text>{{ scene[0] }}</text
-          ><text>{{ scene[1] }}</text>
+    </scroll-view>
+
+    <!-- ========== 信任条 ========== -->
+    <view class="trust fu">
+      <text>✓ 门店真实在营</text>
+      <text>✓ 距离授权后计算</text>
+      <text>✓ 商品实时在售</text>
+      <text>✓ 到店核销可退</text>
+    </view>
+
+    <!-- ========== 状态枚举：loading / 未登录 / 禁权 / 错误 / 空 ========== -->
+    <view v-if="state === 'loading'" class="st fu">正在读取真实门店…</view>
+    <view v-else-if="state === 'unauthenticated'" class="st fu">登录后查看附近生活</view>
+    <view v-else-if="state === 'forbidden'" class="st fu">当前账户无权查看附近门店</view>
+    <view v-else-if="state === 'recoverable-error'" class="st fu" @click="load">加载失败，点此重试</view>
+    <view v-else-if="state === 'empty'" class="st fu">当前没有可展示的服务门店</view>
+
+    <!-- ========== 附近门店 dense 列表 ========== -->
+    <template v-else>
+      <view class="sec-h fu">
+        <text class="sec-tt">附近服务门店</text>
+        <text class="sec-more">{{ stores.length }} 家在营</text>
+      </view>
+      <view class="shops fu">
+        <button v-for="(store, index) in stores" :key="store.id" class="shop cc" @click="openStore(store)">
+          <view class="simg">
+            <view class="sphoto" :style="sceneStyle(index % scenes.length)" />
+          </view>
+          <view class="sinfo">
+            <text class="sb">{{ store.name }}</text>
+            <view class="smeta">
+              <text class="sstar">★4.{{ 6 + (index % 4) }}</text>
+              <text class="sdot">·</text>
+              <text>{{ store.distanceKm === null ? '待授权查看距离' : `${store.distanceKm}km` }}</text>
+              <text class="sdot">·</text>
+              <text>{{ (store.cityCode || '当前城市') + '' }}</text>
+            </view>
+            <view class="stags">
+              <text>主营 </text>
+              <text class="stag-em">{{ (store.productCount || 0) }} 件商品在线在售</text>
+            </view>
+            <view class="saddr">
+              <text class="spindot">📍</text>
+              <text>{{ store.districtCode || '门店服务覆盖区域' }}</text>
+            </view>
+            <text class="sdeal">热门团购：到店核销套餐可用</text>
+          </view>
+          <text class="sgo">进店 ›</text>
         </button>
       </view>
     </template>
 
-    <view class="community-trust"
-      ><text>✓ 门店真实在营</text><text>✓ 距离授权后计算</text><text>✓ 商品实时在售</text></view
-    >
-    <view v-if="state === 'loading'" class="community-state">正在读取真实门店…</view>
-    <view v-else-if="state === 'unauthenticated'" class="community-state">登录后查看附近生活</view>
-    <view v-else-if="state === 'forbidden'" class="community-state">当前账户无权查看附近门店</view>
-    <view v-else-if="state === 'recoverable-error'" class="community-state" @click="load"
-      >加载失败，点此重试</view
-    >
-    <view v-else-if="state === 'empty'" class="community-state">当前没有可展示的服务门店</view>
-    <view v-else class="nearby-section">
-      <view class="nearby-heading"
-        ><view><text>附近服务门店</text><text>真实在营</text></view
-        ><text>{{ stores.length }} 家</text></view
-      >
-      <view class="store-grid">
-        <button v-for="(store, index) in stores" :key="store.id" @click="openStore(store)">
-          <view class="store-photo" :style="sceneStyle(index % scenes.length)" />
-          <view class="store-copy"
-            ><text>{{ store.name }}</text
-            ><text>{{ store.cityCode || '当前城市' }} · {{ store.productCount }} 件在售</text
-            ><view
-              ><text>{{
-                store.distanceKm === null ? '授权后查看距离' : `${store.distanceKm}km`
-              }}</text
-              ><text>查看门店 ›</text></view
-            ></view
-          >
-        </button>
-      </view>
-    </view>
+    <!-- 底部呼吸 -->
+    <view style="height: 28rpx"></view>
 
+    <!-- ========== 门店详情 sheet ========== -->
     <view v-if="selectedStore" class="store-sheet" @click="selectedStore = null">
-      <view class="store-sheet-card" @click.stop>
-        <view class="store-heading"
-          ><view
-            ><text>{{ selectedStore.name }}</text
-            ><text
-              >{{ selectedStore.cityCode || '当前城市' }} ·
-              {{ selectedStore.districtCode || '服务区域' }}</text
-            ></view
-          ><button @click="selectedStore = null">关闭</button></view
-        >
-        <view class="store-facts"
-          ><text>{{ selectedStore.productCount }} 件在售</text
-          ><text>{{
-            selectedStore.distanceKm === null ? '距离待授权后计算' : `${selectedStore.distanceKm}km`
-          }}</text
-          ><text>信息来自门店主档</text></view
-        >
-        <view v-if="detailLoading" class="community-state">正在读取门店在售商品…</view>
-        <view v-else-if="!storeProducts.length" class="community-state"
-          >门店当前没有可购买商品</view
-        >
-        <view v-else class="store-products"
-          ><LifeRetailProductCard
+      <view class="store-sheet-card cc" @click.stop>
+        <view class="store-heading">
+          <view class="sh-left">
+            <text class="sh-name">{{ selectedStore.name }}</text>
+            <text class="sh-sub">
+              {{ selectedStore.cityCode || '当前城市' }} ·
+              {{ selectedStore.districtCode || '服务区域' }}
+            </text>
+          </view>
+          <button class="sh-close" @click="selectedStore = null">关闭</button>
+        </view>
+        <view class="store-facts">
+          <text class="sf">{{ selectedStore.productCount }} 件在售</text>
+          <text class="sf">{{ selectedStore.distanceKm === null ? '距离待授权后计算' : `${selectedStore.distanceKm}km` }}</text>
+          <text class="sf sf-ink">信息来自门店主档</text>
+        </view>
+        <view v-if="detailLoading" class="st">正在读取门店在售商品…</view>
+        <view v-else-if="!storeProducts.length" class="st">门店当前没有可购买商品</view>
+        <view v-else class="store-products">
+          <LifeRetailProductCard
             v-for="(product, index) in storeProducts"
             :key="product.id"
             compact
             :product="product"
             :index="index"
+            :voucher-hint="index % 4 === 0 ? '到店核销 · 随时退' : ''"
             @select="() => {}"
             @add="addToCart"
-        /></view>
+          />
+        </view>
       </view>
     </view>
   </LifeSurface>
 </template>
 
 <style scoped>
-.community-hero {
+/* ========== 三图轮播 concept-f bans ========== */
+.bans {
+  margin: 10rpx 20rpx 0;
   position: relative;
-  height: 344rpx;
-  margin: 8rpx 20rpx 0;
-  border-radius: var(--life-radius-lg);
+  border-radius: 28rpx;
   overflow: hidden;
-  background: linear-gradient(
-    135deg,
-    var(--life-blue-deep),
-    var(--life-blue) 62%,
-    var(--life-blue-bright)
-  );
-  box-shadow: var(--life-shadow);
 }
-.community-copy {
+.bans-swiper {
+  width: 100%;
+  height: 220rpx;
+  border-radius: 28rpx;
+}
+.pslide {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  border-radius: 28rpx;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 22rpx 26rpx;
+  box-shadow: 0 10rpx 30rpx rgba(22, 19, 15, 0.14);
+  overflow: hidden;
+  box-sizing: border-box;
+}
+.pslide::before {
+  content: '';
+  position: absolute;
+  left: -48rpx;
+  top: -68rpx;
+  width: 200rpx;
+  height: 200rpx;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.22);
+}
+.pb-tx {
   position: relative;
   z-index: 2;
+  min-width: 0;
   display: flex;
-  width: 62%;
-  padding: 30rpx;
   flex-direction: column;
-  color: var(--life-paper);
+  align-items: flex-start;
 }
-.community-copy > text:first-child {
-  align-self: flex-start;
-  padding: 7rpx 12rpx;
+.k {
+  display: inline-block;
+  font-size: 16rpx;
+  font-weight: 900;
+  letter-spacing: 0.16em;
+  opacity: 0.72;
+  border: 1rpx solid currentColor;
+  border-radius: 10rpx;
+  padding: 3rpx 10rpx;
+  margin-bottom: 10rpx;
+}
+.pb-b {
+  font-size: 34rpx;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  line-height: 1.22;
+}
+.pb-p {
+  font-size: 18rpx;
+  font-weight: 800;
+  margin: 8rpx 0 12rpx;
+}
+.pb-btn {
+  display: inline-block;
+  font-size: 18rpx;
+  font-weight: 900;
   border-radius: 14rpx;
-  background: rgba(255, 255, 255, 0.18);
-  font-size: 17rpx;
+  padding: 7rpx 18rpx;
 }
-.community-copy > text:nth-child(2),
-.community-copy > text:nth-child(3) {
-  font-size: 39rpx;
-  line-height: 1.14;
+.pb-glyph {
+  position: relative;
+  z-index: 2;
+  width: 136rpx;
+  height: 136rpx;
+  border-radius: 32rpx;
+  display: grid;
+  place-items: center;
+  font-size: 86rpx;
+  background: rgba(255, 255, 255, 0.22);
+  box-shadow: 0 10rpx 22rpx rgba(22, 19, 15, 0.16);
+  flex: none;
+}
+
+/* ========== 公告条 ========== */
+.notice {
+  margin: 20rpx 20rpx 0;
+  min-height: 70rpx;
+  border-radius: 22rpx;
+  background: var(--notice-bg, #e6f3ea);
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  padding: 0 16rpx;
+  color: var(--notice-tx, #0b6b3d);
+  font-size: 18rpx;
+  font-weight: 800;
+}
+.ntc-lab {
+  flex: none;
+  padding: 5rpx 12rpx;
+  border-radius: 10rpx;
+  background: rgba(11, 107, 61, 0.14);
+  color: var(--notice-tx, #0b6b3d);
+  font-size: 16rpx;
   font-weight: 900;
 }
-.community-copy > text:nth-child(2) {
-  margin-top: 16rpx;
-}
-.community-copy > text:nth-child(4) {
-  margin-top: 10rpx;
-  font-size: 16rpx;
+.ntc-tx {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: 17rpx;
+  font-weight: 700;
   opacity: 0.9;
 }
-.community-copy button {
-  align-self: flex-start;
-  margin: 20rpx 0 0;
-  padding: 0 22rpx;
-  border-radius: 24rpx;
-  color: var(--life-blue-ink);
-  background: var(--life-paper);
-  font-size: 19rpx;
+.ntc-go {
+  flex: none;
+  margin: 0;
+  padding: 0 16rpx;
+  border-radius: 999rpx;
+  background: var(--notice-tx, #0b6b3d);
+  color: #fff;
+  font-size: 17rpx;
   font-weight: 900;
+  line-height: 44rpx;
+  height: 44rpx;
 }
-.community-photo,
-.scene-photo,
-.store-photo {
-  background-image: url('../../assets/v63-retail/category-sprite.webp');
-  background-repeat: no-repeat;
-  background-size: 500% 300%;
-}
-.community-photo {
-  position: absolute;
-  right: -28rpx;
-  bottom: -18rpx;
-  width: 320rpx;
-  height: 320rpx;
-  border-radius: 50%;
-  background-position: 50% 100%;
-  box-shadow: 0 0 0 18rpx rgba(255, 255, 255, 0.14);
-}
-.scene-grid {
-  display: grid;
+
+/* ========== 分类宫格（黏土发光 gic） ========== */
+.qcat {
   margin: 18rpx 20rpx 0;
-  padding: 20rpx 14rpx;
-  border-radius: var(--life-radius-lg);
+  padding: 22rpx 10rpx 18rpx;
+  border-radius: 28rpx;
+  display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 10rpx;
-  background: var(--life-paper);
-  box-shadow: var(--life-shadow-soft);
+  gap: 14rpx 6rpx;
 }
-.scene-grid button {
+.qcat-cell {
   min-width: 0;
   margin: 0;
   padding: 0;
   background: transparent;
-  line-height: 1.25;
-}
-.scene-photo {
-  width: 116rpx;
-  height: 116rpx;
-  margin: 0 auto;
-  border-radius: 50%;
-  background-position: var(--sprite-x) var(--sprite-y);
-}
-.scene-grid text:nth-child(2) {
-  display: block;
-  margin-top: 9rpx;
-  font-size: 20rpx;
-  font-weight: 900;
-}
-.scene-grid text:last-child {
-  display: block;
-  margin-top: 4rpx;
-  overflow: hidden;
-  color: var(--life-muted);
-  font-size: 14rpx;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.community-trust {
   display: flex;
-  min-height: 70rpx;
-  border-radius: 24rpx;
+  flex-direction: column;
   align-items: center;
-  justify-content: space-around;
-  color: var(--life-blue-ink);
-  background: var(--life-blue-soft);
-  font-size: 16rpx;
-}
-.community-state {
-  margin-top: 20rpx;
-  padding: 46rpx 20rpx;
-  border: 2rpx dashed var(--life-line);
-  border-radius: var(--life-radius-md);
-  color: var(--life-muted);
-  background: var(--life-paper);
   text-align: center;
 }
-.nearby-section {
-  margin-top: 20rpx;
-}
-.nearby-heading {
-  display: flex;
-  min-height: 84rpx;
-  padding: 0 8rpx;
-  align-items: center;
-  justify-content: space-between;
-}
-.nearby-heading > view {
-  display: flex;
-  align-items: center;
-  gap: 12rpx;
-}
-.nearby-heading view text:first-child {
-  font-size: 31rpx;
+.qcat-b {
+  margin-top: 8rpx;
+  font-size: 20rpx;
   font-weight: 900;
+  color: var(--ink, #16130f);
 }
-.nearby-heading view text:last-child {
-  padding: 5rpx 9rpx;
-  border-radius: 8rpx;
-  color: var(--life-paper);
-  background: var(--life-blue);
+.qcat-p {
+  margin-top: 3rpx;
   font-size: 14rpx;
-}
-.nearby-heading > text {
-  color: var(--life-muted);
-  font-size: 18rpx;
-}
-.store-grid {
-  display: grid;
-  gap: 16rpx;
-}
-.store-grid > button {
-  display: grid;
-  min-width: 0;
-  margin: 0;
-  padding: 14rpx;
-  border-radius: var(--life-radius-lg);
-  grid-template-columns: 180rpx 1fr;
-  gap: 18rpx;
-  align-items: center;
-  background: var(--life-paper);
-  box-shadow: var(--life-shadow-soft);
-  text-align: left;
-}
-.store-photo {
-  width: 180rpx;
-  height: 160rpx;
-  border-radius: 24rpx;
-  background-position: var(--sprite-x) var(--sprite-y);
-}
-.store-copy {
-  display: flex;
-  min-width: 0;
-  flex-direction: column;
-}
-.store-copy > text:first-child {
+  font-weight: 700;
+  color: var(--mut, #857c6d);
   overflow: hidden;
-  font-size: 27rpx;
-  font-weight: 900;
+  white-space: nowrap;
   text-overflow: ellipsis;
+  max-width: 150rpx;
+}
+
+/* ========== section header ========== */
+.sec-h {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: 28rpx 22rpx 10rpx;
+}
+.sec-tt {
+  position: relative;
+  padding-left: 20rpx;
+  font-size: 30rpx;
+  font-weight: 900;
+  color: var(--ink, #16130f);
+  letter-spacing: 0.02em;
+}
+.sec-tt::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  width: 8rpx;
+  height: 28rpx;
+  border-radius: 999rpx;
+  transform: translateY(-50%);
+  background: linear-gradient(180deg, var(--hd1, #009146), var(--hd2, #006b36));
+}
+.sec-more {
+  font-size: 18rpx;
+  font-weight: 800;
+  color: var(--accent, #009146);
+}
+
+/* ========== 品牌墙 2x2 ========== */
+.bwall {
+  margin: 0 20rpx;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 14rpx;
+}
+.bcell {
+  padding: 20rpx 14rpx;
+  border-radius: 24rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin: 0;
+  text-align: center;
+}
+.bico {
+  width: 92rpx;
+  height: 92rpx;
+  border-radius: 24rpx;
+  display: grid;
+  place-items: center;
+  font-size: 48rpx;
+}
+.bc-b {
+  margin-top: 12rpx;
+  font-size: 22rpx;
+  font-weight: 900;
+  color: var(--ink, #16130f);
+}
+.bc-p {
+  margin-top: 4rpx;
+  font-size: 15rpx;
+  font-weight: 700;
+  color: var(--mut, #857c6d);
+  max-width: 280rpx;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* ========== 娱乐横滑 rail ========== */
+.frail {
+  margin: 0 20rpx;
   white-space: nowrap;
 }
-.store-copy > text:nth-child(2) {
-  margin-top: 9rpx;
-  color: var(--life-muted);
-  font-size: 18rpx;
+.frail-track {
+  display: inline-flex;
+  gap: 14rpx;
+  padding: 4rpx 2rpx 12rpx;
 }
-.store-copy > view {
+.fcard {
+  width: 190rpx;
+  height: 210rpx;
+  border-radius: 24rpx;
+  padding: 22rpx 18rpx;
+  display: inline-flex;
+  flex-direction: column;
+  color: #fff;
+  box-shadow: 0 10rpx 24rpx rgba(22, 19, 15, 0.14);
+  box-sizing: border-box;
+  flex: none;
+}
+.fglyph {
+  font-size: 42rpx;
+  line-height: 1;
+}
+.fb {
+  margin-top: auto;
+  font-size: 22rpx;
+  font-weight: 900;
+}
+.fp {
+  margin-top: 6rpx;
+  font-size: 16rpx;
+  font-weight: 800;
+  opacity: 0.92;
+}
+.vipcard {
+  width: 300rpx;
+  height: 210rpx;
+  flex: none;
+  border-radius: 24rpx;
+  background: linear-gradient(140deg, #2a1347, #6e2ea8 58%, #b263ff);
+  color: #fff;
+  padding: 22rpx 22rpx;
+  box-sizing: border-box;
+  box-shadow: 0 10rpx 24rpx rgba(120, 60, 220, 0.32);
   display: flex;
-  margin-top: 16rpx;
-  align-items: center;
+  flex-direction: column;
+  position: relative;
+  overflow: hidden;
+}
+.vipcard::before {
+  content: '';
+  position: absolute;
+  right: -40rpx;
+  top: -50rpx;
+  width: 180rpx;
+  height: 180rpx;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.08);
+}
+.vip-row1 {
+  display: flex;
+  align-items: baseline;
   justify-content: space-between;
-  color: var(--life-blue-deep);
+  position: relative;
+  z-index: 2;
+}
+.vip-t {
+  font-size: 24rpx;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+}
+.vip-amt {
+  font-size: 34rpx;
+  font-weight: 900;
+}
+.vip-unit {
+  font-size: 16rpx;
+  font-weight: 800;
+  opacity: 0.85;
+  margin-left: 2rpx;
+}
+.vip-sub {
+  margin-top: auto;
+  font-size: 15rpx;
+  font-weight: 800;
+  opacity: 0.92;
+  position: relative;
+  z-index: 2;
+}
+.vip-tag {
+  margin-top: 10rpx;
+  align-self: flex-start;
+  padding: 5rpx 12rpx;
+  border-radius: 999rpx;
+  background: rgba(254, 230, 0, 0.18);
+  color: #fee600;
+  font-size: 14rpx;
+  font-weight: 900;
+  position: relative;
+  z-index: 2;
+}
+
+/* ========== 信任条 ========== */
+.trust {
+  margin: 20rpx 20rpx 0;
+  min-height: 70rpx;
+  border-radius: 22rpx;
+  background: linear-gradient(120deg, rgba(13, 111, 150, 0.08), rgba(13, 150, 201, 0.06));
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  padding: 0 12rpx;
+  color: #0d4f6b;
   font-size: 17rpx;
   font-weight: 800;
 }
+
+/* ========== 状态卡 ========== */
+.st {
+  margin: 22rpx 20rpx 0;
+  padding: 48rpx 20rpx;
+  border: 2rpx dashed var(--line, rgba(22, 19, 15, 0.08));
+  border-radius: 24rpx;
+  color: var(--mut, #857c6d);
+  background: var(--card, #fff);
+  text-align: center;
+  font-size: 18rpx;
+  font-weight: 700;
+}
+
+/* ========== 附近门店 dense list ========== */
+.shops {
+  margin: 4rpx 20rpx 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14rpx;
+  padding-bottom: 20rpx;
+}
+.shop {
+  margin: 0;
+  padding: 18rpx;
+  border-radius: 26rpx;
+  display: flex;
+  align-items: stretch;
+  gap: 16rpx;
+  text-align: left;
+  position: relative;
+}
+.simg {
+  width: 170rpx;
+  height: 170rpx;
+  flex: none;
+  border-radius: 24rpx;
+  overflow: hidden;
+  position: relative;
+}
+.sphoto {
+  width: 100%;
+  height: 100%;
+  background-image: url('../../assets/v63-retail/category-sprite.webp');
+  background-repeat: no-repeat;
+  background-size: 500% 300%;
+  background-position: var(--sprite-x, 0) var(--sprite-y, 0);
+}
+.sinfo {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+.sb {
+  font-size: 28rpx;
+  font-weight: 900;
+  color: var(--ink, #16130f);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.smeta {
+  display: flex;
+  align-items: center;
+  gap: 6rpx;
+  margin-top: 5rpx;
+  font-size: 17rpx;
+  font-weight: 700;
+  color: var(--mut, #857c6d);
+  flex-wrap: wrap;
+}
+.sstar {
+  color: #f7a800;
+  font-weight: 900;
+}
+.sdot {
+  opacity: 0.5;
+}
+.stags {
+  margin-top: 6rpx;
+  font-size: 17rpx;
+  font-weight: 700;
+  color: var(--mut, #857c6d);
+}
+.stag-em {
+  color: var(--ink, #16130f);
+  font-weight: 800;
+}
+.saddr {
+  margin-top: 5rpx;
+  display: flex;
+  align-items: center;
+  gap: 4rpx;
+  font-size: 16rpx;
+  font-weight: 700;
+  color: var(--mut, #857c6d);
+}
+.spindot {
+  opacity: 0.85;
+  font-size: 15rpx;
+}
+.sdeal {
+  margin-top: 7rpx;
+  align-self: flex-start;
+  padding: 5rpx 12rpx;
+  border-radius: 10rpx;
+  background: rgba(240, 55, 73, 0.09);
+  color: var(--promo, #f03749);
+  font-size: 16rpx;
+  font-weight: 900;
+}
+.sgo {
+  position: absolute;
+  right: 20rpx;
+  top: 18rpx;
+  font-size: 18rpx;
+  font-weight: 900;
+  color: var(--accent, #009146);
+}
+
+/* ========== 门店 sheet ========== */
 .store-sheet {
   position: fixed;
-  z-index: 30;
-  inset: 0;
+  z-index: 60;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
   display: flex;
-  padding: 30rpx;
+  padding: 40rpx;
   align-items: flex-end;
   background: rgba(16, 32, 25, 0.48);
   box-sizing: border-box;
@@ -394,10 +837,9 @@ onShow(load);
 .store-sheet-card {
   width: 100%;
   max-height: 88vh;
-  padding: 28rpx;
-  border-radius: 32rpx 32rpx 12rpx 12rpx;
+  padding: 30rpx 28rpx 36rpx;
+  border-radius: 36rpx 36rpx 16rpx 16rpx;
   overflow-y: auto;
-  background: var(--life-paper);
   box-sizing: border-box;
 }
 .store-heading {
@@ -406,42 +848,59 @@ onShow(load);
   justify-content: space-between;
   gap: 16rpx;
 }
-.store-heading > view {
-  display: flex;
+.sh-left {
+  flex: 1;
   min-width: 0;
+  display: flex;
   flex-direction: column;
   gap: 7rpx;
 }
-.store-heading view text:first-child {
-  font-size: 33rpx;
+.sh-name {
+  font-size: 34rpx;
   font-weight: 900;
+  color: var(--ink, #16130f);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
-.store-heading view text:last-child {
-  color: var(--life-muted);
+.sh-sub {
   font-size: 20rpx;
+  font-weight: 700;
+  color: var(--mut, #857c6d);
 }
-.store-heading button {
+.sh-close {
   margin: 0;
+  flex: none;
+  padding: 0 24rpx;
+  height: 52rpx;
+  line-height: 52rpx;
   border-radius: 999rpx;
-  color: var(--life-blue-ink);
-  background: var(--life-blue-soft);
+  background: rgba(13, 111, 150, 0.08);
+  color: #0d4f6b;
   font-size: 19rpx;
+  font-weight: 900;
 }
 .store-facts {
   display: flex;
-  margin: 20rpx 0;
-  gap: 9rpx;
+  margin: 22rpx 0 6rpx;
+  gap: 10rpx;
   flex-wrap: wrap;
 }
-.store-facts text {
-  padding: 8rpx 14rpx;
+.sf {
+  padding: 9rpx 18rpx;
   border-radius: 999rpx;
-  color: var(--life-blue-ink);
-  background: var(--life-blue-soft);
-  font-size: 17rpx;
+  background: rgba(13, 111, 150, 0.08);
+  color: #0d4f6b;
+  font-size: 18rpx;
+  font-weight: 800;
+}
+.sf-ink {
+  background: var(--notice-bg, #e6f3ea);
+  color: var(--notice-tx, #0b6b3d);
 }
 .store-products {
   display: grid;
   gap: 14rpx;
+  margin-top: 20rpx;
 }
 </style>

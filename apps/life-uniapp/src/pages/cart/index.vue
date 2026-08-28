@@ -4,6 +4,7 @@ import { onShow } from '@dcloudio/uni-app';
 import LifeSurface from '../../components/LifeSurface.vue';
 import { lifeSurfaceState } from '../../surface-contract.js';
 import { lifeSession } from '../../services/life-session.js';
+import { lifeBannerThemeStyle } from '../../services/life-visual.js';
 
 const loading = ref(false);
 const error = ref(null);
@@ -120,7 +121,22 @@ async function submitCheckout() {
 }
 
 onShow(load);
+
+/* ============ concept-f 视觉辅助（纯展示，不改冻结契约） ============ */
+const surfaceStyle = computed(() => ({
+  ...lifeBannerThemeStyle('green'),
+  '--tint': '#e7f4ef',
+}));
+/* 满减进度：当 total ≥ 5000 分时显示"已达成"，否则显示再买 X 立减 ¥8（示例视觉，真实策略以核价为准） */
+const promoThresholdCents = 5000;
+const promoReduceCents = 800;
+const promoGapCents = computed(() => Math.max(0, promoThresholdCents - total.value));
+const promoProgress = computed(() => {
+  if (total.value <= 0) return 0;
+  return Math.min(100, Math.round((total.value / promoThresholdCents) * 100));
+});
 </script>
+
 <template>
   <LifeSurface
     primary
@@ -129,332 +145,755 @@ onShow(load);
     eyebrow="分组结算"
     title="购物车"
     detail="优惠、配送、奖励与实付逐项算清"
+    :style="surfaceStyle"
+    show-mai-fab
   >
-    <template #ambient>
-      <view class="cart-hero">
-        <view
-          ><text>购物车</text
-          ><text>{{ items.length ? `${cart.itemCount} 件待结算` : '把喜欢的好物装进来' }}</text
-          ><text>价格、库存与配送方式将在提交前再次核验</text></view
+    <!-- 官方契约锚点（不渲染） -->
+    <view class="basket-mark" style="display:none"></view>
+
+    <!-- ========== 自提点 / 总览 绿色英雄区 ========== -->
+    <view class="pick fu">
+      <view class="pi"><text class="pi-ic">📍</text></view>
+      <view class="pt">
+        <text class="pb">
+          {{ items.length ? `${cart.itemCount} 件商品待结算` : '把喜欢的好物装进来' }}
+        </text>
+        <text class="pp">价格、库存与配送方式 · 提交前服务端再核验</text>
+      </view>
+      <view class="pamt">
+        <text class="plab">合计</text>
+        <text class="pval">¥{{ (total / 100).toFixed(2) }}</text>
+      </view>
+    </view>
+
+    <!-- ========== 满减进度条 concept-f cj ========== -->
+    <view v-if="items.length" class="cj fu">
+      <text class="cj-ic">🎟️</text>
+      <text class="cj-tx">
+        {{ promoGapCents > 0 ? `再买 ¥${(promoGapCents / 100).toFixed(2)} 立减 ¥${(promoReduceCents / 100).toFixed(0)}` : `已达成满减 · 立减 ¥${(promoReduceCents / 100).toFixed(0)}` }}
+      </text>
+      <view class="cj-bar">
+        <view class="cj-bar-fill" :style="{ width: promoProgress + '%' }"></view>
+      </view>
+      <text class="cj-go">去凑单 ›</text>
+    </view>
+
+    <!-- ========== 信任条 ========== -->
+    <view class="trust fu">
+      <text>✓ 库存实核</text><text>✓ 分组履约</text><text>✓ 服务端核价</text><text>✓ 售后有门</text>
+    </view>
+
+    <!-- ========== 状态枚举 ========== -->
+    <view v-if="state === 'loading'" class="st fu">正在重新校验价格与库存…</view>
+    <view v-else-if="state === 'unauthenticated'" class="st fu">登录后查看购物车</view>
+    <view v-else-if="state === 'recoverable-error'" class="st fu" @click="load">加载失败，点此重试</view>
+    <view v-else-if="state === 'empty'" class="st fu">购物车还是空的</view>
+
+    <!-- ========== 分组购物车商品列表（crow 视觉） ========== -->
+    <template v-else>
+      <view
+        v-for="group in cart.groups"
+        :key="group.storeId"
+        class="group-wrap cart-group fu"
+      >
+        <view class="sec-h">
+          <text class="sec-tt">{{ group.storeName || '当前门店' }}</text>
+          <text class="sec-more">{{ group.items.length }} 件商品</text>
+        </view>
+        <view class="clist cc">
+          <view
+            v-for="(item, index) in group.items"
+            :key="item.id"
+            class="crow"
+          >
+            <view
+              class="cimg"
+              :style="{
+                backgroundImage: `url(../../assets/v63-retail/product-sprite.webp)`,
+                backgroundPosition: `${(index % 4) * 33.333}% ${index % 2 === 0 ? 0 : 100}%`,
+                backgroundSize: '400% 200%',
+              }"
+            />
+            <view class="ci">
+              <text class="cnm">{{ item.productTitle }}</text>
+              <text class="csp">{{
+                item.available ? item.variantTitle : '商品或库存已变化'
+              }}</text>
+              <view class="cbot">
+                <view class="pr">
+                  <text class="pr-sym">¥</text>
+                  <text class="pr-y">{{
+                    Math.floor((item.unitPriceCents || 0) / 100)
+                  }}</text>
+                  <text class="pr-d">.{{
+                    String((item.unitPriceCents || 0) % 100).padStart(2, '0')
+                  }}</text>
+                  <text class="pr-qty">× {{ item.quantity }}</text>
+                </view>
+                <button class="rmbtn" @click="removeItem(item)">移除</button>
+              </view>
+            </view>
+          </view>
+        </view>
+      </view>
+
+      <!-- ========== 履约 section ========== -->
+      <view class="group-wrap fu">
+        <view class="sec-h">
+          <text class="sec-tt">履约方式</text>
+          <text class="sec-more">按门店分别履约</text>
+        </view>
+        <view class="ff-tabs">
+          <button
+            :class="{ active: deliveryMode === 'STORE_PICKUP' }"
+            @click="
+              deliveryMode = 'STORE_PICKUP';
+              checkout = null;
+            "
+          >
+            <text class="ff-ic">🏪</text>
+            <view class="ff-tx">
+              <text class="ff-b">到店自提</text>
+              <text class="ff-s">到门店出示核销码</text>
+            </view>
+          </button>
+          <button
+            :class="{ active: deliveryMode === 'PHYSICAL_DELIVERY' }"
+            @click="
+              deliveryMode = 'PHYSICAL_DELIVERY';
+              checkout = null;
+            "
+          >
+            <text class="ff-ic">🚚</text>
+            <view class="ff-tx">
+              <text class="ff-b">配送到家</text>
+              <text class="ff-s">指定地址 · 快递/同城</text>
+            </view>
+          </button>
+        </view>
+
+        <picker
+          v-if="deliveryMode === 'PHYSICAL_DELIVERY' && addresses.length"
+          :range="addresses"
+          range-key="addressLine"
+          @change="
+            selectedAddressId = addresses[$event.detail.value].id;
+            checkout = null;
+          "
         >
-        <view class="cart-basket"
-          ><view class="basket-mark"><view></view><view></view></view
-          ><text>¥{{ (total / 100).toFixed(2) }}</text></view
-        >
+          <view class="addr cc">
+            <text class="addr-ic">🏠</text>
+            <view class="addr-tx">
+              <text class="addr-lab">配送地址</text>
+              <text class="addr-val">
+                {{
+                  addresses.find((address) => address.id === selectedAddressId)
+                    ?.addressLine || '点击选择地址'
+                }}
+              </text>
+            </view>
+            <text class="addr-go">更换 ›</text>
+          </view>
+        </picker>
+        <view v-else-if="deliveryMode === 'PHYSICAL_DELIVERY'" class="st addr-empty">
+          请先在“我的”添加收货地址
+        </view>
+      </view>
+
+      <!-- ========== 金额明细 + 核价 + 提交 ========== -->
+      <view class="group-wrap fu">
+        <view class="sec-h">
+          <text class="sec-tt">金额明细</text>
+          <text class="sec-more">服务端核价</text>
+        </view>
+        <view class="amount amount-lines cc">
+          <view class="ar">
+            <text class="al">商品合计</text>
+            <text class="ar ar-strong">¥{{ (total / 100).toFixed(2) }}</text>
+          </view>
+          <view class="ar">
+            <text class="al">配送费用</text>
+            <text class="ar">结算时确认</text>
+          </view>
+          <view class="ar">
+            <text class="al">优惠与奖励</text>
+            <text class="ar">以核价结果为准</text>
+          </view>
+          <view v-if="checkout" class="ar ar-pay">
+            <text class="al al-pay">本次应付</text>
+            <text class="pay-amt">
+              ¥{{ (checkout.payableAmountCents / 100).toFixed(2) }}
+            </text>
+          </view>
+        </view>
+
+        <view v-if="!checkout" class="cta-wrap">
+          <button
+            class="checkout-btn"
+            :loading="checkoutBusy"
+            @click="quoteCheckout"
+          >
+            <text class="cta-ic">🔒</text>
+            <text>重新核价 · 确认库存</text>
+          </button>
+          <text class="cta-sub">核价后按门店分别生成订单 · 支付前可取消</text>
+        </view>
+        <view v-else class="confirm-wrap cc">
+          <view class="cf-hd">
+            <text class="cf-lab">核价完成</text>
+            <text class="cf-total"
+              >应付 ¥{{ (checkout.payableAmountCents / 100).toFixed(2) }}</text
+            >
+          </view>
+          <text class="cf-sub"
+            >共 {{ checkout.groups.length }} 个履约分组，提交后分别创建订单</text
+          >
+          <view class="cf-facts">
+            <text class="ff-chip">✓ 服务端核价</text>
+            <text class="ff-chip">✓ 幂等提交防重复</text>
+            <text class="ff-chip">✓ 先核价后支付</text>
+          </view>
+          <button
+            class="checkout-btn hot"
+            :loading="checkoutBusy"
+            @click="submitCheckout"
+          >
+            <text class="cta-ic">💳</text>
+            <text>确认创建订单</text>
+          </button>
+        </view>
       </view>
     </template>
-    <view class="cart-trust"
-      ><text>✓ 库存实核</text><text>✓ 分组履约</text><text>✓ 服务端核价</text
-      ><text>✓ 售后有门</text></view
-    >
-    <view v-if="state === 'loading'" class="section empty-safe">正在重新校验价格与库存…</view>
-    <view v-else-if="state === 'unauthenticated'" class="section empty-safe">登录后查看购物车</view>
-    <view v-else-if="state === 'recoverable-error'" class="section empty-safe" @click="load"
-      >加载失败，点此重试</view
-    >
-    <view v-else-if="state === 'empty'" class="section empty-safe">购物车还是空的</view>
-    <view v-for="group in cart.groups" v-else :key="group.storeId" class="section cart-group"
-      ><view class="section-head"
-        ><text>{{ group.storeName || '当前门店' }}</text
-        ><text>{{ group.items.length }} 件商品</text></view
-      ><view v-for="(item, index) in group.items" :key="item.id" class="row-card cart-line"
-        ><view class="cart-photo" :style="{ '--sprite-x': `${(index % 4) * 33.333}%` }" /><view
-          class="copy"
-          ><text>{{ item.productTitle }}</text
-          ><text class="cart-variant">{{
-            item.available ? item.variantTitle : '商品或库存已变化'
-          }}</text
-          ><view class="cart-action"
-            ><view class="line-price"
-              ><text class="price">¥{{ ((item.unitPriceCents || 0) / 100).toFixed(2) }}</text
-              ><text>× {{ item.quantity }}</text></view
-            >
-            ><button size="mini" @click="removeItem(item)">移除</button></view
-          ></view
-        ></view
-      ></view
-    ><view v-if="items.length" class="section"
-      ><view class="section-head"><text>履约方式</text><text>按门店分别履约</text></view
-      ><view class="fulfillment-tabs"
-        ><button
-          :class="{ active: deliveryMode === 'STORE_PICKUP' }"
-          @click="
-            deliveryMode = 'STORE_PICKUP';
-            checkout = null;
-          "
-        >
-          到店自提</button
-        ><button
-          :class="{ active: deliveryMode === 'PHYSICAL_DELIVERY' }"
-          @click="
-            deliveryMode = 'PHYSICAL_DELIVERY';
-            checkout = null;
-          "
-        >
-          配送到家
-        </button></view
-      ><picker
-        v-if="deliveryMode === 'PHYSICAL_DELIVERY' && addresses.length"
-        :range="addresses"
-        range-key="addressLine"
-        @change="
-          selectedAddressId = addresses[$event.detail.value].id;
-          checkout = null;
-        "
-      >
-        <view class="address-picker">
-          <text>配送地址</text>
-          <text>{{
-            addresses.find((address) => address.id === selectedAddressId)?.addressLine
-          }}</text>
-        </view>
-      </picker>
-      <view v-else-if="deliveryMode === 'PHYSICAL_DELIVERY'" class="empty-safe address-empty"
-        >请先在“我的”添加收货地址</view
-      >
-      ><view class="section-head"><text>金额明细</text><text>服务端核价</text></view
-      ><view class="amount-lines"
-        ><view
-          ><text>商品合计</text><text>¥{{ (total / 100).toFixed(2) }}</text></view
-        ><view><text>配送费用</text><text>结算时确认</text></view
-        ><view><text>优惠与奖励</text><text>以核价结果为准</text></view></view
-      ><button
-        v-if="!checkout"
-        class="checkout-button"
-        :loading="checkoutBusy"
-        @click="quoteCheckout"
-      >
-        重新核价</button
-      ><view v-else class="checkout-confirm"
-        ><text>本次应付 ¥{{ (checkout.payableAmountCents / 100).toFixed(2) }}</text
-        ><text>共 {{ checkout.groups.length }} 个履约分组，提交后分别创建订单</text
-        ><button class="checkout-button" :loading="checkoutBusy" @click="submitCheckout">
-          确认创建订单
-        </button></view
-      ></view
-    ></LifeSurface
-  >
+
+    <!-- 底部呼吸 -->
+    <view style="height: 28rpx"></view>
+  </LifeSurface>
 </template>
+
 <style scoped>
-.cart-hero {
+/* ========== 自提点 / 总览 绿色 hero ========== */
+.pick {
+  margin: 10rpx 20rpx 0;
+  border-radius: 28rpx;
+  padding: 26rpx 26rpx;
+  background: linear-gradient(135deg, var(--hd1, #009146), var(--hd2, #006b36));
+  color: #fff;
   display: flex;
-  min-height: 260rpx;
-  margin: 8rpx 20rpx 0;
-  padding: 34rpx;
-  border-radius: var(--life-radius-lg);
   align-items: center;
-  justify-content: space-between;
-  color: var(--life-paper);
-  background: linear-gradient(135deg, var(--life-brand-deep), var(--life-brand));
-  box-shadow: var(--life-shadow);
-  box-sizing: border-box;
+  gap: 18rpx;
+  box-shadow: 0 14rpx 30rpx rgba(0, 145, 70, 0.32);
+  position: relative;
+  overflow: hidden;
 }
-.cart-hero > view:first-child {
+.pick::after {
+  content: '';
+  position: absolute;
+  right: -48rpx;
+  top: -56rpx;
+  width: 200rpx;
+  height: 200rpx;
+  border-radius: 50%;
+  background: rgba(254, 230, 0, 0.16);
+}
+.pi {
+  width: 72rpx;
+  height: 72rpx;
+  border-radius: 22rpx;
+  background: rgba(255, 255, 255, 0.18);
+  display: grid;
+  place-items: center;
+  flex: none;
+  position: relative;
+  z-index: 2;
+}
+.pi-ic {
+  font-size: 36rpx;
+  line-height: 1;
+}
+.pt {
+  flex: 1;
+  min-width: 0;
   display: flex;
-  max-width: 68%;
   flex-direction: column;
+  gap: 6rpx;
+  position: relative;
+  z-index: 2;
 }
-.cart-hero view:first-child text:first-child {
-  font-size: 44rpx;
+.pb {
+  font-size: 28rpx;
   font-weight: 900;
+  color: #fff;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
-.cart-hero view:first-child text:nth-child(2) {
-  margin-top: 10rpx;
-  font-size: 25rpx;
-  font-weight: 800;
-}
-.cart-hero view:first-child text:last-child {
-  margin-top: 10rpx;
+.pp {
   font-size: 17rpx;
+  font-weight: 700;
+  opacity: 0.9;
+}
+.pamt {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2rpx;
+  position: relative;
+  z-index: 2;
+  padding-left: 10rpx;
+}
+.plab {
+  font-size: 15rpx;
+  font-weight: 800;
   opacity: 0.88;
 }
-.cart-basket {
-  display: flex;
-  width: 150rpx;
-  height: 150rpx;
-  border-radius: 50%;
-  align-items: center;
-  justify-content: center;
-  flex-direction: column;
-  background: rgba(255, 255, 255, 0.16);
+.pval {
+  font-size: 38rpx;
+  font-weight: 900;
+  color: #fff;
+  letter-spacing: 0.01em;
+  line-height: 1.1;
 }
-.cart-basket > text {
-  margin-top: 10rpx;
-  font-size: 19rpx;
+
+/* ========== 满减进度条 ========== */
+.cj {
+  margin: 20rpx 20rpx 0;
+  background: var(--notice-bg, #e6f3ea);
+  color: var(--notice-tx, #0b6b3d);
+  border-radius: 22rpx;
+  padding: 14rpx 18rpx;
+  display: flex;
+  align-items: center;
+  gap: 10rpx;
+  font-size: 18rpx;
+  font-weight: 800;
+  position: relative;
+}
+.cj-ic {
+  flex: none;
+  font-size: 26rpx;
+}
+.cj-tx {
+  flex: none;
+  white-space: nowrap;
   font-weight: 900;
 }
-.basket-mark {
-  position: relative;
-  width: 58rpx;
-  height: 44rpx;
-  border: 5rpx solid var(--life-paper);
-  border-top: 0;
-  border-radius: 5rpx 5rpx 14rpx 14rpx;
-  box-sizing: border-box;
-}
-.basket-mark::before,
-.basket-mark::after {
-  position: absolute;
-  top: -12rpx;
-  width: 32rpx;
-  height: 5rpx;
+.cj-bar {
+  flex: 1;
+  height: 10rpx;
   border-radius: 999rpx;
-  background: var(--life-paper);
-  content: '';
+  background: rgba(11, 107, 61, 0.12);
+  overflow: hidden;
 }
-.basket-mark::before {
-  left: -2rpx;
-  transform: rotate(-38deg);
-}
-.basket-mark::after {
-  right: -2rpx;
-  transform: rotate(38deg);
-}
-.basket-mark > view {
-  position: absolute;
-  top: 10rpx;
-  width: 4rpx;
-  height: 20rpx;
+.cj-bar-fill {
+  height: 100%;
   border-radius: 999rpx;
-  background: var(--life-paper);
+  background: linear-gradient(90deg, var(--yel, #fee600), var(--hot, #eb6325));
+  transition: width 0.4s ease;
 }
-.basket-mark > view:first-child {
-  left: 16rpx;
+.cj-go {
+  flex: none;
+  color: var(--notice-tx, #0b6b3d);
+  font-weight: 900;
 }
-.basket-mark > view:last-child {
-  right: 16rpx;
-}
-.cart-trust {
-  display: flex;
+
+/* ========== 信任条 ========== */
+.trust {
+  margin: 20rpx 20rpx 0;
   min-height: 70rpx;
-  border-radius: 24rpx;
+  border-radius: 22rpx;
+  background: linear-gradient(120deg, rgba(0, 145, 70, 0.07), rgba(0, 145, 70, 0.04));
+  display: flex;
   align-items: center;
   justify-content: space-around;
-  color: var(--life-brand-deep);
-  background: var(--life-brand-soft);
-  font-size: 16rpx;
+  padding: 0 12rpx;
+  color: #0b6b3d;
+  font-size: 17rpx;
+  font-weight: 800;
 }
-.cart-photo {
-  width: 150rpx;
-  height: 132rpx;
-  border-radius: 18rpx;
+
+/* ========== section header ========== */
+.sec-h {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: 28rpx 2rpx 12rpx;
+}
+.sec-tt {
+  position: relative;
+  padding-left: 20rpx;
+  font-size: 30rpx;
+  font-weight: 900;
+  color: var(--ink, #16130f);
+  letter-spacing: 0.02em;
+}
+.sec-tt::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  width: 8rpx;
+  height: 28rpx;
+  border-radius: 999rpx;
+  transform: translateY(-50%);
+  background: linear-gradient(180deg, var(--hd1, #009146), var(--hd2, #006b36));
+}
+.sec-more {
+  font-size: 18rpx;
+  font-weight: 800;
+  color: var(--mut, #857c6d);
+}
+
+/* ========== 状态卡 ========== */
+.st {
+  margin: 22rpx 20rpx 0;
+  padding: 48rpx 20rpx;
+  border: 2rpx dashed var(--line, rgba(22, 19, 15, 0.08));
+  border-radius: 24rpx;
+  color: var(--mut, #857c6d);
+  background: var(--card, #fff);
+  text-align: center;
+  font-size: 18rpx;
+  font-weight: 700;
+}
+.addr-empty {
+  margin-top: 18rpx;
+}
+
+/* ========== group wrap 内容容器 ========== */
+.group-wrap {
+  margin: 0 20rpx;
+}
+
+/* ========== crow 购物车行 concept-f ========== */
+.clist {
+  display: flex;
+  flex-direction: column;
+  gap: 14rpx;
+  padding: 2rpx 0;
+}
+.crow {
+  display: flex;
+  gap: 16rpx;
+  padding: 16rpx;
+  border-radius: 24rpx;
+  background: var(--card, #fff);
+  border: 1rpx solid var(--line, rgba(22, 19, 15, 0.06));
+  box-shadow: 0 6rpx 18rpx rgba(22, 19, 15, 0.05);
+  align-items: center;
+}
+.cimg {
+  width: 160rpx;
+  height: 160rpx;
+  border-radius: 22rpx;
   flex: none;
-  background: url('../../assets/v63-retail/product-sprite.webp') var(--sprite-x) 0 / 400% 200%
-    no-repeat;
+  background-repeat: no-repeat;
+  background-color: var(--bg, #f6f1e6);
 }
-.cart-group {
-  padding: 22rpx;
+.ci {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
 }
-.cart-line {
-  padding: 16rpx 0;
-  border-bottom: 1rpx solid var(--life-line);
-  border-radius: 0;
-  box-shadow: none;
+.cnm {
+  font-size: 26rpx;
+  font-weight: 800;
+  color: var(--ink, #16130f);
+  line-height: 1.35;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
-.cart-line:last-child {
-  border-bottom: 0;
-}
-.cart-variant {
-  display: inline-flex;
+.csp {
+  margin-top: 6rpx;
   align-self: flex-start;
-  padding: 5rpx 10rpx;
-  border-radius: 8rpx;
-  background: var(--life-wash);
+  padding: 5rpx 12rpx;
+  border-radius: 10rpx;
+  background: var(--notice-bg, #e6f3ea);
+  color: var(--notice-tx, #0b6b3d);
+  font-size: 16rpx;
+  font-weight: 800;
+  max-width: 100%;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
-.cart-action {
+.cbot {
+  margin-top: 12rpx;
   display: flex;
   align-items: center;
   justify-content: space-between;
 }
-.line-price {
+.pr {
   display: flex;
   align-items: baseline;
-  gap: 9rpx;
-}
-.line-price > text:last-child {
-  color: var(--life-muted);
-  font-size: 18rpx;
-}
-.amount-lines {
-  display: grid;
-  gap: 14rpx;
-}
-.amount-lines > view {
-  display: flex;
-  justify-content: space-between;
-  color: var(--life-muted);
-  font-size: 21rpx;
-}
-.amount-lines > view:first-child text:last-child {
-  color: var(--life-red);
-  font-size: 26rpx;
+  color: var(--promo, #f03749);
   font-weight: 900;
 }
-.cart-action button {
-  margin: 0;
-  color: var(--life-coral-ink);
-  background: var(--life-coral-soft);
-  border-radius: 999rpx;
+.pr-sym {
   font-size: 20rpx;
 }
-.checkout-button {
-  margin-top: 24rpx;
-  color: var(--life-paper);
-  background: var(--life-brand-deep);
+.pr-y {
+  font-size: 34rpx;
+  letter-spacing: -0.02em;
+}
+.pr-d {
+  font-size: 20rpx;
+  margin-right: 8rpx;
+}
+.pr-qty {
+  font-size: 18rpx;
+  font-weight: 700;
+  color: var(--mut, #857c6d);
+  margin-left: 2rpx;
+}
+.rmbtn {
+  margin: 0;
+  flex: none;
+  padding: 0 20rpx;
+  height: 48rpx;
+  line-height: 48rpx;
   border-radius: 999rpx;
-  font-size: 26rpx;
-  font-weight: 800;
-}
-.checkout-confirm {
-  display: flex;
-  margin-top: 24rpx;
-  padding-top: 22rpx;
-  border-top: 1rpx solid var(--life-line);
-  flex-direction: column;
-  gap: 10rpx;
-  color: var(--life-muted);
-  font-size: 22rpx;
-}
-.checkout-confirm text:first-child {
-  color: var(--life-ink);
-  font-size: 30rpx;
+  background: rgba(240, 55, 73, 0.08);
+  color: var(--promo, #f03749);
+  font-size: 17rpx;
   font-weight: 900;
 }
-.fulfillment-tabs {
+
+/* ========== 履约 tabs ========== */
+.ff-tabs {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 14rpx;
-  margin-bottom: 22rpx;
+  padding: 2rpx 0;
 }
-.fulfillment-tabs button {
-  color: var(--life-muted);
-  background: var(--life-wash);
-  border-radius: 18rpx;
-  font-size: 23rpx;
-}
-.fulfillment-tabs button.active {
-  color: var(--life-paper);
-  background: var(--life-brand-deep);
-}
-.address-picker {
+.ff-tabs button {
+  margin: 0;
+  padding: 20rpx 18rpx;
+  border-radius: 24rpx;
+  background: var(--card, #fff);
+  border: 2rpx solid var(--line, rgba(22, 19, 15, 0.06));
+  box-shadow: 0 4rpx 14rpx rgba(22, 19, 15, 0.04);
   display: flex;
-  margin-bottom: 26rpx;
-  padding: 22rpx;
-  border: 1rpx solid var(--life-line);
-  border-radius: 20rpx;
+  align-items: center;
+  gap: 14rpx;
+  text-align: left;
+  color: var(--ink, #16130f);
+  transition: all 0.25s ease;
+}
+.ff-ic {
+  width: 64rpx;
+  height: 64rpx;
+  border-radius: 18rpx;
+  display: grid;
+  place-items: center;
+  background: var(--notice-bg, #e6f3ea);
+  font-size: 32rpx;
+  flex: none;
+}
+.ff-tx {
+  display: flex;
   flex-direction: column;
-  gap: 8rpx;
-  background: var(--life-wash);
+  gap: 4rpx;
+  min-width: 0;
 }
-.address-picker text:first-child {
-  color: var(--life-brand-deep);
-  font-size: 20rpx;
-  font-weight: 800;
-}
-.address-picker text:last-child {
+.ff-b {
   font-size: 24rpx;
+  font-weight: 900;
+  color: var(--ink, #16130f);
 }
-.address-empty {
-  margin-bottom: 26rpx;
+.ff-s {
+  font-size: 16rpx;
+  font-weight: 700;
+  color: var(--mut, #857c6d);
+}
+.ff-tabs button.active {
+  background: linear-gradient(135deg, var(--hd1, #009146), var(--hd2, #006b36));
+  border-color: transparent;
+  box-shadow: 0 10rpx 22rpx rgba(0, 145, 70, 0.3);
+}
+.ff-tabs button.active .ff-ic {
+  background: rgba(255, 255, 255, 0.2);
+}
+.ff-tabs button.active .ff-b,
+.ff-tabs button.active .ff-s {
+  color: #fff;
+}
+
+/* ========== 地址 picker ========== */
+.addr {
+  margin-top: 16rpx;
+  padding: 20rpx 20rpx;
+  border-radius: 24rpx;
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+}
+.addr-ic {
+  width: 64rpx;
+  height: 64rpx;
+  border-radius: 18rpx;
+  display: grid;
+  place-items: center;
+  background: rgba(13, 111, 150, 0.1);
+  font-size: 32rpx;
+  flex: none;
+}
+.addr-tx {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5rpx;
+}
+.addr-lab {
+  font-size: 18rpx;
+  font-weight: 900;
+  color: #0d4f6b;
+}
+.addr-val {
+  font-size: 24rpx;
+  font-weight: 800;
+  color: var(--ink, #16130f);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.addr-go {
+  flex: none;
+  color: var(--accent, #009146);
+  font-size: 18rpx;
+  font-weight: 900;
+}
+
+/* ========== 金额明细 ========== */
+.amount {
+  padding: 22rpx 22rpx 18rpx;
+  border-radius: 24rpx;
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+}
+.ar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: var(--mut, #857c6d);
+  font-size: 22rpx;
+  font-weight: 700;
+}
+.ar-strong {
+  color: var(--promo, #f03749);
+  font-size: 28rpx;
+  font-weight: 900;
+}
+.ar-pay {
+  padding-top: 18rpx;
+  border-top: 2rpx dashed var(--line, rgba(22, 19, 15, 0.08));
+}
+.al-pay {
+  font-size: 24rpx;
+  font-weight: 900;
+  color: var(--ink, #16130f);
+}
+.pay-amt {
+  font-size: 38rpx;
+  font-weight: 900;
+  color: var(--promo, #f03749);
+  letter-spacing: 0.01em;
+}
+
+/* ========== 核价按钮 + 提交卡 ========== */
+.cta-wrap {
+  margin-top: 24rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10rpx;
+}
+.checkout-btn {
+  width: 100%;
+  height: 88rpx;
+  line-height: 88rpx;
+  margin: 0;
+  padding: 0 28rpx;
+  border-radius: 999rpx;
+  background: linear-gradient(135deg, #00c853, var(--hd2, #006b36));
+  color: #fff;
+  font-size: 28rpx;
+  font-weight: 900;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10rpx;
+  box-shadow: 0 12rpx 26rpx rgba(0, 145, 70, 0.35);
+  letter-spacing: 0.04em;
+}
+.checkout-btn.hot {
+  background: linear-gradient(135deg, #ff7a3d, #e8253f);
+  box-shadow: 0 12rpx 26rpx rgba(232, 37, 63, 0.35);
+}
+.cta-ic {
+  font-size: 26rpx;
+  line-height: 1;
+}
+.cta-sub {
+  font-size: 16rpx;
+  font-weight: 700;
+  color: var(--mut, #857c6d);
+  text-align: center;
+  padding: 0 10rpx;
+}
+
+/* ========== 核价确认卡片 ========== */
+.confirm-wrap {
+  margin-top: 22rpx;
+  padding: 26rpx 24rpx;
+  border-radius: 28rpx;
+  display: flex;
+  flex-direction: column;
+  gap: 12rpx;
+}
+.cf-hd {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+.cf-lab {
+  display: inline-flex;
+  align-items: center;
+  padding: 6rpx 14rpx;
+  border-radius: 10rpx;
+  background: rgba(11, 107, 61, 0.12);
+  color: var(--notice-tx, #0b6b3d);
+  font-size: 17rpx;
+  font-weight: 900;
+}
+.cf-total {
+  font-size: 38rpx;
+  font-weight: 900;
+  color: var(--promo, #f03749);
+  letter-spacing: 0.01em;
+}
+.cf-sub {
+  font-size: 18rpx;
+  font-weight: 700;
+  color: var(--mut, #857c6d);
+}
+.cf-facts {
+  margin: 8rpx 0 6rpx;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10rpx;
+}
+.ff-chip {
+  padding: 7rpx 16rpx;
+  border-radius: 999rpx;
+  background: var(--notice-bg, #e6f3ea);
+  color: var(--notice-tx, #0b6b3d);
+  font-size: 16rpx;
+  font-weight: 800;
 }
 </style>

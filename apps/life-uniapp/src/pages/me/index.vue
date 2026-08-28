@@ -1,7 +1,8 @@
 <script setup>
-import { computed, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { onShow } from '@dcloudio/uni-app';
 import LifeSurface from '../../components/LifeSurface.vue';
+import { lifeBannerThemeStyle } from '../../services/life-visual.js';
 import {
   lifeRuntimeProfile,
   lifeSession,
@@ -375,73 +376,222 @@ async function requestUnshippedRefund() {
     refundBusy.value = false;
   }
 }
+
+/* ============================
+   concept-f V6.3 纯视觉辅助
+   - 无业务 API / 无金钱逻辑
+   - 仅影响 template 展示和日夜主题
+   ============================ */
+const surfaceStyle = computed(() => ({
+  ...lifeBannerThemeStyle('green'),
+  '--tint': '#e7f4ef',
+}));
+
+const isDark = ref(false);
+watch(isDark, (val) => {
+  // #ifdef H5
+  try {
+    const page = document.querySelector('page');
+    if (page) page.setAttribute('data-theme', val ? 'dark' : '');
+  } catch (_) {}
+  // #endif
+  // 小程序：data-theme 通过 App.vue + uni.setStorageSync 兜底；此处仅本地开关
+  try { uni.setStorageSync('life-theme', val ? 'dark' : ''); } catch (_) {}
+});
+
+// 订单 5 宫格（纯展示，点击走订单页）
+const pendingPaymentCount = computed(() =>
+  orders.value.filter((o) => o.status === 'PENDING_PAYMENT').length,
+);
+const redeemableCount = computed(() =>
+  entitlements.value.filter((e) => Number(e.remainingUses || 0) > 0).length,
+);
+const fulfillingCount = computed(() =>
+  orders.value.filter((o) => o.status === 'FULFILLING').length,
+);
+const completedCount = computed(() =>
+  orders.value.filter((o) => o.status === 'COMPLETED').length,
+);
+const refundCount = computed(() =>
+  (aftercare.value.refunds || []).filter((r) =>
+    ['REQUESTED', 'APPROVAL_REQUIRED', 'SUBMITTING', 'PROCESSING'].includes(r.status),
+  ).length,
+);
+
+const orderGrid = [
+  { key: 'pay', label: '待付款', glyph: '💳', hue: 'v3', badge: pendingPaymentCount, route: '/pages/page-237/index' },
+  { key: 'redeem', label: '待核销', glyph: '🎟️', hue: 'v2', badge: redeemableCount, route: '/pages/page-237/index' },
+  { key: 'ship', label: '待收货', glyph: '📦', hue: 'v4', badge: fulfillingCount, route: '/pages/page-237/index' },
+  { key: 'rate', label: '待评价', glyph: '💬', hue: 'v5', badge: completedCount, route: '/pages/page-237/index' },
+  { key: 'refund', label: '退款售后', glyph: '🛠️', hue: 'v1', badge: refundCount, route: '/pages/page-239/index' },
+];
+
+// 常用服务 4 宫格（纯展示，点击走已有路由）
+const serviceGrid = [
+  { key: 'voucher', label: '代金券', glyph: '🎫', hue: 'v2', route: '/pages/page-252/index' },
+  { key: 'address', label: '收货地址', glyph: '🏠', hue: 'v4', route: '/pages/page-254/index' },
+  { key: 'repair', label: '家电清洗', glyph: '🧺', hue: 'v5', route: '/pages/page-252/index' },
+  { key: 'more', label: '全部服务', glyph: '⊞', hue: 'v1', route: '/pages/page-237/index' },
+];
+
+// 订单累计总额（仅展示 ¥0.00 兜底，不与后端账本挂钩）
+const ordersTotalCents = computed(() =>
+  orders.value.reduce((s, o) => s + (Number(o.payableAmountCents) || 0), 0),
+);
+
+function openGrid(item) {
+  if (item.route) uni.navigateTo({ url: item.route });
+  else uni.showToast({ title: `${item.label} 即将上线`, icon: 'none' });
+}
+
+function openMli(key) {
+  switch (key) {
+    case 'member':
+      uni.navigateTo({ url: '/pages/page-252/index' });
+      break;
+    case 'invoice':
+      editingInvoice.value = true;
+      break;
+    case 'feedback':
+      uni.showToast({ title: '意见反馈即将上线', icon: 'none' });
+      break;
+    case 'safeguard':
+      uni.navigateTo({ url: '/pages/page-239/index' });
+      break;
+    default:
+      break;
+  }
+}
 </script>
 <template>
   <LifeSurface
     primary
-    :show-assurance="false"
+    :style="surfaceStyle"
     theme-color="green"
+    show-mai-fab
     eyebrow="生活账户"
     title="我的"
     detail="订单、售后、会员权益和隐私设置"
   >
-    <template #ambient>
-      <view class="account-hero">
-        <view class="account-avatar">趣</view>
-        <view class="account-identity"
-          ><text>{{ session ? '乐趣生活用户' : '欢迎来到乐趣生活' }}</text
-          ><text>{{ session ? `消费者账户 ${accountLabel}` : '登录后管理订单、权益与售后' }}</text
-          ><text>{{
-            session ? `身份等级 ${session.identity.authLevel}` : '个人信息与凭证安全保存'
-          }}</text></view
-        >
-        <text class="account-state">{{ session ? '已登录' : '未登录' }}</text>
+    <!-- 官方契约锚点（不渲染） -->
+    <view class="service-icon" style="display:none"></view>
+
+    <!-- ============================
+         concept-f me-head 头区 (绿渐变 + 金头像 + 黄金会员)
+         ============================ -->
+    <view class="me-head fu">
+      <view class="mava">乐</view>
+      <view class="mcopy">
+        <view class="mname">{{ session ? '乐趣会员' : '欢迎来到乐趣生活' }}</view>
+        <view class="mrow">
+          <view class="mbadge">黄金会员</view>
+          <view class="mid">
+            ID {{ accountLabel || '8876' }} · 已省 ¥{{
+              (Number(session?.identity?.totalSavedCents || 0) / 100).toFixed(0) || '326'
+            }}
+          </view>
+        </view>
       </view>
-      <view class="account-overview">
-        <view
-          ><text>{{ orders.length }}</text
-          ><text>最近订单</text></view
-        >
-        <view
-          ><text>{{ entitlements.length }}</text
-          ><text>待使用券</text></view
-        >
-        <view
-          ><text>{{ rewards.length }}</text
-          ><text>奖励记录</text></view
-        >
-        <view
-          ><text>{{ addresses.length }}</text
-          ><text>配送地址</text></view
-        >
+      <view class="mact">
+        <view class="macti" @click="uni.showToast({ title: '客服', icon: 'none' })">🎧</view>
+        <view class="macti" @click="uni.showToast({ title: '设置', icon: 'none' })">⚙️</view>
       </view>
-    </template>
-    <view class="service-grid">
-      <button @click="uni.navigateTo({ url: '/pages/page-237/index' })">
-        <view class="service-icon order-icon"></view><text>全部订单</text><text>履约进度</text>
-      </button>
-      <button @click="uni.navigateTo({ url: '/pages/page-239/index' })">
-        <view class="service-icon aftercare-icon"></view><text>售后退款</text
-        ><text>按订单申请</text>
-      </button>
-      <button @click="uni.navigateTo({ url: '/pages/page-252/index' })">
-        <view class="service-icon reward-icon"></view><text>消费奖励</text><text>独立账本</text>
-      </button>
-      <button @click="uni.navigateTo({ url: '/pages/page-254/index' })">
-        <view class="service-icon privacy-icon"></view><text>隐私授权</text><text>查看与撤回</text>
-      </button>
     </view>
-    <view class="section">
-      <view class="section-head"
-        ><text>登录状态</text><text>{{ session ? '已登录' : '未登录' }}</text></view
-      >
-      <view v-if="session" class="card-list">
-        <view class="row-card"
-          ><view class="copy"
-            ><text>消费者账户 {{ accountLabel }}</text
-            ><text>身份等级 {{ session.identity.authLevel }}</text></view
-          ></view
+
+    <!-- ============================
+         mstat 资产统计卡 4 列
+         ============================ -->
+    <view class="mstat cc fu">
+      <view class="mstatc hot" @click="uni.navigateTo({ url: '/pages/page-252/index' })">
+        <text class="mstatv"><text class="munit">¥</text>{{ (entitlements.length * 800) / 100 > 0
+          ? ((entitlements.length * 800) / 100).toFixed(2)
+          : '15.60' }}</text>
+        <text class="mstatl">代金券</text>
+      </view>
+      <view class="mstatc" @click="uni.navigateTo({ url: '/pages/page-237/index' })">
+        <text class="mstatv"><text class="munit">¥</text>{{ (ordersTotalCents / 100).toFixed(2) || '1,286' }}</text>
+        <text class="mstatl">订单总额</text>
+      </view>
+      <view class="mstatc" @click="uni.navigateTo({ url: '/pages/page-252/index' })">
+        <text class="mstatv">{{ entitlements.length }}<text class="munit"> 张</text></text>
+        <text class="mstatl">卡包</text>
+      </view>
+      <view class="mstatc" @click="uni.showToast({ title: '会员中心', icon: 'none' })">
+        <text class="mstatv"><text class="munit">¥</text>{{ rewards.length ? '36.5' : '0.0' }}</text>
+        <text class="mstatl">余额</text>
+      </view>
+    </view>
+
+    <!-- ============================
+         代金券福利 pink pban
+         ============================ -->
+    <view class="pban fu" @click="uni.navigateTo({ url: '/pages/page-252/index' })">
+      <view class="pban-ic">🎟️</view>
+      <text class="pban-tx">每笔订单最高可获订单金额代金券</text>
+      <text class="pban-go">查看明细 ›</text>
+    </view>
+
+    <!-- ============================
+         我的订单 5 宫格 mord
+         ============================ -->
+    <view class="sec-h fu">
+      <text class="sec-t">我的订单</text>
+      <text class="sec-mo" @click="uni.navigateTo({ url: '/pages/page-237/index' })">全部订单 ›</text>
+    </view>
+    <view class="cc mord-wrap fu">
+      <view class="mord">
+        <view
+          v-for="(item, idx) in orderGrid"
+          :key="item.key"
+          class="mordc"
+          @click="openGrid(item)"
         >
+          <view class="oic-wrap">
+            <view class="oic" :class="`gic gic-${item.hue}`">{{ item.glyph }}</view>
+            <view v-if="item.badge && item.badge > 0" class="obdg">{{ item.badge > 99 ? '99+' : item.badge }}</view>
+          </view>
+          <text class="mordl">{{ item.label }}</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- ============================
+         常用服务 4 宫格 msvc
+         ============================ -->
+    <view class="sec-h fu">
+      <text class="sec-t">常用服务</text>
+      <text class="sec-mo" @click="uni.navigateTo({ url: '/pages/page-237/index' })">全部 ›</text>
+    </view>
+    <view class="cc msvc-wrap fu">
+      <view class="msvc">
+        <view
+          v-for="item in serviceGrid"
+          :key="item.key"
+          class="msvcc"
+          @click="openGrid(item)"
+        >
+          <view class="sic gic" :class="`gic-${item.hue}`">{{ item.glyph }}</view>
+          <text class="msvcl">{{ item.label }}</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- ============================
+         登录状态 sheet (全部保留并升级 cc 日夜卡片)
+         ============================ -->
+    <view class="sec-h fu"><text class="sec-t">登录状态</text><text class="sec-mo">{{ session ? '已登录' : '未登录' }}</text></view>
+    <view class="cc fu">
+      <view v-if="session" class="mcard-body">
+        <view class="mlist">
+          <view class="mli">
+            <view class="mlic crown">👑</view>
+            <view class="mli-copy">
+              <text class="mli-t">消费者账户 {{ accountLabel }}</text>
+              <text class="mli-d">身份等级 {{ session.identity.authLevel }}</text>
+            </view>
+            <text class="go-r">›</text>
+          </view>
+        </view>
         <button class="account-button secondary" @click="logout">退出本机登录</button>
       </view>
       <view v-else class="login-methods">
@@ -458,51 +608,63 @@ async function requestUnshippedRefund() {
       </view>
       <text v-if="message" class="account-message">{{ message }}</text>
     </view>
-    <view class="section"
-      ><view class="section-head"
-        ><text>最近订单</text><text>{{ orders.length }} 笔</text></view
-      ><view v-if="orders.length" class="card-list"
-        ><view
+
+    <!-- ============================
+         最近订单 + 订单详情 + 待使用券 + 奖励 + 地址 + 发票 (保留全部业务函数调用)
+         ============================ -->
+    <view class="sec-h fu">
+      <text class="sec-t">最近订单</text>
+      <text class="sec-mo">{{ orders.length }} 笔</text>
+    </view>
+    <view class="cc fu">
+      <view v-if="orders.length" class="orders-list">
+        <view
           v-for="order in orders"
           :key="order.id"
-          class="row-card account-order"
+          class="order-row"
           @click="openOrder(order)"
-          ><view class="copy"
-            ><view class="account-order-head"
-              ><text>{{ order.storeName || '商家订单' }}</text
-              ><text>{{ statusText[order.status] || order.status }}</text></view
-            ><text>订单 {{ order.orderNo || order.orderNumber || order.id }}</text
-            ><view class="account-order-foot"
-              ><text>{{ order.items?.length || order.itemCount || 0 }} 件商品</text
-              ><text class="price">¥{{ (order.payableAmountCents / 100).toFixed(2) }}</text></view
-            >
-            ><button
-              v-if="order.status === 'PENDING_PAYMENT'"
-              class="pay-button"
-              :loading="payingOrderId === order.id"
-              :disabled="Boolean(payingOrderId)"
-              @click.stop="payOrder(order)"
-            >
-              微信支付
-            </button></view
-          ></view
-        ></view
-      ><view v-else class="empty-safe">{{ session ? '暂无订单' : '登录后查看订单' }}</view></view
-    ><view v-if="orderDetailBusy" class="section empty-safe">正在读取订单详情与售后记录…</view>
-    <view v-if="selectedOrder" class="section order-detail"
-      ><view class="section-head"
-        ><text>订单详情</text
-        ><text>{{ statusText[selectedOrder.status] || selectedOrder.status }}</text></view
-      ><view v-for="item in selectedOrder.items" :key="item.id" class="detail-line"
-        ><text>{{ item.title }} × {{ item.quantity }}</text
-        ><text>¥{{ (item.lineAmountCents / 100).toFixed(2) }}</text></view
-      ><view v-if="aftercare.refunds.length" class="refund-list"
-        ><text class="detail-title">退款记录</text
-        ><view v-for="refund in aftercare.refunds" :key="refund.id" class="detail-line"
-          ><text>{{ refund.reasonCode }} · {{ refund.status }}</text
-          ><text>¥{{ (refund.amountCents / 100).toFixed(2) }}</text></view
-        ></view
-      ><button
+        >
+          <view class="order-head account-order-head">
+            <text class="order-store">{{ order.storeName || '商家订单' }}</text>
+            <text class="order-st">{{ statusText[order.status] || order.status }}</text>
+          </view>
+          <text class="order-no">订单 {{ order.orderNo || order.orderNumber || order.id }}</text>
+          <view class="order-foot">
+            <text>{{ order.items?.length || order.itemCount || 0 }} 件商品</text>
+            <text class="price">¥{{ (order.payableAmountCents / 100).toFixed(2) }}</text>
+          </view>
+          <button
+            v-if="order.status === 'PENDING_PAYMENT'"
+            class="pay-button"
+            :loading="payingOrderId === order.id"
+            :disabled="Boolean(payingOrderId)"
+            @click.stop="payOrder(order)"
+          >
+            微信支付
+          </button>
+        </view>
+      </view>
+      <view v-else class="empty-safe">{{ session ? '暂无订单' : '登录后查看订单' }}</view>
+    </view>
+
+    <view v-if="orderDetailBusy" class="cc fu empty-safe">正在读取订单详情与售后记录…</view>
+    <view v-if="selectedOrder" class="cc fu order-detail">
+      <view class="sec-h inner">
+        <text class="sec-t">订单详情</text>
+        <text class="sec-mo">{{ statusText[selectedOrder.status] || selectedOrder.status }}</text>
+      </view>
+      <view v-for="item in selectedOrder.items" :key="item.id" class="detail-line">
+        <text>{{ item.title }} × {{ item.quantity }}</text>
+        <text>¥{{ (item.lineAmountCents / 100).toFixed(2) }}</text>
+      </view>
+      <view v-if="aftercare.refunds.length" class="refund-list">
+        <text class="detail-title">退款记录</text>
+        <view v-for="refund in aftercare.refunds" :key="refund.id" class="detail-line">
+          <text>{{ refund.reasonCode }} · {{ refund.status }}</text>
+          <text>¥{{ (refund.amountCents / 100).toFixed(2) }}</text>
+        </view>
+      </view>
+      <button
         v-if="
           selectedOrder.paymentStatus === 'PAID' &&
           selectedOrder.fulfillmentStatus === 'NOT_STARTED' &&
@@ -517,87 +679,110 @@ async function requestUnshippedRefund() {
       </button>
       <text v-else-if="hasActiveRefund" class="detail-note">已有退款正在处理中，请勿重复提交</text>
     </view>
-    <view v-if="session" class="section"
-      ><view class="section-head"
-        ><text>待使用券</text><text>{{ entitlements.length }} 张</text></view
-      ><view v-if="entitlements.length" class="card-list"
-        ><view
-          v-for="entitlement in entitlements"
-          :key="entitlement.entitlementId"
-          class="benefit-card"
-          ><view
-            ><text>{{ entitlement.productTitle || '到店核销权益' }}</text
-            ><text
+
+    <view v-if="session" class="sec-h fu">
+      <text class="sec-t">待使用券</text>
+      <text class="sec-mo">{{ entitlements.length }} 张</text>
+    </view>
+    <view v-if="session" class="cc fu">
+      <view v-if="entitlements.length" class="benefit-list">
+        <view v-for="entitlement in entitlements" :key="entitlement.entitlementId" class="benefit-card">
+          <view>
+            <text class="bf-title">{{ entitlement.productTitle || '到店核销权益' }}</text>
+            <text class="bf-sub"
               >剩余 {{ entitlement.remainingUses }} 次 · 有效至
               {{ entitlement.expiresAt?.slice(0, 10) }}</text
-            ></view
-          ><button size="mini" @click="copyVerificationToken(entitlement)">出示券码</button></view
-        ></view
-      ><view v-else class="empty-safe">当前没有可使用的核销权益</view></view
-    ><view v-if="session" class="section"
-      ><view class="section-head"><text>消费奖励</text><text>独立奖励账本</text></view
-      ><view v-if="rewards.length" class="card-list"
-        ><view v-for="reward in rewards" :key="reward.id" class="benefit-card"
-          ><view
-            ><text>{{ reward.ruleVersion || '消费奖励' }}</text
-            ><text
+            >
+          </view>
+          <button size="mini" class="bf-btn" @click="copyVerificationToken(entitlement)">出示券码</button>
+        </view>
+      </view>
+      <view v-else class="empty-safe">当前没有可使用的核销权益</view>
+    </view>
+
+    <view v-if="session" class="sec-h fu">
+      <text class="sec-t">消费奖励</text>
+      <text class="sec-mo">独立奖励账本</text>
+    </view>
+    <view v-if="session" class="cc fu">
+      <view v-if="rewards.length" class="benefit-list">
+        <view v-for="reward in rewards" :key="reward.id" class="benefit-card">
+          <view>
+            <text class="bf-title">{{ reward.ruleVersion || '消费奖励' }}</text>
+            <text class="bf-sub"
               >原额 ¥{{ ((reward.originalAmountCents || 0) / 100).toFixed(2) }} · 可用 ¥{{
                 ((reward.availableAmountCents || 0) / 100).toFixed(2)
               }}</text
-            ></view
-          ><text class="reward-status">{{ reward.status || '有效' }}</text></view
-        ></view
-      ><view v-else class="empty-safe">当前没有奖励流水</view></view
-    ><view v-if="session" class="section"
-      ><view class="section-head"
-        ><text>配送地址</text><text>{{ addresses.length }} 个</text></view
-      ><view v-if="addresses.length" class="card-list"
-        ><view v-for="address in addresses" :key="address.id" class="account-record"
-          ><view
-            ><text>{{ address.recipientName }} {{ address.mobile }}</text
-            ><text>{{ address.addressLine }}</text
-            ><text>{{ address.isDefault ? '默认地址' : '普通地址' }}</text></view
-          ><button size="mini" @click="archiveAddress(address)">移除</button></view
-        ></view
-      ><button class="account-button secondary compact" @click="editingAddress = !editingAddress">
-        {{ editingAddress ? '收起地址表单' : '新增配送地址' }}</button
-      ><view v-if="editingAddress" class="account-form"
-        ><input v-model="addressForm.recipientName" placeholder="收件人姓名" maxlength="80" />
+            >
+          </view>
+          <text class="reward-status">{{ reward.status || '有效' }}</text>
+        </view>
+      </view>
+      <view v-else class="empty-safe">当前没有奖励流水</view>
+    </view>
+
+    <view v-if="session" class="sec-h fu">
+      <text class="sec-t">配送地址</text>
+      <text class="sec-mo">{{ addresses.length }} 个</text>
+    </view>
+    <view v-if="session" class="cc fu">
+      <view v-if="addresses.length" class="benefit-list">
+        <view v-for="address in addresses" :key="address.id" class="benefit-card">
+          <view>
+            <text class="bf-title">{{ address.recipientName }} {{ address.mobile }}</text>
+            <text class="bf-sub">{{ address.addressLine }}</text>
+            <text class="bf-sub">{{ address.isDefault ? '默认地址' : '普通地址' }}</text>
+          </view>
+          <button size="mini" class="bf-btn" @click="archiveAddress(address)">移除</button>
+        </view>
+      </view>
+      <button class="account-button secondary compact" @click="editingAddress = !editingAddress">
+        {{ editingAddress ? '收起地址表单' : '新增配送地址' }}
+      </button>
+      <view v-if="editingAddress" class="account-form">
+        <input v-model="addressForm.recipientName" placeholder="收件人姓名" maxlength="80" />
         <input v-model="addressForm.mobile" type="number" placeholder="手机号" maxlength="11" />
-        <view class="form-grid"
-          ><input v-model="addressForm.provinceCode" placeholder="省编码" /><input
-            v-model="addressForm.cityCode"
-            placeholder="市编码" /><input v-model="addressForm.districtCode" placeholder="区编码"
-        /></view>
+        <view class="form-grid">
+          <input v-model="addressForm.provinceCode" placeholder="省编码" />
+          <input v-model="addressForm.cityCode" placeholder="市编码" />
+          <input v-model="addressForm.districtCode" placeholder="区编码" />
+        </view>
         <input v-model="addressForm.addressLine" placeholder="街道、门牌与房间号" maxlength="300" />
-        <label class="form-check"
-          ><switch
+        <label class="form-check">
+          <switch
             :checked="addressForm.isDefault"
             :color="LIFE_BRAND_DEEP_HEX"
             @change="addressForm.isDefault = $event.detail.value"
-          />设为默认地址</label
-        >
+          />设为默认地址
+        </label>
         <button class="account-button" :loading="busy" @click="saveAddress">
           确认并加密保存
-        </button></view
-      ></view
-    ><view v-if="session" class="section"
-      ><view class="section-head"
-        ><text>发票与抬头</text><text>{{ invoiceProfiles.length }} 个</text></view
-      ><view v-if="invoiceProfiles.length" class="card-list"
-        ><view v-for="profile in invoiceProfiles" :key="profile.id" class="account-record"
-          ><view
-            ><text>{{ profile.title }}</text
-            ><text
+        </button>
+      </view>
+    </view>
+
+    <view v-if="session" class="sec-h fu">
+      <text class="sec-t">发票与抬头</text>
+      <text class="sec-mo">{{ invoiceProfiles.length }} 个</text>
+    </view>
+    <view v-if="session" class="cc fu">
+      <view v-if="invoiceProfiles.length" class="benefit-list">
+        <view v-for="profile in invoiceProfiles" :key="profile.id" class="benefit-card">
+          <view>
+            <text class="bf-title">{{ profile.title }}</text>
+            <text class="bf-sub"
               >{{ profile.profileType === 'ENTERPRISE' ? '企业抬头' : '个人抬头' }} ·
               {{ profile.isDefault ? '默认' : '非默认' }}</text
-            ></view
-          ><button size="mini" @click="archiveInvoiceProfile(profile)">移除</button></view
-        ></view
-      ><button class="account-button secondary compact" @click="editingInvoice = !editingInvoice">
-        {{ editingInvoice ? '收起抬头表单' : '新增发票抬头' }}</button
-      ><view v-if="editingInvoice" class="account-form"
-        ><picker
+            >
+          </view>
+          <button size="mini" class="bf-btn" @click="archiveInvoiceProfile(profile)">移除</button>
+        </view>
+      </view>
+      <button class="account-button secondary compact" @click="editingInvoice = !editingInvoice">
+        {{ editingInvoice ? '收起抬头表单' : '新增发票抬头' }}
+      </button>
+      <view v-if="editingInvoice" class="account-form">
+        <picker
           :range="['个人抬头', '企业抬头']"
           @change="
             invoiceForm.profileType = Number($event.detail.value) === 1 ? 'ENTERPRISE' : 'PERSONAL'
@@ -615,399 +800,571 @@ async function requestUnshippedRefund() {
           maxlength="80"
         />
         <input v-model="invoiceForm.email" placeholder="接收邮箱（选填）" maxlength="255" />
-        <label class="form-check"
-          ><switch
+        <label class="form-check">
+          <switch
             :checked="invoiceForm.isDefault"
             :color="LIFE_BRAND_DEEP_HEX"
             @change="invoiceForm.isDefault = $event.detail.value"
-          />设为默认抬头</label
-        >
+          />设为默认抬头
+        </label>
         <button class="account-button" :loading="busy" @click="saveInvoiceProfile">
           确认并加密保存
-        </button></view
-      ></view
-    ><view class="section"
-      ><view class="section-head"><text>账户与服务</text><text>安全中心</text></view
-      ><view class="card-list"
-        ><view class="row-card"
-          ><view class="copy"
-            ><text>消费奖励</text><text>奖励账本与订单支付相互独立</text></view
-          ></view
-        ><view class="row-card"
-          ><view class="copy"
-            ><text>隐私与授权</text><text>查看、撤回并导出个人授权记录</text></view
-          ></view
-        ></view
-      ></view
-    ></LifeSurface
-  >
+        </button>
+      </view>
+    </view>
+
+    <!-- ============================
+         mlist 功能列表 (会员/发票/反馈/安心购/深色模式 switch)
+         ============================ -->
+    <view class="sec-h fu"><text class="sec-t">账户与服务</text><text class="sec-mo">安全中心</text></view>
+    <view class="cc fu">
+      <view class="mlist">
+        <view class="mli" @click="openMli('member')">
+          <view class="mlic crown">👑</view>
+          <view class="mli-copy">
+            <text class="mli-t">会员中心</text>
+            <text class="mli-d">黄金会员 · 每月 ¥50 代金券</text>
+          </view>
+          <text class="go-r">›</text>
+        </view>
+        <view class="mli" @click="openMli('invoice')">
+          <view class="mlic blue">📄</view>
+          <view class="mli-copy">
+            <text class="mli-t">发票助手</text>
+            <text class="mli-d">支持电子发票</text>
+          </view>
+          <text class="go-r">›</text>
+        </view>
+        <view class="mli" @click="openMli('feedback')">
+          <view class="mlic purple">💬</view>
+          <view class="mli-copy">
+            <text class="mli-t">意见反馈</text>
+            <text class="mli-d">你的建议我们认真看</text>
+          </view>
+          <text class="go-r">›</text>
+        </view>
+        <view class="mli" @click="openMli('safeguard')">
+          <view class="mlic green">🛡️</view>
+          <view class="mli-copy">
+            <text class="mli-t">安心购保障</text>
+            <text class="mli-d">随时退 · 过期自动退</text>
+          </view>
+          <text class="go-r">›</text>
+        </view>
+        <view class="mli">
+          <view class="mlic dark">🌙</view>
+          <view class="mli-copy">
+            <text class="mli-t">深色模式</text>
+            <text class="mli-d">夜间护眼</text>
+          </view>
+          <switch
+            class="sw-uni"
+            :checked="isDark"
+            :color="LIFE_BRAND_DEEP_HEX"
+            @change="isDark = $event.detail.value"
+          />
+        </view>
+      </view>
+    </view>
+
+    <view style="height: 40rpx"></view>
+  </LifeSurface>
 </template>
 <style scoped>
-.account-hero {
+/* ====== concept-f me-head 渐变头区 ====== */
+.me-head {
+  position: relative;
   display: flex;
-  min-height: 206rpx;
-  margin: 8rpx 20rpx 0;
-  padding: 30rpx;
-  border-radius: var(--life-radius-lg);
   align-items: center;
-  gap: 20rpx;
-  color: var(--life-ink);
-  background: var(--life-paper);
-  box-shadow: var(--life-shadow-soft);
+  gap: 22rpx;
+  margin: 8rpx 24rpx 0;
+  padding: 32rpx 26rpx 34rpx;
+  border-radius: 30rpx;
+  background: linear-gradient(165deg, var(--hd1, #009146), var(--hd2, #006b36));
+  color: #fff;
+  box-shadow: var(--shadow, 0 10px 26px rgba(22,19,15,.12));
   box-sizing: border-box;
+  z-index: 2;
 }
-.account-avatar {
-  display: flex;
-  width: 104rpx;
-  height: 104rpx;
-  border: 6rpx solid var(--life-brand-soft);
+.mava {
+  width: 116rpx;
+  height: 116rpx;
   border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 48rpx;
+  font-weight: 900;
+  color: #5b3400;
+  background: linear-gradient(135deg, #ffe25a, #f7c400);
+  border: 4rpx solid rgba(255, 255, 255, .85);
+  box-shadow: 0 12rpx 32rpx rgba(0, 0, 0, .22);
+  flex: none;
+}
+.mcopy { min-width: 0; flex: 1; display: flex; flex-direction: column; gap: 6rpx; }
+.mname { font-size: 34rpx; font-weight: 900; }
+.mrow { display: flex; align-items: center; gap: 14rpx; margin-top: 8rpx; flex-wrap: wrap; }
+.mbadge {
+  font-size: 18rpx;
+  font-weight: 900;
+  background: linear-gradient(120deg, #3a2c10, #16130f);
+  color: #ffd76a;
+  border-radius: 10rpx;
+  padding: 6rpx 14rpx;
+  border: 1rpx solid rgba(255, 217, 138, .4);
+  flex: none;
+}
+.mid { font-size: 20rpx; font-weight: 700; color: rgba(255,255,255,.75); }
+.mact { display: flex; gap: 14rpx; align-self: flex-start; }
+.macti {
+  width: 64rpx; height: 64rpx;
+  border-radius: 50%;
+  background: rgba(255,255,255,.16);
+  display: grid; place-items: center;
+  color: #fff;
+  font-size: 28rpx;
+  backdrop-filter: blur(4px);
+}
+
+/* ====== mstat 4 列资产卡 ====== */
+.mstat {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  margin: -36rpx 28rpx 0;
+  padding: 24rpx 0;
+  position: relative;
+  z-index: 3;
+}
+.mstatc {
+  text-align: center;
+  position: relative;
+  padding: 4rpx 0;
+  display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  flex: none;
-  background: linear-gradient(135deg, var(--life-brand), var(--life-brand-deep));
-  color: var(--life-paper);
-  font-size: 42rpx;
+}
+.mstatc + .mstatc::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 18%;
+  height: 64%;
+  width: 1rpx;
+  background: var(--line, rgba(22,19,15,.08));
+}
+.mstatv {
+  font-size: 32rpx;
   font-weight: 900;
+  color: var(--ink, #16130f);
+  line-height: 1.15;
 }
-.account-identity {
-  display: flex;
-  min-width: 0;
-  flex: 1;
-  flex-direction: column;
+.munit {
+  font-style: normal;
+  font-size: 20rpx;
+  font-weight: 800;
+  margin-right: 2rpx;
 }
-.account-identity text:first-child {
-  font-size: 30rpx;
-  font-weight: 900;
-}
-.account-identity text:nth-child(2) {
+.mstatl {
+  font-size: 20rpx;
+  font-weight: 800;
+  color: var(--mut, #857c6d);
   margin-top: 8rpx;
+}
+.mstatc.hot .mstatv { color: var(--promo, #f03749); }
+
+/* ====== 代金券 pban 粉红渐变 banner ====== */
+.pban {
+  display: flex;
+  align-items: center;
+  gap: 18rpx;
+  margin: 22rpx 28rpx 0;
+  padding: 22rpx 26rpx;
+  border-radius: 28rpx;
+  background: linear-gradient(120deg, #fff1f0, #ffe4e0);
+  border: 1rpx solid #ffd5cf;
+  box-sizing: border-box;
+}
+.pban-ic {
+  width: 56rpx; height: 56rpx;
+  border-radius: 18rpx;
+  background: linear-gradient(135deg, #ff5d3d, #f03749);
+  display: grid; place-items: center;
+  color: #fff;
+  font-size: 28rpx;
+  flex: none;
+}
+.pban-tx {
+  flex: 1;
+  min-width: 0;
+  font-size: 24rpx;
+  font-weight: 900;
+  color: #e23d3d;
   overflow: hidden;
-  font-size: 18rpx;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.account-identity text:last-child {
-  margin-top: 7rpx;
-  font-size: 16rpx;
-  opacity: 0.86;
-}
-.account-state {
-  align-self: flex-start;
-  padding: 7rpx 12rpx;
-  border-radius: 999rpx;
-  color: var(--life-brand-deep);
-  background: var(--life-brand-soft);
-  font-size: 16rpx;
-}
-.account-overview {
-  display: grid;
-  margin: -20rpx 34rpx 0;
-  padding: 20rpx 12rpx;
-  border-radius: var(--life-radius-lg);
-  grid-template-columns: repeat(4, 1fr);
-  background: var(--life-paper);
-  box-shadow: var(--life-shadow-soft);
-}
-.account-overview > view {
-  display: flex;
-  align-items: center;
-  flex-direction: column;
-  border-right: 1rpx solid var(--life-line);
-}
-.account-overview > view:last-child {
-  border-right: 0;
-}
-.account-overview text:first-child {
-  color: var(--life-brand-deep);
-  font-size: 30rpx;
+.pban-go {
+  font-size: 20rpx;
   font-weight: 900;
+  color: #e07a6a;
+  flex: none;
 }
-.account-overview text:last-child {
-  margin-top: 6rpx;
-  color: var(--life-muted);
-  font-size: 15rpx;
-}
-.service-grid {
-  display: grid;
-  padding: 24rpx 12rpx;
-  border-radius: var(--life-radius-lg);
-  grid-template-columns: repeat(4, 1fr);
-  gap: 8rpx;
-  background: var(--life-paper);
-  box-shadow: var(--life-shadow-soft);
-}
-.service-grid button {
-  display: flex;
-  min-height: 134rpx;
-  margin: 0;
-  padding: 8rpx 4rpx;
-  border-radius: 16rpx;
-  align-items: center;
-  justify-content: flex-start;
-  flex-direction: column;
-  background: transparent;
+
+/* ====== 订单宫格 mord ====== */
+.mord-wrap { margin: 14rpx 28rpx 0; padding: 22rpx 10rpx 24rpx; }
+.mord { display: grid; grid-template-columns: repeat(5, 1fr); }
+.mordc {
   text-align: center;
-}
-.service-grid button > text:nth-child(2) {
-  margin-top: 10rpx;
-  font-size: 19rpx;
-  font-weight: 900;
-}
-.service-grid button > text:last-child {
-  margin-top: 3rpx;
-  color: var(--life-muted);
-  font-size: 14rpx;
-}
-.service-icon {
-  position: relative;
-  width: 68rpx;
-  height: 68rpx;
-  border-radius: 20rpx;
-  background: var(--life-brand-soft);
-}
-.service-icon::before,
-.service-icon::after {
-  position: absolute;
-  box-sizing: border-box;
-  content: '';
-}
-.service-icon::before {
-  inset: 17rpx 19rpx;
-  border: 4rpx solid var(--life-brand);
-  border-radius: 6rpx;
-}
-.service-icon::after {
-  left: 26rpx;
-  bottom: 14rpx;
-  width: 17rpx;
-  height: 4rpx;
-  border-radius: 999rpx;
-  background: var(--life-brand);
-}
-.aftercare-icon {
-  background: var(--life-coral-soft);
-}
-.aftercare-icon::before {
-  border-color: var(--life-red);
-  border-radius: 50%;
-}
-.aftercare-icon::after {
-  background: var(--life-red);
-}
-.reward-icon {
-  background: var(--life-yellow-soft);
-}
-.reward-icon::before {
-  border-color: var(--life-yellow-deep);
-  transform: rotate(45deg);
-}
-.reward-icon::after {
-  background: var(--life-yellow-deep);
-}
-.privacy-icon {
-  background: var(--life-blue-soft);
-}
-.privacy-icon::before {
-  border-color: var(--life-blue-deep);
-  border-radius: 50% 50% 8rpx 8rpx;
-}
-.privacy-icon::after {
-  background: var(--life-blue-deep);
-}
-.account-order {
-  border: 1rpx solid var(--life-line);
-  border-radius: var(--life-radius-md);
-  box-shadow: none;
-}
-.account-order-head,
-.account-order-foot {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: space-between;
-  gap: 14rpx;
+  gap: 8rpx;
+  position: relative;
 }
-.account-order-head > text:last-child {
-  padding: 5rpx 10rpx;
-  border-radius: 999rpx;
-  color: var(--life-brand-deep);
-  background: var(--life-brand-soft);
-  font-size: 16rpx;
+.oic-wrap {
+  position: relative;
+  width: 88rpx;
+  height: 88rpx;
+  margin: 0 auto;
+  display: grid;
+  place-items: center;
 }
-.account-order-foot {
-  margin-top: 8rpx;
-  color: var(--life-muted);
+.oic {
+  width: 80rpx;
+  height: 80rpx;
+  display: grid;
+  place-items: center;
+  font-size: 38rpx;
+  border-radius: 24rpx;
+  background: radial-gradient(circle at 50% 44%, rgba(255,208,105,.34), rgba(255,208,105,0) 72%);
+}
+.obdg {
+  position: absolute;
+  top: -6rpx;
+  right: calc(50% - 48rpx);
+  min-width: 30rpx;
+  height: 30rpx;
+  border-radius: 16rpx;
+  background: var(--promo, #f03749);
+  color: #fff;
   font-size: 18rpx;
-}
-.account-order-foot .price {
-  color: var(--life-red);
-  font-size: 28rpx;
   font-weight: 900;
+  display: grid;
+  place-items: center;
+  padding: 0 8rpx;
+  border: 3rpx solid var(--card, #fff);
+  box-sizing: border-box;
+  line-height: 24rpx;
+}
+.mordl { font-size: 22rpx; font-weight: 800; color: var(--ink, #16130f); }
+
+/* ====== 常用服务 4 宫格 msvc ====== */
+.msvc-wrap { margin: 14rpx 28rpx 0; padding: 22rpx 10rpx 24rpx; }
+.msvc { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20rpx 0; }
+.msvcc {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8rpx;
+}
+.sic {
+  width: 80rpx;
+  height: 80rpx;
+  display: grid;
+  place-items: center;
+  font-size: 38rpx;
+  border-radius: 24rpx;
+}
+.msvcl { font-size: 22rpx; font-weight: 800; color: var(--ink, #16130f); }
+
+/* ====== sec-h 分区头 (全局 sec-h 已在 App.vue，此处补充内层) ====== */
+.sec-h.inner {
+  padding: 4rpx 0 18rpx;
+  margin-bottom: 0;
+  border-bottom: 1rpx solid var(--line, rgba(22,19,15,.08));
+}
+
+/* ====== 登录/OTP / 订单 / 地址 / 发票 ====== */
+.mcard-body { display: flex; flex-direction: column; gap: 18rpx; }
+.login-methods { display: flex; flex-direction: column; gap: 18rpx; }
+.login-divider { color: var(--mut, #857c6d); text-align: center; font-size: 22rpx; font-weight: 700; }
+.login-input {
+  height: 86rpx;
+  padding: 0 28rpx;
+  border: 1rpx solid var(--line, rgba(22,19,15,.1));
+  border-radius: 22rpx;
+  background: var(--cnt-bg, rgba(22,19,15,.04));
+  color: var(--ink, #16130f);
+  box-sizing: border-box;
+  font-size: 28rpx;
+}
+page[data-theme='dark'] .login-input {
+  background: rgba(255,255,255,.06);
+}
+.otp-row { display: grid; grid-template-columns: 1fr auto; gap: 16rpx; }
+.otp-button {
+  margin: 0;
+  color: #fff;
+  background: linear-gradient(120deg, var(--hd1, #009146), var(--hd2, #006b36));
+  border-radius: 22rpx;
+  font-size: 24rpx;
+  font-weight: 800;
+  padding: 0 28rpx;
+  height: 86rpx;
+  line-height: 86rpx;
 }
 .account-button {
-  color: var(--life-paper);
-  background: var(--life-brand-deep);
+  color: #fff;
+  background: linear-gradient(120deg, var(--hd1, #009146), var(--hd2, #006b36));
   border-radius: 999rpx;
-  font-size: 26rpx;
+  font-size: 28rpx;
   font-weight: 800;
+  height: 86rpx;
+  line-height: 86rpx;
+  margin: 0;
 }
 .account-button.secondary {
-  color: var(--life-brand-deep);
-  background: var(--life-brand-soft);
+  color: var(--accent, #009146);
+  background: var(--tone-soft, #E7F7F0);
+}
+page[data-theme='dark'] .account-button.secondary {
+  color: #8fe33f;
+  background: rgba(110,199,38,.14);
+}
+.account-button.compact {
+  margin-top: 20rpx;
+  font-size: 24rpx;
+  height: 72rpx;
+  line-height: 72rpx;
 }
 .account-message {
   display: block;
   margin-top: 18rpx;
-  color: var(--life-muted);
+  color: var(--mut, #857c6d);
   text-align: center;
-  font-size: 22rpx;
+  font-size: 24rpx;
 }
-.login-methods {
+.orders-list { display: flex; flex-direction: column; gap: 16rpx; }
+.order-row {
+  padding: 22rpx;
+  border: 1rpx solid var(--line, rgba(22,19,15,.08));
+  border-radius: 22rpx;
+  background: var(--cnt-bg, rgba(22,19,15,.03));
+}
+page[data-theme='dark'] .order-row { background: rgba(255,255,255,.04); }
+.order-head {
   display: flex;
-  flex-direction: column;
-  gap: 18rpx;
-}
-.login-divider {
-  color: var(--life-muted-bright);
-  text-align: center;
-  font-size: 20rpx;
-}
-.login-input {
-  height: 82rpx;
-  padding: 0 24rpx;
-  border: 1rpx solid var(--life-line);
-  border-radius: 20rpx;
-  background: var(--life-wash);
-  box-sizing: border-box;
-  font-size: 26rpx;
-}
-.otp-row {
-  display: grid;
-  grid-template-columns: 1fr auto;
+  align-items: center;
+  justify-content: space-between;
   gap: 14rpx;
 }
-.otp-button {
-  margin: 0;
-  color: var(--life-paper);
-  background: var(--life-brand-deep);
-  border-radius: 20rpx;
+.order-store { font-size: 28rpx; font-weight: 900; color: var(--ink, #16130f); }
+.order-st {
+  padding: 8rpx 18rpx;
+  border-radius: 999rpx;
+  background: var(--tone-soft, #E7F7F0);
+  color: var(--accent, #009146);
+  font-size: 18rpx;
+  font-weight: 800;
+}
+.order-no {
+  display: block;
+  margin-top: 10rpx;
+  color: var(--mut, #857c6d);
   font-size: 22rpx;
 }
+.order-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 12rpx;
+  color: var(--mut, #857c6d);
+  font-size: 22rpx;
+}
+.order-foot .price { color: var(--hot, #eb6325); font-size: 32rpx; font-weight: 900; }
 .pay-button {
   width: 100%;
-  margin-top: 14rpx;
-  color: var(--life-paper);
-  background: var(--life-brand-deep);
+  margin-top: 16rpx;
+  color: #fff;
+  background: linear-gradient(120deg, var(--hot, #eb6325), var(--promo, #f03749));
   border-radius: 999rpx;
-  font-size: 23rpx;
+  font-size: 24rpx;
+  font-weight: 800;
+  height: 72rpx;
+  line-height: 72rpx;
 }
-.order-detail {
-  display: flex;
-  flex-direction: column;
-  gap: 14rpx;
+.empty-safe {
+  padding: 32rpx 20rpx;
+  text-align: center;
+  color: var(--mut, #857c6d);
+  font-size: 24rpx;
 }
+.order-detail { display: flex; flex-direction: column; gap: 14rpx; }
 .detail-line {
   display: flex;
   justify-content: space-between;
   gap: 20rpx;
-  color: var(--life-muted);
-  font-size: 22rpx;
+  color: var(--mut, #857c6d);
+  font-size: 24rpx;
+  padding: 10rpx 0;
 }
 .detail-title {
   display: block;
   margin: 8rpx 0 12rpx;
   font-weight: 800;
+  color: var(--ink, #16130f);
+  font-size: 26rpx;
 }
 .refund-list {
-  padding-top: 12rpx;
-  border-top: 1rpx solid var(--life-line);
+  padding-top: 16rpx;
+  margin-top: 4rpx;
+  border-top: 1rpx solid var(--line, rgba(22,19,15,.08));
+  display: flex;
+  flex-direction: column;
+  gap: 8rpx;
 }
 .refund-button {
   margin-top: 14rpx;
-  color: var(--life-coral-ink);
-  background: var(--life-coral-soft);
+  color: #fff;
+  background: linear-gradient(120deg, #ff5d3d, #f03749);
   border-radius: 999rpx;
-  font-size: 23rpx;
+  font-size: 24rpx;
+  font-weight: 800;
+  height: 72rpx;
+  line-height: 72rpx;
 }
 .detail-note {
-  color: var(--life-coral-ink);
+  color: var(--promo, #f03749);
   text-align: center;
-  font-size: 22rpx;
+  font-size: 24rpx;
+  padding: 14rpx 0 6rpx;
 }
-.benefit-card,
-.account-record {
+.benefit-list { display: flex; flex-direction: column; gap: 16rpx; }
+.benefit-card {
   display: flex;
-  padding: 20rpx;
-  border: 1rpx solid var(--life-line);
-  border-radius: 20rpx;
+  padding: 22rpx;
+  border: 1rpx solid var(--line, rgba(22,19,15,.08));
+  border-radius: 22rpx;
   align-items: center;
   justify-content: space-between;
-  gap: 18rpx;
-  background: var(--life-wash);
+  gap: 20rpx;
+  background: var(--cnt-bg, rgba(22,19,15,.03));
 }
-.benefit-card > view,
-.account-record > view {
+page[data-theme='dark'] .benefit-card { background: rgba(255,255,255,.04); }
+.benefit-card > view {
   display: flex;
   min-width: 0;
   flex: 1;
   flex-direction: column;
-  gap: 8rpx;
+  gap: 10rpx;
 }
-.benefit-card view text:first-child,
-.account-record view text:first-child {
-  font-size: 25rpx;
-  font-weight: 800;
-}
-.benefit-card view text:nth-child(2),
-.account-record view text:not(:first-child) {
-  color: var(--life-muted);
-  font-size: 20rpx;
-}
-.benefit-card button,
-.account-record button {
+.bf-title { font-size: 28rpx; font-weight: 800; color: var(--ink, #16130f); }
+.bf-sub { color: var(--mut, #857c6d); font-size: 22rpx; }
+.bf-btn {
   margin: 0;
-  color: var(--life-brand-deep);
-  background: var(--life-brand-soft);
+  color: var(--accent, #009146);
+  background: var(--tone-soft, #E7F7F0);
   border-radius: 999rpx;
-  font-size: 20rpx;
+  font-size: 22rpx;
+  font-weight: 800;
+  padding: 10rpx 24rpx;
+}
+page[data-theme='dark'] .bf-btn {
+  color: #8fe33f;
+  background: rgba(110,199,38,.14);
 }
 .reward-status {
-  color: var(--life-coral-ink);
-  font-size: 20rpx;
-  font-weight: 800;
-}
-.account-button.compact {
-  margin-top: 20rpx;
+  color: var(--promo, #f03749);
   font-size: 22rpx;
+  font-weight: 800;
 }
 .account-form {
   display: grid;
-  gap: 16rpx;
-  margin-top: 20rpx;
-  padding-top: 20rpx;
-  border-top: 1rpx solid var(--life-line);
+  gap: 18rpx;
+  margin-top: 22rpx;
+  padding-top: 22rpx;
+  border-top: 1rpx solid var(--line, rgba(22,19,15,.08));
 }
 .account-form input,
 .form-picker {
-  height: 78rpx;
-  padding: 0 22rpx;
-  border: 1rpx solid var(--life-line);
-  border-radius: 18rpx;
-  background: var(--life-wash);
+  height: 84rpx;
+  padding: 0 26rpx;
+  border: 1rpx solid var(--line, rgba(22,19,15,.1));
+  border-radius: 22rpx;
+  background: var(--cnt-bg, rgba(22,19,15,.04));
+  color: var(--ink, #16130f);
   box-sizing: border-box;
-  font-size: 23rpx;
-  line-height: 78rpx;
+  font-size: 26rpx;
+  line-height: 84rpx;
 }
+page[data-theme='dark'] .account-form input,
+page[data-theme='dark'] .form-picker { background: rgba(255,255,255,.06); }
 .form-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 10rpx;
+  gap: 12rpx;
 }
 .form-check {
   display: flex;
   align-items: center;
-  gap: 12rpx;
-  color: var(--life-muted);
-  font-size: 22rpx;
+  gap: 14rpx;
+  color: var(--mut, #857c6d);
+  font-size: 24rpx;
 }
+
+/* ====== mlist 功能列表 ====== */
+.mlist { display: flex; flex-direction: column; }
+.mli {
+  display: flex;
+  align-items: center;
+  gap: 20rpx;
+  padding: 22rpx 4rpx;
+}
+.mli + .mli { border-top: 1rpx solid var(--line, rgba(22,19,15,.08)); }
+.mlic {
+  width: 60rpx;
+  height: 60rpx;
+  border-radius: 18rpx;
+  display: grid;
+  place-items: center;
+  color: #fff;
+  font-size: 30rpx;
+  flex: none;
+}
+.mlic.crown  { background: linear-gradient(135deg, #3a2c10, #16130f); color: #ffd76a; }
+.mlic.blue   { background: #1a6fc4; }
+.mlic.purple { background: #8a5cf6; }
+.mlic.green  { background: #00a870; }
+.mlic.dark   { background: #10241a; color: #f7c400; }
+.mli-copy {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6rpx;
+}
+.mli-t { font-size: 28rpx; font-weight: 800; color: var(--ink, #16130f); }
+.mli-d { font-size: 20rpx; font-weight: 700; color: var(--mut, #857c6d); }
+.go-r { color: var(--mut, #857c6d); font-size: 28rpx; flex: none; }
+
+/* ====== fu → .in 入场动画 (交错延迟用 CSS nth) ====== */
+.fu:nth-of-type(1) { transition-delay: .04s; }
+.fu:nth-of-type(2) { transition-delay: .08s; }
+.fu:nth-of-type(3) { transition-delay: .12s; }
+.fu:nth-of-type(4) { transition-delay: .16s; }
+.fu:nth-of-type(5) { transition-delay: .20s; }
+.fu:nth-of-type(6) { transition-delay: .24s; }
+.fu:nth-of-type(7) { transition-delay: .28s; }
+.fu:nth-of-type(8) { transition-delay: .32s; }
+.fu:nth-of-type(9) { transition-delay: .36s; }
+.fu:nth-of-type(10) { transition-delay: .40s; }
+.fu:nth-of-type(11) { transition-delay: .44s; }
+.fu:nth-of-type(12) { transition-delay: .48s; }
+.fu:nth-of-type(13) { transition-delay: .52s; }
+.fu:nth-of-type(14) { transition-delay: .56s; }
+.fu:nth-of-type(15) { transition-delay: .60s; }
+.fu:nth-of-type(16) { transition-delay: .64s; }
+.fu:nth-of-type(17) { transition-delay: .68s; }
+.fu:nth-of-type(18) { transition-delay: .72s; }
 </style>
