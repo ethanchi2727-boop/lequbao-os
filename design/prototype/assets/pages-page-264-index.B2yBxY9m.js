@@ -1,0 +1,1 @@
+import{a as e,o as a}from"./index-B8lDgZXn.js";import{L as s}from"./LifeServicePage.B1hAoY1A.js";import"./uni-app.es.8DEY4pmv.js";import"./LifeSurface.CRQ3MGM_.js";import"./surface-contract.Bb0GRBp7.js";const i={__name:"index",setup:i=>(i,r)=>(a(),e(s,{"page-id":"264"}))};export{i as default};

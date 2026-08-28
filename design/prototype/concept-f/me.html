@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>我的 — 乐趣生活</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  body{background:#191511;font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;display:flex;flex-direction:column;align-items:center;padding:36px 16px 60px;color:#f6f2e5}
+  .cap{margin-bottom:18px;text-align:center}
+  .cap h1{font-size:22px;letter-spacing:.1em;font-weight:900}
+  .cap p{font-size:12px;margin-top:6px;letter-spacing:.12em;opacity:.55}
+  /* ============ 主题变量 ============ */
+  .phone{
+    --hd1:#009146; --hd2:#006b36; --bg:#f6f1e6; --card:#ffffff; --ink:#16130f;
+    --mut:#857c6d; --accent:#009146; --promo:#f03749; --hot:#eb6325; --yel:#fee600;
+    --tabbar:#ffffff; --line:rgba(22,19,15,.08); --notice-bg:#e6f3ea; --notice-tx:#0b6b3d;
+    --capsule-bg:rgba(255,255,255,.94); --capsule-line:rgba(22,19,15,.12); --capsule-ink:#16130f;
+    --cnt-bg:#16130f; --cnt-tx:#fee600; --shadow:0 10px 26px rgba(22,19,15,.09);
+  }
+  .phone[data-theme="dark"]{
+    --hd1:#10241a; --hd2:#0c1212; --bg:#0c1212; --card:#141d1d; --ink:#ffffff;
+    --mut:#9fb0a8; --accent:#6ec726; --promo:#ff5d3d; --hot:#f7c400; --yel:#f7c400;
+    --tabbar:#0a0f0f; --line:rgba(255,255,255,.08); --notice-bg:rgba(110,199,38,.13); --notice-tx:#8fe33f;
+    --capsule-bg:rgba(12,18,18,.45); --capsule-line:rgba(255,255,255,.22); --capsule-ink:#ffffff;
+    --cnt-bg:#0c1212; --cnt-tx:#6ec726; --shadow:0 10px 26px rgba(0,0,0,.4);
+  }
+  .phone{width:375px;height:760px;background:var(--bg);border-radius:44px;position:relative;overflow:hidden;display:flex;flex-direction:column;flex:none;color:var(--ink);box-shadow:0 40px 90px rgba(0,0,0,.55);transition:background .5s,color .5s}
+  .no-tr,.no-tr *{transition:none!important}
+  .scroll{flex:1;overflow-y:auto;scrollbar-width:none}
+  .scroll::-webkit-scrollbar{display:none}
+  /* ============ 顶部用户区 ============ */
+  .top{background:linear-gradient(165deg,var(--hd1),var(--hd2));padding:10px 16px 44px;transition:background .5s}
+  .statusbar{display:flex;justify-content:space-between;align-items:center;font-size:13px;font-weight:700;color:#fff}
+  .navrow{display:flex;align-items:center;gap:8px;margin-top:10px;position:relative;z-index:2}
+  .ptitle{font-size:19px;font-weight:900;color:#fff}
+  .capsule{margin-left:auto;width:87px;height:32px;border-radius:16px;background:var(--capsule-bg);border:1px solid var(--capsule-line);display:flex;overflow:hidden;backdrop-filter:blur(8px);transition:background .5s,border-color .5s}
+  .cell{flex:1;display:grid;place-items:center}
+  .cell:first-child{border-right:1px solid var(--capsule-line)}
+  .me-head{display:flex;align-items:center;gap:12px;margin-top:16px}
+  .mava{width:58px;height:58px;border-radius:50%;background:linear-gradient(135deg,#ffe25a,#f7c400);display:grid;place-items:center;font-size:22px;font-weight:900;color:#5b3400;border:2.5px solid rgba(255,255,255,.85);box-shadow:0 6px 16px rgba(0,0,0,.22);flex:none}
+  .mname{font-size:17px;font-weight:900;color:#fff}
+  .mrow{display:flex;align-items:center;gap:6px;margin-top:5px}
+  .mbadge{font-size:9px;font-weight:900;background:linear-gradient(120deg,#3a2c10,#16130f);color:#ffd76a;border-radius:6px;padding:2.5px 7px;border:1px solid rgba(255,217,138,.4)}
+  .mid{font-size:9.5px;font-weight:700;color:rgba(255,255,255,.7)}
+  .mact{margin-left:auto;display:flex;gap:8px}
+  .mact a{width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,.16);display:grid;place-items:center;color:#fff;text-decoration:none;backdrop-filter:blur(4px)}
+  /* ============ 资产统计卡 ============ */
+  .mstat{margin:-26px 14px 0;background:var(--card);border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow);display:grid;grid-template-columns:repeat(4,1fr);padding:14px 0;position:relative;z-index:2;transition:background .5s}
+  .mstat a{text-align:center;text-decoration:none;color:var(--ink);position:relative}
+  .mstat a+a::before{content:"";position:absolute;left:0;top:18%;height:64%;width:1px;background:var(--line)}
+  .mstat b{font-size:16px;font-weight:900;display:block}
+  .mstat b i{font-style:normal;font-size:10px;font-weight:800}
+  .mstat p{font-size:9.5px;font-weight:800;color:var(--mut);margin-top:3px}
+  .mstat .hot b{color:var(--promo)}
+  /* ============ 通用卡片 ============ */
+  .mcard{margin:12px 14px 0;background:var(--card);border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow);padding:13px 14px;transition:background .5s}
+  .mhd{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:11px}
+  .mhd b{font-size:13.5px;font-weight:900}
+  .mhd a{font-size:10px;font-weight:800;color:var(--mut);text-decoration:none}
+  /* ============ 订单宫格 ============ */
+  .mord{display:grid;grid-template-columns:repeat(5,1fr)}
+  .mord a{text-align:center;text-decoration:none;color:var(--ink);position:relative}
+  .mord .oic{width:44px;height:44px;margin:0 auto;display:grid;place-items:center;background:radial-gradient(circle at 50% 44%,rgba(255,208,105,.34),rgba(255,208,105,0) 72%)}
+  .mord .oic img{width:40px;height:40px;filter:drop-shadow(0 3px 5px rgba(30,30,50,.14))}
+  .phone[data-theme="dark"] .mord .oic{background:radial-gradient(circle at 50% 44%,rgba(255,220,150,.10),rgba(255,220,150,0) 72%)}
+  .mord a b{font-size:10px;font-weight:800;display:block;margin-top:3px}
+  .mord .obdg{position:absolute;top:-2px;right:calc(50% - 24px);min-width:15px;height:15px;border-radius:8px;background:var(--promo);color:#fff;font-size:8.5px;font-weight:900;display:grid;place-items:center;padding:0 4px;border:1.5px solid var(--card)}
+  /* ============ 服务宫格 ============ */
+  .msvc{display:grid;grid-template-columns:repeat(4,1fr);gap:12px 4px}
+  .msvc a{text-align:center;text-decoration:none;color:var(--ink)}
+  .msvc .sic{width:44px;height:44px;margin:0 auto;display:grid;place-items:center}
+  .msvc .sic img{width:40px;height:40px;filter:drop-shadow(0 3px 5px rgba(30,30,50,.14))}
+  .msvc a b{font-size:10px;font-weight:800;display:block;margin-top:3px}
+  /* ============ 功能列表 ============ */
+  .mlist{display:flex;flex-direction:column}
+  .mli{display:flex;align-items:center;gap:10px;padding:11px 2px;text-decoration:none;color:var(--ink)}
+  .mli+.mli{border-top:1px solid var(--line)}
+  .mlic{width:30px;height:30px;border-radius:9px;display:grid;place-items:center;color:#fff;flex:none}
+  .mli b{font-size:12.5px;font-weight:800}
+  .mli p{font-size:9px;font-weight:700;color:var(--mut);margin-top:1px}
+  .mli .go-r{margin-left:auto;color:var(--mut);font-size:12px}
+  .mli .sw{margin-left:auto;width:40px;height:23px;border-radius:12px;background:rgba(133,124,109,.35);position:relative;transition:.3s;flex:none}
+  .mli .sw::after{content:"";position:absolute;left:2.5px;top:2.5px;width:18px;height:18px;border-radius:50%;background:#fff;transition:.3s;box-shadow:0 1px 4px rgba(0,0,0,.25)}
+  .mli .sw.on{background:var(--accent)}
+  .mli .sw.on::after{left:19.5px}
+  /* ============ Tabbar ============ */
+  .tabbar{flex:none;height:72px;background:var(--tabbar);border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(5,1fr);padding:7px 4px 15px;transition:background .5s}
+  .tab{display:flex;flex-direction:column;align-items:center;gap:3px;font-size:10px;font-weight:700;color:var(--mut);text-decoration:none;position:relative;transition:color .5s}
+  .tab.on{color:var(--accent)}
+  .tab .bdg{position:absolute;top:2px;right:calc(50% - 20px);min-width:16px;height:16px;border-radius:8px;background:var(--promo);color:#fff;font-size:9px;font-weight:900;display:grid;place-items:center;padding:0 4px;border:1.5px solid var(--tabbar)}
+  [data-theme="dark"] .tab.on svg{filter:drop-shadow(0 0 9px rgba(110,199,38,.9))}
+  /* ============ toast / 悬浮球 ============ */
+  .toast{position:absolute;left:50%;bottom:96px;transform:translateX(-50%) translateY(16px);background:rgba(22,19,15,.92);color:#fff;font-size:11.5px;font-weight:700;border-radius:12px;padding:10px 15px;max-width:300px;text-align:center;line-height:1.6;opacity:0;pointer-events:none;transition:.3s;z-index:20}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  .maifab{position:absolute;right:12px;bottom:92px;width:52px;height:52px;border-radius:50%;background:rgba(255,255,255,.96);border:1px solid var(--line);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:30;text-decoration:none;box-shadow:0 8px 20px rgba(22,19,15,.16),0 0 0 4px rgba(0,200,130,.10);animation:maipulse 2.8s ease-in-out infinite}
+  .maifab img{width:31px;height:31px}
+  .maifab em{font-style:normal;font-size:8.5px;font-weight:900;color:#16130f;margin-top:1px}
+  .phone[data-theme="dark"] .maifab{background:rgba(20,26,24,.94)}
+  .phone[data-theme="dark"] .maifab em{color:#f6f2e5}
+  @keyframes maipulse{0%,100%{box-shadow:0 8px 20px rgba(22,19,15,.16),0 0 0 4px rgba(0,200,130,.12)}50%{box-shadow:0 8px 22px rgba(22,19,15,.18),0 0 0 9px rgba(0,200,130,.04)}}
+  /* ============ 入场动画 ============ */
+  .fu{opacity:0;transform:translateY(16px);transition:opacity .6s ease,transform .6s cubic-bezier(.2,.9,.3,1.05)}
+  .fu.in{opacity:1;transform:none}
+  @media(max-width:480px){body{padding:0}.phone{width:100%;height:100vh;border-radius:0;box-shadow:none}.cap{display:none}}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute"><defs>
+  <g id="x-bell"><path d="M6 9.5a6 6 0 0 1 12 0c0 4 1.6 5.4 2.2 6H3.8C4.4 14.9 6 13.5 6 9.5z"/><path d="M10 19a2.2 2.2 0 0 0 4 0z"/></g>
+  <g id="x-set"><circle cx="12" cy="12" r="3.2" fill="none" stroke-width="2"/><path d="M12 2.8v2.6M12 18.6v2.6M2.8 12h2.6M18.6 12h2.6M5.5 5.5l1.8 1.8M16.7 16.7l1.8 1.8M18.5 5.5l-1.8 1.8M7.3 16.7l-1.8 1.8" fill="none" stroke-width="2" stroke-linecap="round"/></g>
+  <g id="x-cs"><path d="M4.5 12a7.5 7.5 0 0 1 15 0v5.2a2.3 2.3 0 0 1-2.3 2.3H13" fill="none" stroke-width="2.1" stroke-linecap="round"/><rect x="3.2" y="10.5" width="3.6" height="6" rx="1.8"/><rect x="17.2" y="10.5" width="3.6" height="6" rx="1.8"/></g>
+  <g id="x-crown"><path d="M4 17.5 3 7.8l5.4 3.4L12 5.5l3.6 5.7L21 7.8l-1 9.7z"/></g>
+  <g id="x-bill"><path d="M6.5 3h11A1.5 1.5 0 0 1 19 4.5v15a1.5 1.5 0 0 1-1.5 1.5h-11A1.5 1.5 0 0 1 5 19.5v-15A1.5 1.5 0 0 1 6.5 3z"/><path d="M8.5 8h7M8.5 11.5h7M8.5 15h4.5" stroke="#fff" stroke-width="1.8" stroke-linecap="round" fill="none"/></g>
+  <g id="x-chat2"><path d="M6.5 4h11A2.5 2.5 0 0 1 20 6.5v6.8a2.5 2.5 0 0 1-2.5 2.5h-7.8l-4.5 3.6a.6.6 0 0 1-1-.5V6.5A2.5 2.5 0 0 1 6.5 4z"/><circle cx="9.2" cy="10" r="1.3" fill="#fff"/><circle cx="13.4" cy="10" r="1.3" fill="#fff"/><circle cx="17" cy="10" r="1.3" fill="#fff" opacity=".6"/></g>
+  <g id="x-moon"><path d="M20.5 14.5A8.5 8.5 0 1 1 9.5 3.5a7 7 0 0 0 11 11z"/></g>
+  <g id="x-shield"><path d="M12 2.8 19 5.5v6c0 4.6-3 7.7-7 9.7-4-2-7-5.1-7-9.7v-6z"/><path d="m8.8 12 2.2 2.2 4.2-4.4" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></g>
+  <g id="f-home"><path d="M12 4 4 10.6V20a1 1 0 0 0 1 1h4.6v-5.6h4.8V21H19a1 1 0 0 0 1-1v-9.4z"/></g>
+  <g id="f-shop"><path d="M4.6 8.6 6 4h12l1.4 4.6zM4 9.8h16V20a1 1 0 0 1-1 1h-5v-5.4h-4V21H5a1 1 0 0 1-1-1z"/><path d="M4 9.8h16v1a2.6 2.6 0 0 1-5.3 0 2.7 2.7 0 0 1-5.4 0 2.6 2.6 0 0 1-5.3 0z" opacity=".72"/></g>
+  <g id="f-chat"><path d="M6.5 4h11A2.5 2.5 0 0 1 20 6.5v6.8a2.5 2.5 0 0 1-2.5 2.5h-7.8l-4.5 3.6a.6.6 0 0 1-1-.5V6.5A2.5 2.5 0 0 1 6.5 4z"/><circle cx="9.2" cy="10" r="1.3" fill="#fff"/><circle cx="13.4" cy="10" r="1.3" fill="#fff"/><circle cx="17" cy="10" r="1.3" fill="#fff" opacity=".6"/></g>
+  <g id="f-cart"><path d="M3.6 4.4h2.3l.7 3.2H21l-1.7 7.2a1.6 1.6 0 0 1-1.6 1.3H8.7a1.6 1.6 0 0 1-1.6-1.3L5.4 6.6l-.4-1.4H3.6z"/><circle cx="9.3" cy="19.6" r="1.7"/><circle cx="16.8" cy="19.6" r="1.7"/></g>
+  <g id="f-me"><circle cx="12" cy="8.2" r="4"/><path d="M4.4 20.4c1-4.2 3.9-6.4 7.6-6.4s6.6 2.2 7.6 6.4a1 1 0 0 1-1 1.2H5.4a1 1 0 0 1-1-1.2z"/></g>
+  <g id="cap-more"><circle cx="4.5" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="19.5" cy="12" r="1.7"/></g>
+  <g id="cap-target"><circle cx="12" cy="12" r="6.4" fill="none" stroke-width="2"/><circle cx="12" cy="12" r="2.4"/></g>
+</defs></svg>
+
+<div class="cap"><h1>乐趣生活 · 我的</h1><p>会员中心 · 订单 / 代金券 / 服务</p></div>
+
+<div class="phone" id="app">
+  <div class="scroll">
+    <div class="top">
+      <div class="statusbar"><span>9:41</span>
+        <span style="display:flex;gap:5px;align-items:center">
+          <svg width="16" height="11" viewBox="0 0 17 12" fill="#fff"><rect x="0" y="7" width="3" height="5" rx="1"/><rect x="4.5" y="5" width="3" height="7" rx="1"/><rect x="9" y="2.5" width="3" height="9.5" rx="1"/><rect x="13.5" y="0" width="3" height="12" rx="1"/></svg>
+          <svg width="23" height="11" viewBox="0 0 25 12"><rect x="0.5" y="0.5" width="20" height="11" rx="3" fill="none" stroke="#fff"/><rect x="2.5" y="2.5" width="14" height="7" rx="1.5" fill="#fff"/><path d="M23 4v4" stroke="#fff" stroke-width="1.6" stroke-linecap="round"/></svg>
+        </span>
+      </div>
+      <div class="navrow"><div class="ptitle">我的</div>
+        <div class="capsule">
+          <div class="cell"><svg width="20" height="20" viewBox="0 0 24 24" fill="var(--capsule-ink)" style="transition:.5s"><use href="#cap-more"/></svg></div>
+          <div class="cell"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--capsule-ink)" style="transition:.5s"><use href="#cap-target"/></svg></div>
+        </div></div>
+      <div class="me-head fu">
+        <div class="mava">乐</div>
+        <div>
+          <div class="mname">乐趣会员_8876</div>
+          <div class="mrow"><span class="mbadge">黄金会员</span><span class="mid">ID 8876 · 已省 ¥326</span></div>
+        </div>
+        <div class="mact">
+          <a href="mai.html"><svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor"><use href="#x-cs"/></svg></a>
+          <a href="settings.html"><svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor"><use href="#x-set"/></svg></a>
+        </div>
+      </div>
+    </div>
+
+    <div class="mstat fu">
+      <a href="coupons.html"><b style="color:var(--promo)"><i>¥</i>15.60</b><p>代金券</p></a>
+      <a href="orders.html"><b><i>¥</i>1,286</b><p>订单总额</p></a>
+      <a href="coupons.html"><b>3<i> 张</i></b><p>卡包</p></a>
+      <a href="member.html"><b><i>¥</i>36.5</b><p>余额</p></a>
+    </div>
+
+    <a class="fu" href="voucher-detail.html" style="display:flex;align-items:center;gap:10px;margin:12px 14px 0;border-radius:14px;padding:12px 13px;background:linear-gradient(120deg,#fff1f0,#ffe4e0);border:1px solid #ffd5cf;text-decoration:none">
+      <span style="width:28px;height:28px;border-radius:9px;background:linear-gradient(135deg,#ff5d3d,#f03749);display:grid;place-items:center;flex:none"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round"><path d="M4 7h16a1 1 0 0 1 1 1v2.5a2.5 2.5 0 0 0 0 5V18a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-2.5a2.5 2.5 0 0 0 0-5V8a1 1 0 0 1 1-1z"/><path d="M13 7v2m0 4v2m0 4v2"/></svg></span>
+      <span style="flex:1;min-width:0;font-size:11.5px;font-weight:900;color:#e23d3d">每笔订单最高可获订单金额代金券</span>
+      <span style="font-size:10px;font-weight:900;color:#e07a6a;flex:none">查看明细 ›</span>
+    </a>
+
+    <div class="mcard fu">
+      <div class="mhd"><b>我的订单</b><a href="orders.html">全部订单 ›</a></div>
+      <div class="mord">
+        <a href="orders.html?tab=1"><div class="oic"><img src="../assets/icons/3d-phonepay.png" alt=""></div><b>待付款</b></a>
+        <a href="orders.html?tab=2"><div class="oic"><img src="../assets/icons/3d-film.png" alt=""></div><b>待核销</b><span class="obdg">2</span></a>
+        <a href="orders.html?tab=3"><div class="oic"><img src="../assets/icons/3d-box.png" alt=""></div><b>待收货</b><span class="obdg">1</span></a>
+        <a href="orders.html?tab=4"><div class="oic"><img src="../assets/icons/3d-cup.png" alt=""></div><b>待评价</b></a>
+        <a href="orders.html?tab=5"><div class="oic"><img src="../assets/icons/3d-tools.png" alt=""></div><b>退款售后</b></a>
+      </div>
+    </div>
+
+    <div class="mcard fu">
+      <div class="mhd"><b>常用服务</b><a href="svc.html">全部 ›</a></div>
+      <div class="msvc">
+        <a href="coupons.html"><div class="sic"><img src="../assets/icons/banner-vou.png" alt=""></div><b>代金券</b></a>
+        <a href="address.html"><div class="sic"><img src="../assets/icons/3d-house.png" alt=""></div><b>收货地址</b></a>
+        <a href="book.html?t=repair"><div class="sic"><img src="../assets/icons/3d-washer.png" alt=""></div><b>家电清洗</b></a>
+        <a href="book.html?t=repair"><div class="sic"><img src="../assets/icons/3d-tools.png" alt=""></div><b>家庭维修</b></a>
+        <a href="book.html?t=dental"><div class="sic"><img src="../assets/icons/3d-tooth.png" alt=""></div><b>洗牙洁牙</b></a>
+        <a href="book.html?t=checkup"><div class="sic"><img src="../assets/icons/3d-med.png" alt=""></div><b>体检预约</b></a>
+        <a href="book.html?t=drive"><div class="sic"><img src="../assets/icons/3d-steer.png" alt=""></div><b>代驾</b></a>
+        <a href="svc.html"><div class="sic"><img src="../assets/icons/3d-grid.png" alt=""></div><b>全部服务</b></a>
+      </div>
+    </div>
+
+    <div class="mcard fu">
+      <div class="mlist">
+        <a class="mli" href="member.html"><div class="mlic" style="background:linear-gradient(135deg,#3a2c10,#16130f)"><svg width="16" height="16" viewBox="0 0 24 24" fill="#ffd76a"><use href="#x-crown"/></svg></div><div><b>会员中心</b><p>黄金会员 · 每月 ¥50 代金券</p></div><span class="go-r">›</span></a>
+        <a class="mli" href="invoice.html"><div class="mlic" style="background:#1a6fc4"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><use href="#x-bill"/></svg></div><div><b>发票助手</b><p>支持电子发票</p></div><span class="go-r">›</span></a>
+        <a class="mli" href="feedback.html"><div class="mlic" style="background:#8a5cf6"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><use href="#x-chat2"/></svg></div><div><b>意见反馈</b><p>你的建议我们认真看</p></div><span class="go-r">›</span></a>
+        <a class="mli" href="safeguard.html"><div class="mlic" style="background:#00a870"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><use href="#x-shield"/></svg></div><div><b>安心购保障</b><p>随时退 · 过期自动退</p></div><span class="go-r">›</span></a>
+        <div class="mli" data-t="深色模式：跟随小程序主题" style="cursor:pointer"><div class="mlic" style="background:#10241a"><svg width="15" height="15" viewBox="0 0 24 24" fill="#f7c400"><use href="#x-moon"/></svg></div><div><b>深色模式</b><p>夜间护眼</p></div><div class="sw" id="themeSw"></div></div>
+      </div>
+    </div>
+    <div style="height:16px"></div>
+  </div>
+
+  <a class="maifab" id="maifab" href="mai.html" data-t="小满AI对话页：语音/文字说出需求，一句话调用 32 项供应链能力下单（全局悬浮入口，可拖动）"><img src="../assets/icons/mai.png" alt="小满"><em>小满</em></a>
+  <div class="toast" id="toast"></div>
+  <div class="tabbar">
+    <a class="tab" href="index.html"><svg width="23" height="23" viewBox="0 0 24 24" fill="currentColor"><use href="#f-home"/></svg>首页</a>
+    <a class="tab" href="mall.html"><svg width="23" height="23" viewBox="0 0 24 24" fill="currentColor"><use href="#f-shop"/></svg>商城</a>
+    <a class="tab" href="quan.html"><svg width="23" height="23" viewBox="0 0 24 24" fill="currentColor"><use href="#f-chat"/></svg>生活圈</a>
+    <a class="tab" href="cart.html"><svg width="23" height="23" viewBox="0 0 24 24" fill="currentColor"><use href="#f-cart"/></svg>购物车<span class="bdg">3</span></a>
+    <a class="tab on" href="me.html"><svg width="23" height="23" viewBox="0 0 24 24" fill="currentColor"><use href="#f-me"/></svg>我的</a>
+  </div>
+</div>
+
+<script>
+  var app=document.getElementById('app');
+  if(location.search.indexOf('theme=dark')>-1){app.classList.add('no-tr');app.setAttribute('data-theme','dark');requestAnimationFrame(function(){requestAnimationFrame(function(){app.classList.remove('no-tr');});});}
+  function syncSw(){document.getElementById('themeSw').classList.toggle('on',app.getAttribute('data-theme')==='dark');}
+  syncSw();
+  document.getElementById('themeSw').parentElement.addEventListener('click',function(e){
+    e.preventDefault();e.stopPropagation();
+    var d=app.getAttribute('data-theme')!=='dark';
+    if(d)app.setAttribute('data-theme','dark');else app.removeAttribute('data-theme');
+    syncSw();
+    document.querySelectorAll('.tabbar a').forEach(function(a){a.href=a.href.split('?')[0]+(d?'?theme=dark':'');});
+  });
+  document.querySelectorAll('.tabbar a').forEach(function(a){if(app.getAttribute('data-theme')==='dark')a.href+=(a.href.indexOf('?')>-1?'&':'?')+'theme=dark';});
+  if(location.search.indexOf('snap=1')>-1)document.querySelectorAll('.fu').forEach(function(el){el.style.transition='none';el.classList.add('in');});
+  var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target);}});},{root:document.querySelector('.scroll'),threshold:.06});
+  document.querySelectorAll('.fu').forEach(function(el){io.observe(el);});
+  setTimeout(function(){var lim=document.querySelector('.scroll').clientHeight*1.6;document.querySelectorAll('.fu').forEach(function(el){if(el.offsetTop<lim)el.classList.add('in');});},120);
+  var toast=document.getElementById('toast'),tt;
+  document.addEventListener('click',function(e){
+    var el=e.target.closest('[data-t]');
+    if(el&&el.id!=='themeSw'&&!el.querySelector('#themeSw')){e.preventDefault();toast.textContent=el.getAttribute('data-t');toast.classList.add('show');clearTimeout(tt);tt=setTimeout(function(){toast.classList.remove('show')},2300);}
+  });
+</script>
+</body>
+</html>

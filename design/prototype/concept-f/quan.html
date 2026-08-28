@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>生活圈 · 附近团购 — 乐趣生活</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  body{background:#191511;font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;display:flex;flex-direction:column;align-items:center;padding:36px 16px 60px;color:#f6f2e5}
+  .cap{margin-bottom:18px;text-align:center}
+  .cap h1{font-size:22px;letter-spacing:.1em;font-weight:900}
+  .cap p{font-size:12px;margin-top:6px;letter-spacing:.12em;opacity:.55}
+  /* ============ 主题变量 ============ */
+  .phone{
+    --hd1:#009146; --hd2:#006b36; --bg:#f6f1e6; --card:#ffffff; --ink:#16130f;
+    --mut:#857c6d; --accent:#009146; --promo:#f03749; --hot:#eb6325; --yel:#fee600;
+    --tabbar:#ffffff; --line:rgba(22,19,15,.08); --notice-bg:#e6f3ea; --notice-tx:#0b6b3d;
+    --capsule-bg:rgba(255,255,255,.94); --capsule-line:rgba(22,19,15,.12); --capsule-ink:#16130f;
+    --cnt-bg:#16130f; --cnt-tx:#fee600; --shadow:0 10px 26px rgba(22,19,15,.09);
+  }
+  .phone[data-theme="dark"]{
+    --hd1:#10241a; --hd2:#0c1212; --bg:#0c1212; --card:#141d1d; --ink:#ffffff;
+    --mut:#9fb0a8; --accent:#6ec726; --promo:#ff5d3d; --hot:#f7c400; --yel:#f7c400;
+    --tabbar:#0a0f0f; --line:rgba(255,255,255,.08); --notice-bg:rgba(110,199,38,.13); --notice-tx:#8fe33f;
+    --capsule-bg:rgba(12,18,18,.45); --capsule-line:rgba(255,255,255,.22); --capsule-ink:#ffffff;
+    --cnt-bg:#0c1212; --cnt-tx:#6ec726; --shadow:0 10px 26px rgba(0,0,0,.4);
+  }
+  .phone{width:375px;height:760px;background:var(--bg);border-radius:44px;position:relative;overflow:hidden;display:flex;flex-direction:column;flex:none;color:var(--ink);box-shadow:0 40px 90px rgba(0,0,0,.55);transition:background .5s,color .5s}
+  .no-tr,.no-tr *{transition:none!important}
+  .scroll{flex:1;overflow-y:auto;scrollbar-width:none}
+  .scroll::-webkit-scrollbar{display:none}
+  /* ============ 顶部 ============ */
+  .top{background:linear-gradient(165deg,var(--hd1),var(--hd2));padding:10px 16px 4px;transition:background .5s;position:relative;overflow:hidden}
+  .top::after{content:"";position:absolute;right:-46px;top:-52px;width:150px;height:150px;border-radius:50%;background:rgba(254,230,0,.14)}
+  .statusbar{display:flex;justify-content:space-between;align-items:center;font-size:13px;font-weight:700;color:#fff;padding:4px 10px 0;position:relative;z-index:2}
+  .navrow{display:flex;align-items:center;gap:8px;margin-top:10px;position:relative;z-index:2}
+  .ptitle{font-size:19px;font-weight:900;color:#fff;letter-spacing:.02em}
+  .capsule{margin-left:auto;width:87px;height:32px;border-radius:16px;background:var(--capsule-bg);border:1px solid var(--capsule-line);display:flex;overflow:hidden;backdrop-filter:blur(8px);transition:background .5s,border-color .5s}
+  .cell{flex:1;display:grid;place-items:center}
+  .cell:first-child{border-right:1px solid var(--capsule-line)}
+  .loc{display:flex;align-items:center;gap:3px;color:#fff;font-size:12.5px;font-weight:800;flex-shrink:0;max-width:104px;background:rgba(255,255,255,.16);border-radius:999px;padding:7px 9px;text-decoration:none}
+  .bell{position:relative;width:34px;height:34px;flex:none;border-radius:50%;background:rgba(255,255,255,.16);display:grid;place-items:center;color:#fff;text-decoration:none}
+  .bell i{position:absolute;top:7px;right:8px;width:7px;height:7px;border-radius:50%;background:var(--promo);border:1.5px solid var(--hd1)}
+  .qsearch{flex:1;min-width:0;height:34px;background:rgba(255,255,255,.95);border-radius:17px;display:flex;align-items:center;gap:7px;padding:0 13px;font-size:12.5px;color:#9a938a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  [data-theme="dark"] .qsearch{background:rgba(255,255,255,.14);color:rgba(255,255,255,.75)}
+  /* ============ 团购节 banner ============ */
+  .qban{margin:12px 14px 0;border-radius:18px;background:linear-gradient(120deg,#ffe9ad,#ffd06e 60%,#ffb84d);display:flex;align-items:center;justify-content:space-between;padding:14px 16px;box-shadow:0 10px 22px rgba(240,160,30,.28);position:relative;overflow:hidden}
+  .qban::before{content:"";position:absolute;right:-24px;top:-46px;width:130px;height:130px;border-radius:50%;background:rgba(255,255,255,.16)}
+  .qb-tx b{font-size:17px;font-weight:900;color:#5b3400;letter-spacing:.02em}
+  .qb-tx p{font-size:10.5px;font-weight:800;color:#8a5a10;margin:4px 0 8px}
+  .qb-tx span{display:inline-block;background:#5b3400;color:#ffd76a;font-size:10px;font-weight:900;border-radius:9px;padding:4px 10px}
+  .qban img{width:86px;height:86px;flex:none;filter:drop-shadow(0 6px 8px rgba(90,10,10,.3))}
+  /* ============ 团购分类（黏土图标） ============ */
+  .qcat{margin:14px 14px 0;background:var(--card);border:1px solid var(--line);border-radius:18px;padding:14px 6px 12px;display:grid;grid-template-columns:repeat(4,1fr);gap:12px 4px;box-shadow:var(--shadow);transition:background .5s}
+  .qcat a{text-decoration:none;text-align:center;color:var(--ink)}
+  .qcat .qic{width:50px;height:50px;margin:0 auto;display:grid;place-items:center;background:radial-gradient(circle at 50% 44%,rgba(255,208,105,.34),rgba(255,208,105,0) 72%)}
+  .qcat .qic img{width:46px;height:46px;filter:drop-shadow(0 3px 5px rgba(30,30,50,.14))}
+  .qcat a b{font-size:11px;font-weight:900;display:block;margin-top:2px}
+  .qcat a p{font-size:8.5px;font-weight:700;color:var(--mut);margin-top:2px}
+  .phone[data-theme="dark"] .qcat .qic{background:radial-gradient(circle at 50% 44%,rgba(255,220,150,.10),rgba(255,220,150,0) 72%)}
+  /* ============ 套餐/商家切换 ============ */
+  .qseg{margin:14px 14px 0;display:flex;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:3px;box-shadow:var(--shadow);transition:background .5s}
+  .qseg button{flex:1;border:none;background:none;font-size:12px;font-weight:900;color:var(--mut);border-radius:9px;padding:8px 0;cursor:pointer;font-family:inherit}
+  .qseg button.on{background:linear-gradient(120deg,#00a850,#007a3d);color:#fff;box-shadow:0 3px 8px rgba(0,145,70,.28)}
+  /* ============ 商家列表 ============ */
+  .shops{margin:10px 14px 0;display:none;flex-direction:column;gap:10px;padding-bottom:16px}
+  .shop{display:flex;align-items:center;gap:11px;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:12px;box-shadow:var(--shadow);text-decoration:none;color:var(--ink);transition:background .5s}
+  .simg{width:62px;height:62px;border-radius:14px;object-fit:cover;flex:none}
+  .sinfo{flex:1;min-width:0}
+  .sinfo b{font-size:13.5px;font-weight:900;display:block}
+  .sinfo .smeta{font-size:9.5px;font-weight:700;color:var(--mut);margin-top:3px}
+  .sinfo .smeta i{font-style:normal;color:#f7a800;font-weight:900}
+  .sdeal{display:inline-block;font-size:9px;font-weight:800;color:var(--promo);background:rgba(240,55,73,.09);border-radius:5px;padding:2.5px 7px;margin-top:6px}
+  .phone[data-theme="dark"] .sdeal{background:rgba(255,93,61,.13)}
+  .sgo{flex:none;font-size:10.5px;font-weight:900;color:var(--accent)}
+  .stags{font-size:9.5px;font-weight:700;color:var(--mut);margin-top:3px}
+  .stags em{font-style:normal;color:var(--ink);font-weight:800}
+  .saddr{display:flex;align-items:center;gap:3px;font-size:9.5px;font-weight:700;color:var(--mut);margin-top:3px}
+  .saddr svg{flex:none;opacity:.55}
+  /* ============ 筛选 tabs ============ */
+  .qtabs{margin:14px 14px 0;display:flex;gap:8px;align-items:center;overflow-x:auto;scrollbar-width:none}
+  .qtabs::-webkit-scrollbar{display:none}
+  .qtabs a{flex:none;font-size:11.5px;font-weight:800;color:var(--mut);background:var(--card);border:1px solid var(--line);border-radius:999px;padding:6px 13px;text-decoration:none;transition:background .5s}
+  .qtabs a.on{background:linear-gradient(120deg,#00a850,#007a3d);color:#fff;border-color:transparent;font-weight:900}
+  .qtabs .sort{margin-left:auto;color:var(--accent);border-color:transparent;background:none;font-weight:900}
+  /* ============ 商家团购列表 ============ */
+  .deals{margin:10px 14px 0;display:flex;flex-direction:column;gap:10px;padding-bottom:16px}
+  .deal{display:flex;gap:10px;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:10px;box-shadow:var(--shadow);text-decoration:none;color:var(--ink);transition:background .5s}
+  .dimgbox{position:relative;flex:none;width:96px;height:96px}
+  .dimgbox img{width:96px;height:96px;border-radius:12px;object-fit:cover;display:block}
+  .dtag{position:absolute;left:5px;top:5px;background:rgba(240,55,73,.94);color:#fff;font-size:8.5px;font-weight:900;border-radius:5px;padding:2px 6px}
+  .dinfo{flex:1;min-width:0;display:flex;flex-direction:column}
+  .dshop{font-size:13.5px;font-weight:900;display:flex;align-items:center;gap:5px}
+  .dshop .dstar{font-size:10px;font-weight:800;color:#f7a800}
+  .dshop .ddist{font-size:9px;font-weight:700;color:var(--mut);margin-left:auto}
+  .dtit{font-size:10.5px;font-weight:700;color:var(--mut);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .drules{display:flex;gap:5px;margin-top:5px}
+  .drules i{font-style:normal;font-size:8px;font-weight:800;color:var(--notice-tx);background:var(--notice-bg);border-radius:4px;padding:2px 5px}
+  .drow{margin-top:auto;display:flex;align-items:center;justify-content:space-between;padding-top:6px}
+  .dprice{font-size:17px;font-weight:900;color:var(--promo)}
+  .dprice s{font-size:10px;color:var(--mut);font-weight:700;margin-left:4px}
+  .dsold{font-size:9px;font-weight:700;color:var(--mut)}
+  .dbuy{flex:none;background:linear-gradient(120deg,#ff7a3d,#f03749);color:#fff;font-size:10.5px;font-weight:900;border-radius:9px;padding:6px 12px;box-shadow:0 4px 10px rgba(240,55,73,.3)}
+  .dright{display:flex;flex-direction:column;align-items:flex-end;justify-content:space-between}
+  /* ============ Tabbar ============ */
+  .tabbar{flex:none;height:72px;background:var(--tabbar);border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(5,1fr);padding:7px 4px 15px;transition:background .5s}
+  .tab{display:flex;flex-direction:column;align-items:center;gap:3px;font-size:10px;font-weight:700;color:var(--mut);text-decoration:none;position:relative;transition:color .5s}
+  .tab.on{color:var(--accent)}
+  .tab .bdg{position:absolute;top:2px;right:calc(50% - 20px);min-width:16px;height:16px;border-radius:8px;background:var(--promo);color:#fff;font-size:9px;font-weight:900;display:grid;place-items:center;padding:0 4px;border:1.5px solid var(--tabbar)}
+  [data-theme="dark"] .tab.on svg{filter:drop-shadow(0 0 9px rgba(110,199,38,.9))}
+  /* ============ toast / 悬浮球 ============ */
+  .toast{position:absolute;left:50%;bottom:96px;transform:translateX(-50%) translateY(16px);background:rgba(22,19,15,.92);color:#fff;font-size:11.5px;font-weight:700;border-radius:12px;padding:10px 15px;max-width:300px;text-align:center;line-height:1.6;opacity:0;pointer-events:none;transition:.3s;z-index:20}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  .maifab{position:absolute;right:12px;bottom:92px;width:52px;height:52px;border-radius:50%;background:rgba(255,255,255,.96);border:1px solid var(--line);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:30;text-decoration:none;box-shadow:0 8px 20px rgba(22,19,15,.16),0 0 0 4px rgba(0,200,130,.10);animation:maipulse 2.8s ease-in-out infinite}
+  .maifab img{width:31px;height:31px}
+  .maifab em{font-style:normal;font-size:8.5px;font-weight:900;color:#16130f;margin-top:1px}
+  .phone[data-theme="dark"] .maifab{background:rgba(20,26,24,.94)}
+  .phone[data-theme="dark"] .maifab em{color:#f6f2e5}
+  @keyframes maipulse{0%,100%{box-shadow:0 8px 20px rgba(22,19,15,.16),0 0 0 4px rgba(0,200,130,.12)}50%{box-shadow:0 8px 22px rgba(22,19,15,.18),0 0 0 9px rgba(0,200,130,.04)}}
+  /* ============ 入场动画 ============ */
+  .fu{opacity:0;transform:translateY(16px);transition:opacity .6s ease,transform .6s cubic-bezier(.2,.9,.3,1.05)}
+  .fu.in{opacity:1;transform:none}
+  @media(max-width:480px){body{padding:0}.phone{width:100%;height:100vh;border-radius:0;box-shadow:none}.cap{display:none}}
+
+/* ===== V10：顶部随 banner 联动渐变 + 三图轮播 ===== */
+@property --tint{syntax:'<color>';inherits:false;initial-value:#ffe6b8}
+.scroll{background:linear-gradient(180deg,var(--tint,#ffe6b8) 0px,var(--bg) 500px);transition:--tint .9s ease}
+[data-theme="dark"] .scroll{background:var(--bg)}
+.top{background:none;overflow:visible;padding-bottom:4px}
+.top::after{display:none}
+.statusbar{color:var(--ink)}
+.loc{background:rgba(255,255,255,.92);color:var(--ink);box-shadow:0 3px 10px rgba(22,19,15,.07)}
+.bell{background:rgba(255,255,255,.92);color:var(--ink);box-shadow:0 3px 10px rgba(22,19,15,.07)}
+.bell i{border-color:#fff}
+[data-theme="dark"] .statusbar{color:#fff}
+[data-theme="dark"] .loc,[data-theme="dark"] .bell{background:rgba(255,255,255,.14);color:#fff;box-shadow:none}
+.bans{margin:12px 14px 0;position:relative;height:118px;border-radius:18px}
+.pslide{position:absolute;inset:0;border-radius:18px;background:linear-gradient(120deg,var(--pc1),var(--pc2));display:flex;align-items:center;justify-content:space-between;padding:13px 15px;overflow:hidden;opacity:0;transform:translateX(16px) scale(.98);transition:opacity .65s ease,transform .65s ease;pointer-events:none;box-shadow:0 10px 22px var(--psh,rgba(22,19,15,.14))}
+.pslide.on{opacity:1;transform:none;pointer-events:auto}
+.pslide::before{content:"";position:absolute;left:-34px;top:-46px;width:124px;height:124px;border-radius:50%;background:rgba(255,255,255,.22)}
+.pb-tx{position:relative;z-index:2;min-width:0}
+.pb-tx .k{display:inline-block;font-style:normal;font-size:9px;font-weight:900;letter-spacing:.16em;color:var(--ptx);opacity:.72;border:1px solid currentColor;border-radius:6px;padding:2px 6px;margin-bottom:6px}
+.pb-tx b{display:block;font-size:19px;font-weight:900;color:var(--ptx);letter-spacing:.05em;line-height:1.25}
+.pb-tx p{font-size:10.5px;font-weight:800;color:var(--psub);margin:5px 0 8px;letter-spacing:.02em}
+.pb-tx span{display:inline-block;background:var(--pbtn);color:var(--pbt);font-size:10px;font-weight:900;border-radius:9px;padding:4.5px 11px;letter-spacing:.04em}
+.pslide>img{width:88px;height:88px;flex:none;position:relative;z-index:2;filter:drop-shadow(0 8px 10px rgba(22,19,15,.18))}
+.pdots{position:absolute;right:13px;bottom:10px;display:flex;gap:5px;z-index:6}
+.pdots i{width:5px;height:5px;border-radius:99px;background:rgba(22,19,15,.16);transition:.35s}
+.pdots i.on{width:15px;background:rgba(22,19,15,.55)}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute"><defs>
+  <g id="x-search"><circle cx="11" cy="11" r="6.5" fill="none" stroke-width="2.2"/><path d="m16 16 4.2 4.2" stroke-width="2.2" stroke-linecap="round"/></g>
+  <g id="x-bell"><path d="M6 9.5a6 6 0 0 1 12 0c0 4 1.6 5.4 2.2 6H3.8C4.4 14.9 6 13.5 6 9.5z"/><path d="M10 19a2.2 2.2 0 0 0 4 0z"/></g>
+  <g id="f-home"><path d="M12 4 4 10.6V20a1 1 0 0 0 1 1h4.6v-5.6h4.8V21H19a1 1 0 0 0 1-1v-9.4z"/></g>
+  <g id="f-shop"><path d="M4.6 8.6 6 4h12l1.4 4.6zM4 9.8h16V20a1 1 0 0 1-1 1h-5v-5.4h-4V21H5a1 1 0 0 1-1-1z"/><path d="M4 9.8h16v1a2.6 2.6 0 0 1-5.3 0 2.7 2.7 0 0 1-5.4 0 2.6 2.6 0 0 1-5.3 0z" opacity=".72"/></g>
+  <g id="f-chat"><path d="M6.5 4h11A2.5 2.5 0 0 1 20 6.5v6.8a2.5 2.5 0 0 1-2.5 2.5h-7.8l-4.5 3.6a.6.6 0 0 1-1-.5V6.5A2.5 2.5 0 0 1 6.5 4z"/><circle cx="9.2" cy="10" r="1.3" fill="#fff"/><circle cx="13.4" cy="10" r="1.3" fill="#fff"/><circle cx="17" cy="10" r="1.3" fill="#fff" opacity=".6"/></g>
+  <g id="f-cart"><path d="M3.6 4.4h2.3l.7 3.2H21l-1.7 7.2a1.6 1.6 0 0 1-1.6 1.3H8.7a1.6 1.6 0 0 1-1.6-1.3L5.4 6.6l-.4-1.4H3.6z"/><circle cx="9.3" cy="19.6" r="1.7"/><circle cx="16.8" cy="19.6" r="1.7"/></g>
+  <g id="f-me"><circle cx="12" cy="8.2" r="4"/><path d="M4.4 20.4c1-4.2 3.9-6.4 7.6-6.4s6.6 2.2 7.6 6.4a1 1 0 0 1-1 1.2H5.4a1 1 0 0 1-1-1.2z"/></g>
+  <g id="cap-more"><circle cx="4.5" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="19.5" cy="12" r="1.7"/></g>
+  <g id="cap-target"><circle cx="12" cy="12" r="6.4" fill="none" stroke-width="2"/><circle cx="12" cy="12" r="2.4"/></g>
+</defs></svg>
+
+<div class="cap"><h1>乐趣生活 · 生活圈</h1><p>附近团购 · 商家套餐 / 到店核销 / 随时退</p></div>
+
+<div class="phone" id="app">
+  <div class="scroll" style="--tint:#ffe6b8">
+    <div class="top">
+      <div class="statusbar"><span>9:41</span>
+        <span style="display:flex;gap:5px;align-items:center">
+          <svg width="16" height="11" viewBox="0 0 17 12" fill="currentColor"><rect x="0" y="7" width="3" height="5" rx="1"/><rect x="4.5" y="5" width="3" height="7" rx="1"/><rect x="9" y="2.5" width="3" height="9.5" rx="1"/><rect x="13.5" y="0" width="3" height="12" rx="1"/></svg>
+          <svg width="23" height="11" viewBox="0 0 25 12"><rect x="0.5" y="0.5" width="20" height="11" rx="3" fill="none" stroke="currentColor"/><rect x="2.5" y="2.5" width="14" height="7" rx="1.5" fill="currentColor"/><path d="M23 4v4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+        </span>
+      </div>
+      <div class="navrow">
+        <a class="loc" href="#" data-t="切换城市/定位：团购按当前定位 3km 内推荐"><svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.8a7.2 7.2 0 0 0-7.2 7.2C4.8 15.4 12 21.5 12 21.5S19.2 15.4 19.2 10A7.2 7.2 0 0 0 12 2.8zm0 9.7a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5z"/></svg>杭州<svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round"><path d="M5 9l7 7 7-7"/></svg></a>
+        <a class="qsearch" href="search.html" style="text-decoration:none">
+          <svg width="15" height="15" viewBox="0 0 24 24" stroke="currentColor"><use href="#x-search"/></svg>
+          搜商家 / 搜团购套餐…
+        </a>
+        <a class="bell" href="msgs.html"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><use href="#x-bell"/></svg><i></i></a>
+        <div class="capsule" style="margin-left:0">
+          <div class="cell"><svg width="20" height="20" viewBox="0 0 24 24" fill="var(--capsule-ink)" style="transition:.5s"><use href="#cap-more"/></svg></div>
+          <div class="cell"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--capsule-ink)" style="transition:.5s"><use href="#cap-target"/></svg></div>
+        </div></div>
+    </div>
+
+    <div class="bans fu">
+      <a class="pslide on" data-tint="#ffe6b8" style="text-decoration:none;color:inherit;--pc1:#ffe9ad;--pc2:#ffb84d;--ptx:#5b3400;--psub:#8a5a10;--pbtn:#5b3400;--pbt:#ffd76a;--psh:rgba(240,160,30,.28)" href="deals.html">
+        <div class="pb-tx"><i class="k">生活圈 · 团购</i><b>周末团购节</b><p>爆款套餐 5 折起 · 先囤后约 · 不用可退</p><span>去逛逛 ›</span></div>
+        <img src="../assets/icons/3d-hotpot.png" alt="">
+      </a>
+      <a class="pslide" data-tint="#ffdbe7" style="text-decoration:none;color:inherit;--pc1:#ffe0ea;--pc2:#ff9ec2;--ptx:#8f1148;--psub:#b04a74;--pbtn:#8f1148;--pbt:#ffe0ea;--psh:rgba(220,60,130,.25)" href="deals.html?c=beauty">
+        <div class="pb-tx"><i class="k">丽人焕新季</i><b>丽人焕新季</b><p>美发 · 美甲 · 美容 3 折起</p><span>去变美 ›</span></div>
+        <img src="../assets/icons/3d-rose.png" alt="">
+      </a>
+      <a class="pslide" data-tint="#dbf0dd" style="text-decoration:none;color:inherit;--pc1:#dff5d9;--pc2:#8fd9a8;--ptx:#0d5c2e;--psub:#3a7a52;--pbtn:#0d5c2e;--pbt:#dff5d9;--psh:rgba(30,150,80,.24)" href="deals.html?c=kids">
+        <div class="pb-tx"><i class="k">亲子玩乐</i><b>亲子玩乐汇</b><p>乐园 · DIY · 研学 周末通用</p><span>带娃去 ›</span></div>
+        <img src="../assets/icons/3d-play.png" alt="">
+      </a>
+      <div class="pdots"><i class="on"></i><i></i><i></i></div>
+    </div>
+
+    <div class="qcat fu">
+      <a href="deals.html?c=food" data-t="美食团购：附近餐饮商家套餐（到店核销）"><div class="qic"><img src="../assets/icons/3d-burger.png" alt=""></div><b>美食团购</b><p>附近 328 家</p></a>
+      <a href="deals.html?c=drink" data-t="奶茶饮品团购：瑞幸/喜茶等品牌券到店核销"><div class="qic"><img src="../assets/icons/3d-cup.png" alt=""></div><b>奶茶饮品</b><p>券后 9.9 起</p></a>
+      <a href="deals.html?c=film" data-t="电影演出团购：观影券/演出票通兑"><div class="qic"><img src="../assets/icons/3d-film.png" alt=""></div><b>电影演出</b><p>双人券 59.9</p></a>
+      <a href="deals.html?c=hotel" data-t="酒店民宿团购：钟点房/住宿套餐"><div class="qic"><img src="../assets/icons/3d-hotel.png" alt=""></div><b>酒店民宿</b><p>4 折起</p></a>
+      <a href="deals.html?c=ktv" data-t="KTV 团购：欢唱套餐/酒水券"><div class="qic"><img src="../assets/icons/3d-mic.png" alt=""></div><b>KTV 欢唱</b><p>3 小时 39 起</p></a>
+      <a href="deals.html?c=tour" data-t="周边游团购：景区门票+玩乐套餐"><div class="qic"><img src="../assets/icons/3d-mnt.png" alt=""></div><b>周边游</b><p>亲子套票热售</p></a>
+      <a href="deals.html?c=beauty" data-t="丽人美发团购：洗剪吹/美甲/美容套餐"><div class="qic"><img src="../assets/icons/3d-spray.png" alt=""></div><b>丽人美发</b><p>总监洗剪吹 38</p></a>
+      <a href="deals.html?c=kids" data-t="亲子乐园团购：儿童乐园/电玩城套餐"><div class="qic"><img src="../assets/icons/3d-play.png" alt=""></div><b>亲子乐园</b><p>周末通用</p></a>
+    </div>
+
+    <div class="qseg fu">
+      <button class="on" id="segDeal">团购套餐</button><button id="segShop">附近商家</button>
+    </div>
+
+    <div class="qtabs fu" id="dealTabs">
+      <a href="#" class="on" data-f="all">推荐</a><a href="#" data-f="food">美食</a><a href="#" data-f="beauty">丽人</a><a href="#" data-f="fun">休闲玩乐</a><a href="#" data-f="trip">酒旅</a>
+      <a href="#" class="sort" data-t="切换排序：销量优先 / 距离优先 / 价格最低">销量 ↓</a>
+    </div>
+
+    <div class="shops" id="shopList">
+      <a class="shop fu" href="shop.html?s=0">
+        <img class="simg" src="../assets/img/n-crayfish.jpg" alt="">
+        <div class="sinfo"><b>虾闹闹 · 麻辣小龙虾</b><div class="smeta"><i>★4.8</i> · 480m · 川菜 · 人均 ¥65</div><div class="stags">主营 <em>麻辣小龙虾 · 江湖菜</em></div><div class="saddr"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linejoin="round"><path d="M12 21s-6.5-5.4-6.5-10.3A6.5 6.5 0 0 1 12 4a6.5 6.5 0 0 1 6.5 6.7C18.5 15.6 12 21 12 21z"/><circle cx="12" cy="10.6" r="2.2"/></svg>西湖区文三路 100 号</div><span class="sdeal">热门团购：双人餐 ¥98</span></div>
+        <span class="sgo">进店 ›</span>
+      </a>
+      <a class="shop fu" href="shop.html?s=1">
+        <img class="simg" src="../assets/img/n-skewer.jpg" alt="">
+        <div class="sinfo"><b>串局 · 东北烧烤</b><div class="smeta"><i>★4.7</i> · 650m · 烧烤 · 人均 ¥58</div><div class="stags">主营 <em>牛羊肉串 · 扎啤烤翅</em></div><div class="saddr"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linejoin="round"><path d="M12 21s-6.5-5.4-6.5-10.3A6.5 6.5 0 0 1 12 4a6.5 6.5 0 0 1 6.5 6.7C18.5 15.6 12 21 12 21z"/><circle cx="12" cy="10.6" r="2.2"/></svg>拱墅区莫干山路 66 号</div><span class="sdeal">热门团购：四人撸串 ¥128</span></div>
+        <span class="sgo">进店 ›</span>
+      </a>
+      <a class="shop fu" href="shop.html?s=2">
+        <img class="simg" src="../assets/img/p-barber.jpg" alt="">
+        <div class="sinfo"><b>型格美发 · 银泰店</b><div class="smeta"><i>★4.9</i> · 320m · 丽人美发 · 人均 ¥45</div><div class="stags">主营 <em>洗剪吹 · 染烫造型</em></div><div class="saddr"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linejoin="round"><path d="M12 21s-6.5-5.4-6.5-10.3A6.5 6.5 0 0 1 12 4a6.5 6.5 0 0 1 6.5 6.7C18.5 15.6 12 21 12 21z"/><circle cx="12" cy="10.6" r="2.2"/></svg>西湖区银泰百货 5F</div><span class="sdeal">热门团购：总监洗剪吹 ¥38</span></div>
+        <span class="sgo">进店 ›</span>
+      </a>
+      <a class="shop fu" href="shop.html?s=3">
+        <img class="simg" src="../assets/img/s-cake.jpg" alt="">
+        <div class="sinfo"><b>甜屿 · 手作蛋糕</b><div class="smeta"><i>★4.8</i> · 1.2km · 烘焙 · 人均 ¥42</div><div class="stags">主营 <em>生日蛋糕 · 手作甜点</em></div><div class="saddr"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linejoin="round"><path d="M12 21s-6.5-5.4-6.5-10.3A6.5 6.5 0 0 1 12 4a6.5 6.5 0 0 1 6.5 6.7C18.5 15.6 12 21 12 21z"/><circle cx="12" cy="10.6" r="2.2"/></svg>滨江区江南大道 288 号</div><span class="sdeal">热门团购：6寸蛋糕 ¥88</span></div>
+        <span class="sgo">进店 ›</span>
+      </a>
+      <a class="shop fu" href="shop.html?s=4">
+        <img class="simg" src="../assets/img/s-film.jpg" alt="">
+        <div class="sinfo"><b>万达影城 · 西湖店</b><div class="smeta"><i>★4.9</i> · 900m · 电影 · 人均 ¥35</div><div class="stags">主营 <em>电影放映 · 通兑券</em></div><div class="saddr"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linejoin="round"><path d="M12 21s-6.5-5.4-6.5-10.3A6.5 6.5 0 0 1 12 4a6.5 6.5 0 0 1 6.5 6.7C18.5 15.6 12 21 12 21z"/><circle cx="12" cy="10.6" r="2.2"/></svg>西湖区西溪印象城 3F</div><span class="sdeal">热门团购：双人通兑 ¥59.9</span></div>
+        <span class="sgo">进店 ›</span>
+      </a>
+      <a class="shop fu" href="shop.html?s=5">
+        <img class="simg" src="../assets/img/n-melon.jpg" alt="">
+        <div class="sinfo"><b>果然鲜 · 精品水果</b><div class="smeta"><i>★4.6</i> · 210m · 水果 · 人均 ¥20</div><div class="stags">主营 <em>精品水果 · 现切果切</em></div><div class="saddr"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linejoin="round"><path d="M12 21s-6.5-5.4-6.5-10.3A6.5 6.5 0 0 1 12 4a6.5 6.5 0 0 1 6.5 6.7C18.5 15.6 12 21 12 21z"/><circle cx="12" cy="10.6" r="2.2"/></svg>西湖区文二路 45 号</div><span class="sdeal">热门团购：麒麟西瓜 ¥15.9</span></div>
+        <span class="sgo">进店 ›</span>
+      </a>
+    </div>
+
+    <div class="deals" id="dealList">
+      <a class="deal fu" data-c="food" href="detail.html?id=d1" data-t="商家主页：虾闹闹——套餐详情→在线购买→到店展码核销（团购能力）">
+        <div class="dimgbox"><img src="../assets/img/n-crayfish.jpg" alt=""><span class="dtag">团购</span></div>
+        <div class="dinfo">
+          <div class="dshop">虾闹闹 · 麻辣小龙虾<span class="dstar">★4.8</span><span class="ddist">480m</span></div>
+          <div class="dtit">【双人餐】招牌麻辣小龙虾 2 斤 + 配菜双拼 + 饮品</div>
+          <div class="drules"><i>随时退</i><i>过期自动退</i><i>免预约</i></div>
+          <div class="drow"><div><span class="dprice">¥98<s>¥168</s></span><span class="dsold">　已售 3200+</span></div><span class="dbuy">马上抢</span></div>
+        </div>
+      </a>
+      <a class="deal fu" data-c="food" href="detail.html?id=d2" data-t="商家主页：串局烧烤——套餐详情→在线购买→到店展码核销（团购能力）">
+        <div class="dimgbox"><img src="../assets/img/n-skewer.jpg" alt=""><span class="dtag">团购</span></div>
+        <div class="dinfo">
+          <div class="dshop">串局 · 东北烧烤<span class="dstar">★4.7</span><span class="ddist">650m</span></div>
+          <div class="dtit">【四人撸串套餐】牛羊肉串 40 串 + 烤翅 + 扎啤 4 杯</div>
+          <div class="drules"><i>随时退</i><i>过期自动退</i></div>
+          <div class="drow"><div><span class="dprice">¥128<s>¥228</s></span><span class="dsold">　已售 2100+</span></div><span class="dbuy">马上抢</span></div>
+        </div>
+      </a>
+      <a class="deal fu" data-c="beauty" href="detail.html?id=d3" data-t="商家主页：型格美发——洗剪吹套餐→购买→预约到店核销（丽人团购）">
+        <div class="dimgbox"><img src="../assets/img/p-barber.jpg" alt=""><span class="dtag">丽人</span></div>
+        <div class="dinfo">
+          <div class="dshop">型格美发 · 银泰店<span class="dstar">★4.9</span><span class="ddist">320m</span></div>
+          <div class="dtit">【总监洗剪吹】含头皮检测 + 造型，周末通用</div>
+          <div class="drules"><i>随时退</i><i>需预约</i></div>
+          <div class="drow"><div><span class="dprice">¥38<s>¥88</s></span><span class="dsold">　已售 8600+</span></div><span class="dbuy">马上抢</span></div>
+        </div>
+      </a>
+      <a class="deal fu" data-c="food" href="detail.html?id=d4" data-t="商家主页：甜屿蛋糕——团购券购买→到店自提核销（接口 4/5 蛋糕能力）">
+        <div class="dimgbox"><img src="../assets/img/s-cake.jpg" alt=""><span class="dtag">团购</span></div>
+        <div class="dinfo">
+          <div class="dshop">甜屿 · 手作蛋糕<span class="dstar">★4.8</span><span class="ddist">1.2km</span></div>
+          <div class="dtit">【6 寸生日蛋糕】动物奶油，8 款可选，需提前 4 小时预约</div>
+          <div class="drules"><i>随时退</i><i>过期自动退</i></div>
+          <div class="drow"><div><span class="dprice">¥88<s>¥158</s></span><span class="dsold">　已售 1500+</span></div><span class="dbuy">马上抢</span></div>
+        </div>
+      </a>
+      <a class="deal fu" data-c="fun" href="detail.html?id=d5" data-t="万达影城通兑券：在线购券→选影片场次→影院核销（接口 1）">
+        <div class="dimgbox"><img src="../assets/img/s-film.jpg" alt=""><span class="dtag">通兑</span></div>
+        <div class="dinfo">
+          <div class="dshop">万达影城 · 西湖店<span class="dstar">★4.9</span><span class="ddist">900m</span></div>
+          <div class="dtit">【双人观影通兑券】2D/3D 全场次通用，含 2 杯可乐</div>
+          <div class="drules"><i>随时退</i><i>全场次通用</i></div>
+          <div class="drow"><div><span class="dprice">¥59.9<s>¥160</s></span><span class="dsold">　已售 5.2万</span></div><span class="dbuy">马上抢</span></div>
+        </div>
+      </a>
+      <a class="deal fu" data-c="food" href="detail.html?id=d6" data-t="商家主页：果然鲜——水果团购价→到店自提/小时达（商超能力）">
+        <div class="dimgbox"><img src="../assets/img/n-melon.jpg" alt=""><span class="dtag">自提</span></div>
+        <div class="dinfo">
+          <div class="dshop">果然鲜 · 精品水果<span class="dstar">★4.6</span><span class="ddist">210m</span></div>
+          <div class="dtit">【麒麟西瓜 3 斤】现摘现切，不甜包退</div>
+          <div class="drules"><i>随时退</i><i>坏果包赔</i></div>
+          <div class="drow"><div><span class="dprice">¥15.9<s>¥24</s></span><span class="dsold">　已售 9800+</span></div><span class="dbuy">马上抢</span></div>
+        </div>
+      </a>
+    </div>
+  </div>
+
+  <a class="maifab" id="maifab" href="mai.html" data-t="小满AI对话页：语音/文字说出需求，一句话调用 32 项供应链能力下单（全局悬浮入口，可拖动）"><img src="../assets/icons/mai.png" alt="小满"><em>小满</em></a>
+  <div class="toast" id="toast"></div>
+  <div class="tabbar">
+    <a class="tab" href="index.html"><svg width="23" height="23" viewBox="0 0 24 24" fill="currentColor"><use href="#f-home"/></svg>首页</a>
+    <a class="tab" href="mall.html"><svg width="23" height="23" viewBox="0 0 24 24" fill="currentColor"><use href="#f-shop"/></svg>商城</a>
+    <a class="tab on" href="quan.html"><svg width="23" height="23" viewBox="0 0 24 24" fill="currentColor"><use href="#f-chat"/></svg>生活圈</a>
+    <a class="tab" href="cart.html"><svg width="23" height="23" viewBox="0 0 24 24" fill="currentColor"><use href="#f-cart"/></svg>购物车<span class="bdg">3</span></a>
+    <a class="tab" href="me.html"><svg width="23" height="23" viewBox="0 0 24 24" fill="currentColor"><use href="#f-me"/></svg>我的</a>
+  </div>
+</div>
+
+<script>
+  var app=document.getElementById('app');
+  if(location.search.indexOf('theme=dark')>-1){app.classList.add('no-tr');app.setAttribute('data-theme','dark');requestAnimationFrame(function(){requestAnimationFrame(function(){app.classList.remove('no-tr');});});}
+  document.querySelectorAll('.tabbar a').forEach(function(a){if(app.getAttribute('data-theme')==='dark')a.href+=(a.href.indexOf('?')>-1?'&':'?')+'theme=dark';});
+  if(location.search.indexOf('snap=1')>-1)document.querySelectorAll('.fu').forEach(function(el){el.style.transition='none';el.classList.add('in');});
+  var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target);}});},{root:document.querySelector('.scroll'),threshold:.06});
+  document.querySelectorAll('.fu').forEach(function(el){io.observe(el);});
+  setTimeout(function(){var lim=document.querySelector('.scroll').clientHeight*1.6;document.querySelectorAll('.fu').forEach(function(el){if(el.offsetTop<lim)el.classList.add('in');});},120);
+  var segD=document.getElementById('segDeal'),segS=document.getElementById('segShop');
+  function segSwitch(shop){
+    segD.classList.toggle('on',!shop);segS.classList.toggle('on',shop);
+    document.getElementById('dealList').style.display=shop?'none':'flex';
+    document.getElementById('dealTabs').style.display=shop?'none':'flex';
+    document.getElementById('shopList').style.display=shop?'flex':'none';
+  }
+  if(location.search.indexOf('seg=shop')>-1)segSwitch(true);
+  segD.addEventListener('click',function(){segSwitch(false)});
+  segS.addEventListener('click',function(){segSwitch(true)});
+  var toast=document.getElementById('toast'),tt;
+  document.addEventListener('click',function(e){
+    var el=e.target.closest('[data-t]');
+    if(el){var hr=el.tagName==='A'?el.getAttribute('href'):'';if(hr&&hr.indexOf('.html')>-1)return;e.preventDefault();toast.textContent=el.getAttribute('data-t');toast.classList.add('show');clearTimeout(tt);tt=setTimeout(function(){toast.classList.remove('show')},2300);}
+  });
+</script>
+<script>
+(function(){
+  var tabs=document.querySelectorAll('.qtabs a[data-f]');
+  var cards=document.querySelectorAll('#dealList .deal');
+  tabs.forEach(function(t){t.addEventListener('click',function(e){e.preventDefault();
+    tabs.forEach(function(x){x.classList.remove('on')});t.classList.add('on');
+    var k=t.getAttribute('data-f'),n=0;
+    cards.forEach(function(c){var s=k==='all'||c.getAttribute('data-c')===k;c.style.display=s?'flex':'none';if(s)n++;});
+    var emp=document.getElementById('qempty');
+    if(n===0){if(!emp){emp=document.createElement('div');emp.id='qempty';emp.style.cssText='text-align:center;font-size:11px;font-weight:700;color:var(--mut);padding:26px 0 8px';emp.textContent='附近 3km 暂无该类商家，看看其他分类吧';document.getElementById('dealList').appendChild(emp);}emp.style.display='block';}
+    else if(emp)emp.style.display='none';
+  });});
+})();
+</script>
+<script>
+(function(){
+  var box=document.querySelector('.bans');if(!box)return;
+  var sl=box.querySelectorAll('.pslide'),dots=box.querySelectorAll('.pdots i');
+  var sc=document.querySelector('.scroll');var i=0,n=sl.length;
+  function go(k){i=(k+n)%n;for(var j=0;j<n;j++){sl[j].classList.toggle('on',j===i);if(dots[j])dots[j].classList.toggle('on',j===i)}var t=sl[i].getAttribute('data-tint');if(t&&sc)sc.style.setProperty('--tint',t);}
+  if(location.search.indexOf('snap=1')<0)setInterval(function(){go(i+1)},3800);
+})();
+</script>
+</body>
+</html>

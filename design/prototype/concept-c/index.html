@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>概念 C · 暖红生活 — 乐趣生活</title>
+<style>
+  :root{
+    --red:#ff4049; --bg:#f3f3ec; --ink:#000; --mut:#707070;
+    --pu:#f6ddff; --mi:#baf6e8; --cr:#fff6d1;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  body{
+    background:#e8e8de;
+    font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;
+    display:flex;flex-direction:column;align-items:center;
+    padding:36px 16px 60px;color:var(--ink);
+  }
+  .cap{margin-bottom:18px;text-align:center}
+  .cap h1{font-size:22px;letter-spacing:.22em;font-weight:800}
+  .cap p{font-size:12px;margin-top:6px;letter-spacing:.14em;color:var(--mut)}
+  .phone{
+    width:375px;height:760px;background:var(--bg);border-radius:46px;
+    position:relative;overflow:hidden;display:flex;flex-direction:column;flex:none;
+    box-shadow:0 30px 80px -24px rgba(0,0,0,.4),0 0 0 10px #1d1d1f;
+  }
+  .statusbar{height:44px;flex:none;display:flex;justify-content:space-between;align-items:center;padding:0 28px;font-size:13px;font-weight:700;position:relative;z-index:5}
+  .scroll{flex:1;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:none;position:relative;z-index:2}
+  .scroll::-webkit-scrollbar{display:none}
+  /* ---------- 背景 blob ---------- */
+  .blob{position:absolute;z-index:0;pointer-events:none}
+  /* ---------- 头部 ---------- */
+  .hd{padding:4px 20px 0;display:flex;justify-content:space-between;align-items:center;position:relative;z-index:3}
+  .brand{font-size:20px;font-weight:900;letter-spacing:.04em}
+  .brand i{font-style:normal;color:var(--red)}
+  .hd .loc{font-size:12.5px;font-weight:700;background:#fff;border-radius:999px;padding:8px 13px;box-shadow:0 4px 14px rgba(0,0,0,.08)}
+  .search{
+    margin:12px 20px 0;height:48px;background:#fff;border-radius:999px;
+    display:flex;align-items:center;gap:9px;padding:0 8px 0 18px;
+    font-size:14px;color:var(--mut);box-shadow:0 6px 18px rgba(0,0,0,.06);position:relative;z-index:3;
+  }
+  .search .go{margin-left:auto;background:var(--red);color:#fff;font-size:13px;font-weight:800;border-radius:999px;padding:9px 18px}
+  /* ---------- Hero ---------- */
+  .hero{padding:26px 20px 4px;position:relative;z-index:3}
+  .hero h2{font-size:38px;line-height:1.3;font-weight:900;letter-spacing:.01em}
+  .hero h2 .ch{display:inline-block;animation:wave 2.4s ease-in-out infinite}
+  @keyframes wave{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+  .hero h2 em{font-style:normal;color:var(--red);position:relative}
+  .hero h2 em::after{content:"";position:absolute;left:0;right:0;bottom:4px;height:10px;background:var(--cr);z-index:-1;border-radius:5px}
+  .hero .sub{margin-top:10px;font-size:13.5px;color:var(--mut);font-weight:600}
+  .hero .granny{position:absolute;right:2px;top:-6px;z-index:-1}
+  /* ---------- 分类胶囊 ---------- */
+  .pills{display:flex;gap:9px;overflow-x:auto;padding:18px 20px 6px;scrollbar-width:none;position:relative;z-index:3}
+  .pills::-webkit-scrollbar{display:none}
+  .pill{
+    flex:none;display:flex;align-items:center;gap:7px;border-radius:999px;padding:11px 16px;
+    font-size:13.5px;font-weight:800;background:#fff;box-shadow:0 4px 12px rgba(0,0,0,.05);cursor:pointer;
+  }
+  .pill i{width:8px;height:8px;border-radius:50%;flex:none}
+  .pill.hot{background:var(--red);color:#fff}
+  /* ---------- 横向商品 ---------- */
+  .sec{padding:22px 0 0;position:relative;z-index:3}
+  .sec-hd{display:flex;align-items:baseline;justify-content:space-between;padding:0 20px;margin-bottom:13px}
+  .sec-hd h3{font-size:21px;font-weight:900}
+  .sec-hd h3::before{content:"";display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--red);margin-right:8px}
+  .sec-hd a{font-size:12.5px;font-weight:800;color:var(--ink);text-decoration:none;background:#fff;border-radius:999px;padding:7px 13px;box-shadow:0 4px 10px rgba(0,0,0,.06)}
+  .rail{display:flex;gap:13px;overflow-x:auto;padding:4px 20px 14px;scroll-snap-type:x mandatory;scrollbar-width:none}
+  .rail::-webkit-scrollbar{display:none}
+  .card{
+    flex:none;width:168px;background:#fff;border-radius:22px;overflow:hidden;
+    box-shadow:0 10px 26px rgba(0,0,0,.07);scroll-snap-align:start;
+  }
+  .cpic{height:118px;display:grid;place-items:center;position:relative}
+  .cpic .tag{position:absolute;top:10px;left:10px;font-size:10.5px;font-weight:800;border-radius:999px;padding:4px 9px}
+  .c-bd{padding:11px 13px 13px}
+  .c-name{font-size:14.5px;font-weight:800;line-height:1.4}
+  .c-sub{font-size:11.5px;color:var(--mut);margin-top:3px;font-weight:600}
+  .c-row{display:flex;align-items:center;justify-content:space-between;margin-top:9px}
+  .price{font-size:11px;font-weight:800;color:var(--red)}
+  .price b{font-size:20px}
+  .price s{color:var(--mut);font-weight:600;font-size:11px;margin-left:3px}
+  .plus{
+    width:34px;height:34px;border-radius:50%;border:none;background:var(--red);color:#fff;
+    display:grid;place-items:center;cursor:pointer;box-shadow:0 6px 14px rgba(255,64,73,.4);
+  }
+  /* ---------- 团购 ---------- */
+  .tg{
+    margin:8px 20px 0;border-radius:24px;background:#fff;padding:17px;position:relative;overflow:hidden;
+    box-shadow:0 10px 26px rgba(0,0,0,.07);
+  }
+  .tg::before{content:"";position:absolute;right:-34px;top:-34px;width:110px;height:110px;border-radius:50%;background:var(--mi)}
+  .tg-top{display:flex;justify-content:space-between;align-items:center;position:relative}
+  .tg-top h4{font-size:18px;font-weight:900}
+  .cnt{display:flex;gap:5px;align-items:center;font-size:12px;font-weight:800;color:var(--red)}
+  .cnt b{background:var(--red);color:#fff;border-radius:7px;padding:3px 6px;font-size:12px}
+  .tg-item{display:flex;justify-content:space-between;align-items:center;margin-top:13px;position:relative}
+  .tg-item .t{font-size:15px;font-weight:800}
+  .tg-item .t small{display:block;font-size:11.5px;color:var(--mut);font-weight:600;margin-top:2px}
+  .tg-btn{
+    border:none;background:var(--red);color:#fff;font-size:14px;font-weight:800;
+    padding:12px 18px;border-radius:999px;cursor:pointer;display:flex;align-items:center;gap:6px;
+    box-shadow:0 8px 18px rgba(255,64,73,.35);font-family:inherit;
+  }
+  .tg-btn svg{transition:transform .2s}
+  .tg-btn:hover svg{transform:translateX(3px)}
+  .tg-note{margin-top:11px;font-size:12px;color:var(--mut);font-weight:600;position:relative}
+  .tg-note b{color:var(--ink)}
+  /* ---------- 服务 ---------- */
+  .svcs{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:4px 20px 0}
+  .svc{border-radius:20px;padding:15px;min-height:96px;display:flex;flex-direction:column;justify-content:space-between}
+  .svc .k{font-size:15px;font-weight:900}
+  .svc .v{font-size:11.5px;font-weight:700;opacity:.55;margin-top:3px}
+  .svc svg{align-self:flex-end}
+  /* ---------- 生活圈 ---------- */
+  .post{margin:0 20px 12px;background:#fff;border-radius:20px;padding:14px 15px;box-shadow:0 8px 20px rgba(0,0,0,.05)}
+  .post .who{display:flex;align-items:center;gap:9px}
+  .post .av{width:36px;height:36px;border-radius:50%;display:grid;place-items:center;font-weight:900;font-size:14px}
+  .post .nm{font-size:13.5px;font-weight:800}
+  .post .tm{font-size:11px;color:var(--mut);font-weight:600}
+  .post .tx{font-size:13.5px;line-height:1.65;margin-top:9px;font-weight:600}
+  .foot-note{text-align:center;font-size:11.5px;color:var(--mut);padding:22px 0 12px;font-weight:700;letter-spacing:.2em}
+  /* 进入动画 */
+  .fu{opacity:0;transform:translateY(22px);transition:opacity .7s cubic-bezier(.2,.7,.3,1),transform .7s cubic-bezier(.2,.7,.3,1)}
+  .fu.in{opacity:1;transform:none}
+  /* ---------- Tabbar ---------- */
+  .tabbar{
+    flex:none;height:74px;background:#fff;border-radius:28px 28px 0 0;
+    box-shadow:0 -8px 26px rgba(0,0,0,.07);
+    display:grid;grid-template-columns:repeat(5,1fr);padding:8px 6px 15px;position:relative;z-index:5;
+  }
+  .tab{display:flex;flex-direction:column;align-items:center;gap:3px;font-size:11px;font-weight:700;color:var(--mut);position:relative;padding-top:5px}
+  .tab.on{color:var(--red)}
+  .tab.on::before{content:"";position:absolute;top:-2px;width:6px;height:6px;border-radius:50%;background:var(--red)}
+  @media(max-width:480px){ body{padding:0} .phone{width:100%;height:100vh;border-radius:0;box-shadow:none} .cap{display:none} }
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute"><defs>
+  <g id="c-search"><circle cx="11" cy="11" r="6.5" fill="none" stroke-width="2.2"/><path d="m16 16 4.2 4.2" stroke-width="2.2" stroke-linecap="round"/></g>
+  <g id="c-plus"><path d="M12 6v12M6 12h12" fill="none" stroke-width="2.6" stroke-linecap="round"/></g>
+  <g id="c-arrow"><path d="M4 12h14m-6-6 6 6-6 6" fill="none" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></g>
+  <g id="c-home"><path d="M4 10.5 12 4l8 6.5V20a1 1 0 0 1-1 1h-4.5v-6h-5v6H5a1 1 0 0 1-1-1z" fill="none" stroke-width="2.2" stroke-linejoin="round"/></g>
+  <g id="c-shop"><path d="M4 9l1.2-4.5h13.6L20 9M4 9v11h16V9M4 9h16M9.5 20v-6h5v6" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></g>
+  <g id="c-chat"><path d="M4 6.5A2.5 2.5 0 0 1 6.5 4h11A2.5 2.5 0 0 1 20 6.5v7a2.5 2.5 0 0 1-2.5 2.5H9l-4.2 3.4c-.4.3-.8 0-.8-.4z" fill="none" stroke-width="2.2" stroke-linejoin="round"/></g>
+  <g id="c-cart"><path d="M3.5 4.5h2.4l2 11h10.4l1.9-8H8" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="9.5" cy="19.5" r="1.6" fill="none" stroke-width="2.2"/><circle cx="16.5" cy="19.5" r="1.6" fill="none" stroke-width="2.2"/></g>
+  <g id="c-me"><circle cx="12" cy="8.5" r="3.8" fill="none" stroke-width="2.2"/><path d="M4.8 20c.8-3.8 3.6-6 7.2-6s6.4 2.2 7.2 6" fill="none" stroke-width="2.2" stroke-linecap="round"/></g>
+  <g id="c-egg"><ellipse cx="12" cy="13.5" rx="7" ry="8.5" fill="none" stroke-width="2"/><path d="M9 10.5c.8-1.4 2-2.2 3.4-2.4" fill="none" stroke-width="2" stroke-linecap="round"/></g>
+  <g id="c-leaf"><path d="M12 21c-5 0-8-3.2-8-8 0-5.5 4.5-8.5 9-9-.6 4.8-1 8.2 1.5 10.5C16.6 16.6 18 18.5 18 20c-1.8.7-3.9 1-6 1z" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></g>
+  <g id="c-apple"><path d="M12 8c-4.5-2.5-8 .5-8 4.5 0 4.5 3.5 8.5 8 8.5s8-4 8-8.5c0-4-3.5-7-8-4.5z" fill="none" stroke-width="2" stroke-linejoin="round"/><path d="M12 8V5.5A2.5 2.5 0 0 1 14.5 3" fill="none" stroke-width="2" stroke-linecap="round"/></g>
+  <g id="c-wheat"><path d="M12 21V8" fill="none" stroke-width="2" stroke-linecap="round"/><path d="M12 8c-2.5-1-3.5-3-3-5 2.2.6 3.4 2 3 5zm0 0c2.5-1 3.5-3 3-5-2.2.6-3.4 2-3 5zm0 5c-2.5-1-3.5-3-3-5 2.2.6 3.4 2 3 5z" fill="none" stroke-width="2" stroke-linejoin="round"/></g>
+  <g id="c-clock"><circle cx="12" cy="12" r="8.5" fill="none" stroke-width="2.2"/><path d="M12 7.5V12l3 2.5" fill="none" stroke-width="2.2" stroke-linecap="round"/></g>
+</defs></svg>
+
+<div class="cap">
+  <h1>概念 C · 暖红生活</h1>
+  <p>珊瑚红行动点 / 有机形动效 / 逐字波 / 柔软圆角</p>
+</div>
+
+<div class="phone">
+  <!-- 背景有机形：SMIL 变形 -->
+  <svg class="blob" style="top:110px;left:-70px" width="240" height="240" viewBox="0 0 200 200">
+    <path fill="#fff6d1">
+      <animate attributeName="d" dur="9s" repeatCount="indefinite"
+        values="M45,-60C58,-52,68,-39,73,-24C78,-9,78,8,72,23C66,38,54,51,40,60C26,69,10,74,-6,72C-22,70,-38,61,-50,48C-62,35,-70,18,-71,0C-72,-18,-66,-35,-55,-47C-44,-59,-28,-66,-12,-69C4,-72,32,-68,45,-60Z;
+                M52,-66C66,-55,76,-38,79,-20C82,-2,78,16,69,31C60,46,46,58,30,65C14,72,-4,74,-21,69C-38,64,-54,52,-63,36C-72,20,-74,1,-70,-17C-66,-35,-56,-51,-41,-61C-26,-71,-9,-75,8,-72C25,-69,38,-77,52,-66Z;
+                M45,-60C58,-52,68,-39,73,-24C78,-9,78,8,72,23C66,38,54,51,40,60C26,69,10,74,-6,72C-22,70,-38,61,-50,48C-62,35,-70,18,-71,0C-72,-18,-66,-35,-55,-47C-44,-59,-28,-66,-12,-69C4,-72,32,-68,45,-60Z"
+        transform="translate(100,100)"/>
+    </path>
+  </svg>
+  <svg class="blob" style="top:430px;right:-90px" width="260" height="260" viewBox="0 0 200 200">
+    <path fill="#baf6e8">
+      <animate attributeName="d" dur="11s" repeatCount="indefinite"
+        values="M42,-56C55,-47,66,-33,71,-17C76,-1,75,16,68,31C61,46,48,59,33,66C18,73,1,74,-16,69C-33,64,-50,53,-59,38C-68,23,-69,4,-64,-13C-59,-30,-48,-45,-34,-54C-20,-63,-4,-66,12,-64C28,-62,29,-65,42,-56Z;
+                M50,-62C63,-51,72,-35,74,-18C76,-1,71,16,61,30C51,44,36,55,20,61C4,67,-13,68,-29,62C-45,56,-60,43,-67,27C-74,11,-73,-7,-66,-22C-59,-37,-46,-50,-30,-57C-14,-64,3,-65,19,-60C35,-55,37,-73,50,-62Z;
+                M42,-56C55,-47,66,-33,71,-17C76,-1,75,16,68,31C61,46,48,59,33,66C18,73,1,74,-16,69C-33,64,-50,53,-59,38C-68,23,-69,4,-64,-13C-59,-30,-48,-45,-34,-54C-20,-63,-4,-66,12,-64C28,-62,29,-65,42,-56Z"
+        transform="translate(100,100)"/>
+    </path>
+  </svg>
+
+  <div class="statusbar"><span>9:41</span><span>5G · 100%</span></div>
+  <div class="scroll">
+
+    <div class="hd">
+      <div class="brand">乐趣<i>生活</i></div>
+      <div class="loc"><svg width="13" height="13" viewBox="0 0 24 24" style="margin-right:4px" fill="none" stroke="#ff4049" stroke-width="2.4" stroke-linejoin="round"><path d="M12 21s-6.5-5.4-6.5-10.3A6.5 6.5 0 0 1 12 4a6.5 6.5 0 0 1 6.5 6.7C18.5 15.6 12 21 12 21z"/><circle cx="12" cy="10.6" r="2.2"/></svg>幸福里社区</div>
+    </div>
+
+    <div class="search">
+      <svg width="19" height="19" viewBox="0 0 24 24" stroke="#707070"><use href="#c-search"/></svg>
+      搜：土鸡蛋 / 理发 / 缴电费
+      <span class="go">搜索</span>
+    </div>
+
+    <div class="hero">
+      <!-- 手绘人物：挎篮的张婶 -->
+      <svg class="granny" width="120" height="130" viewBox="0 0 120 130">
+        <circle cx="60" cy="34" r="16" fill="#ffd9b8" stroke="#000" stroke-width="2"/>
+        <path d="M44 30c0-10 7-18 16-18s16 8 16 18c-4-6-8-8-16-8s-12 2-16 8z" fill="#5b5b5b"/>
+        <circle cx="54" cy="33" r="1.8" fill="#000"/><circle cx="66" cy="33" r="1.8" fill="#000"/>
+        <path d="M55 41c2.5 2.5 7.5 2.5 10 0" fill="none" stroke="#000" stroke-width="2" stroke-linecap="round"/>
+        <path d="M42 52h36l4 34a8 8 0 0 1-8 8H46a8 8 0 0 1-8-8z" fill="#ff4049"/>
+        <path d="M42 56c-8 2-14 8-16 16" fill="none" stroke="#000" stroke-width="2.4" stroke-linecap="round"/>
+        <path d="M78 56c8 2 13 8 15 15" fill="none" stroke="#000" stroke-width="2.4" stroke-linecap="round"/>
+        <path d="M93 71c8-2 15 2 15 10v14a6 6 0 0 1-6 6H84a6 6 0 0 1-6-6V81c0-6 7-9 15-10z" fill="#fff6d1" stroke="#000" stroke-width="2"/>
+        <path d="M84 78c0-8 5-13 12-13s12 5 12 13" fill="none" stroke="#000" stroke-width="2"/>
+        <ellipse cx="88" cy="88" rx="4" ry="5" fill="#df6536"/><ellipse cx="98" cy="90" rx="4" ry="5" fill="#2c6469"/>
+        <path d="M52 94v18M68 94v18" stroke="#000" stroke-width="2.4" stroke-linecap="round"/>
+        <path d="M46 112h12M62 112h12" stroke="#000" stroke-width="3.4" stroke-linecap="round"/>
+      </svg>
+      <h2 id="hero-t">买点<em>好</em>的，<br>日子就<em>亮</em>了。</h2>
+      <div class="sub">今早现摘的菜 · 王婶家的蛋 · 满 59 送到楼下</div>
+    </div>
+
+    <div class="pills">
+      <div class="pill hot"><i style="background:#fff"></i>今日鲜货</div>
+      <div class="pill"><i style="background:#c77dff"></i>时令蔬菜</div>
+      <div class="pill"><i style="background:#52d1a8"></i>肉禽蛋奶</div>
+      <div class="pill"><i style="background:#ffd166"></i>粮油米面</div>
+      <div class="pill"><i style="background:#c77dff"></i>家政维修</div>
+      <div class="pill"><i style="background:#52d1a8"></i>理发洗护</div>
+      <div class="pill"><i style="background:#ffd166"></i>缴费代办</div>
+    </div>
+
+    <div class="sec fu">
+      <div class="sec-hd"><h3>大家都在买</h3><a href="#">进商城 →</a></div>
+      <div class="rail">
+        <div class="card">
+          <div class="cpic" style="background:var(--cr)"><span class="tag" style="background:var(--pu)">今日鲜</span>
+            <svg width="54" height="54" viewBox="0 0 24 24" stroke="#df6536"><use href="#c-egg"/></svg></div>
+          <div class="c-bd">
+            <div class="c-name">林下散养土鸡蛋 30 枚</div>
+            <div class="c-sub">张家庄王婶家 · 可溯源</div>
+            <div class="c-row"><div class="price">¥<b>9.9</b><s>15.8</s></div>
+              <button class="plus"><svg width="17" height="17" viewBox="0 0 24 24" stroke="#fff"><use href="#c-plus"/></svg></button></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="cpic" style="background:var(--mi)"><span class="tag" style="background:var(--cr)">凌晨摘</span>
+            <svg width="54" height="54" viewBox="0 0 24 24" stroke="#2c6469"><use href="#c-leaf"/></svg></div>
+          <div class="c-bd">
+            <div class="c-name">本地小青菜 500g</div>
+            <div class="c-sub">村东大棚 · 不新鲜包退</div>
+            <div class="c-row"><div class="price">¥<b>2.8</b><s>4.5</s></div>
+              <button class="plus"><svg width="17" height="17" viewBox="0 0 24 24" stroke="#fff"><use href="#c-plus"/></svg></button></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="cpic" style="background:var(--pu)"><span class="tag" style="background:var(--mi)">直发</span>
+            <svg width="54" height="54" viewBox="0 0 24 24" stroke="#b20155"><use href="#c-apple"/></svg></div>
+          <div class="c-bd">
+            <div class="c-name">红富士苹果 3 斤装</div>
+            <div class="c-sub">邻县果园 · 坏果包赔</div>
+            <div class="c-row"><div class="price">¥<b>11.9</b><s>16.9</s></div>
+              <button class="plus"><svg width="17" height="17" viewBox="0 0 24 24" stroke="#fff"><use href="#c-plus"/></svg></button></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="cpic" style="background:#fff"><span class="tag" style="background:var(--pu)">新米</span>
+            <svg width="54" height="54" viewBox="0 0 24 24" stroke="#3469a1"><use href="#c-wheat"/></svg></div>
+          <div class="c-bd">
+            <div class="c-name">五常新大米 10 斤</div>
+            <div class="c-sub">团长价 · 今晚截团</div>
+            <div class="c-row"><div class="price">¥<b>29.9</b><s>39.9</s></div>
+              <button class="plus"><svg width="17" height="17" viewBox="0 0 24 24" stroke="#fff"><use href="#c-plus"/></svg></button></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="tg fu">
+      <div class="tg-top">
+        <h4>邻里拼一单</h4>
+        <div class="cnt"><svg width="16" height="16" viewBox="0 0 24 24" stroke="#ff4049"><use href="#c-clock"/></svg>
+          剩 <b>02</b>:<b>47</b>:<b>13</b></div>
+      </div>
+      <div class="tg-item">
+        <div class="t">五常新大米 10 斤<small>37 位邻居已参团 · 还差 13 人</small></div>
+        <button class="tg-btn">¥29.9 参团 <svg width="16" height="16" viewBox="0 0 24 24" stroke="#fff"><use href="#c-arrow"/></svg></button>
+      </div>
+      <div class="tg-note">今晚 8 点截团，<b>团长是 3 号楼王婶</b>，送到她家楼下自取。</div>
+    </div>
+
+    <div class="sec fu">
+      <div class="sec-hd"><h3>家门口办事</h3><a href="#">全部 →</a></div>
+      <div class="svcs">
+        <div class="svc" style="background:var(--mi)">
+          <div><div class="k">缴电费水费</div><div class="v">报户号，帮您跑</div></div>
+          <svg width="26" height="26" viewBox="0 0 24 24" stroke="#000"><use href="#c-arrow"/></svg>
+        </div>
+        <div class="svc" style="background:var(--cr)">
+          <div><div class="k">阿芳理发</div><div class="v">老人小孩 8 元</div></div>
+          <svg width="26" height="26" viewBox="0 0 24 24" stroke="#000"><use href="#c-arrow"/></svg>
+        </div>
+        <div class="svc" style="background:var(--pu)">
+          <div><div class="k">修水管换灯泡</div><div class="v">张师傅 30 分钟到</div></div>
+          <svg width="26" height="26" viewBox="0 0 24 24" stroke="#000"><use href="#c-arrow"/></svg>
+        </div>
+        <div class="svc" style="background:#fff">
+          <div><div class="k">代购代办</div><div class="v">赶集顺路捎东西</div></div>
+          <svg width="26" height="26" viewBox="0 0 24 24" stroke="#000"><use href="#c-arrow"/></svg>
+        </div>
+      </div>
+    </div>
+
+    <div class="sec fu">
+      <div class="sec-hd"><h3>生活圈</h3><a href="#">逛逛 →</a></div>
+      <div class="post">
+        <div class="who"><div class="av" style="background:var(--cr)">王</div>
+          <div><div class="nm">3 号楼王婶</div><div class="tm">10 分钟前</div></div></div>
+        <div class="tx">今早捡了 200 多个蛋，要的抓紧，下午送到楼下 🥚 不够的我挨家退钱。</div>
+      </div>
+      <div class="post">
+        <div class="who"><div class="av" style="background:var(--mi)">李</div>
+          <div><div class="nm">东门李师傅</div><div class="tm">1 小时前</div></div></div>
+        <div class="tx">明早赶集，顺路捎镇上的豆腐乳和挂面，要的留言。</div>
+      </div>
+    </div>
+
+    <div class="foot-note">乐趣生活 · 把日子过亮堂</div>
+    <div style="height:12px"></div>
+  </div>
+
+  <div class="tabbar">
+    <div class="tab on"><svg width="23" height="23" viewBox="0 0 24 24" stroke="currentColor"><use href="#c-home"/></svg>首页</div>
+    <div class="tab"><svg width="23" height="23" viewBox="0 0 24 24" stroke="currentColor"><use href="#c-shop"/></svg>商城</div>
+    <div class="tab"><svg width="23" height="23" viewBox="0 0 24 24" stroke="currentColor"><use href="#c-chat"/></svg>生活圈</div>
+    <div class="tab"><svg width="23" height="23" viewBox="0 0 24 24" stroke="currentColor"><use href="#c-cart"/></svg>购物车</div>
+    <div class="tab"><svg width="23" height="23" viewBox="0 0 24 24" stroke="currentColor"><use href="#c-me"/></svg>我的</div>
+  </div>
+</div>
+
+<script>
+  // 逐字波动画
+  (function(){
+    var h=document.getElementById('hero-t');
+    var nodes=[...h.childNodes]; h.innerHTML='';
+    var i=0;
+    nodes.forEach(function(n){
+      if(n.nodeType===3){
+        [...n.textContent].forEach(function(c){
+          var s=document.createElement('span');s.className='ch';s.textContent=c;
+          s.style.animationDelay=(i++*0.09)+'s';h.appendChild(s);
+        });
+      }else if(n.tagName==='BR'){h.appendChild(n);}
+      else{
+        var e=document.createElement(n.tagName.toLowerCase());
+        [...n.textContent].forEach(function(c){
+          var s=document.createElement('span');s.className='ch';s.textContent=c;
+          s.style.animationDelay=(i++*0.09)+'s';e.appendChild(s);
+        });
+        h.appendChild(e);
+      }
+    });
+  })();
+  // 滚动进入
+  var io=new IntersectionObserver(function(es){
+    es.forEach(function(e){ if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target);} });
+  },{root:document.querySelector('.scroll'),threshold:.08});
+  document.querySelectorAll('.fu').forEach(function(el){io.observe(el);});
+</script>
+
+</body>
+</html>

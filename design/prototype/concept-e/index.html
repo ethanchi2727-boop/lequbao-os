@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>概念 E · 夜市烟火 v2 — 乐趣生活</title>
+<style>
+  :root{
+    --bg:#0c1212; --panel:#141d1d; --lime:#6ec726; --lime-dk:#4a7e20;
+    --tape:#f7c400; --red:#f03749; --tx:#ffffff; --mut:#9fb0a8;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  body{background:#060a0a;font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;display:flex;flex-direction:column;align-items:center;padding:36px 16px 60px;color:var(--tx)}
+  .cap{margin-bottom:18px;text-align:center}
+  .cap h1{font-size:22px;letter-spacing:.14em;font-weight:900}
+  .cap p{font-size:12px;margin-top:6px;letter-spacing:.12em;color:var(--mut)}
+  .phone{width:375px;height:760px;background:var(--bg);border-radius:44px;position:relative;overflow:hidden;display:flex;flex-direction:column;flex:none;box-shadow:0 0 0 10px #000,0 0 60px rgba(110,199,38,.28),0 30px 80px -20px rgba(0,0,0,.8)}
+  .scroll{flex:1;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:none}
+  .scroll::-webkit-scrollbar{display:none}
+  /* ---------- 夜市区 ---------- */
+  .hero{position:relative;height:344px}
+  .hero img{width:100%;height:100%;object-fit:cover;display:block}
+  .hero .shade{position:absolute;inset:0;background:linear-gradient(180deg,rgba(12,18,18,.78) 0%,rgba(12,18,18,.05) 46%,rgba(12,18,18,.94) 88%)}
+  .statusbar{position:absolute;top:0;left:0;right:0;display:flex;justify-content:space-between;align-items:center;padding:16px 26px 0;font-size:13px;font-weight:700;z-index:5}
+  /* 微信胶囊（暗夜版） */
+  .navrow{position:absolute;top:46px;left:0;right:0;display:flex;justify-content:space-between;align-items:center;padding:0 16px;z-index:5}
+  .wm{font-size:19px;font-weight:900;letter-spacing:.04em}
+  .wm i{font-style:normal;color:var(--lime);text-shadow:0 0 14px rgba(110,199,38,.8)}
+  .capsule{
+    width:87px;height:32px;flex:none;border-radius:16px;
+    background:rgba(12,18,18,.42);backdrop-filter:blur(8px);
+    border:1px solid rgba(255,255,255,.28);
+    display:flex;align-items:center;
+  }
+  .capsule .cell{flex:1;display:grid;place-items:center;height:100%}
+  .capsule .cell:first-child{border-right:1px solid rgba(255,255,255,.22)}
+  .hero-t{position:absolute;left:18px;bottom:52px;z-index:5}
+  .hero-t .k{display:inline-block;background:linear-gradient(135deg,#ff5d3d,var(--red));font-size:11px;font-weight:900;letter-spacing:.18em;padding:5px 10px;border-radius:6px;box-shadow:0 4px 14px rgba(240,55,73,.5)}
+  .hero-t h2{font-size:42px;line-height:1.16;font-weight:900;margin-top:10px;text-shadow:0 4px 26px rgba(0,0,0,.6)}
+  .hero-t h2 em{font-style:normal;color:var(--lime);text-shadow:0 0 22px rgba(110,199,38,.9)}
+  .hero-t p{font-size:12px;color:rgba(255,255,255,.85);font-weight:600;margin-top:8px}
+  .hero .open-now{position:absolute;right:16px;bottom:56px;z-index:5;display:flex;align-items:center;gap:7px;background:rgba(12,18,18,.6);backdrop-filter:blur(6px);border:1px solid rgba(110,199,38,.5);border-radius:999px;padding:9px 14px;font-size:11.5px;font-weight:800;color:var(--lime)}
+  .dot{width:8px;height:8px;border-radius:50%;background:var(--lime);box-shadow:0 0 10px var(--lime);animation:pls 1.6s infinite}
+  @keyframes pls{0%,100%{opacity:1}50%{opacity:.35}}
+  /* ---------- 警示带 ---------- */
+  .tape{height:30px;display:flex;align-items:center;overflow:hidden;white-space:nowrap;background:repeating-linear-gradient(-45deg,var(--tape) 0 14px,#141313 14px 28px);border-top:2px solid #000;border-bottom:2px solid #000;position:relative}
+  .tape span{position:absolute;left:0;right:0;text-align:center;font-size:12px;font-weight:900;letter-spacing:.5em;color:var(--tape);text-shadow:0 1px 0 #000}
+  /* ---------- 搜索 ---------- */
+  .search{margin:14px 14px 0;height:46px;background:var(--panel);border:1px solid rgba(110,199,38,.3);border-radius:12px;display:flex;align-items:center;gap:9px;padding:0 7px 0 15px;font-size:13px;color:var(--mut)}
+  .search .go{
+    margin-left:auto;color:#0c1212;font-size:13px;font-weight:900;border-radius:8px;padding:9px 20px;
+    background:linear-gradient(135deg,#8fe33f,var(--lime));
+    box-shadow:0 4px 14px rgba(110,199,38,.45),inset 0 1px 0 rgba(255,255,255,.4);
+  }
+  /* ---------- 今夜档口 ---------- */
+  .sec{padding:20px 14px 0}
+  .sec-hd{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:12px}
+  .sec-hd h3{font-size:20px;font-weight:900;display:flex;align-items:center;gap:9px}
+  .sec-hd h3::before{content:"";width:4px;height:20px;background:var(--tape);box-shadow:0 0 12px rgba(247,196,0,.7)}
+  .sec-hd a{font-size:12px;font-weight:800;color:var(--lime);text-decoration:none}
+  .stalls{display:flex;flex-direction:column;gap:11px}
+  .stall{display:flex;gap:13px;background:var(--panel);border-radius:16px;padding:11px;border:1px solid rgba(255,255,255,.06);align-items:center}
+  .stall img{width:92px;height:92px;border-radius:12px;object-fit:cover;flex:none}
+  .stall .inf{flex:1;min-width:0}
+  .stall .nm{font-size:15.5px;font-weight:900;display:flex;align-items:center;gap:7px}
+  .stall .nm .hot{font-size:9.5px;background:linear-gradient(135deg,#ff5d3d,var(--red));border-radius:5px;padding:3px 7px;font-weight:900;letter-spacing:.05em}
+  .stall .ds{font-size:11.5px;color:var(--mut);font-weight:600;margin-top:4px}
+  .stall .rw{display:flex;align-items:flex-end;justify-content:space-between;margin-top:8px}
+  .pr{font-size:11px;font-weight:800;color:var(--tape)}
+  .pr b{font-size:21px;font-weight:900;letter-spacing:-.02em}
+  .pr s{color:var(--mut);font-size:10.5px;margin-left:4px}
+  .nbtn{
+    border:1.5px solid var(--lime);background:rgba(110,199,38,.1);color:var(--lime);
+    font-size:12px;font-weight:900;border-radius:9px;padding:8px 15px;cursor:pointer;font-family:inherit;
+    box-shadow:0 0 12px rgba(110,199,38,.22),inset 0 0 8px rgba(110,199,38,.12);
+    transition:all .15s;
+  }
+  .nbtn:active{background:var(--lime);color:#0c1212}
+  /* ---------- 快捷入口：荧光双色 ---------- */
+  .quicks{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;padding:16px 14px 0}
+  .qk{display:flex;flex-direction:column;align-items:center;gap:7px;background:var(--panel);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:13px 4px 11px;cursor:pointer}
+  .qk .ic{width:40px;height:40px;border-radius:13px;display:grid;place-items:center}
+  .qk span{font-size:11px;font-weight:800}
+  /* ---------- 荧光数字带 ---------- */
+  .nums{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;padding:18px 14px 0}
+  .num{background:var(--panel);border:1px solid rgba(110,199,38,.22);border-radius:14px;padding:13px 8px;text-align:center}
+  .num b{font-size:23px;font-weight:900;color:var(--lime);text-shadow:0 0 16px rgba(110,199,38,.65);display:block}
+  .num span{font-size:10.5px;color:var(--mut);font-weight:700;display:block;margin-top:4px}
+  /* ---------- 早市预告 ---------- */
+  .am{margin:20px 14px 0;border-radius:16px;padding:15px;position:relative;overflow:hidden;background:linear-gradient(120deg,#1a2b12,#0f1a0c);border:1px solid rgba(110,199,38,.35)}
+  .am h4{font-size:16px;font-weight:900;color:#fff}
+  .am h4 i{font-style:normal;color:var(--lime)}
+  .am p{font-size:12px;color:var(--mut);font-weight:600;margin-top:6px;line-height:1.7}
+  .am .bk{
+    margin-top:11px;display:inline-flex;align-items:center;gap:6px;
+    background:linear-gradient(135deg,#ffd94d,var(--tape));color:#141313;
+    font-size:12.5px;font-weight:900;border-radius:9px;padding:10px 17px;text-decoration:none;
+    box-shadow:0 5px 14px rgba(247,196,0,.35),inset 0 1px 0 rgba(255,255,255,.5);
+  }
+  .foot-note{text-align:center;font-size:11px;letter-spacing:.3em;font-weight:800;color:rgba(159,176,168,.5);padding:24px 0 14px}
+  /* ---------- 小程序 Tabbar ---------- */
+  .tabbar{flex:none;height:74px;background:#0a0f0f;border-top:1px solid rgba(110,199,38,.18);display:grid;grid-template-columns:repeat(5,1fr);padding:7px 4px 15px}
+  .tab{display:flex;flex-direction:column;align-items:center;gap:3px;font-size:10.5px;font-weight:700;color:var(--mut);padding-top:5px;position:relative}
+  .tab.on{color:var(--lime)}
+  .tab.on svg{filter:drop-shadow(0 0 9px rgba(110,199,38,.9))}
+  .tab .bdg{position:absolute;top:2px;right:calc(50% - 20px);min-width:16px;height:16px;border-radius:8px;background:var(--red);color:#fff;font-size:9px;font-weight:900;display:grid;place-items:center;padding:0 4px;border:1.5px solid #0a0f0f}
+  .fu{opacity:0;transform:translateY(18px);transition:opacity .6s ease,transform .6s ease}
+  .fu.in{opacity:1;transform:none}
+  @media(max-width:480px){body{padding:0}.phone{width:100%;height:100vh;border-radius:0;box-shadow:none}.cap{display:none}}
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute"><defs>
+  <g id="e-search"><circle cx="11" cy="11" r="6.5" fill="none" stroke-width="2.2"/><path d="m16 16 4.2 4.2" stroke-width="2.2" stroke-linecap="round"/></g>
+  <g id="e-arrow"><path d="M4 12h13m-5-5 5 5-5 5" fill="none" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></g>
+  <g id="f-home"><path d="M12 4 4 10.6V20a1 1 0 0 0 1 1h4.6v-5.6h4.8V21H19a1 1 0 0 0 1-1v-9.4z"/></g>
+  <g id="f-shop"><path d="M4.6 8.6 6 4h12l1.4 4.6zM4 9.8h16V20a1 1 0 0 1-1 1h-5v-5.4h-4V21H5a1 1 0 0 1-1-1z"/><path d="M4 9.8h16v1a2.6 2.6 0 0 1-5.3 0 2.7 2.7 0 0 1-5.4 0 2.6 2.6 0 0 1-5.3 0z" opacity=".72"/></g>
+  <g id="f-chat"><path d="M6.5 4h11A2.5 2.5 0 0 1 20 6.5v6.8a2.5 2.5 0 0 1-2.5 2.5h-7.8l-4.5 3.6a.6.6 0 0 1-1-.5V6.5A2.5 2.5 0 0 1 6.5 4z"/><circle cx="9.2" cy="10" r="1.3" fill="#0c1212"/><circle cx="13.4" cy="10" r="1.3" fill="#0c1212"/><circle cx="17" cy="10" r="1.3" fill="#0c1212" opacity=".55"/></g>
+  <g id="f-cart"><path d="M3.6 4.4h2.3l.7 3.2H21l-1.7 7.2a1.6 1.6 0 0 1-1.6 1.3H8.7a1.6 1.6 0 0 1-1.6-1.3L5.4 6.6l-.4-1.4H3.6z"/><circle cx="9.3" cy="19.6" r="1.7"/><circle cx="16.8" cy="19.6" r="1.7"/></g>
+  <g id="f-me"><circle cx="12" cy="8.2" r="4"/><path d="M4.4 20.4c1-4.2 3.9-6.4 7.6-6.4s6.6 2.2 7.6 6.4a1 1 0 0 1-1 1.2H5.4a1 1 0 0 1-1-1.2z"/></g>
+  <g id="f-bill"><path d="M6.5 3h11a1.5 1.5 0 0 1 1.5 1.5v15a1.5 1.5 0 0 1-1.5 1.5h-11a1.5 1.5 0 0 1-1.5-1.5v-15A1.5 1.5 0 0 1 6.5 3z"/><path d="M8.5 8h7M8.5 11.5h7M8.5 15h4.5" stroke="#0c1212" stroke-width="1.8" stroke-linecap="round" fill="none"/></g>
+  <g id="f-cut"><path d="M19.5 4.6 9.9 14.2l1.7 1.7 9.6-9.6a1.2 1.2 0 0 0-1.7-1.7zM4.6 19.5l7.4-7.4 1.7 1.7-7.4 7.4a1.2 1.2 0 0 1-1.7-1.7z"/><circle cx="7" cy="6.8" r="2.9" fill="none" stroke-width="2.2"/><circle cx="7" cy="17.2" r="2.9" fill="none" stroke-width="2.2"/></g>
+  <g id="f-group"><circle cx="9" cy="8" r="3.4"/><circle cx="16.3" cy="9.3" r="2.7" opacity=".7"/><path d="M3.2 19.5c.6-3.6 2.8-5.6 5.8-5.6s5.2 2 5.8 5.6z"/><path d="M14.9 14.6c2.6.3 4.4 2.1 4.9 4.9h-4.4c-.3-2-1.2-3.7-2.6-4.8.7-.1 1.4-.2 2.1-.1z" opacity=".7"/></g>
+  <g id="f-flash"><path d="M13.2 2.5 5 13.8h5.6l-1.3 7.7 8.2-11.3h-5.6z"/></g>
+  <g id="cap-more"><circle cx="4.5" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="19.5" cy="12" r="1.7"/></g>
+  <g id="cap-target"><circle cx="12" cy="12" r="6.4" fill="none" stroke-width="2"/><circle cx="12" cy="12" r="2.4"/></g>
+</defs></svg>
+
+<div class="cap"><h1>概念 E · 夜市烟火 v2</h1><p>小程序胶囊导航 / 荧光填充图标 / 霓虹发光按钮 / 炭火大片</p></div>
+
+<div class="phone">
+  <div class="scroll">
+    <div class="hero">
+      <img src="../assets/img/night-hero.jpg" alt="夜市">
+      <div class="shade"></div>
+      <div class="statusbar"><span>21:07</span>
+        <span style="display:flex;gap:5px;align-items:center">
+          <svg width="16" height="11" viewBox="0 0 17 12" fill="#fff"><rect x="0" y="7" width="3" height="5" rx="1"/><rect x="4.5" y="5" width="3" height="7" rx="1"/><rect x="9" y="2.5" width="3" height="9.5" rx="1"/><rect x="13.5" y="0" width="3" height="12" rx="1"/></svg>
+          <svg width="23" height="11" viewBox="0 0 25 12"><rect x="0.5" y="0.5" width="20" height="11" rx="3" fill="none" stroke="#fff"/><rect x="2.5" y="2.5" width="14" height="7" rx="1.5" fill="#fff"/><path d="M23 4v4" stroke="#fff" stroke-width="1.6" stroke-linecap="round"/></svg>
+        </span>
+      </div>
+      <div class="navrow">
+        <div class="wm">乐趣<i>生活</i> · 夜市</div>
+        <div class="capsule">
+          <div class="cell"><svg width="21" height="21" viewBox="0 0 24 24" fill="#fff"><use href="#cap-more"/></svg></div>
+          <div class="cell"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#fff"><use href="#cap-target"/></svg></div>
+        </div>
+      </div>
+      <div class="hero-t">
+        <span class="k">今晚开市</span>
+        <h2>夜里想<em>吃点啥</em>，<br>楼下就有<em>烟火气</em>。</h2>
+        <p>18 家档口营业中 · 最晚到夜里 12 点</p>
+      </div>
+      <div class="open-now"><span class="dot"></span>营业中</div>
+    </div>
+
+    <div class="tape"><span>现 烤 现 卖 · 明 码 标 价 · 不 新 鲜 包 退</span></div>
+
+    <div class="search">
+      <svg width="18" height="18" viewBox="0 0 24 24" stroke="#9fb0a8"><use href="#e-search"/></svg>
+      搜：烤串 / 小龙虾 / 冰西瓜
+      <span class="go">搜</span>
+    </div>
+
+    <div class="quicks fu">
+      <div class="qk"><div class="ic" style="background:rgba(110,199,38,.16);color:var(--lime)"><svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><use href="#f-flash"/></svg></div><span>今夜特价</span></div>
+      <div class="qk"><div class="ic" style="background:rgba(247,196,0,.14);color:var(--tape)"><svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><use href="#f-group"/></svg></div><span>邻里拼单</span></div>
+      <div class="qk"><div class="ic" style="background:rgba(240,55,73,.15);color:#ff6b7a"><svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><use href="#f-bill"/></svg></div><span>缴费代办</span></div>
+      <div class="qk"><div class="ic" style="background:rgba(110,199,38,.16);color:var(--lime)"><svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor"><use href="#f-cut"/></svg></div><span>理发洗护</span></div>
+    </div>
+
+    <div class="sec fu">
+      <div class="sec-hd"><h3>今夜档口</h3><a href="#">全部 18 家 →</a></div>
+      <div class="stalls">
+        <div class="stall">
+          <img src="../assets/img/n-skewer.jpg" alt="">
+          <div class="inf">
+            <div class="nm">老味烧烤 <span class="hot">排队王</span></div>
+            <div class="ds">羊肉串 2 元 · 炭火现烤 · 出摊 12 年</div>
+            <div class="rw"><div class="pr">¥<b>2</b>/串起</div><button class="nbtn">来 10 串</button></div>
+          </div>
+        </div>
+        <div class="stall">
+          <img src="../assets/img/n-crayfish.jpg" alt="">
+          <div class="inf">
+            <div class="nm">麻辣小龙虾 <span class="hot">今夜特价</span></div>
+            <div class="ds">现捞现烧 · 麻辣/蒜蓉 · 送手套围裙</div>
+            <div class="rw"><div class="pr">¥<b>38</b>/斤<s>¥48</s></div><button class="nbtn">来一份</button></div>
+          </div>
+        </div>
+        <div class="stall">
+          <img src="../assets/img/n-melon.jpg" alt="">
+          <div class="inf">
+            <div class="nm">冰镇西瓜摊</div>
+            <div class="ds">沙地西瓜 · 现切现称 · 不甜不要钱</div>
+            <div class="rw"><div class="pr">¥<b>2.5</b>/斤<s>¥3.5</s></div><button class="nbtn">切半个</button></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="nums fu">
+      <div class="num"><b>18</b><span>今夜档口</span></div>
+      <div class="num"><b>326</b><span>邻居正在逛</span></div>
+      <div class="num"><b>4.9</b><span>街坊评分</span></div>
+    </div>
+
+    <div class="am fu">
+      <h4>明早 <i>6:30</i> · 早市接着开</h4>
+      <p>村东大棚的青菜、王婶家的土鸡蛋凌晨到摊。现在预订，明早下楼直接拿，不用挤。</p>
+      <a class="bk" href="#">预订明早的菜 <svg width="14" height="14" viewBox="0 0 24 24" stroke="#141313"><use href="#e-arrow"/></svg></a>
+    </div>
+
+    <div class="foot-note">— 乐趣生活 · 夜夜有烟火 —</div>
+    <div style="height:8px"></div>
+  </div>
+
+  <div class="tabbar">
+    <div class="tab on"><svg width="23" height="23" viewBox="0 0 24 24" fill="currentColor"><use href="#f-home"/></svg>首页</div>
+    <div class="tab"><svg width="23" height="23" viewBox="0 0 24 24" fill="currentColor"><use href="#f-shop"/></svg>商城</div>
+    <div class="tab"><svg width="23" height="23" viewBox="0 0 24 24" fill="currentColor"><use href="#f-chat"/></svg>生活圈</div>
+    <div class="tab"><svg width="23" height="23" viewBox="0 0 24 24" fill="currentColor"><use href="#f-cart"/></svg>购物车<span class="bdg">2</span></div>
+    <div class="tab"><svg width="23" height="23" viewBox="0 0 24 24" fill="currentColor"><use href="#f-me"/></svg>我的</div>
+  </div>
+</div>
+
+<script>
+  var io=new IntersectionObserver(function(es){
+    es.forEach(function(e){if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target);}});
+  },{root:document.querySelector('.scroll'),threshold:.06});
+  document.querySelectorAll('.fu').forEach(function(el){io.observe(el);});
+  window.addEventListener('load',function(){
+    setTimeout(function(){
+      var lim=document.querySelector('.scroll').clientHeight*1.6;
+      document.querySelectorAll('.fu').forEach(function(el){
+        if(el.offsetTop<lim) el.classList.add('in');
+      });
+    },150);
+  });
+</script>
+</body>
+</html>

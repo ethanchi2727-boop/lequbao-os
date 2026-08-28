@@ -1,0 +1,746 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>首页 · 乐趣生活</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  body{background:#191511;font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;display:flex;flex-direction:column;align-items:center;padding:36px 16px 60px;color:#f6f2e5}
+  .cap{margin-bottom:18px;text-align:center}
+  .cap h1{font-size:22px;letter-spacing:.1em;font-weight:900}
+  .cap p{font-size:12px;margin-top:6px;letter-spacing:.12em;opacity:.55}
+  /* ============ 主题变量 ============ */
+  .phone{
+    --hd1:#009146; --hd2:#006b36; --bg:#f6f1e6; --card:#ffffff; --ink:#16130f;
+    --mut:#857c6d; --accent:#009146; --promo:#f03749; --hot:#eb6325; --yel:#fee600;
+    --tabbar:#ffffff; --line:rgba(22,19,15,.08); --notice-bg:#e6f3ea; --notice-tx:#0b6b3d;
+    --capsule-bg:rgba(255,255,255,.94); --capsule-line:rgba(22,19,15,.12); --capsule-ink:#16130f;
+    --cnt-bg:#16130f; --cnt-tx:#fee600; --shadow:0 10px 26px rgba(22,19,15,.09);
+  }
+  .phone[data-theme="dark"]{
+    --hd1:#10241a; --hd2:#0c1212; --bg:#0c1212; --card:#141d1d; --ink:#ffffff;
+    --mut:#9fb0a8; --accent:#6ec726; --promo:#ff5d3d; --hot:#f7c400; --yel:#f7c400;
+    --tabbar:#0a0f0f; --line:rgba(255,255,255,.08); --notice-bg:rgba(110,199,38,.13); --notice-tx:#8fe33f;
+    --capsule-bg:rgba(12,18,18,.45); --capsule-line:rgba(255,255,255,.22); --capsule-ink:#ffffff;
+    --cnt-bg:#0c1212; --cnt-tx:#6ec726; --shadow:0 10px 26px rgba(0,0,0,.4);
+  }
+  .phone{
+    width:375px;height:760px;background:var(--bg);border-radius:44px;position:relative;overflow:hidden;
+    display:flex;flex-direction:column;flex:none;color:var(--ink);
+    box-shadow:0 30px 80px -20px rgba(0,0,0,.55),0 0 0 10px #141210;
+    transition:background .5s;
+  }
+  .scroll{flex:1;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:none}
+  .scroll::-webkit-scrollbar{display:none}
+  /* ============ 顶部（搜索 + 胶囊） ============ */
+  .top{background:linear-gradient(165deg,var(--hd1),var(--hd2));padding:10px 16px 34px;transition:background .5s;position:relative;overflow:hidden}
+  .top::after{content:"";position:absolute;right:-46px;top:-52px;width:150px;height:150px;border-radius:50%;background:rgba(254,230,0,.14)}
+  .statusbar{display:flex;justify-content:space-between;align-items:center;font-size:13px;font-weight:700;color:#fff;padding:4px 10px 0;position:relative;z-index:2}
+  .navrow{display:flex;align-items:center;gap:8px;margin-top:10px;position:relative;z-index:2}
+  .loc{display:flex;align-items:center;gap:3px;color:#fff;font-size:12.5px;font-weight:800;flex-shrink:0;max-width:104px;background:rgba(255,255,255,.16);border-radius:999px;padding:7px 9px}
+  .loc b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:800}
+  .loc svg{flex-shrink:0}
+  .search{
+    flex:1;height:34px;background:rgba(255,255,255,.95);border-radius:17px;
+    display:flex;align-items:center;gap:7px;padding:0 13px;font-size:12.5px;color:#9a938a;
+  }
+  [data-theme="dark"] .search{background:rgba(255,255,255,.14);backdrop-filter:blur(8px);color:rgba(255,255,255,.75)}
+  .capsule{
+    width:87px;height:32px;flex:none;border-radius:16px;background:var(--capsule-bg);
+    display:flex;align-items:center;box-shadow:0 2px 8px rgba(0,0,0,.14);transition:background .5s;
+  }
+  [data-theme="dark"] .capsule{backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.25);box-shadow:none}
+  .capsule .cell{flex:1;display:grid;place-items:center;height:100%}
+  .capsule .cell:first-child{border-right:1px solid var(--capsule-line)}
+  /* ============ 主图（日夜双图切换） ============ */
+  .hero{margin:-22px 14px 0;border-radius:18px;overflow:hidden;position:relative;z-index:3;box-shadow:var(--shadow);height:136px}
+  .hero img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transition:opacity .6s}
+  .hero .img-d{opacity:0}
+  [data-theme="dark"] .hero .img-d{opacity:1}
+  [data-theme="dark"] .hero .img-l{opacity:0}
+  .hero .ov{position:absolute;inset:0;background:linear-gradient(100deg,rgba(22,19,15,.6) 6%,transparent 60%)}
+  .hero .tx{position:absolute;left:15px;top:13px;color:#fff}
+  .hero .tx .k{display:inline-block;background:var(--yel);color:#16130f;font-size:10px;font-weight:900;padding:3px 7px;border-radius:6px;letter-spacing:.06em}
+  .hero .tx h2{font-size:19.5px;font-weight:900;margin-top:6px;line-height:1.3;text-shadow:0 2px 10px rgba(0,0,0,.4)}
+  .hero .tx p{font-size:11px;font-weight:700;opacity:.92;margin-top:3px}
+  /* 主题切换开关 */
+  .tswitch{
+    position:absolute;right:12px;bottom:12px;z-index:4;border:none;cursor:pointer;font-family:inherit;
+    display:flex;align-items:center;gap:6px;border-radius:999px;padding:8px 13px;
+    background:rgba(22,19,15,.55);backdrop-filter:blur(8px);color:#fff;font-size:11.5px;font-weight:800;
+    border:1px solid rgba(255,255,255,.25);
+  }
+  /* ============ 公告（轻盈版） ============ */
+  .notice{
+    margin:12px 14px 0;height:38px;border-radius:12px;background:var(--notice-bg);
+    display:flex;align-items:center;gap:8px;padding:0 13px;overflow:hidden;transition:background .5s;
+  }
+  .notice .lb{flex:none;display:flex;align-items:center;gap:5px;font-size:11.5px;font-weight:900;color:var(--notice-tx)}
+  .notice .roll{flex:1;min-width:0;overflow:hidden;white-space:nowrap;font-size:12px;font-weight:600;color:var(--notice-tx)}
+  .notice .roll-in{display:inline-block;animation:roll 22s linear infinite;will-change:transform}
+  @keyframes roll{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+  /* ============ 秒杀（减重版） ============ */
+  .sk{margin:12px 14px 0;background:var(--card);border-radius:18px;padding:13px 13px 12px;box-shadow:var(--shadow);transition:background .5s}
+  .sk-hd{display:flex;align-items:center;justify-content:space-between}
+  .sk-hd h3{font-size:16.5px;font-weight:900;color:var(--ink);display:flex;align-items:center;gap:6px}
+  .sk-hd h3 svg{color:var(--promo)}
+  .sk-hd h3 em{font-style:normal;font-size:10px;font-weight:900;color:#fff;background:var(--promo);border-radius:5px;padding:2px 6px;letter-spacing:.06em}
+  .cnt{display:flex;align-items:center;gap:4px;font-size:10.5px;font-weight:700;color:var(--mut)}
+  .cnt b{background:var(--cnt-bg);color:var(--cnt-tx);border-radius:5px;padding:3px 6px;font-size:11.5px;font-weight:900}
+  .sk-rail{display:flex;gap:10px;margin-top:11px;overflow-x:auto;scrollbar-width:none}
+  .sk-rail::-webkit-scrollbar{display:none}
+  .sk-card{flex:none;width:112px;border-radius:13px;overflow:hidden;border:1px solid var(--line);background:var(--card)}
+  .sk-card img{width:100%;height:80px;object-fit:cover;display:block}
+  .sk-bd{padding:7px 9px 9px}
+  .sk-nm{font-size:11.5px;font-weight:800;line-height:1.35;height:30px;overflow:hidden;color:var(--ink)}
+  .sk-pr{margin-top:4px;display:flex;align-items:baseline;gap:5px}
+  .sk-pr b{color:var(--promo);font-size:16px;font-weight:900}
+  .sk-pr s{font-size:10px;color:var(--mut)}
+  .sk-bar{height:12px;border-radius:6px;background:color-mix(in srgb,var(--promo) 12%,transparent);margin-top:6px;position:relative;overflow:hidden}
+  .sk-bar i{position:absolute;inset:0;right:auto;background:linear-gradient(90deg,var(--hot),var(--promo));border-radius:6px}
+  .sk-bar span{position:absolute;inset:0;text-align:center;font-size:8.5px;font-weight:900;color:#fff;line-height:12px;text-shadow:0 1px 2px rgba(0,0,0,.3)}
+  /* ============ 分类 ============ */
+  .cats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px 8px;padding:16px 14px 2px}
+  .cat{display:flex;flex-direction:column;align-items:center;gap:7px;cursor:pointer;transition:transform .15s}
+  .cat:active{transform:scale(.92)}
+  .badge{width:56px;height:56px;border-radius:19px;overflow:hidden;box-shadow:var(--shadow)}
+  .badge img{width:100%;height:100%;object-fit:cover;display:block}
+  .badge.duo{display:grid;place-items:center}
+  .cat span{font-size:11.5px;font-weight:800;color:var(--ink)}
+  /* ============ 分区货架 ============ */
+  .aisle{margin:16px 14px 0}
+  .aisle-hd{display:flex;align-items:center;justify-content:space-between;padding:2px 4px 11px}
+  .aisle-hd h3{font-size:17px;font-weight:900;display:flex;align-items:center;gap:8px;color:var(--ink)}
+  .aisle-hd h3 .chip-ic{width:22px;height:22px;border-radius:7px;display:grid;place-items:center;color:#fff}
+  .aisle-hd a{font-size:11.5px;font-weight:800;text-decoration:none}
+  .aisle-hd a.c-grn{color:#009146}
+  .aisle-hd a.c-blu{color:#1a6fc4}
+  .phone[data-theme="dark"] .aisle-hd a.c-grn{color:#6ec726}
+  .phone[data-theme="dark"] .aisle-hd a.c-blu{color:#5ea8f0}
+  .aisle-bd{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .pd{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden;box-shadow:var(--shadow);transition:background .5s}
+  .pd img{width:100%;height:100px;object-fit:cover;display:block}
+  .pd-bd{padding:8px 10px 10px}
+  .pd-nm{font-size:13px;font-weight:800;line-height:1.4;color:var(--ink)}
+  .pd-tg{display:inline-block;font-size:9.5px;font-weight:800;border-radius:5px;padding:2px 6px;margin-top:4px}
+  .pd-row{display:flex;align-items:flex-end;justify-content:space-between;margin-top:6px}
+  .pr{color:var(--promo);font-weight:900;font-size:11px}
+  .pr b{font-size:20px;letter-spacing:-.02em}
+  .pr sup{font-size:10.5px;font-weight:900}
+  .pr s{color:var(--mut);font-size:10px;font-weight:600;margin-left:4px}
+  .pbtn{width:34px;height:34px;border-radius:50%;border:none;cursor:pointer;display:grid;place-items:center;background:linear-gradient(145deg,#19b26b,var(--green,#009146));background:linear-gradient(145deg,color-mix(in srgb,var(--accent) 70%,#3dff8f),var(--accent));box-shadow:0 6px 13px color-mix(in srgb,var(--accent) 40%,transparent),inset 0 1.5px 0 rgba(255,255,255,.35);transition:transform .12s}
+  .pbtn:active{transform:scale(.86)}
+  /* ============ 团购 ============ */
+  .tg{margin:14px 14px 0;background:var(--card);border-radius:18px;padding:14px;box-shadow:var(--shadow);transition:background .5s}
+  .tg-hd{display:flex;justify-content:space-between;align-items:center}
+  .tg-hd h3{font-size:16.5px;font-weight:900;color:var(--ink)}
+  .tg-hd em{font-style:normal;background:linear-gradient(135deg,#ff8a3d,var(--hot,#eb6325));color:#fff;font-size:10.5px;font-weight:900;border-radius:7px;padding:4px 9px}
+  .tg-it{display:flex;gap:12px;margin-top:11px;align-items:center}
+  .tg-it img{width:66px;height:66px;border-radius:13px;object-fit:cover}
+  .tg-it .t{flex:1}
+  .tg-it .t b{font-size:14px;font-weight:800;color:var(--ink)}
+  .tg-it .t p{font-size:11px;color:var(--mut);font-weight:600;margin-top:3px}
+  .tg-go{border:none;border-radius:999px;font-size:12.5px;font-weight:900;padding:11px 16px;font-family:inherit;cursor:pointer;white-space:nowrap;color:#fff;display:flex;align-items:center;gap:5px;background:linear-gradient(135deg,#ff5d3a,var(--promo));box-shadow:0 7px 15px color-mix(in srgb,var(--promo) 40%,transparent),inset 0 1.5px 0 rgba(255,255,255,.3)}
+  .tg-bar{height:9px;border-radius:5px;background:var(--line);margin-top:11px;overflow:hidden}
+  .tg-bar i{display:block;height:100%;width:74%;background:linear-gradient(90deg,var(--yel),var(--hot));border-radius:5px}
+  .tg-ft{font-size:11px;font-weight:700;color:var(--mut);margin-top:7px}
+  .tg-ft b{color:var(--accent)}
+  .foot-note{text-align:center;font-size:10.5px;letter-spacing:.24em;font-weight:800;color:var(--mut);padding:20px 0 14px;opacity:.7}
+  /* ============ Tabbar ============ */
+  /* ============ 瀑布流推荐 ============ */
+  .wf{margin:20px 14px 0}
+  .wf-hd{display:flex;align-items:center;justify-content:center;gap:10px;padding:0 0 13px;color:var(--ink)}
+  .wf-hd::before,.wf-hd::after{content:"";width:30px;height:1px;background:var(--mut);opacity:.45}
+  .wf-hd h3{font-size:16px;font-weight:900;display:flex;align-items:center;gap:6px}
+  .wf-hd h3 svg{color:var(--hot)}
+  .wf-bd{display:flex;gap:10px;align-items:flex-start}
+  .wf-col{flex:1;display:flex;flex-direction:column;gap:10px;min-width:0}
+  .wf-it{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden;box-shadow:var(--shadow);transition:background .5s;animation:wfIn .45s ease both}
+  @keyframes wfIn{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+  .wf-it img{width:100%;object-fit:cover;display:block}
+  .wf-it .pd-bd{padding:8px 10px 10px}
+  .wf-load{display:flex;align-items:center;justify-content:center;gap:8px;padding:14px 0 4px;font-size:11.5px;font-weight:700;color:var(--mut)}
+  .wf-load i{width:14px;height:14px;border-radius:50%;border:2px solid var(--line);border-top-color:var(--accent);animation:spin .8s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .wf-end{text-align:center;padding:16px 0 4px;font-size:11.5px;font-weight:700;color:var(--mut)}
+  .tabbar{flex:none;height:72px;background:var(--tabbar);border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(5,1fr);padding:7px 4px 15px;transition:background .5s}
+  a.tab{text-decoration:none}
+  .tab{display:flex;flex-direction:column;align-items:center;gap:3px;font-size:10.5px;font-weight:700;color:var(--mut);padding-top:5px;position:relative}
+  .tab.on{color:var(--accent)}
+  [data-theme="dark"] .tab.on svg{filter:drop-shadow(0 0 9px rgba(110,199,38,.9))}
+  .tab .bdg{position:absolute;top:2px;right:calc(50% - 20px);min-width:16px;height:16px;border-radius:8px;background:var(--promo);color:#fff;font-size:9px;font-weight:900;display:grid;place-items:center;padding:0 4px;border:1.5px solid var(--tabbar)}
+  .fu{opacity:0;transform:translateY(16px);transition:opacity .6s ease,transform .6s ease}
+  .fu.in{opacity:1;transform:none}
+  @media(max-width:480px){body{padding:0}.phone{width:100%;height:100vh;border-radius:0;box-shadow:none}.cap{display:none}}
+.phone.no-tr,.phone.no-tr *{transition:none!important}
+
+  a.tab{text-decoration:none}
+  .ptitle{color:#fff;font-size:19px;font-weight:900;letter-spacing:.02em;flex:1}
+  /* ===== 首页 · 供应链总入口 ===== */
+  .top{padding-bottom:4px}
+  .bell{position:relative;width:34px;height:34px;flex:none;border-radius:50%;background:rgba(255,255,255,.16);display:grid;place-items:center;color:#fff}
+  .bell i{position:absolute;top:7px;right:8px;width:7px;height:7px;border-radius:50%;background:var(--promo);border:1.5px solid var(--hd1)}
+  .ai{margin:11px 2px 0;display:flex;align-items:center;gap:9px;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.22);backdrop-filter:blur(6px);border-radius:13px;padding:10px 12px;color:#fff;position:relative;z-index:2;cursor:pointer}
+  .ai .sic{width:26px;height:26px;border-radius:8px;background:var(--yel);color:#16130f;display:grid;place-items:center;flex:none}
+  .ai .at{flex:1;min-width:0}
+  .ai .at b{font-size:12.5px;font-weight:900;display:block}
+  .ai .at p{font-size:10px;font-weight:700;opacity:.85;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .ai .go{flex:none;font-size:10.5px;font-weight:900;background:#fff;color:var(--hd1);border-radius:999px;padding:5px 10px}
+  /* 进行中订单 */
+  .od{margin:12px 14px 0;background:var(--card);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);padding:11px 13px;transition:background .5s}
+  .od-hd{display:flex;align-items:center;gap:6px;font-size:11px;font-weight:900;color:var(--mut);padding-bottom:8px}
+  .od-hd .dot{width:6px;height:6px;border-radius:50%;background:var(--promo);animation:blink 1.2s infinite}
+  @keyframes blink{50%{opacity:.25}}
+  .od-it{display:flex;align-items:center;gap:10px;padding:8px 0;border-top:1px solid var(--line)}
+  .od-it .oic{width:34px;height:34px;border-radius:11px;display:grid;place-items:center;color:#fff;flex:none}
+  .od-it .ot{flex:1;min-width:0}
+  .od-it .ot b{font-size:12.5px;font-weight:900;color:var(--ink);display:block}
+  .od-it .ot p{font-size:10.5px;font-weight:700;color:var(--mut);margin-top:2px}
+  .od-it .ob{flex:none;font-size:10.5px;font-weight:900;color:var(--accent);background:var(--notice-bg);border-radius:999px;padding:6px 11px;text-decoration:none}
+  /* 金刚位 */
+  .gw{margin:12px 14px 0;background:var(--card);border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow);display:grid;grid-template-columns:repeat(5,1fr);padding:14px 6px 12px;row-gap:14px;transition:background .5s}
+  .gw a{text-decoration:none;text-align:center;color:var(--ink)}
+  .gic{width:42px;height:42px;border-radius:14px;display:grid;place-items:center;margin:0 auto;color:#fff}
+  .gw a p{font-size:10.5px;font-weight:800;margin-top:6px}
+  /* 此刻推荐 */
+  .now{margin:14px 14px 0}
+  .now-bd{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}
+  .now-c{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:11px 10px;box-shadow:var(--shadow);text-decoration:none;color:var(--ink);display:block;text-align:center;transition:background .5s}
+  .now-c .nic{width:30px;height:30px;border-radius:9px;display:grid;place-items:center;color:#fff;margin:0 auto 7px}
+  .now-c b{font-size:11.5px;font-weight:900;display:block}
+  .now-c p{font-size:9.5px;font-weight:700;color:var(--mut);margin-top:2px}
+  /* 品牌墙 */
+  .brow-hd{display:flex;align-items:baseline;justify-content:space-between;padding:0 4px 8px}
+  .brow-hd b{font-size:12.5px;font-weight:900;color:var(--ink)}
+  .brow-hd b::before{content:"";display:inline-block;width:9px;height:9px;border-radius:3px;background:#e8442e;margin-right:6px}
+  .brow-hd span{font-size:10px;font-weight:800;color:var(--mut)}
+  .brow{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;padding:0 4px 4px}
+  .bd{flex:none;min-width:74px;height:38px;border-radius:11px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px;font-weight:900;padding:0 13px;letter-spacing:.02em;text-decoration:none;box-shadow:0 3px 10px rgba(22,19,15,.12)}
+  .brow + .brow-hd{margin-top:10px}
+  /* 生活服务 4 列 */
+  .svc{display:grid;grid-template-columns:repeat(4,1fr);gap:10px 8px}
+  .svc a{text-decoration:none;color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:15px;padding:10px 9px 9px;box-shadow:var(--shadow);transition:background .5s}
+  .svc a b{font-size:11px;font-weight:900;display:block}
+  .svc a p{font-size:8.5px;font-weight:700;color:var(--mut);margin-top:3px}
+  .svc .sico{width:46px;height:46px;display:block;margin:8px 0 0 auto;filter:drop-shadow(0 3px 5px rgba(30,30,50,.14))}
+  /* 出行横滑 */
+  .go{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:0 2px 4px}
+  .go-c{display:flex;align-items:center;justify-content:space-between;background:linear-gradient(125deg,#fdf4e0,#f7e7c8);border:1px solid #efe0bd;border-radius:16px;padding:12px;box-shadow:var(--shadow);text-decoration:none;color:var(--ink);transition:background .5s}
+  .phone[data-theme="dark"] .go-c{background:linear-gradient(125deg,#2c261a,#241f14);border-color:#3b3322}
+  .go-tx b{font-size:13px;font-weight:900;display:block}
+  .go-tx p{font-size:8.5px;font-weight:700;color:#8a7a52;margin:3px 0 7px}
+  .phone[data-theme="dark"] .go-tx p{color:#a89a72}
+  .go-pill{display:inline-block;background:#16130f;color:#ffd98a;font-size:8.5px;font-weight:900;border-radius:999px;padding:3px 9px}
+  .phone[data-theme="dark"] .go-pill{background:#ffd98a;color:#16130f}
+  .go-c .goi{width:50px;height:50px;flex:none;margin-left:8px;filter:drop-shadow(0 4px 6px rgba(120,90,20,.20))}
+  /* 休闲旅行大图卡 */
+  .fun{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .fun-c{position:relative;border-radius:15px;overflow:hidden;height:96px;text-decoration:none;box-shadow:var(--shadow);display:block}
+  .fun-c img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+  .fun-c .fov{position:absolute;inset:0;background:linear-gradient(100deg,rgba(15,12,10,.62) 8%,transparent 62%)}
+  .fun-c .ftx{position:absolute;left:11px;top:10px;color:#fff}
+  .fun-c .ftx b{font-size:13px;font-weight:900;display:block;text-shadow:0 1px 6px rgba(0,0,0,.4)}
+  .fun-c .ftx p{font-size:9.5px;font-weight:800;opacity:.92;margin-top:3px}
+  .fun-c .fdis{position:absolute;left:11px;bottom:9px;background:var(--yel);color:#16130f;font-size:9px;font-weight:900;border-radius:6px;padding:3px 7px}
+  /* 健康礼赠 */
+  .gift{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .g-sq{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .g-sq a{display:flex;align-items:center;gap:9px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:11px 12px;text-align:left;text-decoration:none;color:var(--ink);box-shadow:var(--shadow);transition:background .5s}
+  .g-sq .gqi{width:40px;height:40px;flex:none;filter:drop-shadow(0 3px 5px rgba(30,30,50,.14))}
+  .g-sq a b{font-size:11.5px;font-weight:900;display:block}
+  .g-sq a p{font-size:9px;font-weight:800;color:var(--promo);margin-top:2px}
+  /* 为你定制 */
+  .reb{display:flex;gap:9px;overflow-x:auto;scrollbar-width:none;padding:0 4px 4px}
+  .reb-c{flex:none;width:150px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:11px;box-shadow:var(--shadow);transition:background .5s}
+  .reb-c .rb{display:flex;align-items:center;gap:7px}
+  .reb-c .ric{width:28px;height:28px;border-radius:9px;display:grid;place-items:center;color:#fff;flex:none}
+  .reb-c .rt b{font-size:11px;font-weight:900;color:var(--ink);display:block}
+  .reb-c .rt p{font-size:9px;font-weight:700;color:var(--mut);margin-top:1px}
+  .reb-c button{margin-top:9px;width:100%;border:none;border-radius:999px;background:var(--accent);color:#fff;font-size:10.5px;font-weight:900;padding:7px 0;cursor:pointer}
+  .nearby{display:flex;flex-wrap:wrap;gap:7px;margin-top:10px}
+  .nearby a{font-size:10.5px;font-weight:800;color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:999px;padding:7px 12px;text-decoration:none}
+  /* 全部服务 */
+  .allsvc{display:flex;align-items:center;justify-content:center;gap:7px;margin:16px 14px 0;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:13px;font-size:12.5px;font-weight:900;color:var(--ink);text-decoration:none;box-shadow:var(--shadow)}
+  /* 主题切换浮钮 */
+  .tfab{position:absolute;right:16px;bottom:92px;width:38px;height:38px;border-radius:50%;background:var(--card);border:1px solid var(--line);box-shadow:var(--shadow);display:grid;place-items:center;cursor:pointer;z-index:9;transition:background .5s}
+  /* 轻提示 */
+  .toast{position:absolute;left:50%;bottom:96px;transform:translateX(-50%) translateY(16px);background:rgba(22,19,15,.92);color:#fff;font-size:11.5px;font-weight:700;border-radius:12px;padding:10px 15px;max-width:300px;text-align:center;line-height:1.6;opacity:0;pointer-events:none;transition:.3s;z-index:20}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  .search{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .aisle-hd a{color:var(--accent)}
+
+  /* ===== 精选好物瀑布流（富卡片） ===== */
+  .wf-it{display:block;text-decoration:none;color:inherit;cursor:pointer}
+  .wf-imgbox{position:relative}
+  .wf-imgbox img{width:100%;object-fit:cover;display:block}
+  .rk{position:absolute;left:7px;top:7px;background:linear-gradient(135deg,#f7563c,#e8253f);color:#fff;font-size:8.5px;font-weight:900;border-radius:6px;padding:3px 6px;letter-spacing:.02em;box-shadow:0 3px 8px rgba(232,37,63,.35)}
+  .wf-sl{font-size:10.5px;color:var(--mut);font-weight:600;margin-top:3px;line-height:1.45;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .wf-tags{display:flex;flex-wrap:wrap;gap:4px;margin-top:5px}
+  .wf-tags i{font-style:normal;font-size:9px;font-weight:800;border-radius:5px;padding:2px 5px;background:var(--notice-bg);color:var(--notice-tx)}
+  .wf-vou{margin-top:7px;font-size:9.5px;font-weight:800;border-radius:7px;padding:5px 7px;color:#9c6500;background:#fdf3d7;display:flex;align-items:center;gap:4px}
+  .wf-vou svg{flex:none}
+  .phone[data-theme="dark"] .wf-vou{background:rgba(247,196,0,.13);color:#f7c400}
+
+  /* ===== 3D 黏土图标：无底无托，直接落在卡片上 ===== */
+  .gic,.ric,.nic,.oic{box-shadow:none!important;background:transparent!important}
+  .gic,.nic{background:radial-gradient(circle at 50% 44%,rgba(255,208,105,.34),rgba(255,208,105,0) 72%)!important}
+  .phone[data-theme="dark"] .gic,.phone[data-theme="dark"] .nic{background:radial-gradient(circle at 50% 44%,rgba(255,220,150,.10),rgba(255,220,150,0) 72%)!important}
+  .gic{width:58px;height:58px}
+  .gic img{width:58px;height:58px;filter:drop-shadow(0 4px 6px rgba(30,30,50,.15))}
+  .now-c .nic{width:48px;height:48px}
+  .now-c .nic img{width:48px;height:48px}
+  .reb-c .ric{width:38px;height:38px}
+  .reb-c .ric img{width:38px;height:38px}
+  .od-it .oic{width:38px;height:38px}
+  .od-it .oic img{width:38px;height:38px}
+  /* ===== 代金券 banner ===== */
+  .pban{margin:12px 14px 0;border-radius:18px;background:linear-gradient(120deg,#ffe9ad,#ffd06e 60%,#ffb84d);display:flex;align-items:center;justify-content:space-between;padding:14px 16px;box-shadow:0 10px 22px rgba(240,160,30,.28);position:relative;overflow:hidden}
+  .pban::before{content:"";position:absolute;left:-30px;top:-40px;width:120px;height:120px;border-radius:50%;background:rgba(255,255,255,.25)}
+  .pb-tx b{font-size:17px;font-weight:900;color:#5b3400;letter-spacing:.02em}
+  .pb-tx p{font-size:10.5px;font-weight:800;color:#8a5a10;margin:4px 0 8px}
+  .pb-tx span{display:inline-block;background:#5b3400;color:#ffd76a;font-size:10px;font-weight:900;border-radius:9px;padding:4px 10px}
+  .pban img{width:92px;height:92px;flex:none;margin-right:-6px}
+  /* ===== 品牌栏目：白卡 logo + 实物图 ===== */
+  .bwall{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:2px 0 0}
+  .bfeat{display:flex;align-items:center;justify-content:space-between;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:12px;box-shadow:var(--shadow);text-decoration:none;transition:background .5s}
+  .bfeat img{width:62px;height:62px;flex:none;filter:drop-shadow(0 4px 6px rgba(30,30,50,.15))}
+  .bf-tx b{font-size:15px;font-weight:900}
+  .bf-lg{width:38px;height:38px;border-radius:9px;object-fit:contain;display:block;margin-bottom:6px}
+  .bf-tx p{font-size:9.5px;color:var(--mut);font-weight:700;margin:3px 0 7px}
+  .bf-go{display:inline-block;background:var(--notice-bg);color:var(--notice-tx);font-size:9.5px;font-weight:900;border-radius:8px;padding:3px 9px}
+  .blogo{display:flex;gap:8px;overflow-x:auto;margin-top:10px;padding:0 2px 4px;scrollbar-width:none}
+  .blogo::-webkit-scrollbar{display:none}
+  .bl{flex:none;display:flex;align-items:center;gap:9px;background:#fff;border:1px solid var(--line);border-radius:15px;padding:9px 16px 9px 9px;text-align:left;text-decoration:none;box-shadow:var(--shadow)}
+  .bl img{width:44px;height:44px;border-radius:12px;display:block;flex:none}
+  .bl b{font-size:13.5px;font-weight:900;display:block;white-space:nowrap;color:#16130f}
+  .bl p{font-size:9px;color:#8a8f9a;font-weight:700;margin-top:3px;white-space:nowrap}
+  /* ===== 休闲娱乐：海报购票横滑 ===== */
+  .frail{display:flex;gap:10px;overflow-x:auto;scrollbar-width:none;padding:0 2px 4px}
+  .frail::-webkit-scrollbar{display:none}
+  .fc{flex:none;width:118px;background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden;box-shadow:var(--shadow);text-decoration:none;color:var(--ink);transition:background .5s}
+  .fc .fp{width:100%;height:110px;object-fit:cover;display:block}
+  .fc .fx{padding:8px 9px 10px}
+  .ftag{display:inline-block;background:#e8442e;color:#fff;font-size:8.5px;font-weight:900;border-radius:5px;padding:2px 6px;margin-bottom:5px}
+  .fc .fx b{font-size:12px;font-weight:900;display:block}
+  .fc .fx p{font-size:8.5px;font-weight:700;color:var(--mut);margin-top:3px}
+  .fbuy{display:inline-block;margin-top:7px;background:var(--notice-bg);color:var(--notice-tx);font-size:9px;font-weight:900;border-radius:7px;padding:3px 8px}
+  .fc.vip{background:linear-gradient(150deg,#4d2a85,#7b3fa0);border:none;display:flex;align-items:center;justify-content:center;min-height:196px}
+  .fxv{text-align:center;color:#fff;padding:10px}
+  .fxv b{font-size:14px;font-weight:900}
+  .fxv p{font-size:9px;font-weight:700;opacity:.88;margin-top:5px}
+  .fbuy2{display:inline-block;margin-top:10px;background:#ffd98a;color:#16130f;font-size:9px;font-weight:900;border-radius:999px;padding:4px 11px}
+  /* ===== 小满 AI 入口 ===== */
+  .search .mai-ic{width:23px;height:23px;border-radius:50%;flex:none;overflow:hidden;display:grid;place-items:center}
+  .search .mai-ic img{width:23px;height:23px;display:block}
+  .maifab{position:absolute;right:12px;bottom:92px;width:52px;height:52px;border-radius:50%;background:rgba(255,255,255,.96);border:1px solid var(--line);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:30;text-decoration:none;box-shadow:0 8px 20px rgba(22,19,15,.16),0 0 0 4px rgba(0,200,130,.10);animation:maipulse 2.8s ease-in-out infinite}
+  .maifab img{width:31px;height:31px}
+  .maifab em{font-style:normal;font-size:8.5px;font-weight:900;color:#16130f;margin-top:1px}
+  .phone[data-theme="dark"] .maifab{background:rgba(20,26,24,.94)}
+  .phone[data-theme="dark"] .maifab em{color:#f6f2e5}
+  @keyframes maipulse{0%,100%{box-shadow:0 8px 20px rgba(22,19,15,.16),0 0 0 4px rgba(0,200,130,.12)}50%{box-shadow:0 8px 22px rgba(22,19,15,.18),0 0 0 9px rgba(0,200,130,.04)}}
+
+/* ===== V10：顶部随 banner 联动渐变 + 三图轮播 ===== */
+@property --tint{syntax:'<color>';inherits:false;initial-value:#ffe6b8}
+.scroll{background:linear-gradient(180deg,var(--tint,#ffe6b8) 0px,var(--bg) 500px);transition:--tint .9s ease}
+[data-theme="dark"] .scroll{background:var(--bg)}
+.top{background:none;overflow:visible;padding-bottom:4px}
+.top::after{display:none}
+.statusbar{color:var(--ink)}
+.loc{background:rgba(255,255,255,.92);color:var(--ink);box-shadow:0 3px 10px rgba(22,19,15,.07)}
+.bell{background:rgba(255,255,255,.92);color:var(--ink);box-shadow:0 3px 10px rgba(22,19,15,.07)}
+.bell i{border-color:#fff}
+[data-theme="dark"] .statusbar{color:#fff}
+[data-theme="dark"] .loc,[data-theme="dark"] .bell{background:rgba(255,255,255,.14);color:#fff;box-shadow:none}
+.bans{margin:12px 14px 0;position:relative;height:118px;border-radius:18px}
+.pslide{position:absolute;inset:0;border-radius:18px;background:linear-gradient(120deg,var(--pc1),var(--pc2));display:flex;align-items:center;justify-content:space-between;padding:13px 15px;overflow:hidden;opacity:0;transform:translateX(16px) scale(.98);transition:opacity .65s ease,transform .65s ease;pointer-events:none;box-shadow:0 10px 22px var(--psh,rgba(22,19,15,.14))}
+.pslide.on{opacity:1;transform:none;pointer-events:auto}
+.pslide::before{content:"";position:absolute;left:-34px;top:-46px;width:124px;height:124px;border-radius:50%;background:rgba(255,255,255,.22)}
+.pb-tx{position:relative;z-index:2;min-width:0}
+.pb-tx .k{display:inline-block;font-style:normal;font-size:9px;font-weight:900;letter-spacing:.16em;color:var(--ptx);opacity:.72;border:1px solid currentColor;border-radius:6px;padding:2px 6px;margin-bottom:6px}
+.pb-tx b{display:block;font-size:19px;font-weight:900;color:var(--ptx);letter-spacing:.05em;line-height:1.25}
+.pb-tx p{font-size:10.5px;font-weight:800;color:var(--psub);margin:5px 0 8px;letter-spacing:.02em}
+.pb-tx span{display:inline-block;background:var(--pbtn);color:var(--pbt);font-size:10px;font-weight:900;border-radius:9px;padding:4.5px 11px;letter-spacing:.04em}
+.pslide>img{width:88px;height:88px;flex:none;position:relative;z-index:2;filter:drop-shadow(0 8px 10px rgba(22,19,15,.18))}
+.pdots{position:absolute;right:13px;bottom:10px;display:flex;gap:5px;z-index:6}
+.pdots i{width:5px;height:5px;border-radius:99px;background:rgba(22,19,15,.16);transition:.35s}
+.pdots i.on{width:15px;background:rgba(22,19,15,.55)}
+.search .hot-ic{flex:none;font-style:normal;font-size:8.5px;font-weight:900;color:#fff;background:linear-gradient(120deg,#ff5d3d,#f03749);border-radius:5px;padding:2px 5px;letter-spacing:.05em}
+</style></style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute"><defs>
+  <g id="x-search"><circle cx="11" cy="11" r="6.5" fill="none" stroke-width="2.2"/><path d="m16 16 4.2 4.2" stroke-width="2.2" stroke-linecap="round"/></g>
+  <g id="x-flash"><path d="M13.2 2.5 5 13.8h5.6l-1.3 7.7 8.2-11.3h-5.6z"/></g>
+  <g id="x-plus"><path d="M12 5.5v13M5.5 12h13" fill="none" stroke-width="3" stroke-linecap="round"/></g>
+  <g id="x-arrow"><path d="M4 12h13m-5-5 5 5-5 5" fill="none" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></g>
+  <g id="x-mega"><path d="M3.5 10.2 12 6.5l8.5 3.7v3.6a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2z"/><path d="M12 6.5V4.5" stroke-linecap="round"/></g>
+  <g id="x-sun"><circle cx="12" cy="12" r="4.6"/><path d="M12 2.5v2.4M12 19.1v2.4M2.5 12h2.4M19.1 12h2.4M5.2 5.2l1.7 1.7M17.1 17.1l1.7 1.7M18.8 5.2l-1.7 1.7M6.9 17.1l-1.7 1.7" fill="none" stroke-width="2.2" stroke-linecap="round"/></g>
+  <g id="x-moon"><path d="M20.5 14.5A8.5 8.5 0 1 1 9.5 3.5a7 7 0 0 0 11 11z"/></g>
+  <g id="f-wheat"><path d="M11 3.2c.5 1.8.5 3.4 0 5.1-.5-1.7-.5-3.3 0-5.1zm2 0c-.5 1.8-.5 3.4 0 5.1.5-1.7.5-3.3 0-5.1z"/><path d="M8.6 6.2c1.5 1.1 2.4 2.6 2.7 4.4-1.8-.4-3.2-1.4-4.1-3zm6.8 0c-1.5 1.1-2.4 2.6-2.7 4.4 1.8-.4 3.2-1.4 4.1-3zM8.6 11c1.5 1.1 2.4 2.6 2.7 4.4-1.8-.4-3.2-1.4-4.1-3zm6.8 0c-1.5 1.1-2.4 2.6-2.7 4.4 1.8-.4 3.2-1.4 4.1-3z" opacity=".75"/><path d="M11.2 13.5h1.6v7.3h-1.6z"/></g>
+  <g id="f-group"><circle cx="9" cy="8" r="3.4"/><circle cx="16.3" cy="9.3" r="2.7" opacity=".7"/><path d="M3.2 19.5c.6-3.6 2.8-5.6 5.8-5.6s5.2 2 5.8 5.6z"/><path d="M14.9 14.6c2.6.3 4.4 2.1 4.9 4.9h-4.4c-.3-2-1.2-3.7-2.6-4.8.7-.1 1.4-.2 2.1-.1z" opacity=".7"/></g>
+  <g id="f-bill"><path d="M6.5 3h11a1.5 1.5 0 0 1 1.5 1.5v15a1.5 1.5 0 0 1-1.5 1.5h-11a1.5 1.5 0 0 1-1.5-1.5v-15A1.5 1.5 0 0 1 6.5 3z"/><path d="M8.5 8h7M8.5 11.5h7M8.5 15h4.5" stroke="#fff" stroke-width="1.8" stroke-linecap="round" fill="none"/></g>
+  <g id="f-cut"><path d="M19.5 4.6 9.9 14.2l1.7 1.7 9.6-9.6a1.2 1.2 0 0 0-1.7-1.7zM4.6 19.5l7.4-7.4 1.7 1.7-7.4 7.4a1.2 1.2 0 0 1-1.7-1.7z"/><circle cx="7" cy="6.8" r="2.9" fill="none" stroke-width="2.2"/><circle cx="7" cy="17.2" r="2.9" fill="none" stroke-width="2.2"/></g>
+  <g id="f-home"><path d="M12 4 4 10.6V20a1 1 0 0 0 1 1h4.6v-5.6h4.8V21H19a1 1 0 0 0 1-1v-9.4z"/></g>
+  <g id="f-shop"><path d="M4.6 8.6 6 4h12l1.4 4.6zM4 9.8h16V20a1 1 0 0 1-1 1h-5v-5.4h-4V21H5a1 1 0 0 1-1-1z"/><path d="M4 9.8h16v1a2.6 2.6 0 0 1-5.3 0 2.7 2.7 0 0 1-5.4 0 2.6 2.6 0 0 1-5.3 0z" opacity=".72"/></g>
+  <g id="f-chat"><path d="M6.5 4h11A2.5 2.5 0 0 1 20 6.5v6.8a2.5 2.5 0 0 1-2.5 2.5h-7.8l-4.5 3.6a.6.6 0 0 1-1-.5V6.5A2.5 2.5 0 0 1 6.5 4z"/><circle cx="9.2" cy="10" r="1.3" fill="#fff"/><circle cx="13.4" cy="10" r="1.3" fill="#fff"/><circle cx="17" cy="10" r="1.3" fill="#fff" opacity=".6"/></g>
+  <g id="f-cart"><path d="M3.6 4.4h2.3l.7 3.2H21l-1.7 7.2a1.6 1.6 0 0 1-1.6 1.3H8.7a1.6 1.6 0 0 1-1.6-1.3L5.4 6.6l-.4-1.4H3.6z"/><circle cx="9.3" cy="19.6" r="1.7"/><circle cx="16.8" cy="19.6" r="1.7"/></g>
+  <g id="f-me"><circle cx="12" cy="8.2" r="4"/><path d="M4.4 20.4c1-4.2 3.9-6.4 7.6-6.4s6.6 2.2 7.6 6.4a1 1 0 0 1-1 1.2H5.4a1 1 0 0 1-1-1.2z"/></g>
+  <g id="cap-more"><circle cx="4.5" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="19.5" cy="12" r="1.7"/></g>
+  <g id="f-leaf"><path d="M12 21.2c-5.2 0-8.3-3.3-8.3-8.2 0-5.7 4.7-8.8 9.3-9.3-.6 5-1 8.5 1.5 10.9 2.1 2.1 3.6 4.1 3.6 5.7-1.9.7-4 1-6.1 1z"/><path d="M7.3 17.4c2.1-3.1 5.2-6.2 8.8-8.8" fill="none" stroke="#fff" stroke-width="1.9" stroke-linecap="round"/></g>
+  <g id="f-egg"><path d="M12 3.5c-3.9 0-7.2 4.3-7.2 9.3 0 4.4 3 7.7 7.2 7.7s7.2-3.3 7.2-7.7c0-5-3.3-9.3-7.2-9.3z"/><ellipse cx="9.6" cy="9.4" rx="1.7" ry="2.6" fill="#fff" opacity=".55" transform="rotate(-14 9.6 9.4)"/></g>
+  <g id="cap-target"><circle cx="12" cy="12" r="6.4" fill="none" stroke-width="2"/><circle cx="12" cy="12" r="2.4"/></g>
+
+  <g id="x-bell"><path d="M12 3.5a5.5 5.5 0 0 1 5.5 5.5c0 4 1.5 5.5 2 6H4.5c.5-.5 2-2 2-6A5.5 5.5 0 0 1 12 3.5z"/><path d="M9.8 18.6a2.3 2.3 0 0 0 4.4 0"/></g>
+  <g id="x-spark"><path d="M12 2.8l2.1 5.6 5.9 1.6-5.9 1.6L12 17.2l-2.1-5.6L4 10l5.9-1.6z"/><circle cx="18.6" cy="17.6" r="1.7"/><circle cx="5.4" cy="16.4" r="1.2"/></g>
+  <g id="x-bowl"><path d="M4 11.5h16a8 8 0 0 1-16 0z"/><path d="M9.2 7.4c0-1.6 1.1-1.7 1.1-3.2M13.7 7.4c0-1.6 1.1-1.7 1.1-3.2" fill="none" stroke="#fff" stroke-width="1.7" stroke-linecap="round"/></g>
+  <g id="x-phone"><rect x="7" y="3" width="10" height="18" rx="2.6"/><path d="M10.6 17.6h2.8" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/></g>
+  <g id="x-car"><path d="M4 16.5v-4.2l2-5.3h12l2 5.3v4.2"/><path d="M4 12h16" stroke="#fff" stroke-width="1.6" fill="none"/><circle cx="7.6" cy="17.6" r="1.9" fill="#fff"/><circle cx="16.4" cy="17.6" r="1.9" fill="#fff"/></g>
+  <g id="x-box"><path d="M4 8.2l8-4.2 8 4.2v7.6l-8 4.2-8-4.2z"/><path d="M4 8.2l8 4 8-4M12 12.2V20" fill="none" stroke="#fff" stroke-width="1.8"/></g>
+  <g id="x-pump"><path d="M4.5 20V6a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v14"/><rect x="7" y="7" width="5" height="4.4" rx=".8" fill="#fff"/><path d="M14.5 9.5h2.3a2 2 0 0 1 2 2v5.3a1.7 1.7 0 0 1-3.4 0v-2.6" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M3.5 20h12" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/></g>
+  <g id="x-bubble"><circle cx="9.5" cy="13.5" r="4.6"/><circle cx="16" cy="8.5" r="3.1"/><circle cx="16.8" cy="15.8" r="2.5" fill="#fff" opacity=".85"/></g>
+  <g id="x-grid4"><rect x="4" y="4" width="7" height="7" rx="2.2"/><rect x="13" y="4" width="7" height="7" rx="2.2"/><rect x="4" y="13" width="7" height="7" rx="2.2"/><rect x="13" y="13" width="7" height="7" rx="2.2"/></g>
+  <g id="x-film"><rect x="3.5" y="5" width="17" height="14" rx="2.5"/><path d="M8 5v14M16 5v14M3.5 9.6h4.5M3.5 14.4h4.5M16 9.6h4.5M16 14.4h4.5" stroke="#fff" stroke-width="1.5" fill="none"/></g>
+  <g id="x-mic"><rect x="9" y="3" width="6" height="10.5" rx="3"/><path d="M6.5 10.8a5.5 5.5 0 0 0 11 0M12 16.3v3.4M9 19.7h6" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></g>
+  <g id="x-mnt"><path d="M3 18.5l6-9.5 4 6.3 3-4.2 5 7.4z"/><circle cx="17.4" cy="6.4" r="2"/></g>
+  <g id="x-train"><rect x="5" y="3.5" width="14" height="14" rx="3.2"/><path d="M5 11.8h14" stroke="#fff" stroke-width="1.6" fill="none"/><circle cx="9.2" cy="14.6" r="1.2" fill="#fff"/><circle cx="14.8" cy="14.6" r="1.2" fill="#fff"/><path d="M8 20.3 6.5 22.5M16 20.3l1.5 2.2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" fill="none"/></g>
+  <g id="x-plane"><path d="M21 3.5 3 10.8l6.8 2.4L12.2 20z"/><path d="M21 3.5 9.8 13.2" stroke="#fff" stroke-width="1.6" fill="none"/></g>
+  <g id="x-hotel"><rect x="4" y="4" width="16" height="16" rx="2.4"/><path d="M8 8.2h2.2M13.8 8.2H16M8 12h2.2M13.8 12H16M8 15.8h2.2M13.8 15.8H16" stroke="#fff" stroke-width="1.7" stroke-linecap="round" fill="none"/></g>
+  <g id="x-wash"><path d="M12 5a1.9 1.9 0 1 1 1.9 1.9V9" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 9 4 15.4a1.6 1.6 0 0 0 1 2.9h14a1.6 1.6 0 0 0 1-2.9z"/></g>
+  <g id="x-clean"><path d="M12 3.5s6 6.2 6 10a6 6 0 0 1-12 0c0-3.8 6-10 6-10z"/><path d="M9.4 13.6a2.7 2.7 0 0 0 2.6 2.8" stroke="#fff" stroke-width="1.6" fill="none" stroke-linecap="round"/></g>
+  <g id="x-wrench"><path d="M15.8 4.2a4.6 4.6 0 0 0-4.6 5.8L4 17.2V20h2.8l7.2-7.2a4.6 4.6 0 0 0 5.8-4.6l-2.9 2.9-2.4-2.4 2.9-2.9a4.6 4.6 0 0 0-1.6-1.6z"/></g>
+  <g id="x-heart2"><path d="M12 20.5C7 16.5 3.5 13.3 3.5 9.6 3.5 7 5.5 5 8 5c1.6 0 3.1.8 4 2.1C12.9 5.8 14.4 5 16 5c2.5 0 4.5 2 4.5 4.6 0 3.7-3.5 6.9-8.5 10.9z"/></g>
+  <g id="x-lux"><path d="M7 4h10l4 5-9 11L3 9z"/><path d="M3 9h18M12 20 8.6 9M12 20l3.4-11M7 4l1.6 5M17 4l-1.6 5" stroke="#fff" fill="none" stroke-width="1.3"/></g>
+  <g id="x-charge"><path d="M9.2 3.5V8M14.8 3.5V8" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/><path d="M6.5 8h11v4a5.5 5.5 0 0 1-11 0z"/><path d="M12 17.4V21" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/></g>
+  <g id="x-steer"><circle cx="12" cy="12" r="8.4"/><circle cx="12" cy="12" r="2.5" fill="#fff"/><path d="M12 3.6v5.9M4.8 15.8l4.9-2M19.2 15.8l-4.9-2" stroke="#fff" stroke-width="1.7" fill="none"/></g>
+  <g id="x-med"><path d="M12 3l7.5 3v6c0 4.6-3.2 7.7-7.5 9-4.3-1.3-7.5-4.4-7.5-9V6z"/><path d="M12 8.4v5.8M9.1 11.3h5.8" stroke="#fff" stroke-width="1.9" stroke-linecap="round" fill="none"/></g>
+  <g id="x-tooth"><path d="M12 4.6c-1.6-1.2-4.3-1.5-5.7.2C4.8 6.7 5.1 10 6.1 12.5c.8 2 1 5.9 2.2 5.9s1.4-3.5 2.3-3.5 1 3.5 2.2 3.5 1.5-3.9 2.3-5.9c1-2.5 1.3-5.8-.2-7.7-1.4-1.7-4.1-1.4-5.7-.2z"/></g>
+  <g id="x-cake"><path d="M5 21v-5.6a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2V21"/><path d="M3.8 21h16.4" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/><path d="M12 13.4v-2.6" stroke="currentColor" stroke-width="1.8" fill="none"/><circle cx="12" cy="9.2" r="1.3" fill="#fff"/><path d="M5 16.4c1.5 1.2 3-1.2 4.5 0s3-1.2 4.5 0 3-1.2 4.5 0" stroke="#fff" fill="none" stroke-width="1.4"/></g>
+  <g id="x-play"><rect x="3.5" y="5" width="17" height="14" rx="2.5"/><path d="M10.2 9.2l5 2.8-5 2.8z" fill="#fff"/></g>
+  <g id="x-tkt2"><path d="M3.5 7.5a2 2 0 0 1 2-2h13a2 2 0 0 1 2 2v2.4a2.4 2.4 0 0 0 0 4.2v2.4a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2v-2.4a2.4 2.4 0 0 0 0-4.2z"/><path d="M14.5 5.5v13" fill="none" stroke="#fff" stroke-width="1.7" stroke-dasharray="2.6 2.6"/></g>
+  <g id="x-clock2"><circle cx="12" cy="12" r="8.4"/><path d="M12 7.4V12l3.2 1.9" stroke="#fff" stroke-width="1.9" stroke-linecap="round" fill="none"/></g>
+
+  <g id="n-burger"><path d="M12 4.4c-4.5 0-7.5 2.4-7.8 5.5h15.6c-.3-3.1-3.3-5.5-7.8-5.5z" fill="url(#gg-o)"/><ellipse cx="9" cy="6.5" rx="2.4" ry="1.2" fill="#fff" opacity=".35"/><circle cx="10" cy="6.3" r=".62" fill="#fff" opacity=".9"/><circle cx="12.6" cy="5.6" r=".62" fill="#fff" opacity=".9"/><circle cx="14.6" cy="6.9" r=".62" fill="#fff" opacity=".9"/><path d="M4.3 10.5h15.4c-.7 1.3-1.8.5-2.9.8-1.3.4-1.7-.6-3-.6s-1.7 1-3 .6-1.6-.6-2.9-.3-2.3.9-3.6-.6z" fill="url(#gg-g)"/><path d="M5.2 12.5h13.6v1.3l-1.6 1.2h-2l-1.4-1.2H5.2z" fill="url(#gg-y)"/><rect x="4.5" y="14.3" width="15" height="2" rx="1" fill="url(#gg-br)"/><path d="M4.2 17.1h15.6v.8a4 4 0 0 1-4 4H8.2a4 4 0 0 1-4-4z" fill="url(#gg-o)"/></g>
+  <g id="n-basket"><path d="M6.6 10.2 10 4.6M17.4 10.2 14 4.6" stroke="url(#gg-br)" stroke-width="2" stroke-linecap="round" fill="none"/><path d="M4 10.2h16l-1.4 7.8a2 2 0 0 1-2 1.6H7.4a2 2 0 0 1-2-1.6z" fill="url(#gg-y)"/><path d="M4 10.2h16v1.6H4z" fill="#000" opacity=".08"/><path d="M8.4 13v4M12 13v4M15.6 13v4" stroke="#000" opacity=".14" stroke-width="1.6" stroke-linecap="round" fill="none"/><path d="M15.2 4.2c1.8-.5 3.4.2 4.2 1.7-1.6.8-3.2.3-4.2-1.7z" fill="url(#gg-g)"/><ellipse cx="8.6" cy="12.4" rx="2.6" ry="1" fill="#fff" opacity=".3"/></g>
+  <g id="n-scart"><path d="M3.2 4h2.5l.8 3.2" fill="none" stroke="url(#gg-d)" stroke-width="2" stroke-linecap="round"/><path d="M6.5 7.2H21l-1.7 6.6a1.8 1.8 0 0 1-1.8 1.4H9a1.8 1.8 0 0 1-1.8-1.4z" fill="url(#gg-b)"/><path d="M9.2 9.6v3.4M12.8 9.6v3.4M16.4 9.6v3.4" stroke="#fff" opacity=".55" stroke-width="1.5" stroke-linecap="round" fill="none"/><ellipse cx="10" cy="8.6" rx="2.8" ry=".9" fill="#fff" opacity=".35"/><circle cx="9.6" cy="19.2" r="2" fill="url(#gg-d)"/><circle cx="17" cy="19.2" r="2" fill="url(#gg-d)"/><circle cx="9.6" cy="19.2" r=".8" fill="#cfd6de"/><circle cx="17" cy="19.2" r=".8" fill="#cfd6de"/></g>
+  <g id="n-phonepay"><rect x="5.5" y="2.6" width="10" height="18.8" rx="2.8" fill="url(#gg-d)"/><rect x="7.3" y="5" width="6.4" height="10.4" rx="1.2" fill="url(#gg-b)"/><path d="M8.9 7.8l1.6 1.6 1.6-1.6M10.5 9.4v2.8M9.3 10.8h2.4" stroke="#fff" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round" fill="none"/><ellipse cx="9" cy="4" rx="1.6" ry=".7" fill="#fff" opacity=".3"/><circle cx="16.6" cy="16.6" r="4.6" fill="url(#gg-y)"/><circle cx="16.6" cy="16.6" r="3.5" fill="none" stroke="#fff" opacity=".55" stroke-width="1"/><path d="M14.8 15l1.8 1.9 1.8-1.9M16.6 16.9v2.9M15.4 18.2h2.4" stroke="#a3700d" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round" fill="none"/></g>
+  <g id="n-taxi"><path d="M9.4 3.2h5.2a1 1 0 0 1 1 1v1.8H8.4V4.2a1 1 0 0 1 1-1z" fill="url(#gg-y)"/><path d="M8.6 4h6.8" stroke="#8a6300" stroke-width=".9" opacity=".6"/><path d="M6.3 7.4h11.4a2 2 0 0 1 1.9 1.3l1.8 4.5v4.6H2.6v-4.6l1.8-4.5a2 2 0 0 1 1.9-1.3z" fill="url(#gg-y)"/><path d="M7 8.6h10l1.4 3.4H5.6z" fill="url(#gg-b)"/><path d="M2.6 13.4h18.8v1H2.6z" fill="#000" opacity=".07"/><rect x="3.8" y="14.6" width="2.6" height="1.3" rx=".65" fill="#fff" opacity=".85"/><rect x="17.6" y="14.6" width="2.6" height="1.3" rx=".65" fill="#fff" opacity=".85"/><circle cx="7.2" cy="18" r="2.1" fill="url(#gg-d)"/><circle cx="16.8" cy="18" r="2.1" fill="url(#gg-d)"/><circle cx="7.2" cy="18" r=".9" fill="#cfd6de"/><circle cx="16.8" cy="18" r=".9" fill="#cfd6de"/><ellipse cx="12" cy="8.4" rx="3.2" ry=".8" fill="#fff" opacity=".4"/></g>
+  <g id="n-ship"><path d="M8.6 7.4l7-3.6 6.9 3.6v6.8l-7 3.6-6.9-3.6z" fill="url(#gg-br)"/><path d="M8.6 7.4l7 3.4 6.9-3.4M15.5 10.8v7" stroke="#000" opacity=".16" stroke-width="1.5" fill="none"/><path d="M12 5.6l7 3.5-1.6.8-7-3.5z" fill="url(#gg-c)"/><path d="M1.8 8.8h5.2M1.2 12.2h5.2M1.8 15.6h5.2" stroke="url(#gg-gr)" stroke-width="2" stroke-linecap="round" fill="none"/><ellipse cx="13" cy="6" rx="1.8" ry=".8" fill="#fff" opacity=".3"/></g>
+  <g id="n-scooter"><circle cx="5.4" cy="17.6" r="2.7" fill="url(#gg-d)"/><circle cx="18.6" cy="17.6" r="2.7" fill="url(#gg-d)"/><circle cx="5.4" cy="17.6" r="1.1" fill="#cfd6de"/><circle cx="18.6" cy="17.6" r="1.1" fill="#cfd6de"/><path d="M12.4 17.6 15 9.8h3.4" fill="none" stroke="url(#gg-r)" stroke-width="2.2" stroke-linecap="round"/><path d="M14.6 5.2h3.2a2 2 0 0 1 2 2v2.6" fill="none" stroke="url(#gg-d)" stroke-width="2" stroke-linecap="round"/><path d="M5.4 17.6h6.8l-2.6-6.4H6.8a2.6 2.6 0 0 0-2.6 2.6v.6z" fill="url(#gg-r)"/><rect x="7" y="6.6" width="5" height="4.2" rx="1.4" fill="url(#gg-y)"/><ellipse cx="9.5" cy="7.8" rx="1.6" ry=".7" fill="#fff" opacity=".4"/></g>
+  <g id="n-pump2"><path d="M4.4 20.4V6.2a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v14.2z" fill="url(#gg-r)"/><rect x="6.9" y="6.9" width="5.4" height="4.8" rx="1" fill="#fff"/><path d="M10.4 8 8.9 10.3h1.7l-.8 2.3 2.2-2.7h-1.7z" fill="url(#gg-y)"/><path d="M14.4 9.8h2.2a2 2 0 0 1 2 2v4.8a1.7 1.7 0 0 1-3.4 0v-2.2" fill="none" stroke="url(#gg-d)" stroke-width="1.8" stroke-linecap="round"/><path d="M3.4 20.4h12" stroke="url(#gg-d)" stroke-width="2.2" stroke-linecap="round" fill="none"/><ellipse cx="8.4" cy="5.6" rx="1.8" ry=".8" fill="#fff" opacity=".4"/></g>
+  <g id="n-spray"><path d="M9 9.6h6v8.8a2.4 2.4 0 0 1-2.4 2.4h-1.2A2.4 2.4 0 0 1 9 18.4z" fill="url(#gg-t)"/><path d="M9 12.6h6v3H9z" fill="#fff" opacity=".35"/><path d="M10.4 9.6V7.2h3.2v2.4z" fill="url(#gg-b)"/><path d="M9.6 5.2h6.4v2H9.6z" fill="url(#gg-b)"/><path d="M17.6 4.4l2.4-1.4M18.2 7.4h2.6M17.6 10.4l2.4 1.4" stroke="url(#gg-b)" stroke-width="1.8" stroke-linecap="round" fill="none"/><ellipse cx="10.8" cy="15" rx="1" ry="2.4" fill="#fff" opacity=".4"/></g>
+  <g id="n-dots"><rect x="4" y="4" width="7" height="7" rx="2.4" fill="url(#gg-gr)"/><rect x="13" y="4" width="7" height="7" rx="2.4" fill="url(#gg-gr)"/><rect x="4" y="13" width="7" height="7" rx="2.4" fill="url(#gg-gr)"/><rect x="13" y="13" width="7" height="7" rx="2.4" fill="url(#gg-b)"/><ellipse cx="6.4" cy="5.6" rx="1.4" ry=".7" fill="#fff" opacity=".6"/><ellipse cx="15.4" cy="14.6" rx="1.4" ry=".7" fill="#fff" opacity=".5"/></g>
+  <g id="n-shirt"><path d="M9 4.2 4.6 6.6a1 1 0 0 0-.5 1.3l1.2 2.6a1 1 0 0 0 1.3.5l1-.6V19a1 1 0 0 0 1 1h6.8a1 1 0 0 0 1-1v-8.6l1 .6a1 1 0 0 0 1.3-.5l1.2-2.6a1 1 0 0 0-.5-1.3L15 4.2a3.4 3.4 0 0 1-6 0z" fill="url(#gg-b)"/><path d="M9 4.2a3.4 3.4 0 0 0 6 0 3.4 3.4 0 0 1-6 0z" fill="#fff" opacity=".55"/><path d="M9.4 16.6h5.2" stroke="#fff" opacity=".5" stroke-width="1.5" stroke-linecap="round" fill="none"/><ellipse cx="10" cy="9" rx="1.6" ry="2.8" fill="#fff" opacity=".25"/></g>
+  <g id="n-washer"><rect x="4.4" y="3.4" width="15.2" height="17.2" rx="2.6" fill="url(#gg-w)"/><path d="M4.4 6a2.6 2.6 0 0 1 2.6-2.6h10A2.6 2.6 0 0 1 19.6 6v1.8H4.4z" fill="url(#gg-gr)"/><circle cx="12" cy="13.6" r="4.8" fill="url(#gg-b)"/><circle cx="12" cy="13.6" r="3.4" fill="#fff" opacity=".9"/><path d="M9.2 14a2.8 2.8 0 0 0 5.6 0c-.9.9-1.9-.8-2.8 0s-1.1.9-2.8 0z" fill="url(#gg-t)"/><circle cx="7" cy="5.6" r=".9" fill="url(#gg-r)"/><path d="M10.4 5.6h6" stroke="#9aa4b2" stroke-width="1.4" stroke-linecap="round" fill="none"/><ellipse cx="7.6" cy="10.4" rx="1.2" ry="2" fill="#fff" opacity=".5"/></g>
+  <g id="n-homeclean"><path d="M12 3.6 4.2 10.2V20a1 1 0 0 0 1 1h13.6a1 1 0 0 0 1-1v-9.8z" fill="url(#gg-c)"/><path d="M12 3.6 4.2 10.2h2L12 4.8l5.8 5.4h2z" fill="url(#gg-r)"/><rect x="10" y="14.4" width="4" height="6.6" rx="1" fill="url(#gg-br)"/><rect x="6.4" y="12.4" width="3" height="3" rx=".8" fill="url(#gg-b)"/><path d="M16.6 8.6l.8 2.2 2.2.8-2.2.8-.8 2.2-.8-2.2-2.2-.8 2.2-.8z" fill="url(#gg-y)"/></g>
+  <g id="n-tools"><path d="M15.9 4.4a4.4 4.4 0 0 0-4.4 5.5L5 16.4V19h2.6l6.5-6.5a4.4 4.4 0 0 0 5.5-4.4l-2.7 2.7-2.2-2.2 2.7-2.7a4.4 4.4 0 0 0-1.5-1.5z" fill="url(#gg-gr)"/><path d="M4.8 6.4l5.4 5.4" stroke="url(#gg-y)" stroke-width="2.4" stroke-linecap="round" fill="none"/><path d="M3.6 4.6l2.6 2.6" stroke="url(#gg-d)" stroke-width="2.8" stroke-linecap="round" fill="none"/><circle cx="6.4" cy="17.6" r="1" fill="#9aa4b2"/><ellipse cx="16.6" cy="5.4" rx="1.6" ry=".9" fill="#fff" opacity=".6"/></g>
+  <g id="n-bag"><path d="M5.4 8.8h13.2l1.2 10a2 2 0 0 1-2 2.2H6.2a2 2 0 0 1-2-2.2z" fill="url(#gg-br)"/><path d="M8.6 10.6V7a3.4 3.4 0 0 1 6.8 0v3.6" stroke="url(#gg-y)" stroke-width="2" fill="none" stroke-linecap="round"/><rect x="10.4" y="12.6" width="3.2" height="2.4" rx=".8" fill="url(#gg-y)"/><ellipse cx="8.6" cy="12.4" rx="1.4" ry="3" fill="#fff" opacity=".22"/></g>
+  <g id="n-crh"><path d="M12 3c-3.9 0-6.6 1.7-6.6 5.4v6.2c0 2.4 1.6 3.9 3.7 4.3L7.8 21.4h2.3l1.1-2h1.6l1.1 2h2.3l-1.3-2.5c2.1-.4 3.7-1.9 3.7-4.3V8.4C18.6 4.7 15.9 3 12 3z" fill="url(#gg-w)"/><path d="M5.4 8.4c0-3.7 2.7-5.4 6.6-5.4s6.6 1.7 6.6 5.4v.8H5.4z" fill="url(#gg-b)"/><rect x="7" y="10.8" width="10" height="2.2" rx="1.1" fill="url(#gg-b)"/><circle cx="9" cy="15" r="1.1" fill="url(#gg-y)"/><circle cx="15" cy="15" r="1.1" fill="url(#gg-y)"/><ellipse cx="8.6" cy="5" rx="1.6" ry=".8" fill="#fff" opacity=".5"/></g>
+  <g id="n-plane2"><path d="M10.2 2.6a1.2 1.2 0 0 1 2.3-.3l3 7 5 2.9a1.2 1.2 0 0 1-1.2 2.1l-5.6-1.6-2 5.4 1.8 1.5a1.2 1.2 0 0 1-1.3 2l-3.3-1.3-1.5 3.1a1.2 1.2 0 0 1-2.2-.6l.3-4.2-4.9-1.5a1.2 1.2 0 0 1-.6-1.9l2.1-2.5 4.9 1.3z" transform="rotate(38 12 12)" fill="url(#gg-b)"/><path d="M11.2 4.4l2.4 5.6 3.9 2.2" transform="rotate(38 12 12)" stroke="#fff" opacity=".5" stroke-width="1.2" stroke-linecap="round" fill="none"/></g>
+  <g id="n-hotel2"><path d="M4.5 20.5V5.6A1.6 1.6 0 0 1 6.1 4h8.3a1.6 1.6 0 0 1 1.6 1.6v14.9z" fill="url(#gg-n)"/><path d="M16 9.6h3.4a1.4 1.4 0 0 1 1.4 1.4v9.5H16z" fill="url(#gg-b)"/><rect x="7.2" y="6.8" width="1.8" height="1.8" rx=".5" fill="url(#gg-y)"/><rect x="11" y="6.8" width="1.8" height="1.8" rx=".5" fill="url(#gg-y)"/><rect x="7.2" y="10.2" width="1.8" height="1.8" rx=".5" fill="url(#gg-y)"/><rect x="11" y="10.2" width="1.8" height="1.8" rx=".5" fill="#fff" opacity=".45"/><rect x="7.2" y="13.6" width="1.8" height="1.8" rx=".5" fill="#fff" opacity=".45"/><rect x="11" y="13.6" width="1.8" height="1.8" rx=".5" fill="url(#gg-y)"/><path d="M11 1.8l.7 1.5 1.6.2-1.2 1.1.3 1.6-1.4-.8-1.4.8.3-1.6-1.2-1.1 1.6-.2z" fill="url(#gg-y)"/><path d="M3.4 20.5h17.2" stroke="url(#gg-d)" stroke-width="1.6" stroke-linecap="round" fill="none"/></g>
+  <g id="n-carwash"><path d="M4.4 17.6v-4l1.9-5a2 2 0 0 1 1.9-1.3h7.6a2 2 0 0 1 1.9 1.3l1.9 5v4z" fill="url(#gg-r)"/><path d="M7 8.6h10l1.5 3.6H5.5z" fill="url(#gg-b)"/><rect x="5.6" y="14" width="2.4" height="1.2" rx=".6" fill="#fff" opacity=".85"/><rect x="16" y="14" width="2.4" height="1.2" rx=".6" fill="#fff" opacity=".85"/><circle cx="7.6" cy="18" r="2" fill="url(#gg-d)"/><circle cx="16.4" cy="18" r="2" fill="url(#gg-d)"/><circle cx="7.6" cy="18" r=".8" fill="#cfd6de"/><circle cx="16.4" cy="18" r=".8" fill="#cfd6de"/><circle cx="6.6" cy="4.4" r="1.3" fill="url(#gg-t)"/><circle cx="12" cy="3.2" r="1.6" fill="url(#gg-t)"/><circle cx="17.4" cy="4.6" r="1.2" fill="url(#gg-t)"/></g>
+  <g id="n-ev"><rect x="3.4" y="8" width="13.6" height="8.6" rx="2.6" fill="url(#gg-g)"/><path d="M17 10.8h2a1.6 1.6 0 0 1 1.6 1.6v0a1.6 1.6 0 0 1-1.6 1.6h-2z" fill="url(#gg-g)"/><path d="M10.8 9.6 8.6 12.6h2.2l-1.4 3.2 3.6-4.2h-2.2z" fill="url(#gg-y)"/><ellipse cx="7.4" cy="10" rx="2.2" ry=".8" fill="#fff" opacity=".4"/></g>
+  <g id="n-gas"><path d="M4.4 20.4V6.2a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v14.2z" fill="url(#gg-o)"/><rect x="6.9" y="6.9" width="5.4" height="4.6" rx="1" fill="#fff"/><path d="M9.7 8.2s1.6 1.8 1.6 2.9a1.6 1.6 0 0 1-3.2 0c0-1.1 1.6-2.9 1.6-2.9z" fill="url(#gg-r)"/><path d="M14.4 9.8h2.2a2 2 0 0 1 2 2v4.8a1.7 1.7 0 0 1-3.4 0v-2.2" fill="none" stroke="url(#gg-d)" stroke-width="1.8" stroke-linecap="round"/><path d="M3.4 20.4h12" stroke="url(#gg-d)" stroke-width="2.2" stroke-linecap="round" fill="none"/><ellipse cx="8.4" cy="5.6" rx="1.8" ry=".8" fill="#fff" opacity=".4"/></g>
+  <g id="n-driver"><circle cx="12" cy="12" r="8.8" fill="url(#gg-d)"/><circle cx="12" cy="12" r="6.4" fill="none" stroke="#59616e" stroke-width="1.3"/><circle cx="12" cy="12" r="2.3" fill="url(#gg-gr)"/><path d="M12 14.3v4.2M10.3 10.9 4.9 9.2M13.7 10.9l5.4-1.7" stroke="url(#gg-gr)" stroke-width="1.9" stroke-linecap="round" fill="none"/><ellipse cx="9" cy="6.2" rx="2.6" ry="1.3" fill="#fff" opacity=".18"/></g>
+  <g id="n-cup"><path d="M6.4 8.6h11.2l-1.1 10.8a2 2 0 0 1-2 1.8h-4.8a2 2 0 0 1-2-1.8z" fill="url(#gg-c)"/><path d="M7 12.4h10l-.4 3.2H7.4z" fill="url(#gg-br)"/><path d="M5.8 8.6 7 5.2h10l1.2 3.4z" fill="url(#gg-d)"/><path d="M12 5.2V3" stroke="url(#gg-d)" stroke-width="1.9" stroke-linecap="round" fill="none"/><ellipse cx="9" cy="15.4" rx="1" ry="3" fill="#fff" opacity=".45"/></g>
+  <g id="n-rose"><circle cx="12" cy="7.4" r="3.8" fill="url(#gg-r)"/><path d="M12 4.4a3 3 0 0 1 2.8 2c-.9 1-2 .6-2.8 1.4s-1.9.6-2.8-.4a3 3 0 0 1 2.8-3z" fill="url(#gg-pk)"/><circle cx="12" cy="7.4" r="1.1" fill="url(#gg-r)"/><path d="M12 11.2v9.2" stroke="url(#gg-g)" stroke-width="2" stroke-linecap="round" fill="none"/><path d="M12 15.4c-2.2.5-3.9-.3-4.8-2 2.1-.7 4 .1 4.8 2z" fill="url(#gg-g)"/><path d="M12 17.6c2.2.5 3.9-.3 4.8-2-2.1-.7-4 .1-4.8 2z" fill="url(#gg-g)"/></g>
+  <g id="n-fbasket"><path d="M7.2 11.6C7.2 7.6 9.3 5.2 12 5.2s4.8 2.4 4.8 6.4" stroke="url(#gg-br)" stroke-width="1.9" fill="none"/><path d="M5 11.6h14l-1.3 6.6a2 2 0 0 1-2 1.6H8.3a2 2 0 0 1-2-1.6z" fill="url(#gg-br)"/><path d="M5 11.6h14v1.5H5z" fill="#000" opacity=".12"/><path d="M8.4 14.4v3.4M12 14.4v3.4M15.6 14.4v3.4" stroke="#000" opacity=".16" stroke-width="1.5" stroke-linecap="round" fill="none"/><circle cx="9" cy="8.6" r="1.6" fill="url(#gg-pk)"/><circle cx="12" cy="6.8" r="1.8" fill="url(#gg-r)"/><circle cx="15" cy="8.6" r="1.6" fill="url(#gg-y)"/><circle cx="9" cy="8.6" r=".6" fill="#fff" opacity=".7"/><circle cx="12" cy="6.8" r=".7" fill="#fff" opacity=".7"/><circle cx="15" cy="8.6" r=".6" fill="#fff" opacity=".7"/></g>
+  <g id="n-tooth"><path d="M12 4.6c-1.6-1.2-4.3-1.5-5.7.2C4.8 6.7 5.1 10 6.1 12.5c.8 2 1 5.9 2.2 5.9s1.4-3.5 2.3-3.5 1 3.5 2.2 3.5 1.5-3.9 2.3-5.9c1-2.5 1.3-5.8-.2-7.7-1.4-1.7-4.1-1.4-5.7-.2z" fill="url(#gg-w)"/><path d="M8 6.4a3.4 3.4 0 0 0-1.4 3" stroke="url(#gg-b)" stroke-width="1.2" stroke-linecap="round" fill="none" opacity=".7"/><ellipse cx="8.8" cy="7.6" rx="1.2" ry="1.9" fill="#fff" opacity=".8"/><path d="M17.8 3.4l.7 1.7 1.7.7-1.7.7-.7 1.7-.7-1.7-1.7-.7 1.7-.7z" fill="url(#gg-b)"/></g>
+  <linearGradient id="gg-y" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffd76a"/><stop offset="1" stop-color="#f0a01e"/></linearGradient>
+  <linearGradient id="gg-o" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffb76a"/><stop offset="1" stop-color="#ef7d2a"/></linearGradient>
+  <linearGradient id="gg-r" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ff9d8a"/><stop offset="1" stop-color="#ef4444"/></linearGradient>
+  <linearGradient id="gg-g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#93e29a"/><stop offset="1" stop-color="#35a853"/></linearGradient>
+  <linearGradient id="gg-t" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#7fe3cf"/><stop offset="1" stop-color="#14a38b"/></linearGradient>
+  <linearGradient id="gg-b" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8ecafc"/><stop offset="1" stop-color="#2f7fe0"/></linearGradient>
+  <linearGradient id="gg-n" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#93a9e0"/><stop offset="1" stop-color="#3d5a9e"/></linearGradient>
+  <linearGradient id="gg-p" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#cfa9f7"/><stop offset="1" stop-color="#8b5cf6"/></linearGradient>
+  <linearGradient id="gg-pk" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffb9cd"/><stop offset="1" stop-color="#f06595"/></linearGradient>
+  <linearGradient id="gg-br" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#d3a97f"/><stop offset="1" stop-color="#8a5a38"/></linearGradient>
+  <linearGradient id="gg-gr" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#eef1f5"/><stop offset="1" stop-color="#c3cad4"/></linearGradient>
+  <linearGradient id="gg-d" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#7b8494"/><stop offset="1" stop-color="#3c4350"/></linearGradient>
+  <linearGradient id="gg-c" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff6de"/><stop offset="1" stop-color="#f3d892"/></linearGradient>
+  <linearGradient id="gg-w" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#e6ebf2"/></linearGradient>
+  <g id="m-film"><rect x="3.5" y="5" width="17" height="14" rx="2.5" fill="url(#gg-p)"/><path d="M8 5v14M16 5v14M3.5 9.6h4.5M3.5 14.4h4.5M16 9.6h4.5M16 14.4h4.5" stroke="#fff" opacity=".75" stroke-width="1.5" fill="none"/><ellipse cx="12" cy="7" rx="2.2" ry=".9" fill="#fff" opacity=".35"/></g>
+  <g id="m-cake"><path d="M5 21v-5.4a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2V21z" fill="url(#gg-pk)"/><path d="M5 15.8c1.2 1.2 2.4-1.2 3.6 0s2.4-1.2 3.6 0 2.4-1.2 3.6 0 2.4-1.2 3.6 0v-2.2a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2z" fill="#fff"/><path d="M3.8 21h16.4" stroke="url(#gg-br)" stroke-width="2" stroke-linecap="round" fill="none"/><rect x="11.2" y="7.6" width="1.6" height="4" rx=".8" fill="url(#gg-y)"/><circle cx="12" cy="6.4" r="1.1" fill="url(#gg-o)"/></g>
+  <g id="m-play"><rect x="3.5" y="5" width="17" height="14" rx="2.5" fill="url(#gg-n)"/><path d="M10.2 9.2l5 2.8-5 2.8z" fill="url(#gg-y)"/><ellipse cx="8" cy="7" rx="2.4" ry=".9" fill="#fff" opacity=".3"/></g>
+  <g id="m-mnt"><path d="M3 18.5l6-9.5 4 6.3 3-4.2 5 7.4z" fill="url(#gg-g)"/><path d="M9 9l1.2 1.9.9-1.1 1 .9.9-.7 4 6.3" fill="none" stroke="#fff" opacity=".5" stroke-width="1.1"/><circle cx="17.4" cy="6.4" r="2.2" fill="url(#gg-y)"/></g>
+  <g id="m-mic"><rect x="9" y="3" width="6" height="10.5" rx="3" fill="url(#gg-r)"/><path d="M9 6.6h6M9 9.4h6" stroke="#fff" opacity=".4" stroke-width="1.1" fill="none"/><path d="M6.5 10.8a5.5 5.5 0 0 0 11 0M12 16.3v3.4M9 19.7h6" fill="none" stroke="url(#gg-d)" stroke-width="1.9" stroke-linecap="round"/></g>
+  <g id="m-bowl"><path d="M4 11.5h16a8 8 0 0 1-16 0z" fill="url(#gg-r)"/><path d="M5.6 11.5h12.8a6.4 6.4 0 0 1-12.8 0z" fill="url(#gg-y)"/><circle cx="9.6" cy="13.4" r="1" fill="url(#gg-g)"/><circle cx="13.6" cy="14.2" r="1" fill="url(#gg-r)"/><path d="M9.2 7.4c0-1.6 1.1-1.7 1.1-3.2M13.7 7.4c0-1.6 1.1-1.7 1.1-3.2" fill="none" stroke="url(#gg-gr)" stroke-width="1.7" stroke-linecap="round"/></g>
+  <g id="m-med"><path d="M12 3l7.5 3v6c0 4.6-3.2 7.7-7.5 9-4.3-1.3-7.5-4.4-7.5-9V6z" fill="url(#gg-b)"/><path d="M12 8.4v5.8M9.1 11.3h5.8" stroke="#fff" stroke-width="2" stroke-linecap="round" fill="none"/><ellipse cx="8.6" cy="6.6" rx="1.6" ry="1" fill="#fff" opacity=".4"/></g>
+</defs></svg>
+
+<div class="cap"><h1>乐趣生活 · 首页</h1><p>数字生活供应链总入口 · 32 项能力一屏直达</p></div>
+
+<div class="phone" id="app">
+  <div class="scroll" style="--tint:#ffe6b8">
+    <div class="top">
+      <div class="statusbar"><span>9:41</span>
+        <span style="display:flex;gap:5px;align-items:center">
+          <svg width="16" height="11" viewBox="0 0 17 12" fill="currentColor"><rect x="0" y="7" width="3" height="5" rx="1"/><rect x="4.5" y="5" width="3" height="7" rx="1"/><rect x="9" y="2.5" width="3" height="9.5" rx="1"/><rect x="13.5" y="0" width="3" height="12" rx="1"/></svg>
+          <svg width="23" height="11" viewBox="0 0 25 12"><rect x="0.5" y="0.5" width="20" height="11" rx="3" fill="none" stroke="currentColor"/><rect x="2.5" y="2.5" width="14" height="7" rx="1.5" fill="currentColor"/><path d="M23 4v4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+        </span>
+      </div>
+      <div class="navrow"><div class="loc">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round"><path d="M12 21s-6.5-5.4-6.5-10.3A6.5 6.5 0 0 1 12 4a6.5 6.5 0 0 1 6.5 6.7C18.5 15.6 12 21 12 21z"/><circle cx="12" cy="10.6" r="2.2"/></svg>
+          <b>杭州</b>
+          <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round"><path d="M5 9l7 7 7-7"/></svg>
+        </div>
+        <a class="search" href="search.html" style="text-decoration:none;min-width:0"><span class="hot-ic">热</span>
+          瑞幸生椰拿铁 ¥9.9 起
+        </a>
+        <a class="bell" href="msgs.html"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><use href="#x-bell"/></svg><i></i></a>
+        <div class="capsule">
+          <div class="cell"><svg width="20" height="20" viewBox="0 0 24 24" fill="var(--capsule-ink)" style="transition:.5s"><use href="#cap-more"/></svg></div>
+          <div class="cell"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--capsule-ink)" style="transition:.5s"><use href="#cap-target"/></svg></div>
+        </div></div>
+    </div>
+
+
+    <div class="bans fu">
+      <a class="pslide on" data-tint="#ffe6b8" style="text-decoration:none;color:inherit;--pc1:#ffe9ad;--pc2:#ffb84d;--ptx:#5b3400;--psub:#8a5a10;--pbtn:#5b3400;--pbt:#ffd76a;--psh:rgba(240,160,30,.28)" href="recharge.html">
+        <div class="pb-tx"><i class="k">充值中心</i><b>话费充值送好礼</b><p>告别原价 · 充值最高可得 100 元代金券</p><span>立即充值 ›</span></div>
+        <img src="../assets/icons/banner-vou.png" alt="">
+      </a>
+      <a class="pslide" data-tint="#ffd9cc" style="text-decoration:none;color:inherit;--pc1:#ffdcd2;--pc2:#ff9a7a;--ptx:#7a1f00;--psub:#a85530;--pbtn:#7a1f00;--pbt:#ffd9c8;--psh:rgba(240,90,40,.26)" href="brand.html">
+        <div class="pb-tx"><i class="k">大牌点餐</i><b>品牌美味 5 折起</b><p>肯德基 · 麦当劳 · 星巴克 天天有券</p><span>去领券 ›</span></div>
+        <img src="../assets/icons/3d-burger.png" alt="">
+      </a>
+      <a class="pslide" data-tint="#d6e9ff" style="text-decoration:none;color:inherit;--pc1:#dcecff;--pc2:#9cc4ff;--ptx:#0b3a75;--psub:#41608f;--pbtn:#0b3a75;--pbt:#dcecff;--psh:rgba(50,110,220,.26)" href="svc.html?c=travel">
+        <div class="pb-tx"><i class="k">周末出行</i><b>周末出去玩 一站搞定</b><p>打车 · 加油充电 · 电影票 都有优惠</p><span>去看看 ›</span></div>
+        <img src="../assets/icons/3d-plane.png" alt="">
+      </a>
+      <div class="pdots"><i class="on"></i><i></i><i></i></div>
+    </div>
+
+    <div class="od fu">
+      <div class="od-hd"><span class="dot"></span>进行中订单 · 2<span style="margin-left:auto;font-weight:800;color:var(--mut)">无订单时此模块自动隐藏</span></div>
+      <div class="od-it">
+        <div class="oic" style="background:#232d91"><img src="../assets/icons/3d-cup.png" alt=""></div>
+        <div class="ot"><b>瑞幸咖啡 · 生椰拿铁 1 杯</b><p>待取餐 · 湖滨银泰店 · 约 300 米</p></div>
+        <a class="ob" href="payok.html">取餐码 6682</a>
+      </div>
+      <div class="od-it">
+        <div class="oic" style="background:#e4002b"><img src="../assets/icons/3d-film.png" alt=""></div>
+        <div class="ot"><b>万达影城 · 今晚 19:40 · 2 张</b><p>待出票 · 出票中，平均约 8 分钟</p></div>
+        <a class="ob" href="orders.html">查看进度</a>
+      </div>
+    </div>
+
+    <div class="gw fu">
+      <a href="brand.html"><div class="gic" style="background:#e4002b"><img src="../assets/icons/3d-burger.png" alt=""></div><p>大牌点餐</p></a>
+      <a href="list.html?c=grocery"><div class="gic" style="background:#00a051"><img src="../assets/icons/3d-basket.png" alt=""></div><p>买菜到家</p></a>
+      <a href="list.html?c=super"><div class="gic" style="background:#e60012"><img src="../assets/icons/3d-cart.png" alt=""></div><p>商超购物</p></a>
+      <a href="recharge.html"><div class="gic" style="background:#1a6fc4"><img src="../assets/icons/3d-phonepay.png" alt=""></div><p>手机充值</p></a>
+      <a href="book.html?t=car"><div class="gic" style="background:#eb6325"><img src="../assets/icons/3d-taxi.png" alt=""></div><p>打车</p></a>
+      <a href="book.html?t=express"><div class="gic" style="background:#8b5e34"><img src="../assets/icons/3d-box.png" alt=""></div><p>寄快递</p></a>
+      <a href="book.html?t=run"><div class="gic" style="background:#c47f17"><img src="../assets/icons/3d-scooter.png" alt=""></div><p>跑腿配送</p></a>
+      <a href="svc.html?c=travel"><div class="gic" style="background:#e8442e"><img src="../assets/icons/3d-pump.png" alt=""></div><p>加油充电</p></a>
+      <a href="svc.html?c=life"><div class="gic" style="background:#0c9b4a"><img src="../assets/icons/3d-spray.png" alt=""></div><p>家政洗护</p></a>
+      <a href="svc.html"><div class="gic" style="background:#4a5a6a"><img src="../assets/icons/3d-grid.png" alt=""></div><p>全部服务</p></a>
+    </div>
+
+    <div class="notice fu">
+      <span class="lb"><svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><use href="#x-mega"/></svg>今日优惠</span>
+      <div class="roll"><div class="roll-in">电影票 7 折起 · 视频会员直冲 4 折起 · 蛋糕鲜花 5 折起同城达 · 加油 9 折起 · 体检 3 折起 · 大牌点餐到店核销单单划算　｜　电影票 7 折起 · 视频会员直冲 4 折起 · 蛋糕鲜花 5 折起同城达 · 加油 9 折起 · 体检 3 折起 · 大牌点餐到店核销单单划算　｜　</div></div>
+    </div>
+
+    <div class="now fu">
+      <div class="aisle-hd"><h3>此刻推荐</h3><a href="deals.html">查看全部 →</a></div>
+      <div class="now-bd" id="nowBd"></div>
+    </div>
+
+    <div class="aisle fu">
+      <div class="aisle-hd"><h3>大牌吃喝 · 到店核销</h3><a href="brand.html">查看全部 →</a></div>
+      <div class="brow-hd"><b>大牌点餐</b><span>到店自取 · 外卖到家</span></div>
+      <div class="bwall">
+        <a class="bfeat" href="brand.html?b=kfc"><div class="bf-tx"><img class="bf-lg" src="../assets/brands/kfc.png" alt="肯德基"><p>到店核销 · 外卖到家</p><span class="bf-go">去点餐 ›</span></div><img src="../assets/icons/food-chicken.png" alt=""></a>
+        <a class="bfeat" href="brand.html?b=mcd"><div class="bf-tx"><img class="bf-lg" src="../assets/brands/mcd.png" alt="麦当劳"><p>到店自提 · 外送到家</p><span class="bf-go">去点餐 ›</span></div><img src="../assets/icons/3d-burger.png" alt=""></a>
+      </div>
+      <div class="blogo"><a class="bl" href="brand.html?b=luckin"><img src="../assets/brands/luckin.png" alt="瑞幸咖啡"><span><b>瑞幸咖啡</b><p>日常轻享咖</p></span></a><a class="bl" href="brand.html?b=cotti"><img src="../assets/brands/cotti.png" alt="库迪咖啡"><span><b>库迪咖啡</b><p>平价好咖啡</p></span></a><a class="bl" href="brand.html?b=starbucks"><img src="../assets/brands/starbucks.png" alt="星巴克"><span><b>星巴克</b><p>星享好咖啡</p></span></a><a class="bl" href="brand.html?b=heytea"><img src="../assets/brands/heytea.png" alt="喜茶"><span><b>喜茶</b><p>灵感之茶</p></span></a><a class="bl" href="brand.html?b=nayuki"><img src="../assets/brands/nayuki.png" alt="奈雪的茶"><span><b>奈雪的茶</b><p>鲜茶伴时光</p></span></a><a class="bl" href="brand.html?b=chagee"><img src="../assets/brands/chagee.png" alt="霸王茶姬"><span><b>霸王茶姬</b><p>原叶鲜奶茶</p></span></a><a class="bl" href="brand.html?b=pizzahut"><img src="../assets/brands/pizzahut.png" alt="必胜客"><span><b>必胜客</b><p>披萨现烤</p></span></a><a class="bl" href="brand.html?b=tastien"><img src="../assets/brands/tastien.png" alt="塔斯汀"><span><b>塔斯汀</b><p>中国汉堡</p></span></a><a class="bl" href="brand.html?b=dicos"><img src="../assets/brands/dicos.png" alt="德克士"><span><b>德克士</b><p>脆皮炸鸡</p></span></a><a class="bl" href="brand.html?b=pagoda"><img src="../assets/brands/pagoda.png" alt="百果园"><span><b>百果园</b><p>新鲜水果</p></span></a></div>
+      <div class="brow-hd" style="margin-top:12px"><b>买菜商超</b><span>小时达 · 展码付款</span></div>
+      <div class="blogo"><a class="bl" href="list.html?c=grocery"><img src="../assets/brands/dingdong.png" alt="叮咚买菜"><span><b>叮咚买菜</b><p>29 分钟达</p></span></a><a class="bl" href="list.html?c=super"><img src="../assets/brands/rtmart.png" alt="大润发"><span><b>大润发</b><p>超市小时达</p></span></a><a class="bl" href="list.html?c=sams"><img src="../assets/brands/sams.png" alt="山姆会员店"><span><b>山姆会员店</b><p>会员甄选</p></span></a><a class="bl" href="list.html?c=tmall"><img src="../assets/brands/tmall.png" alt="天猫超市"><span><b>天猫超市</b><p>正品次日达</p></span></a><a class="bl" href="list.html?c=gq"><img src="../assets/brands/guoquan.png" alt="锅圈食汇"><span><b>锅圈食汇</b><p>火锅烧烤</p></span></a><a class="bl" href="list.html?c=bestore"><img src="../assets/brands/bestore.png" alt="良品铺子"><span><b>良品铺子</b><p>高端零食</p></span></a><a class="bl" href="list.html?c=cake"><img src="../assets/icons/3d-cake.png" alt="生日蛋糕"><span><b>生日蛋糕</b><p>同城速达</p></span></a></div>
+    </div>
+
+    <div class="aisle fu">
+      <div class="aisle-hd"><h3>日常生活服务</h3><a href="svc.html?c=life">查看全部 →</a></div>
+      <div class="svc">
+        <a href="recharge.html"><b>话费充值</b><p>实时到账</p><img class="sico" src="../assets/icons/3d-phonepay.png" alt=""></a>
+        <a href="book.html?t=express"><b>寄快递</b><p>5 元起</p><img class="sico" src="../assets/icons/3d-box.png" alt=""></a>
+        <a href="book.html?t=run"><b>跑腿小时达</b><p>5 折起</p><img class="sico" src="../assets/icons/3d-scooter.png" alt=""></a>
+        <a href="book.html?t=wash"><b>衣服干洗</b><p>顺丰取送</p><img class="sico" src="../assets/icons/3d-shirt.png" alt=""></a>
+        <a href="book.html?t=appliance"><b>家电清洗</b><p>5 折起</p><img class="sico" src="../assets/icons/3d-washer.png" alt=""></a>
+        <a href="book.html?t=clean"><b>保洁保姆</b><p>预约上门</p><img class="sico" src="../assets/icons/3d-house.png" alt=""></a>
+        <a href="book.html?t=repair"><b>家庭维修</b><p>预约上门</p><img class="sico" src="../assets/icons/3d-tools.png" alt=""></a>
+        <a href="book.html?t=lux"><b>奢侈品养护</b><p>皮具保养</p><img class="sico" src="../assets/icons/3d-bag.png" alt=""></a>
+      </div>
+    </div>
+
+    <div class="aisle fu">
+      <div class="aisle-hd"><h3>出行与车主</h3><a href="svc.html?c=travel">查看全部 →</a></div>
+      <div class="go">
+      <a class="go-c" href="book.html?t=car"><div class="go-tx"><b>特惠打车</b><p>实时叫车</p><span class="go-pill">GO ›</span></div><img class="goi" src="../assets/icons/3d-taxi.png" alt=""></a>
+      <a class="go-c" href="book.html?t=train"><div class="go-tx"><b>火车票</b><p>同步 12306</p><span class="go-pill">GO ›</span></div><img class="goi" src="../assets/icons/3d-train.png" alt=""></a>
+      <a class="go-c" href="book.html?t=flight"><div class="go-tx"><b>国内机票</b><p>航信数据</p><span class="go-pill">GO ›</span></div><img class="goi" src="../assets/icons/3d-plane.png" alt=""></a>
+      <a class="go-c" href="deals.html?c=hotel"><div class="go-tx"><b>酒店预订</b><p>实时出单</p><span class="go-pill">GO ›</span></div><img class="goi" src="../assets/icons/3d-hotel.png" alt=""></a>
+      <a class="go-c" href="book.html?t=repair"><div class="go-tx"><b>洗车美容</b><p>4 折起</p><span class="go-pill">GO ›</span></div><img class="goi" src="../assets/icons/3d-carwash.png" alt=""></a>
+      <a class="go-c" href="book.html?t=ev"><div class="go-tx"><b>新能源充电</b><p>服务费 8 折起</p><span class="go-pill">GO ›</span></div><img class="goi" src="../assets/icons/3d-ev.png" alt=""></a>
+      <a class="go-c" href="book.html?t=fuel"><div class="go-tx"><b>加油</b><p>9 折起</p><span class="go-pill">GO ›</span></div><img class="goi" src="../assets/icons/3d-pump.png" alt=""></a>
+      <a class="go-c" href="book.html?t=drive"><div class="go-tx"><b>代驾</b><p>5 折起</p><span class="go-pill">GO ›</span></div><img class="goi" src="../assets/icons/3d-steer.png" alt=""></a>
+      </div>
+    </div>
+
+    <div class="aisle fu">
+      <div class="aisle-hd"><h3>休闲娱乐与旅行</h3><a href="deals.html?c=film">查看全部 →</a></div>
+      <div class="frail">
+      <a class="fc" href="deals.html?c=film"><img class="fp" src="../assets/img/s-film.jpg" alt=""><div class="fx"><span class="ftag">热映</span><b>电影票</b><p>全国影院 · 出票约 8 分钟</p><span class="fbuy">选座购票 ›</span></div></a>
+      <a class="fc" href="deals.html?c=film"><img class="fp" src="../assets/img/s-live.jpg" alt=""><div class="fx"><span class="ftag">必看</span><b>演出票务</b><p>演唱会 · 话剧 · 脱口秀</p><span class="fbuy">抢购票 ›</span></div></a>
+      <a class="fc" href="deals.html?c=tour"><img class="fp" src="../assets/img/s-scene.jpg" alt=""><div class="fx"><span class="ftag">特惠</span><b>景区门票</b><p>全国景区 · 1-3 分钟出票</p><span class="fbuy">在线预约 ›</span></div></a>
+      <a class="fc vip" href="recharge.html"><div class="fxv"><b>会员直冲</b><p>视频 · 音频 · 各大平台</p><span class="fbuy2">4 折起 ›</span></div></a>
+      </div>
+    </div>
+
+    <div class="aisle fu">
+      <div class="aisle-hd"><h3>健康与礼赠</h3><a href="svc.html?c=health">查看全部 →</a></div>
+      <div class="fun">
+      <a class="fun-c" href="list.html?c=fresh"><img src="../assets/img/s-flower.jpg" alt=""><div class="fov"></div><div class="ftx"><b>鲜花速递</b><p>生日 · 节日 · 商务花篮</p></div><span class="fdis">同城 1-3 小时</span></a>
+      <a class="fun-c" href="deals.html?c=food"><img src="../assets/img/s-cake.jpg" alt=""><div class="fov"></div><div class="ftx"><b>蛋糕配送</b><p>品牌蛋糕 · 同城速达</p></div><span class="fdis">5 折起</span></a>
+      </div>
+      <div class="g-sq" style="margin-top:10px">
+        <a href="book.html?t=dental"><img class="gqi" src="../assets/icons/3d-tooth.png" alt=""><span><b>洗牙洁牙</b><p>5 折起</p></span></a>
+        <a href="book.html?t=checkup"><img class="gqi" src="../assets/icons/3d-med.png" alt=""><span><b>身体体检</b><p>3 折起</p></span></a>
+        <a href="list.html?c=fresh"><img class="gqi" src="../assets/icons/3d-rose.png" alt=""><span><b>居家鲜花</b><p>云南直发</p></span></a>
+        <a href="list.html?c=fresh"><img class="gqi" src="../assets/icons/3d-fbasket.png" alt=""><span><b>商务花篮</b><p>开业乔迁</p></span></a>
+      </div>
+    </div>
+
+    <div class="aisle fu">
+      <div class="aisle-hd"><h3>为你定制 · 常用与复购</h3><a href="svc.html">查看全部 →</a></div>
+      <div class="reb">
+      <div class="reb-c"><div class="rb"><div class="ric" style="background:#232d91"><img src="../assets/icons/3d-cup.png" alt=""></div><div class="rt"><b>瑞幸 · 生椰拿铁</b><p>上周买过 2 次</p></div></div><button data-t="大牌点餐（接口 6）原单一键复购">一键复购</button></div>
+      <div class="reb-c"><div class="rb"><div class="ric" style="background:#1a6fc4"><img src="../assets/icons/3d-phonepay.png" alt=""></div><div class="rt"><b>话费 100 元</b><p>上月 10 号充过</p></div></div><button data-t="话费直冲（接口 10）一键复购">一键复购</button></div>
+      <div class="reb-c"><div class="rb"><div class="ric" style="background:#e4002b"><img src="../assets/icons/3d-film.png" alt=""></div><div class="rt"><b>万达影城 2 张</b><p>常去影院</p></div></div><button data-t="电影票（接口 1）按常去影院快速下单">一键复购</button></div>
+      </div>
+      <div class="nearby"><a href="book.html?t=ev">附近充电桩</a><a href="book.html?t=fuel">附近加油站</a><a href="svc.html?c=life">附近洗车店</a><a href="svc.html?c=health">24h 药店</a><a href="deals.html?c=film">附近影院</a><a href="list.html?c=grocery">自提点</a></div>
+    </div>
+
+    <div class="wf fu">
+      <div class="wf-hd"><h3><svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><use href="#x-flash"/></svg>精选好物 · 边买边省</h3></div>
+      <div class="wf-bd">
+        <div class="wf-col" id="wfA"></div>
+        <div class="wf-col" id="wfB"></div>
+      </div>
+      <div class="wf-load" id="wfLoad" style="display:none"><i></i>正在补货…</div>
+      <div class="wf-end" id="wfEnd" style="display:none">到底啦 · 更多好物去「商城」逛逛</div>
+    </div>
+
+    <a class="allsvc fu" href="svc.html">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor" style="color:var(--accent)"><use href="#x-grid4"/></svg>全部服务 · 32 项生活能力
+    </a>
+    <div class="foot-note">— 乐趣生活 · 数字生活供应链总入口 —</div>
+    <div style="height:10px"></div>
+  </div>
+  <a class="maifab" href="mai.html" data-t="小满AI对话页：语音/文字说出需求，一句话调用 32 项供应链能力下单（全局悬浮入口，可拖动）"><img src="../assets/icons/mai.png" alt="小满"><em>小满</em></a>
+  <div class="tfab" id="tfab">
+    <svg id="tfMoon" width="17" height="17" viewBox="0 0 24 24" fill="#f7c400"><use href="#x-moon"/></svg>
+    <svg id="tfSun" width="18" height="18" viewBox="0 0 24 24" fill="#f7c400" style="display:none"><use href="#x-sun"/></svg>
+  </div>
+  <div class="toast" id="toast"></div>
+<div class="tabbar">
+    <a class="tab on" href="index.html"><svg width="23" height="23" viewBox="0 0 24 24" fill="currentColor"><use href="#f-home"/></svg>首页</a>
+    <a class="tab" href="mall.html"><svg width="23" height="23" viewBox="0 0 24 24" fill="currentColor"><use href="#f-shop"/></svg>商城</a>
+    <a class="tab" href="quan.html"><svg width="23" height="23" viewBox="0 0 24 24" fill="currentColor"><use href="#f-chat"/></svg>生活圈</a>
+    <a class="tab" href="cart.html"><svg width="23" height="23" viewBox="0 0 24 24" fill="currentColor"><use href="#f-cart"/></svg>购物车<span class="bdg">3</span></a>
+    <a class="tab" href="me.html"><svg width="23" height="23" viewBox="0 0 24 24" fill="currentColor"><use href="#f-me"/></svg>我的</a>
+  </div>
+</div>
+
+<script>
+  var app=document.getElementById('app');
+  if(location.search.indexOf('theme=dark')>-1){app.classList.add('no-tr');app.setAttribute('data-theme','dark');requestAnimationFrame(function(){requestAnimationFrame(function(){app.classList.remove('no-tr');});});}
+  document.querySelectorAll('.tabbar a').forEach(function(a){if(app.getAttribute('data-theme')==='dark')a.href+=(a.href.indexOf('?')>-1?'&':'?')+'theme=dark';});
+  if(location.search.indexOf('snap=1')>-1)document.querySelectorAll('.fu').forEach(function(el){el.style.transition='none';el.classList.add('in');});
+  var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target);}});},{root:document.querySelector('.scroll'),threshold:.06});
+  document.querySelectorAll('.fu').forEach(function(el){io.observe(el);});
+  setTimeout(function(){var lim=document.querySelector('.scroll').clientHeight*1.6;document.querySelectorAll('.fu').forEach(function(el){if(el.offsetTop<lim)el.classList.add('in');});},120);
+  // ===== 此刻推荐：按时间段动态切换 =====
+  var NOW_SETS={
+    morning:{lb:'早安 · 吃点热乎的',items:[['3d-burger','大牌早餐','肯德基/麦当劳到店核销'],['3d-cup','咖啡提神','瑞幸/库迪就近下单'],['3d-taxi','打车上班','特惠打车实时叫车']]},
+    noon:{lb:'中午好 · 干饭时间',items:[['3d-burger','大牌点餐','12 大品牌到店/外卖'],['3d-cup','奶茶饮品','喜茶/奈雪/霸王茶姬'],['3d-scooter','跑腿代买','小时达帮买帮送']]},
+    tea:{lb:'下午茶 · 来点甜的',items:[['3d-cake','蛋糕甜品','5 折起 · 同城 1-3 小时'],['3d-cup','咖啡饮品','星巴克/瑞幸/库迪'],['3d-film','订张晚场票','电影票 7 折起']]},
+    dusk:{lb:'晚上好 · 买菜做饭',items:[['3d-basket','买菜到家','叮咚小时达'],['3d-cart','商超购物','大润发/山姆/天猫超市'],['3d-hotpot','火锅烧烤','锅圈食汇 95 折展码']]},
+    night:{lb:'夜深了 · 放松一下',items:[['3d-film','电影演出','7 折起 · 全场次覆盖'],['3d-play','会员直冲','视频音频 4 折起'],['3d-scooter','夜宵跑腿','小时达帮送']]},
+    weekend:{lb:'周末 · 出去转转',items:[['3d-mnt','景区门票','全国景区 1-3 分钟出票'],['3d-mic','演出亲子','演唱会/亲子剧/脱口秀'],['3d-hotel','酒店预订','就近推荐实时出单']]}
+  };
+  var hr=new Date().getHours(),day=new Date().getDay();
+  var key=(day===0||day===6)?'weekend':(hr>=5&&hr<10?'morning':hr<14?'noon':hr<17?'tea':hr<21?'dusk':'night');
+  var ns=NOW_SETS[key];
+  document.querySelector('#nowBd').previousElementSibling.querySelector('h3').lastChild.textContent=ns.lb;
+  document.getElementById('nowBd').innerHTML=ns.items.map(function(it){
+    return '<a class="now-c" href="#" data-t="'+it[1]+'：'+it[2]+'"><div class="nic"><img src="../assets/icons/'+it[0]+'.png" alt=""></div><b>'+it[1]+'</b><p>'+it[2].split('（')[0]+'</p></a>';
+  }).join('');
+  // ===== 精选好物：无限下拉瀑布流 =====
+  var wfPool=[{"img": "p-eggs", "nm": "散养土鸡蛋 30 枚", "pr": "9", "ps": ".9", "op": "15.8", "rk": "回购榜 · 第 1 名", "sl": "散养 180 天，蛋香浓郁的安心蛋", "tg": ["可溯源", "今日现捡"]}, {"img": "p-prawn", "nm": "鲜活基围虾 500g", "pr": "19", "ps": ".9", "op": "32", "rk": "海鲜榜 · 第 1 名", "sl": "活虾现捕现发，肉质 Q 弹鲜甜", "tg": ["鲜活直达", "坏单包赔"]}, {"img": "p-milk", "nm": "牧场鲜牛奶 950ml", "pr": "9", "ps": ".9", "op": "13.5", "rk": "早餐榜 · 第 2 名", "sl": "72 小时牧场直达，浓到挂壁", "tg": ["冷链直送", "今日到"]}, {"img": "p-berry", "nm": "奶油草莓 1 斤 · 今早现摘", "pr": "15", "ps": ".9", "op": "22", "rk": "水果榜 · 第 1 名", "sl": "凌晨现摘，一口爆汁的奶香", "tg": ["现摘", "坏果包赔"]}, {"img": "p-pork", "nm": "精品五花肉 500g · 现切", "pr": "13", "ps": ".9", "op": "17.9", "rk": "肉禽榜 · 第 1 名", "sl": "三层肥瘦，红烧回锅都绝", "tg": ["现切", "冷链配送"]}, {"img": "p-bread", "nm": "手工鲜奶吐司 · 16 点出炉", "pr": "6", "ps": ".9", "op": "9.9", "rk": "烘焙榜 · 第 3 名", "sl": "不加一滴水，奶香会拉丝", "tg": ["今日现烤"]}, {"img": "p-tomato", "nm": "沙瓤番茄 3 斤 · 自然熟", "pr": "6", "ps": ".9", "op": "9.9", "rk": "蔬菜榜 · 第 2 名", "sl": "自然熟沙瓤，一炒就出红汤", "tg": ["自然熟", "产地直发"]}, {"img": "p-apple", "nm": "红富士苹果 3 斤", "pr": "11", "ps": ".9", "op": "16.9", "rk": "水果榜 · 第 3 名", "sl": "脆甜多汁，切开看得见糖心", "tg": ["坏果包赔"]}, {"img": "p-rice", "nm": "五常新大米 10 斤", "pr": "29", "ps": ".9", "op": "39.9", "rk": "粮油榜 · 第 1 名", "sl": "新米上市，剩饭都带回甘", "tg": ["新米", "产地直发"]}, {"img": "p-banana", "nm": "云南高山香蕉 3 斤", "pr": "8", "ps": ".9", "op": "12.9", "rk": "水果榜 · 第 5 名", "sl": "树上熟采摘，软糯不涩口", "tg": ["树上熟"]}, {"img": "p-broc", "nm": "有机西兰花 400g", "pr": "4", "ps": ".9", "op": "6.5", "rk": "蔬菜榜 · 第 4 名", "sl": "凌晨现摘，脆嫩自带清甜", "tg": ["有机认证", "现摘"]}, {"img": "p-greens", "nm": "本地小青菜 500g", "pr": "2", "ps": ".8", "op": "4.5", "rk": "蔬菜榜 · 第 6 名", "sl": "本地大棚当天采，下锅还脆", "tg": ["本地直供"]}, {"img": "n-skewer", "nm": "夜市羊肉串 10 串 · 现烤", "pr": "15", "ps": ".9", "op": "20", "rk": "夜宵榜 · 第 1 名", "sl": "现烤现送，肥瘦相间冒油花", "tg": ["夜市专供", "现烤"]}, {"img": "n-crayfish", "nm": "麻辣小龙虾 2 斤 · 夜宵", "pr": "39", "ps": ".9", "op": "58", "rk": "夜宵榜 · 第 2 名", "sl": "麻辣入味，只只虾黄饱满", "tg": ["活虾现烧", "夜宵"]}, {"img": "n-melon", "nm": "麒麟西瓜 半个 · 包甜", "pr": "12", "ps": ".9", "op": "16.9", "rk": "水果榜 · 第 2 名", "sl": "包甜包沙，不甜直接退", "tg": ["包甜", "不甜包退"]}, {"img": "p-group", "nm": "邻里团购蔬菜箱 8 斤", "pr": "19", "ps": ".9", "op": "28", "rk": "团购榜 · 第 1 名", "sl": "一箱配齐三天菜，团长价", "tg": ["团购价", "次日达"]}];
+  var wfA=document.getElementById('wfA'),wfB=document.getElementById('wfB');
+  var wfLoad=document.getElementById('wfLoad'),wfEnd=document.getElementById('wfEnd');
+  var wfIdx=0,wfLoading=false,wfDone=false;
+  var wfH=[128,104,142,116];
+  function wfItem(it,h){
+    var tg=it.tg.map(function(t){return '<i>'+t+'</i>';}).join('');
+    var q=app.getAttribute('data-theme')==='dark'?'?theme=dark':'';
+    return '<a class="wf-it" href="detail.html'+q+'"><div class="wf-imgbox"><img loading="lazy" src="../assets/img/'+it.img+'.jpg" style="height:'+h+'px" alt="">'
+      +'<span class="rk">'+it.rk+'</span></div>'
+      +'<div class="pd-bd"><div class="pd-nm">'+it.nm+'</div>'
+      +'<div class="wf-sl">'+it.sl+'</div>'
+      +'<div class="wf-tags">'+tg+'</div>'
+      +'<div class="pd-row"><div class="pr">\u00a5<b>'+it.pr+'</b><sup>'+it.ps+'</sup><s>\u00a5'+it.op+'</s></div></div>'
+      +'<div class="wf-vou"><svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><use href="#x-tkt2"/></svg>最高可得 '+(it.pr+it.ps)+' 元代金券</div></div></a>';
+  }
+  function wfMore(init){
+    if(wfLoading||wfDone) return;
+    wfLoading=true; wfLoad.style.display='flex';
+    setTimeout(function(){
+      var n=init?8:6;
+      for(var k=0;k<n;k++){
+        var it=wfPool[wfIdx%wfPool.length];
+        (wfIdx%2===0?wfA:wfB).insertAdjacentHTML('beforeend',wfItem(it,wfH[wfIdx%4]));
+        wfIdx++;
+      }
+      if(wfIdx>=48){wfDone=true;wfLoad.style.display='none';wfEnd.style.display='block';}
+      wfLoading=false;
+    },init?0:300);
+  }
+  wfMore(true);
+  var scEl=document.querySelector('.scroll');
+  scEl.addEventListener('scroll',function(){
+    if(scEl.scrollTop+scEl.clientHeight>scEl.scrollHeight-640) wfMore(false);
+  });
+  // ===== 夜间自动深色（未手动指定主题时） =====
+  if(location.search.indexOf('theme=')===-1&&(hr>=19||hr<6)){app.classList.add('no-tr');app.setAttribute('data-theme','dark');requestAnimationFrame(function(){requestAnimationFrame(function(){app.classList.remove('no-tr');});});}
+  // ===== 主题浮钮 =====
+  var tfab=document.getElementById('tfab');
+  function syncFab(){var d=app.getAttribute('data-theme')==='dark';document.getElementById('tfMoon').style.display=d?'none':'';document.getElementById('tfSun').style.display=d?'':'none';
+    document.querySelectorAll('.tabbar a,.wf-it').forEach(function(a){a.href=a.href.split('?')[0]+(d?'?theme=dark':'');});}
+  tfab.addEventListener('click',function(){app.setAttribute('data-theme',app.getAttribute('data-theme')==='dark'?'light':'dark');syncFab();});
+  syncFab();
+  // ===== 轻提示（演示点击去向） =====
+  var toast=document.getElementById('toast'),tt;
+  document.addEventListener('click',function(e){
+    var el=e.target.closest('[data-t]');
+    if(!el) return;
+    e.preventDefault();
+    toast.textContent='演示版 → '+el.getAttribute('data-t');
+    toast.classList.add('show');
+    clearTimeout(tt); tt=setTimeout(function(){toast.classList.remove('show');},2400);
+  });
+</script>
+<script>
+(function(){
+  var box=document.querySelector('.bans');if(!box)return;
+  var sl=box.querySelectorAll('.pslide'),dots=box.querySelectorAll('.pdots i');
+  var sc=document.querySelector('.scroll');var i=0,n=sl.length;
+  function go(k){i=(k+n)%n;for(var j=0;j<n;j++){sl[j].classList.toggle('on',j===i);if(dots[j])dots[j].classList.toggle('on',j===i)}var t=sl[i].getAttribute('data-tint');if(t&&sc)sc.style.setProperty('--tint',t);}
+  if(location.search.indexOf('snap=1')<0)setInterval(function(){go(i+1)},3800);
+})();
+</script>
+</body>
+</html>

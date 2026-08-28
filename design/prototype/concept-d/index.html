@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>概念 D · 鲜绿市集 v2 — 乐趣生活</title>
+<style>
+  :root{
+    --green:#009146; --green-dk:#00703a; --red:#f03749; --orange:#eb6325;
+    --yel:#fee600; --blue:#0756a5; --cream:#f8ebda; --ink:#141313;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  body{background:#e9dcc4;font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;color:var(--ink);display:flex;flex-direction:column;align-items:center;padding:36px 16px 60px}
+  .cap{margin-bottom:18px;text-align:center}
+  .cap h1{font-size:22px;letter-spacing:.14em;font-weight:900}
+  .cap p{font-size:12px;margin-top:6px;letter-spacing:.12em;opacity:.55}
+  .phone{width:375px;height:760px;background:var(--cream);border-radius:44px;position:relative;overflow:hidden;display:flex;flex-direction:column;flex:none;box-shadow:0 30px 80px -20px rgba(20,19,19,.4),0 0 0 10px #191714}
+  .scroll{flex:1;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:none}
+  .scroll::-webkit-scrollbar{display:none}
+  /* ---------- 小程序绿色头部 ---------- */
+  .top{background:linear-gradient(160deg,var(--green) 0%,var(--green-dk) 100%);padding:10px 18px 62px;position:relative;overflow:hidden}
+  .top::after{content:"";position:absolute;right:-46px;top:-46px;width:150px;height:150px;border-radius:50%;background:rgba(254,230,0,.18)}
+  .statusbar{display:flex;justify-content:space-between;align-items:center;font-size:13px;font-weight:700;color:#fff;padding:4px 10px 0}
+  /* 微信胶囊 */
+  .navrow{display:flex;justify-content:space-between;align-items:center;margin-top:9px;position:relative;z-index:2}
+  .loc{display:flex;align-items:center;gap:5px;color:#fff;font-size:14px;font-weight:800}
+  .capsule{
+    width:87px;height:32px;flex:none;border-radius:16px;background:rgba(255,255,255,.94);
+    display:flex;align-items:center;box-shadow:0 2px 8px rgba(0,0,0,.15);
+  }
+  .capsule .cell{flex:1;display:grid;place-items:center;height:100%}
+  .capsule .cell:first-child{border-right:1px solid rgba(20,19,19,.12)}
+  .wm{margin-top:12px;color:#fff;line-height:1.05;position:relative;z-index:2}
+  .wm b{font-size:27px;font-weight:900;letter-spacing:.02em}
+  .wm i{display:block;font-style:normal;font-size:11px;font-weight:700;opacity:.85;letter-spacing:.24em;margin-top:5px}
+  .search{margin-top:13px;height:46px;background:#fff;border-radius:999px;display:flex;align-items:center;gap:9px;padding:0 7px 0 16px;font-size:13.5px;color:rgba(20,19,19,.5);position:relative;z-index:2;box-shadow:0 8px 20px rgba(0,0,0,.18)}
+  .search .go{
+    margin-left:auto;color:#fff;font-size:13px;font-weight:900;border-radius:999px;padding:9px 20px;
+    background:linear-gradient(135deg,#ff5d3a,var(--red));
+    box-shadow:0 4px 10px rgba(240,55,73,.45),inset 0 1px 0 rgba(255,255,255,.35);
+  }
+  /* ---------- 主图促销 ---------- */
+  .hero{margin:-44px 14px 0;border-radius:20px;overflow:hidden;position:relative;z-index:3;box-shadow:0 16px 34px rgba(20,19,19,.25)}
+  .hero img{width:100%;height:188px;object-fit:cover;display:block}
+  .hero .ov{position:absolute;inset:0;background:linear-gradient(100deg,rgba(20,19,19,.62) 8%,transparent 62%)}
+  .hero .tx{position:absolute;left:16px;top:18px;color:#fff}
+  .hero .tx .k{display:inline-block;background:var(--yel);color:var(--ink);font-size:11px;font-weight:900;padding:4px 9px;border-radius:6px;letter-spacing:.08em}
+  .hero .tx h2{font-size:26px;font-weight:900;margin-top:8px;line-height:1.3;text-shadow:0 2px 10px rgba(0,0,0,.35)}
+  .hero .tx p{font-size:12px;font-weight:700;opacity:.92;margin-top:4px}
+  .burst{position:absolute;right:14px;bottom:14px;width:78px;height:78px;border-radius:50%;background:radial-gradient(circle at 32% 28%,#ff6a5e,var(--red));color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;font-weight:900;transform:rotate(-8deg);box-shadow:0 8px 18px rgba(240,55,73,.5),inset 0 2px 0 rgba(255,255,255,.3);animation:pop 2.6s ease-in-out infinite}
+  @keyframes pop{0%,100%{transform:rotate(-8deg) scale(1)}50%{transform:rotate(-8deg) scale(1.07)}}
+  .burst small{font-size:10px}.burst b{font-size:19px}
+  /* ---------- 跑马灯 ---------- */
+  .mq{background:var(--yel);border-top:2px solid var(--ink);border-bottom:2px solid var(--ink);overflow:hidden;white-space:nowrap;height:36px;display:flex;align-items:center;margin-top:14px}
+  .mq-in{display:inline-block;animation:mq 14s linear infinite;font-size:13px;font-weight:900;letter-spacing:.05em;color:var(--ink)}
+  @keyframes mq{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+  /* ---------- 秒杀 ---------- */
+  .sk{background:linear-gradient(150deg,#ff4d3d,var(--red));margin:14px 14px 0;border-radius:20px;padding:15px 14px 14px;color:#fff;position:relative;overflow:hidden}
+  .sk::before{content:"";position:absolute;right:-30px;top:-30px;width:110px;height:110px;border-radius:50%;background:rgba(254,230,0,.22)}
+  .sk-hd{display:flex;align-items:center;justify-content:space-between;position:relative}
+  .sk-hd h3{font-size:19px;font-weight:900;display:flex;align-items:center;gap:7px}
+  .cnt{display:flex;align-items:center;gap:4px;font-size:11px;font-weight:800}
+  .cnt b{background:var(--ink);color:var(--yel);border-radius:6px;padding:3px 6px;font-size:12px}
+  .sk-rail{display:flex;gap:10px;margin-top:12px;overflow-x:auto;scrollbar-width:none;position:relative}
+  .sk-rail::-webkit-scrollbar{display:none}
+  .sk-card{flex:none;width:118px;background:#fff;border-radius:14px;overflow:hidden;color:var(--ink)}
+  .sk-card img{width:100%;height:86px;object-fit:cover;display:block}
+  .sk-bd{padding:8px 9px 10px}
+  .sk-nm{font-size:12px;font-weight:800;line-height:1.35;height:32px;overflow:hidden}
+  .sk-pr{margin-top:5px;display:flex;align-items:baseline;gap:5px}
+  .sk-pr b{color:var(--red);font-size:17px;font-weight:900}
+  .sk-pr s{font-size:10.5px;color:rgba(20,19,19,.4)}
+  .sk-bar{height:14px;border-radius:7px;background:#ffe1e4;margin-top:7px;position:relative;overflow:hidden}
+  .sk-bar i{position:absolute;inset:0;right:auto;background:linear-gradient(90deg,var(--orange),var(--red));border-radius:7px}
+  .sk-bar span{position:absolute;inset:0;text-align:center;font-size:9px;font-weight:900;color:#fff;line-height:14px;text-shadow:0 1px 2px rgba(0,0,0,.3)}
+  /* ---------- 分类：实拍徽章 + 双色图标 ---------- */
+  .cats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px 8px;padding:16px 14px 2px}
+  .cat{display:flex;flex-direction:column;align-items:center;gap:7px;cursor:pointer;transition:transform .15s}
+  .cat:active{transform:scale(.92)}
+  .badge{width:58px;height:58px;border-radius:20px;overflow:hidden;position:relative;box-shadow:0 6px 14px rgba(20,19,19,.14)}
+  .badge img{width:100%;height:100%;object-fit:cover;display:block}
+  .badge.duo{display:grid;place-items:center}
+  .cat span{font-size:12px;font-weight:800}
+  /* ---------- 分区货架 ---------- */
+  .aisle{margin:16px 14px 0;border-radius:20px;overflow:hidden}
+  .aisle-hd{display:flex;align-items:center;justify-content:space-between;padding:13px 15px;color:#fff}
+  .aisle-hd h3{font-size:18px;font-weight:900;display:flex;align-items:center;gap:8px}
+  .aisle-hd h3::before{content:"";width:8px;height:18px;border-radius:4px;background:var(--yel)}
+  .aisle-hd a{font-size:12px;font-weight:800;color:#fff;text-decoration:none;opacity:.9}
+  .aisle-bd{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:0 12px 13px}
+  .pd{background:#fff;border-radius:16px;overflow:hidden}
+  .pd img{width:100%;height:108px;object-fit:cover;display:block}
+  .pd-bd{padding:9px 11px 11px}
+  .pd-nm{font-size:13.5px;font-weight:800;line-height:1.4}
+  .pd-tg{display:inline-block;font-size:10px;font-weight:800;border-radius:5px;padding:2px 6px;margin-top:5px}
+  .pd-row{display:flex;align-items:flex-end;justify-content:space-between;margin-top:7px}
+  .pr{color:var(--red);font-weight:900;font-size:12px}
+  .pr b{font-size:21px;letter-spacing:-.02em}
+  .pr sup{font-size:11px;font-weight:900}
+  .pr s{color:rgba(20,19,19,.38);font-size:10.5px;font-weight:600;margin-left:4px}
+  .pbtn{
+    width:36px;height:36px;border-radius:50%;border:none;cursor:pointer;display:grid;place-items:center;
+    background:linear-gradient(145deg,#19b26b,var(--green));
+    box-shadow:0 6px 13px rgba(0,145,70,.4),inset 0 1.5px 0 rgba(255,255,255,.35);
+    transition:transform .12s;
+  }
+  .pbtn:active{transform:scale(.86)}
+  /* ---------- 团购 ---------- */
+  .tg{margin:16px 14px 0;background:#fff;border-radius:20px;padding:15px;box-shadow:0 10px 24px rgba(20,19,19,.08)}
+  .tg-hd{display:flex;justify-content:space-between;align-items:center}
+  .tg-hd h3{font-size:17px;font-weight:900}
+  .tg-hd em{font-style:normal;background:linear-gradient(135deg,#ff8a3d,var(--orange));color:#fff;font-size:11px;font-weight:900;border-radius:8px;padding:5px 10px;box-shadow:0 4px 10px rgba(235,99,37,.4)}
+  .tg-it{display:flex;gap:12px;margin-top:12px;align-items:center}
+  .tg-it img{width:72px;height:72px;border-radius:14px;object-fit:cover}
+  .tg-it .t{flex:1}
+  .tg-it .t b{font-size:14.5px;font-weight:800}
+  .tg-it .t p{font-size:11.5px;color:rgba(20,19,19,.55);font-weight:600;margin-top:3px}
+  .tg-go{
+    background:linear-gradient(135deg,#ff5d3a,var(--red));color:#fff;border:none;border-radius:999px;
+    font-size:13px;font-weight:900;padding:12px 17px;font-family:inherit;cursor:pointer;white-space:nowrap;
+    box-shadow:0 7px 16px rgba(240,55,73,.4),inset 0 1.5px 0 rgba(255,255,255,.3);
+    display:flex;align-items:center;gap:5px;
+  }
+  .tg-bar{height:10px;border-radius:5px;background:#f4ead9;margin-top:12px;overflow:hidden}
+  .tg-bar i{display:block;height:100%;width:74%;background:linear-gradient(90deg,var(--yel),var(--orange));border-radius:5px}
+  .tg-ft{font-size:11.5px;font-weight:700;color:rgba(20,19,19,.55);margin-top:7px}
+  .tg-ft b{color:var(--green)}
+  .foot-note{text-align:center;font-size:11px;letter-spacing:.24em;font-weight:800;color:rgba(20,19,19,.4);padding:22px 0 14px}
+  /* ---------- 小程序 Tabbar ---------- */
+  .tabbar{flex:none;height:74px;background:#fff;border-top:1px solid rgba(20,19,19,.08);display:grid;grid-template-columns:repeat(5,1fr);padding:7px 4px 15px}
+  .tab{display:flex;flex-direction:column;align-items:center;gap:3px;font-size:10.5px;font-weight:700;color:rgba(20,19,19,.45);padding-top:5px;position:relative}
+  .tab.on{color:var(--green)}
+  .tab .bdg{position:absolute;top:2px;right:calc(50% - 20px);min-width:16px;height:16px;border-radius:8px;background:var(--red);color:#fff;font-size:9px;font-weight:900;display:grid;place-items:center;padding:0 4px;border:1.5px solid #fff}
+  .fu{opacity:0;transform:translateY(18px);transition:opacity .6s ease,transform .6s ease}
+  .fu.in{opacity:1;transform:none}
+  @media(max-width:480px){body{padding:0}.phone{width:100%;height:100vh;border-radius:0;box-shadow:none}.cap{display:none}}
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute"><defs>
+  <!-- 双色填充图标：底色 currentColor，细节 #fff 镂空/高光 -->
+  <g id="d-search"><circle cx="11" cy="11" r="6.5" fill="none" stroke-width="2.2"/><path d="m16 16 4.2 4.2" stroke-width="2.2" stroke-linecap="round"/></g>
+  <g id="d-flash"><path d="M13.2 2.5 5 13.8h5.6l-1.3 7.7 8.2-11.3h-5.6z"/></g>
+  <g id="d-plus"><path d="M12 5.5v13M5.5 12h13" fill="none" stroke-width="3" stroke-linecap="round"/></g>
+  <g id="d-arrow"><path d="M4 12h13m-5-5 5 5-5 5" fill="none" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></g>
+  <!-- 填充版分类/导航图标 -->
+  <g id="f-wheat"><path d="M11 3.2c.5 1.8.5 3.4 0 5.1-.5-1.7-.5-3.3 0-5.1zm2 0c-.5 1.8-.5 3.4 0 5.1.5-1.7.5-3.3 0-5.1z"/><path d="M8.6 6.2c1.5 1.1 2.4 2.6 2.7 4.4-1.8-.4-3.2-1.4-4.1-3zm6.8 0c-1.5 1.1-2.4 2.6-2.7 4.4 1.8-.4 3.2-1.4 4.1-3zM8.6 11c1.5 1.1 2.4 2.6 2.7 4.4-1.8-.4-3.2-1.4-4.1-3zm6.8 0c-1.5 1.1-2.4 2.6-2.7 4.4 1.8-.4 3.2-1.4 4.1-3z" opacity=".75"/><path d="M11.2 13.5h1.6v7.3h-1.6z"/></g>
+  <g id="f-group"><circle cx="9" cy="8" r="3.4"/><circle cx="16.3" cy="9.3" r="2.7" opacity=".7"/><path d="M3.2 19.5c.6-3.6 2.8-5.6 5.8-5.6s5.2 2 5.8 5.6z"/><path d="M14.9 14.6c2.6.3 4.4 2.1 4.9 4.9h-4.4c-.3-2-1.2-3.7-2.6-4.8.7-.1 1.4-.2 2.1-.1z" opacity=".7"/></g>
+  <g id="f-bill"><path d="M6.5 3h11a1.5 1.5 0 0 1 1.5 1.5v15a1.5 1.5 0 0 1-1.5 1.5h-11a1.5 1.5 0 0 1-1.5-1.5v-15A1.5 1.5 0 0 1 6.5 3z"/><path d="M8.5 8h7M8.5 11.5h7M8.5 15h4.5" stroke="#fff" stroke-width="1.8" stroke-linecap="round" fill="none"/></g>
+  <g id="f-home2"><path d="M12 3.5 3.8 10.4v9.1a1.5 1.5 0 0 0 1.5 1.5h13.4a1.5 1.5 0 0 0 1.5-1.5v-9.1z"/><path d="M9.8 21v-5.4a2.2 2.2 0 0 1 4.4 0V21z" fill="#fff"/></g>
+  <g id="f-cut"><path d="M19.5 4.6 9.9 14.2l1.7 1.7 9.6-9.6a1.2 1.2 0 0 0-1.7-1.7zM4.6 19.5l7.4-7.4 1.7 1.7-7.4 7.4a1.2 1.2 0 0 1-1.7-1.7z"/><circle cx="7" cy="6.8" r="2.9" fill="none" stroke-width="2.2"/><circle cx="7" cy="17.2" r="2.9" fill="none" stroke-width="2.2"/></g>
+  <g id="f-home"><path d="M12 4 4 10.6V20a1 1 0 0 0 1 1h4.6v-5.6h4.8V21H19a1 1 0 0 0 1-1v-9.4z"/></g>
+  <g id="f-shop"><path d="M4.6 8.6 6 4h12l1.4 4.6zM4 9.8h16V20a1 1 0 0 1-1 1h-5v-5.4h-4V21H5a1 1 0 0 1-1-1z"/><path d="M4 9.8h16v1a2.6 2.6 0 0 1-5.3 0 2.7 2.7 0 0 1-5.4 0 2.6 2.6 0 0 1-5.3 0z" opacity=".72"/></g>
+  <g id="f-chat"><path d="M6.5 4h11A2.5 2.5 0 0 1 20 6.5v6.8a2.5 2.5 0 0 1-2.5 2.5h-7.8l-4.5 3.6a.6.6 0 0 1-1-.5V6.5A2.5 2.5 0 0 1 6.5 4z"/><circle cx="9.2" cy="10" r="1.3" fill="#fff"/><circle cx="13.4" cy="10" r="1.3" fill="#fff"/><circle cx="17" cy="10" r="1.3" fill="#fff" opacity=".6"/></g>
+  <g id="f-cart"><path d="M3.6 4.4h2.3l.7 3.2H21l-1.7 7.2a1.6 1.6 0 0 1-1.6 1.3H8.7a1.6 1.6 0 0 1-1.6-1.3L5.4 6.6l-.4-1.4H3.6z"/><circle cx="9.3" cy="19.6" r="1.7"/><circle cx="16.8" cy="19.6" r="1.7"/></g>
+  <g id="f-me"><circle cx="12" cy="8.2" r="4"/><path d="M4.4 20.4c1-4.2 3.9-6.4 7.6-6.4s6.6 2.2 7.6 6.4a1 1 0 0 1-1 1.2H5.4a1 1 0 0 1-1-1.2z"/></g>
+  <!-- 胶囊 glyphs -->
+  <g id="cap-more"><circle cx="4.5" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="19.5" cy="12" r="1.7"/></g>
+  <g id="cap-target"><circle cx="12" cy="12" r="6.4" fill="none" stroke-width="2"/><circle cx="12" cy="12" r="2.4"/></g>
+</defs></svg>
+
+<div class="cap"><h1>概念 D · 鲜绿市集 v2</h1><p>小程序胶囊导航 / 实拍分类徽章 / 双色填充图标 / 渐变立体质感按钮</p></div>
+
+<div class="phone">
+  <div class="scroll">
+    <div class="top">
+      <div class="statusbar"><span>9:41</span>
+        <span style="display:flex;gap:5px;align-items:center">
+          <svg width="16" height="11" viewBox="0 0 17 12" fill="#fff"><rect x="0" y="7" width="3" height="5" rx="1"/><rect x="4.5" y="5" width="3" height="7" rx="1"/><rect x="9" y="2.5" width="3" height="9.5" rx="1"/><rect x="13.5" y="0" width="3" height="12" rx="1"/></svg>
+          <svg width="23" height="11" viewBox="0 0 25 12"><rect x="0.5" y="0.5" width="20" height="11" rx="3" fill="none" stroke="#fff"/><rect x="2.5" y="2.5" width="14" height="7" rx="1.5" fill="#fff"/><path d="M23 4v4" stroke="#fff" stroke-width="1.6" stroke-linecap="round"/></svg>
+        </span>
+      </div>
+      <div class="navrow">
+        <div class="loc">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linejoin="round"><path d="M12 21s-6.5-5.4-6.5-10.3A6.5 6.5 0 0 1 12 4a6.5 6.5 0 0 1 6.5 6.7C18.5 15.6 12 21 12 21z"/><circle cx="12" cy="10.6" r="2.2"/></svg>
+          幸福里社区
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round"><path d="m6 9 6 6 6-6"/></svg>
+        </div>
+        <div class="capsule">
+          <div class="cell"><svg width="21" height="21" viewBox="0 0 24 24" fill="#141313"><use href="#cap-more"/></svg></div>
+          <div class="cell"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#141313"><use href="#cap-target"/></svg></div>
+        </div>
+      </div>
+      <div class="wm"><b>乐趣生活</b><i>LEQU FRESH · 鲜到家</i></div>
+      <div class="search">
+        <svg width="18" height="18" viewBox="0 0 24 24" stroke="rgba(20,19,19,.5)"><use href="#d-search"/></svg>
+        搜：土鸡蛋 / 活虾 / 理发
+        <span class="go">搜索</span>
+      </div>
+    </div>
+
+    <div class="hero fu">
+      <img src="../assets/img/hero-fresh.jpg" alt="今日鲜货">
+      <div class="ov"></div>
+      <div class="tx">
+        <span class="k">今日鲜到</span>
+        <h2>凌晨现摘<br>晌午上桌</h2>
+        <p>村东大棚直供 · 满 59 元送到楼下</p>
+      </div>
+      <div class="burst"><small>全场低至</small><b>5 折</b></div>
+    </div>
+
+    <div class="mq"><div class="mq-in">
+      新人礼：首单立减 10 元　·　高温关怀券满 30 减 8 已到账　·　今晚 8 点新米拼团截单　·　孤寡老人免配送费　·　新人礼：首单立减 10 元　·　高温关怀券满 30 减 8 已到账　·　今晚 8 点新米拼团截单　·　孤寡老人免配送费　·
+    </div></div>
+
+    <div class="sk fu">
+      <div class="sk-hd">
+        <h3><svg width="20" height="20" viewBox="0 0 24 24" fill="#fee600"><use href="#d-flash"/></svg>限时秒杀</h3>
+        <div class="cnt">距结束 <b>01</b>:<b>58</b>:<b>42</b></div>
+      </div>
+      <div class="sk-rail">
+        <div class="sk-card"><img src="../assets/img/p-prawn.jpg" alt="">
+          <div class="sk-bd"><div class="sk-nm">鲜活基围虾 500g</div>
+            <div class="sk-pr"><b>¥19.9</b><s>¥32</s></div>
+            <div class="sk-bar"><i style="width:86%"></i><span>已抢86%</span></div></div></div>
+        <div class="sk-card"><img src="../assets/img/p-eggs.jpg" alt="">
+          <div class="sk-bd"><div class="sk-nm">散养土鸡蛋 30枚</div>
+            <div class="sk-pr"><b>¥9.9</b><s>¥15.8</s></div>
+            <div class="sk-bar"><i style="width:72%"></i><span>已抢72%</span></div></div></div>
+        <div class="sk-card"><img src="../assets/img/p-tomato.jpg" alt="">
+          <div class="sk-bd"><div class="sk-nm">沙瓤番茄 3 斤</div>
+            <div class="sk-pr"><b>¥6.9</b><s>¥11</s></div>
+            <div class="sk-bar"><i style="width:64%"></i><span>已抢64%</span></div></div></div>
+      </div>
+    </div>
+
+    <div class="cats fu">
+      <div class="cat"><div class="badge"><img src="../assets/img/p-greens.jpg" alt=""></div><span>时令蔬菜</span></div>
+      <div class="cat"><div class="badge"><img src="../assets/img/p-apple.jpg" alt=""></div><span>新鲜水果</span></div>
+      <div class="cat"><div class="badge"><img src="../assets/img/p-eggs.jpg" alt=""></div><span>肉禽蛋奶</span></div>
+      <div class="cat"><div class="badge"><img src="../assets/img/p-prawn.jpg" alt=""></div><span>鲜活水产</span></div>
+      <div class="cat"><div class="badge duo" style="background:#fdeee0;color:var(--orange)"><svg width="30" height="30" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor"><use href="#f-wheat"/></svg></div><span>粮油米面</span></div>
+      <div class="cat"><div class="badge duo" style="background:#ffe9eb;color:var(--red)"><svg width="30" height="30" viewBox="0 0 24 24" fill="currentColor"><use href="#f-group"/></svg></div><span>邻里团购</span></div>
+      <div class="cat"><div class="badge duo" style="background:#e7f0fa;color:var(--blue)"><svg width="30" height="30" viewBox="0 0 24 24" fill="currentColor"><use href="#f-bill"/></svg></div><span>缴费代办</span></div>
+      <div class="cat"><div class="badge duo" style="background:#e7f5ec;color:var(--green)"><svg width="30" height="30" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor"><use href="#f-cut"/></svg></div><span>理发洗护</span></div>
+    </div>
+
+    <div class="aisle fu" style="background:linear-gradient(150deg,#0aa654,var(--green))">
+      <div class="aisle-hd"><h3>蔬菜鲜果</h3><a href="#">进专区 →</a></div>
+      <div class="aisle-bd">
+        <div class="pd"><img src="../assets/img/p-greens.jpg" alt="">
+          <div class="pd-bd"><div class="pd-nm">本地小青菜 500g</div>
+            <span class="pd-tg" style="background:#e7f5ec;color:var(--green)">凌晨现摘</span>
+            <div class="pd-row"><div class="pr">¥<b>2</b><sup>.8</sup><s>¥4.5</s></div>
+              <button class="pbtn"><svg width="17" height="17" viewBox="0 0 24 24" stroke="#fff"><use href="#d-plus"/></svg></button></div></div></div>
+        <div class="pd"><img src="../assets/img/p-apple.jpg" alt="">
+          <div class="pd-bd"><div class="pd-nm">红富士苹果 3 斤</div>
+            <span class="pd-tg" style="background:#fdeee7;color:var(--orange)">坏果包赔</span>
+            <div class="pd-row"><div class="pr">¥<b>11</b><sup>.9</sup><s>¥16.9</s></div>
+              <button class="pbtn"><svg width="17" height="17" viewBox="0 0 24 24" stroke="#fff"><use href="#d-plus"/></svg></button></div></div></div>
+      </div>
+    </div>
+
+    <div class="aisle fu" style="background:linear-gradient(150deg,#1a6fc4,var(--blue))">
+      <div class="aisle-hd"><h3>肉禽蛋奶</h3><a href="#">进专区 →</a></div>
+      <div class="aisle-bd">
+        <div class="pd"><img src="../assets/img/p-eggs.jpg" alt="">
+          <div class="pd-bd"><div class="pd-nm">散养土鸡蛋 30 枚</div>
+            <span class="pd-tg" style="background:#e7f0fa;color:var(--blue)">可溯源</span>
+            <div class="pd-row"><div class="pr">¥<b>9</b><sup>.9</sup><s>¥15.8</s></div>
+              <button class="pbtn"><svg width="17" height="17" viewBox="0 0 24 24" stroke="#fff"><use href="#d-plus"/></svg></button></div></div></div>
+        <div class="pd"><img src="../assets/img/p-prawn.jpg" alt="">
+          <div class="pd-bd"><div class="pd-nm">鲜活基围虾 500g</div>
+            <span class="pd-tg" style="background:#ffe9eb;color:var(--red)">今日秒杀</span>
+            <div class="pd-row"><div class="pr">¥<b>19</b><sup>.9</sup><s>¥32</s></div>
+              <button class="pbtn"><svg width="17" height="17" viewBox="0 0 24 24" stroke="#fff"><use href="#d-plus"/></svg></button></div></div></div>
+      </div>
+    </div>
+
+    <div class="tg fu">
+      <div class="tg-hd"><h3>邻里拼一单</h3><em>还差 13 人成团</em></div>
+      <div class="tg-it">
+        <img src="../assets/img/p-tomato.jpg" alt="">
+        <div class="t"><b>五常新大米 10 斤 · 团长价 ¥29.9</b><p>3 号楼王婶当团长 · 送到她家楼下自取</p></div>
+        <button class="tg-go">参团<svg width="14" height="14" viewBox="0 0 24 24" stroke="#fff"><use href="#d-arrow"/></svg></button>
+      </div>
+      <div class="tg-bar"><i></i></div>
+      <div class="tg-ft">已有 <b>37 位邻居</b>参团 · 今晚 8 点截团</div>
+    </div>
+
+    <div class="foot-note">— 乐趣生活 · 鲜到家 —</div>
+    <div style="height:8px"></div>
+  </div>
+
+  <div class="tabbar">
+    <div class="tab on"><svg width="23" height="23" viewBox="0 0 24 24" fill="currentColor"><use href="#f-home"/></svg>首页</div>
+    <div class="tab"><svg width="23" height="23" viewBox="0 0 24 24" fill="currentColor"><use href="#f-shop"/></svg>商城</div>
+    <div class="tab"><svg width="23" height="23" viewBox="0 0 24 24" fill="currentColor"><use href="#f-chat"/></svg>生活圈</div>
+    <div class="tab"><svg width="23" height="23" viewBox="0 0 24 24" fill="currentColor"><use href="#f-cart"/></svg>购物车<span class="bdg">3</span></div>
+    <div class="tab"><svg width="23" height="23" viewBox="0 0 24 24" fill="currentColor"><use href="#f-me"/></svg>我的</div>
+  </div>
+</div>
+
+<script>
+  var io=new IntersectionObserver(function(es){
+    es.forEach(function(e){if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target);}});
+  },{root:document.querySelector('.scroll'),threshold:.06});
+  document.querySelectorAll('.fu').forEach(function(el){io.observe(el);});
+  window.addEventListener('load',function(){
+    setTimeout(function(){
+      var lim=document.querySelector('.scroll').clientHeight*1.6;
+      document.querySelectorAll('.fu').forEach(function(el){
+        if(el.offsetTop<lim) el.classList.add('in');
+      });
+    },150);
+  });
+</script>
+</body>
+</html>

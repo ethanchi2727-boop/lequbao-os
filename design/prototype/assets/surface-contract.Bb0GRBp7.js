@@ -1,0 +1,1 @@
+function r({loading:r=!1,error:e,records:t}={}){return r?"loading":401===(null==e?void 0:e.status)?"unauthenticated":403===(null==e?void 0:e.status)?"forbidden":e?"recoverable-error":Array.isArray(t)&&0===t.length?"empty":"ready"}export{r as l};

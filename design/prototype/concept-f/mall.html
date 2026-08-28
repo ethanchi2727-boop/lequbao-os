@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>乐趣生活 · 日夜双主题 — 概念终稿</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  body{background:#191511;font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;display:flex;flex-direction:column;align-items:center;padding:36px 16px 60px;color:#f6f2e5}
+  .cap{margin-bottom:18px;text-align:center}
+  .cap h1{font-size:22px;letter-spacing:.1em;font-weight:900}
+  .cap p{font-size:12px;margin-top:6px;letter-spacing:.12em;opacity:.55}
+  /* ============ 主题变量 ============ */
+  .phone{
+    --hd1:#009146; --hd2:#006b36; --bg:#f6f1e6; --card:#ffffff; --ink:#16130f;
+    --mut:#857c6d; --accent:#009146; --promo:#f03749; --hot:#eb6325; --yel:#fee600;
+    --tabbar:#ffffff; --line:rgba(22,19,15,.08); --notice-bg:#e6f3ea; --notice-tx:#0b6b3d;
+    --capsule-bg:rgba(255,255,255,.94); --capsule-line:rgba(22,19,15,.12); --capsule-ink:#16130f;
+    --cnt-bg:#16130f; --cnt-tx:#fee600; --shadow:0 10px 26px rgba(22,19,15,.09);
+  }
+  .phone[data-theme="dark"]{
+    --hd1:#10241a; --hd2:#0c1212; --bg:#0c1212; --card:#141d1d; --ink:#ffffff;
+    --mut:#9fb0a8; --accent:#6ec726; --promo:#ff5d3d; --hot:#f7c400; --yel:#f7c400;
+    --tabbar:#0a0f0f; --line:rgba(255,255,255,.08); --notice-bg:rgba(110,199,38,.13); --notice-tx:#8fe33f;
+    --capsule-bg:rgba(12,18,18,.45); --capsule-line:rgba(255,255,255,.22); --capsule-ink:#ffffff;
+    --cnt-bg:#0c1212; --cnt-tx:#6ec726; --shadow:0 10px 26px rgba(0,0,0,.4);
+  }
+  .phone{
+    width:375px;height:760px;background:var(--bg);border-radius:44px;position:relative;overflow:hidden;
+    display:flex;flex-direction:column;flex:none;color:var(--ink);
+    box-shadow:0 30px 80px -20px rgba(0,0,0,.55),0 0 0 10px #141210;
+    transition:background .5s;
+  }
+  .scroll{flex:1;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:none}
+  .scroll::-webkit-scrollbar{display:none}
+  /* ============ 顶部（搜索 + 胶囊） ============ */
+  .top{background:linear-gradient(165deg,var(--hd1),var(--hd2));padding:10px 16px 34px;transition:background .5s;position:relative;overflow:hidden}
+  .top::after{content:"";position:absolute;right:-46px;top:-52px;width:150px;height:150px;border-radius:50%;background:rgba(254,230,0,.14)}
+  .statusbar{display:flex;justify-content:space-between;align-items:center;font-size:13px;font-weight:700;color:#fff;padding:4px 10px 0;position:relative;z-index:2}
+  .navrow{display:flex;align-items:center;gap:8px;margin-top:10px;position:relative;z-index:2}
+  .loc{display:flex;align-items:center;gap:3px;color:#fff;font-size:12.5px;font-weight:800;flex-shrink:0;max-width:104px;background:rgba(255,255,255,.16);border-radius:999px;padding:7px 9px}
+  .loc b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:800}
+  .loc svg{flex-shrink:0}
+  .search{
+    flex:1;height:34px;background:rgba(255,255,255,.95);border-radius:17px;
+    display:flex;align-items:center;gap:7px;padding:0 13px;font-size:12.5px;color:#9a938a;
+  }
+  [data-theme="dark"] .search{background:rgba(255,255,255,.14);backdrop-filter:blur(8px);color:rgba(255,255,255,.75)}
+  .capsule{
+    width:87px;height:32px;flex:none;border-radius:16px;background:var(--capsule-bg);
+    display:flex;align-items:center;box-shadow:0 2px 8px rgba(0,0,0,.14);transition:background .5s;
+  }
+  [data-theme="dark"] .capsule{backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.25);box-shadow:none}
+  .capsule .cell{flex:1;display:grid;place-items:center;height:100%}
+  .capsule .cell:first-child{border-right:1px solid var(--capsule-line)}
+  /* ============ 主图（日夜双图切换） ============ */
+  .hero{margin:-22px 14px 0;border-radius:18px;overflow:hidden;position:relative;z-index:3;box-shadow:var(--shadow);height:136px}
+  .hero img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transition:opacity .6s}
+  .hero .img-d{opacity:0}
+  [data-theme="dark"] .hero .img-d{opacity:1}
+  [data-theme="dark"] .hero .img-l{opacity:0}
+  .hero .ov{position:absolute;inset:0;background:linear-gradient(100deg,rgba(22,19,15,.6) 6%,transparent 60%)}
+  .hero .tx{position:absolute;left:15px;top:13px;color:#fff}
+  .hero .tx .k{display:inline-block;background:var(--yel);color:#16130f;font-size:10px;font-weight:900;padding:3px 7px;border-radius:6px;letter-spacing:.06em}
+  .hero .tx h2{font-size:19.5px;font-weight:900;margin-top:6px;line-height:1.3;text-shadow:0 2px 10px rgba(0,0,0,.4)}
+  .hero .tx p{font-size:11px;font-weight:700;opacity:.92;margin-top:3px}
+  /* 主题切换开关 */
+  .tswitch{
+    position:absolute;right:12px;bottom:12px;z-index:4;border:none;cursor:pointer;font-family:inherit;
+    display:flex;align-items:center;gap:6px;border-radius:999px;padding:8px 13px;
+    background:rgba(22,19,15,.55);backdrop-filter:blur(8px);color:#fff;font-size:11.5px;font-weight:800;
+    border:1px solid rgba(255,255,255,.25);
+  }
+  /* ============ 公告（轻盈版） ============ */
+  .notice{
+    margin:12px 14px 0;height:38px;border-radius:12px;background:var(--notice-bg);
+    display:flex;align-items:center;gap:8px;padding:0 13px;overflow:hidden;transition:background .5s;
+  }
+  .notice .lb{flex:none;display:flex;align-items:center;gap:5px;font-size:11.5px;font-weight:900;color:var(--notice-tx)}
+  .notice .roll{flex:1;min-width:0;overflow:hidden;white-space:nowrap;font-size:12px;font-weight:600;color:var(--notice-tx)}
+  .notice .roll-in{display:inline-block;animation:roll 22s linear infinite;will-change:transform}
+  @keyframes roll{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+  /* ============ 秒杀（减重版） ============ */
+  .sk{margin:12px 14px 0;background:var(--card);border-radius:18px;padding:13px 13px 12px;box-shadow:var(--shadow);transition:background .5s}
+  .sk-hd{display:flex;align-items:center;justify-content:space-between}
+  .sk-hd h3{font-size:16.5px;font-weight:900;color:var(--ink);display:flex;align-items:center;gap:6px}
+  .sk-hd h3 svg{color:var(--promo)}
+  .sk-hd h3 em{font-style:normal;font-size:10px;font-weight:900;color:#fff;background:var(--promo);border-radius:5px;padding:2px 6px;letter-spacing:.06em}
+  .cnt{display:flex;align-items:center;gap:4px;font-size:10.5px;font-weight:700;color:var(--mut)}
+  .cnt b{background:var(--cnt-bg);color:var(--cnt-tx);border-radius:5px;padding:3px 6px;font-size:11.5px;font-weight:900}
+  .sk-rail{display:flex;gap:10px;margin-top:11px;overflow-x:auto;scrollbar-width:none}
+  .sk-rail::-webkit-scrollbar{display:none}
+  .sk-card{flex:none;width:112px;border-radius:13px;overflow:hidden;border:1px solid var(--line);background:var(--card)}
+  .sk-card img{width:100%;height:80px;object-fit:cover;display:block}
+  .sk-bd{padding:7px 9px 9px}
+  .sk-nm{font-size:11.5px;font-weight:800;line-height:1.35;height:30px;overflow:hidden;color:var(--ink)}
+  .sk-pr{margin-top:4px;display:flex;align-items:baseline;gap:5px}
+  .sk-pr b{color:var(--promo);font-size:16px;font-weight:900}
+  .sk-pr s{font-size:10px;color:var(--mut)}
+  .sk-bar{height:12px;border-radius:6px;background:color-mix(in srgb,var(--promo) 12%,transparent);margin-top:6px;position:relative;overflow:hidden}
+  .sk-bar i{position:absolute;inset:0;right:auto;background:linear-gradient(90deg,var(--hot),var(--promo));border-radius:6px}
+  .sk-bar span{position:absolute;inset:0;text-align:center;font-size:8.5px;font-weight:900;color:#fff;line-height:12px;text-shadow:0 1px 2px rgba(0,0,0,.3)}
+  /* ============ 分类 ============ */
+  .cats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px 8px;padding:16px 14px 2px}
+  .cat{display:flex;flex-direction:column;align-items:center;gap:7px;cursor:pointer;transition:transform .15s}
+  .cat:active{transform:scale(.92)}
+  .badge{width:56px;height:56px;border-radius:19px;overflow:hidden;box-shadow:var(--shadow)}
+  .badge img{width:100%;height:100%;object-fit:cover;display:block}
+  .badge.duo{display:grid;place-items:center}
+  .cat span{font-size:11.5px;font-weight:800;color:var(--ink)}
+  /* ============ 分区货架 ============ */
+  .aisle{margin:16px 14px 0}
+  .aisle-hd{display:flex;align-items:center;justify-content:space-between;padding:2px 4px 11px}
+  .aisle-hd h3{font-size:17px;font-weight:900;display:flex;align-items:center;gap:8px;color:var(--ink)}
+  .aisle-hd h3 .chip-ic{width:22px;height:22px;border-radius:7px;display:grid;place-items:center;color:#fff}
+  .aisle-hd a{font-size:11.5px;font-weight:800;text-decoration:none}
+  .aisle-hd a.c-grn{color:#009146}
+  .aisle-hd a.c-blu{color:#1a6fc4}
+  .phone[data-theme="dark"] .aisle-hd a.c-grn{color:#6ec726}
+  .phone[data-theme="dark"] .aisle-hd a.c-blu{color:#5ea8f0}
+  .aisle-bd{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .pd{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden;box-shadow:var(--shadow);transition:background .5s}
+  .pd img{width:100%;height:100px;object-fit:cover;display:block}
+  .pd-bd{padding:8px 10px 10px}
+  .pd-nm{font-size:13px;font-weight:800;line-height:1.4;color:var(--ink)}
+  .pd-tg{display:inline-block;font-size:9.5px;font-weight:800;border-radius:5px;padding:2px 6px;margin-top:4px}
+  .pd-row{display:flex;align-items:flex-end;justify-content:space-between;margin-top:6px}
+  .pr{color:var(--promo);font-weight:900;font-size:11px}
+  .pr b{font-size:20px;letter-spacing:-.02em}
+  .pr sup{font-size:10.5px;font-weight:900}
+  .pr s{color:var(--mut);font-size:10px;font-weight:600;margin-left:4px}
+  .pbtn{width:34px;height:34px;border-radius:50%;border:none;cursor:pointer;display:grid;place-items:center;background:linear-gradient(145deg,#19b26b,var(--green,#009146));background:linear-gradient(145deg,color-mix(in srgb,var(--accent) 70%,#3dff8f),var(--accent));box-shadow:0 6px 13px color-mix(in srgb,var(--accent) 40%,transparent),inset 0 1.5px 0 rgba(255,255,255,.35);transition:transform .12s}
+  .pbtn:active{transform:scale(.86)}
+  /* ============ 团购 ============ */
+  .tg{margin:14px 14px 0;background:var(--card);border-radius:18px;padding:14px;box-shadow:var(--shadow);transition:background .5s}
+  .tg-hd{display:flex;justify-content:space-between;align-items:center}
+  .tg-hd h3{font-size:16.5px;font-weight:900;color:var(--ink)}
+  .tg-hd em{font-style:normal;background:linear-gradient(135deg,#ff8a3d,var(--hot,#eb6325));color:#fff;font-size:10.5px;font-weight:900;border-radius:7px;padding:4px 9px}
+  .tg-it{display:flex;gap:12px;margin-top:11px;align-items:center}
+  .tg-it img{width:66px;height:66px;border-radius:13px;object-fit:cover}
+  .tg-it .t{flex:1}
+  .tg-it .t b{font-size:14px;font-weight:800;color:var(--ink)}
+  .tg-it .t p{font-size:11px;color:var(--mut);font-weight:600;margin-top:3px}
+  .tg-go{border:none;border-radius:999px;font-size:12.5px;font-weight:900;padding:11px 16px;font-family:inherit;cursor:pointer;white-space:nowrap;color:#fff;display:flex;align-items:center;gap:5px;background:linear-gradient(135deg,#ff5d3a,var(--promo));box-shadow:0 7px 15px color-mix(in srgb,var(--promo) 40%,transparent),inset 0 1.5px 0 rgba(255,255,255,.3)}
+  .tg-bar{height:9px;border-radius:5px;background:var(--line);margin-top:11px;overflow:hidden}
+  .tg-bar i{display:block;height:100%;width:74%;background:linear-gradient(90deg,var(--yel),var(--hot));border-radius:5px}
+  .tg-ft{font-size:11px;font-weight:700;color:var(--mut);margin-top:7px}
+  .tg-ft b{color:var(--accent)}
+  .foot-note{text-align:center;font-size:10.5px;letter-spacing:.24em;font-weight:800;color:var(--mut);padding:20px 0 14px;opacity:.7}
+  /* ============ Tabbar ============ */
+  /* ============ 瀑布流推荐 ============ */
+  .wf{margin:20px 14px 0}
+  .wf-hd{display:flex;align-items:center;justify-content:center;gap:10px;padding:0 0 13px;color:var(--ink)}
+  .wf-hd::before,.wf-hd::after{content:"";width:30px;height:1px;background:var(--mut);opacity:.45}
+  .wf-hd h3{font-size:16px;font-weight:900;display:flex;align-items:center;gap:6px}
+  .wf-hd h3 svg{color:var(--hot)}
+  .wf-bd{display:flex;gap:10px;align-items:flex-start}
+  .wf-col{flex:1;display:flex;flex-direction:column;gap:10px;min-width:0}
+  .wf-it{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden;box-shadow:var(--shadow);transition:background .5s;animation:wfIn .45s ease both}
+  @keyframes wfIn{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+  .wf-it img{width:100%;object-fit:cover;display:block}
+  .wf-it .pd-bd{padding:8px 10px 10px}
+  .wf-load{display:flex;align-items:center;justify-content:center;gap:8px;padding:14px 0 4px;font-size:11.5px;font-weight:700;color:var(--mut)}
+  .wf-load i{width:14px;height:14px;border-radius:50%;border:2px solid var(--line);border-top-color:var(--accent);animation:spin .8s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .wf-end{text-align:center;padding:16px 0 4px;font-size:11.5px;font-weight:700;color:var(--mut)}
+  .tabbar{flex:none;height:72px;background:var(--tabbar);border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(5,1fr);padding:7px 4px 15px;transition:background .5s}
+  a.tab{text-decoration:none}
+  .tab{display:flex;flex-direction:column;align-items:center;gap:3px;font-size:10.5px;font-weight:700;color:var(--mut);padding-top:5px;position:relative}
+  .tab.on{color:var(--accent)}
+  [data-theme="dark"] .tab.on svg{filter:drop-shadow(0 0 9px rgba(110,199,38,.9))}
+  .tab .bdg{position:absolute;top:2px;right:calc(50% - 20px);min-width:16px;height:16px;border-radius:8px;background:var(--promo);color:#fff;font-size:9px;font-weight:900;display:grid;place-items:center;padding:0 4px;border:1.5px solid var(--tabbar)}
+  .fu{opacity:0;transform:translateY(16px);transition:opacity .6s ease,transform .6s ease}
+  .fu.in{opacity:1;transform:none}
+  @media(max-width:480px){body{padding:0}.phone{width:100%;height:100vh;border-radius:0;box-shadow:none}.cap{display:none}}
+.phone.no-tr,.phone.no-tr *{transition:none!important}
+
+  .wf-it{display:block;text-decoration:none;color:inherit;cursor:pointer}
+  .wf-vou{margin-top:7px;font-size:9.5px;font-weight:800;border-radius:7px;padding:5px 7px;color:#9c6500;background:#fdf3d7;display:flex;align-items:center;gap:4px}
+  .wf-vou svg{flex:none}
+  .phone[data-theme="dark"] .wf-vou{background:rgba(247,196,0,.13);color:#f7c400}
+  /* ===== 小满 AI 入口 ===== */
+  .maifab{position:absolute;right:12px;bottom:92px;width:52px;height:52px;border-radius:50%;background:rgba(255,255,255,.96);border:1px solid var(--line);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:30;text-decoration:none;box-shadow:0 8px 20px rgba(22,19,15,.16),0 0 0 4px rgba(0,200,130,.10);animation:maipulse 2.8s ease-in-out infinite}
+  .maifab img{width:31px;height:31px}
+  .maifab em{font-style:normal;font-size:8.5px;font-weight:900;color:#16130f;margin-top:1px}
+  .phone[data-theme="dark"] .maifab{background:rgba(20,26,24,.94)}
+  .phone[data-theme="dark"] .maifab em{color:#f6f2e5}
+  @keyframes maipulse{0%,100%{box-shadow:0 8px 20px rgba(22,19,15,.16),0 0 0 4px rgba(0,200,130,.12)}50%{box-shadow:0 8px 22px rgba(22,19,15,.18),0 0 0 9px rgba(0,200,130,.04)}}
+  .maitoast{position:absolute;left:50%;bottom:158px;transform:translateX(-50%) translateY(14px);background:rgba(22,19,15,.92);color:#fff;font-size:11.5px;font-weight:700;border-radius:12px;padding:10px 15px;max-width:290px;text-align:center;line-height:1.6;opacity:0;pointer-events:none;transition:.3s;z-index:40}
+  .maitoast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* ===== V10：顶部随 banner 联动渐变 + 三图轮播 ===== */
+@property --tint{syntax:'<color>';inherits:false;initial-value:#ffe6b8}
+.scroll{background:linear-gradient(180deg,var(--tint,#ffe6b8) 0px,var(--bg) 500px);transition:--tint .9s ease}
+[data-theme="dark"] .scroll{background:var(--bg)}
+.top{background:none;overflow:visible;padding-bottom:4px}
+.top::after{display:none}
+.statusbar{color:var(--ink)}
+.loc{background:rgba(255,255,255,.92);color:var(--ink);box-shadow:0 3px 10px rgba(22,19,15,.07)}
+.bell{background:rgba(255,255,255,.92);color:var(--ink);box-shadow:0 3px 10px rgba(22,19,15,.07)}
+.bell i{border-color:#fff}
+[data-theme="dark"] .statusbar{color:#fff}
+[data-theme="dark"] .loc,[data-theme="dark"] .bell{background:rgba(255,255,255,.14);color:#fff;box-shadow:none}
+.bans{margin:12px 14px 0;position:relative;height:118px;border-radius:18px}
+.pslide{position:absolute;inset:0;border-radius:18px;background:linear-gradient(120deg,var(--pc1),var(--pc2));display:flex;align-items:center;justify-content:space-between;padding:13px 15px;overflow:hidden;opacity:0;transform:translateX(16px) scale(.98);transition:opacity .65s ease,transform .65s ease;pointer-events:none;box-shadow:0 10px 22px var(--psh,rgba(22,19,15,.14))}
+.pslide.on{opacity:1;transform:none;pointer-events:auto}
+.pslide::before{content:"";position:absolute;left:-34px;top:-46px;width:124px;height:124px;border-radius:50%;background:rgba(255,255,255,.22)}
+.pb-tx{position:relative;z-index:2;min-width:0}
+.pb-tx .k{display:inline-block;font-style:normal;font-size:9px;font-weight:900;letter-spacing:.16em;color:var(--ptx);opacity:.72;border:1px solid currentColor;border-radius:6px;padding:2px 6px;margin-bottom:6px}
+.pb-tx b{display:block;font-size:19px;font-weight:900;color:var(--ptx);letter-spacing:.05em;line-height:1.25}
+.pb-tx p{font-size:10.5px;font-weight:800;color:var(--psub);margin:5px 0 8px;letter-spacing:.02em}
+.pb-tx span{display:inline-block;background:var(--pbtn);color:var(--pbt);font-size:10px;font-weight:900;border-radius:9px;padding:4.5px 11px;letter-spacing:.04em}
+.pslide>img{width:88px;height:88px;flex:none;position:relative;z-index:2;filter:drop-shadow(0 8px 10px rgba(22,19,15,.18))}
+.pdots{position:absolute;right:13px;bottom:10px;display:flex;gap:5px;z-index:6}
+.pdots i{width:5px;height:5px;border-radius:99px;background:rgba(22,19,15,.16);transition:.35s}
+.pdots i.on{width:15px;background:rgba(22,19,15,.55)}
+.bans .tswitch{z-index:7}
+.bans .pdots{left:14px;right:auto}
+</style></style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute"><defs>
+  <g id="x-search"><circle cx="11" cy="11" r="6.5" fill="none" stroke-width="2.2"/><path d="m16 16 4.2 4.2" stroke-width="2.2" stroke-linecap="round"/></g>
+  <g id="x-flash"><path d="M13.2 2.5 5 13.8h5.6l-1.3 7.7 8.2-11.3h-5.6z"/></g>
+  <g id="x-plus"><path d="M12 5.5v13M5.5 12h13" fill="none" stroke-width="3" stroke-linecap="round"/></g>
+  <g id="x-arrow"><path d="M4 12h13m-5-5 5 5-5 5" fill="none" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></g>
+  <g id="x-mega"><path d="M3.5 10.2 12 6.5l8.5 3.7v3.6a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2z"/><path d="M12 6.5V4.5" stroke-linecap="round"/></g>
+  <g id="x-sun"><circle cx="12" cy="12" r="4.6"/><path d="M12 2.5v2.4M12 19.1v2.4M2.5 12h2.4M19.1 12h2.4M5.2 5.2l1.7 1.7M17.1 17.1l1.7 1.7M18.8 5.2l-1.7 1.7M6.9 17.1l-1.7 1.7" fill="none" stroke-width="2.2" stroke-linecap="round"/></g>
+  <g id="x-moon"><path d="M20.5 14.5A8.5 8.5 0 1 1 9.5 3.5a7 7 0 0 0 11 11z"/></g>
+  <g id="f-wheat"><path d="M11 3.2c.5 1.8.5 3.4 0 5.1-.5-1.7-.5-3.3 0-5.1zm2 0c-.5 1.8-.5 3.4 0 5.1.5-1.7.5-3.3 0-5.1z"/><path d="M8.6 6.2c1.5 1.1 2.4 2.6 2.7 4.4-1.8-.4-3.2-1.4-4.1-3zm6.8 0c-1.5 1.1-2.4 2.6-2.7 4.4 1.8-.4 3.2-1.4 4.1-3zM8.6 11c1.5 1.1 2.4 2.6 2.7 4.4-1.8-.4-3.2-1.4-4.1-3zm6.8 0c-1.5 1.1-2.4 2.6-2.7 4.4 1.8-.4 3.2-1.4 4.1-3z" opacity=".75"/><path d="M11.2 13.5h1.6v7.3h-1.6z"/></g>
+  <g id="f-group"><circle cx="9" cy="8" r="3.4"/><circle cx="16.3" cy="9.3" r="2.7" opacity=".7"/><path d="M3.2 19.5c.6-3.6 2.8-5.6 5.8-5.6s5.2 2 5.8 5.6z"/><path d="M14.9 14.6c2.6.3 4.4 2.1 4.9 4.9h-4.4c-.3-2-1.2-3.7-2.6-4.8.7-.1 1.4-.2 2.1-.1z" opacity=".7"/></g>
+  <g id="f-bill"><path d="M6.5 3h11a1.5 1.5 0 0 1 1.5 1.5v15a1.5 1.5 0 0 1-1.5 1.5h-11a1.5 1.5 0 0 1-1.5-1.5v-15A1.5 1.5 0 0 1 6.5 3z"/><path d="M8.5 8h7M8.5 11.5h7M8.5 15h4.5" stroke="#fff" stroke-width="1.8" stroke-linecap="round" fill="none"/></g>
+  <g id="f-cut"><path d="M19.5 4.6 9.9 14.2l1.7 1.7 9.6-9.6a1.2 1.2 0 0 0-1.7-1.7zM4.6 19.5l7.4-7.4 1.7 1.7-7.4 7.4a1.2 1.2 0 0 1-1.7-1.7z"/><circle cx="7" cy="6.8" r="2.9" fill="none" stroke-width="2.2"/><circle cx="7" cy="17.2" r="2.9" fill="none" stroke-width="2.2"/></g>
+  <g id="f-home"><path d="M12 4 4 10.6V20a1 1 0 0 0 1 1h4.6v-5.6h4.8V21H19a1 1 0 0 0 1-1v-9.4z"/></g>
+  <g id="f-shop"><path d="M4.6 8.6 6 4h12l1.4 4.6zM4 9.8h16V20a1 1 0 0 1-1 1h-5v-5.4h-4V21H5a1 1 0 0 1-1-1z"/><path d="M4 9.8h16v1a2.6 2.6 0 0 1-5.3 0 2.7 2.7 0 0 1-5.4 0 2.6 2.6 0 0 1-5.3 0z" opacity=".72"/></g>
+  <g id="f-chat"><path d="M6.5 4h11A2.5 2.5 0 0 1 20 6.5v6.8a2.5 2.5 0 0 1-2.5 2.5h-7.8l-4.5 3.6a.6.6 0 0 1-1-.5V6.5A2.5 2.5 0 0 1 6.5 4z"/><circle cx="9.2" cy="10" r="1.3" fill="#fff"/><circle cx="13.4" cy="10" r="1.3" fill="#fff"/><circle cx="17" cy="10" r="1.3" fill="#fff" opacity=".6"/></g>
+  <g id="f-cart"><path d="M3.6 4.4h2.3l.7 3.2H21l-1.7 7.2a1.6 1.6 0 0 1-1.6 1.3H8.7a1.6 1.6 0 0 1-1.6-1.3L5.4 6.6l-.4-1.4H3.6z"/><circle cx="9.3" cy="19.6" r="1.7"/><circle cx="16.8" cy="19.6" r="1.7"/></g>
+  <g id="f-me"><circle cx="12" cy="8.2" r="4"/><path d="M4.4 20.4c1-4.2 3.9-6.4 7.6-6.4s6.6 2.2 7.6 6.4a1 1 0 0 1-1 1.2H5.4a1 1 0 0 1-1-1.2z"/></g>
+  <g id="cap-more"><circle cx="4.5" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="19.5" cy="12" r="1.7"/></g>
+  <g id="f-leaf"><path d="M12 21.2c-5.2 0-8.3-3.3-8.3-8.2 0-5.7 4.7-8.8 9.3-9.3-.6 5-1 8.5 1.5 10.9 2.1 2.1 3.6 4.1 3.6 5.7-1.9.7-4 1-6.1 1z"/><path d="M7.3 17.4c2.1-3.1 5.2-6.2 8.8-8.8" fill="none" stroke="#fff" stroke-width="1.9" stroke-linecap="round"/></g>
+  <g id="f-egg"><path d="M12 3.5c-3.9 0-7.2 4.3-7.2 9.3 0 4.4 3 7.7 7.2 7.7s7.2-3.3 7.2-7.7c0-5-3.3-9.3-7.2-9.3z"/><ellipse cx="9.6" cy="9.4" rx="1.7" ry="2.6" fill="#fff" opacity=".55" transform="rotate(-14 9.6 9.4)"/></g>
+  <g id="cap-target"><circle cx="12" cy="12" r="6.4" fill="none" stroke-width="2"/><circle cx="12" cy="12" r="2.4"/></g>
+<g id="x-tkt2"><path d="M3.5 7.5a2 2 0 0 1 2-2h13a2 2 0 0 1 2 2v2.4a2.4 2.4 0 0 0 0 4.2v2.4a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2v-2.4a2.4 2.4 0 0 0 0-4.2z"/><path d="M14.5 5.5v13" fill="none" stroke="#fff" stroke-width="1.7" stroke-dasharray="2.6 2.6"/></g>
+</defs></svg>
+
+<div class="cap"><h1>乐趣生活 · 商城</h1><p>买菜 · 商超 · 生鲜集市 · 小时达（原生鲜首页）</p></div>
+
+<div class="phone" id="app">
+  <div class="scroll" style="--tint:#dff0d4">
+    <div class="top">
+      <div class="statusbar"><span>9:41</span>
+        <span style="display:flex;gap:5px;align-items:center">
+          <svg width="16" height="11" viewBox="0 0 17 12" fill="currentColor"><rect x="0" y="7" width="3" height="5" rx="1"/><rect x="4.5" y="5" width="3" height="7" rx="1"/><rect x="9" y="2.5" width="3" height="9.5" rx="1"/><rect x="13.5" y="0" width="3" height="12" rx="1"/></svg>
+          <svg width="23" height="11" viewBox="0 0 25 12"><rect x="0.5" y="0.5" width="20" height="11" rx="3" fill="none" stroke="currentColor"/><rect x="2.5" y="2.5" width="14" height="7" rx="1.5" fill="currentColor"/><path d="M23 4v4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+        </span>
+      </div>
+      <div class="navrow">
+        <div class="loc">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round"><path d="M12 21s-6.5-5.4-6.5-10.3A6.5 6.5 0 0 1 12 4a6.5 6.5 0 0 1 6.5 6.7C18.5 15.6 12 21 12 21z"/><circle cx="12" cy="10.6" r="2.2"/></svg>
+          <b>幸福里</b>
+          <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round"><path d="M5 9l7 7 7-7"/></svg>
+        </div>
+        <a class="search" href="search.html" style="text-decoration:none">
+          <svg width="16" height="16" viewBox="0 0 24 24" stroke="currentColor"><use href="#x-search"/></svg>
+          搜：土鸡蛋 / 活虾 / 理发
+        </a>
+        <div class="capsule">
+          <div class="cell"><svg width="20" height="20" viewBox="0 0 24 24" fill="var(--capsule-ink)" style="transition:.5s"><use href="#cap-more"/></svg></div>
+          <div class="cell"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--capsule-ink)" style="transition:.5s"><use href="#cap-target"/></svg></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="bans fu">
+      <a class="pslide on" data-tint="#dff0d4" style="text-decoration:none;color:inherit;--pc1:#e2f3d4;--pc2:#a8dd8a;--ptx:#1e4d0f;--psub:#4a7a34;--pbtn:#1e4d0f;--pbt:#e2f3d4;--psh:rgba(80,170,60,.26)" href="list.html?c=fresh">
+        <div class="pb-tx"><i class="k">今日鲜到</i><b>凌晨现摘 晌午上桌</b><p>产地直供 · 满 59 元送到家</p><span>去逛逛 ›</span></div>
+        <img src="../assets/icons/3d-fbasket.png" alt="">
+      </a>
+      <a class="pslide" data-tint="#d9e9fb" style="text-decoration:none;color:inherit;--pc1:#ddeeff;--pc2:#9ec9f5;--ptx:#0d3f77;--psub:#3d6494;--pbtn:#0d3f77;--pbt:#ddeeff;--psh:rgba(50,110,220,.25)" href="svc.html?c=life">
+        <div class="pb-tx"><i class="k">家清服务</i><b>家清焕新节</b><p>洗护 · 保洁 · 家电清洗 预约上门</p><span>去预约 ›</span></div>
+        <img src="../assets/icons/3d-washer.png" alt="">
+      </a>
+      <a class="pslide" data-tint="#eadffb" style="text-decoration:none;color:inherit;--pc1:#f0e4ff;--pc2:#c5a1f5;--ptx:#4a1a8a;--psub:#7446ab;--pbtn:#4a1a8a;--pbt:#f0e4ff;--psh:rgba(130,70,220,.25)" href="list.html?c=super">
+        <div class="pb-tx"><i class="k">会员专享</i><b>会员囤货日</b><p>商超百货 满 99 减 30</p><span>去囤货 ›</span></div>
+        <img src="../assets/icons/3d-bag.png" alt="">
+      </a>
+      <div class="pdots"><i class="on"></i><i></i><i></i></div>
+      <button class="tswitch" id="tswitch">
+        <svg id="ts-ic-moon" width="14" height="14" viewBox="0 0 24 24" fill="#f7c400"><use href="#x-moon"/></svg>
+        <svg id="ts-ic-sun" width="15" height="15" viewBox="0 0 24 24" fill="#fee600" style="display:none"><use href="#x-sun"/></svg>
+        <span id="ts-tx">夜市模式</span>
+      </button>
+    </div>
+
+    <a class="notice fu" href="msgs.html" style="text-decoration:none;color:inherit">
+      <span class="lb"><svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><use href="#x-mega"/></svg>公告</span>
+      <div class="roll"><div class="roll-in">高温关怀券满 30 减 8 已放入卡包 · 孤寡老人下单免配送费 · 今晚 8 点新米拼团截单 · 明早 6:30 早市开摊　｜　高温关怀券满 30 减 8 已放入卡包 · 孤寡老人下单免配送费 · 今晚 8 点新米拼团截单 · 明早 6:30 早市开摊　｜　</div></div>
+    </a>
+
+    <div class="sk fu">
+      <div class="sk-hd">
+        <h3><svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor"><use href="#x-flash"/></svg>限时秒杀<em>进行中</em></h3>
+        <div class="cnt">距结束 <b>01</b>:<b>58</b>:<b>42</b></div>
+      </div>
+      <div class="sk-rail">
+        <a class="sk-card" href="detail.html?t=goods&id=sk1" style="text-decoration:none;color:inherit"><img src="../assets/img/p-prawn.jpg" alt="">
+          <div class="sk-bd"><div class="sk-nm">鲜活基围虾 500g</div>
+            <div class="sk-pr"><b>¥19.9</b><s>¥32</s></div>
+            <div class="sk-bar"><i style="width:86%"></i><span>已抢86%</span></div></div></a>
+        <a class="sk-card" href="detail.html?t=goods&id=sk2" style="text-decoration:none;color:inherit"><img src="../assets/img/p-eggs.jpg" alt="">
+          <div class="sk-bd"><div class="sk-nm">散养土鸡蛋 30枚</div>
+            <div class="sk-pr"><b>¥9.9</b><s>¥15.8</s></div>
+            <div class="sk-bar"><i style="width:72%"></i><span>已抢72%</span></div></div></a>
+        <a class="sk-card" href="detail.html?t=goods&id=sk3" style="text-decoration:none;color:inherit"><img src="../assets/img/p-tomato.jpg" alt="">
+          <div class="sk-bd"><div class="sk-nm">沙瓤番茄 3 斤</div>
+            <div class="sk-pr"><b>¥6.9</b><s>¥11</s></div>
+            <div class="sk-bar"><i style="width:64%"></i><span>已抢64%</span></div></div></a>
+      </div>
+    </div>
+
+    <div class="cats fu">
+      <a class="cat" href="list.html?c=veg" style="text-decoration:none;color:inherit"><div class="badge"><img src="../assets/img/p-greens.jpg" alt=""></div><span>时令蔬菜</span></a>
+      <a class="cat" href="list.html?c=fruit" style="text-decoration:none;color:inherit"><div class="badge"><img src="../assets/img/p-apple.jpg" alt=""></div><span>新鲜水果</span></a>
+      <a class="cat" href="list.html?c=grocery" style="text-decoration:none;color:inherit"><div class="badge"><img src="../assets/img/p-eggs.jpg" alt=""></div><span>肉禽蛋奶</span></a>
+      <a class="cat" href="list.html?c=grocery" style="text-decoration:none;color:inherit"><div class="badge"><img src="../assets/img/p-prawn.jpg" alt=""></div><span>鲜活水产</span></a>
+      <a class="cat" href="list.html?c=super" style="text-decoration:none;color:inherit"><div class="badge"><img src="../assets/img/p-rice.jpg" alt=""></div><span>粮油米面</span></a>
+      <a class="cat" href="deals.html" style="text-decoration:none;color:inherit"><div class="badge"><img src="../assets/img/p-group.jpg" alt=""></div><span>邻里团购</span></a>
+      <a class="cat" href="recharge.html" style="text-decoration:none;color:inherit"><div class="badge"><img src="../assets/img/p-bill.jpg" alt=""></div><span>缴费代办</span></a>
+      <a class="cat" href="deals.html?c=beauty" style="text-decoration:none;color:inherit"><div class="badge"><img src="../assets/img/p-barber.jpg" alt=""></div><span>理发洗护</span></a>
+    </div>
+
+    <div class="aisle fu">
+      <div class="aisle-hd"><h3><span class="chip-ic" style="background:linear-gradient(135deg,#19b26b,#009146)"><svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><use href="#f-leaf"/></svg></span>蔬菜鲜果</h3><a href="list.html?c=veg" class="c-grn">进专区 →</a></div>
+      <div class="aisle-bd">
+        <a class="pd" href="detail.html?t=goods&id=pd1" style="text-decoration:none;color:inherit"><img src="../assets/img/p-greens.jpg" alt="">
+          <div class="pd-bd"><div class="pd-nm">本地小青菜 500g</div>
+            <span class="pd-tg" style="background:#e7f5ec;color:#009146">凌晨现摘</span>
+            <div class="pd-row"><div class="pr">¥<b>2</b><sup>.8</sup><s>¥4.5</s></div>
+              <span class="pbtn"><svg width="16" height="16" viewBox="0 0 24 24" stroke="#fff"><use href="#x-plus"/></svg></span></div></div></a>
+        <a class="pd" href="detail.html?t=goods&id=pd2" style="text-decoration:none;color:inherit"><img src="../assets/img/p-apple.jpg" alt="">
+          <div class="pd-bd"><div class="pd-nm">红富士苹果 3 斤</div>
+            <span class="pd-tg" style="background:#fdeee7;color:#eb6325">坏果包赔</span>
+            <div class="pd-row"><div class="pr">¥<b>11</b><sup>.9</sup><s>¥16.9</s></div>
+              <span class="pbtn"><svg width="16" height="16" viewBox="0 0 24 24" stroke="#fff"><use href="#x-plus"/></svg></span></div></div></a>
+      </div>
+    </div>
+
+    <div class="aisle fu">
+      <div class="aisle-hd"><h3><span class="chip-ic" style="background:linear-gradient(135deg,#2f86d8,#0756a5)"><svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><use href="#f-egg"/></svg></span>肉禽蛋奶</h3><a href="list.html?c=meat" class="c-blu">进专区 →</a></div>
+      <div class="aisle-bd">
+        <a class="pd" href="detail.html?t=goods&id=pd3" style="text-decoration:none;color:inherit"><img src="../assets/img/p-eggs.jpg" alt="">
+          <div class="pd-bd"><div class="pd-nm">散养土鸡蛋 30 枚</div>
+            <span class="pd-tg" style="background:#e7f0fa;color:#0756a5">可溯源</span>
+            <div class="pd-row"><div class="pr">¥<b>9</b><sup>.9</sup><s>¥15.8</s></div>
+              <span class="pbtn"><svg width="16" height="16" viewBox="0 0 24 24" stroke="#fff"><use href="#x-plus"/></svg></span></div></div></a>
+        <a class="pd" href="detail.html?t=goods&id=pd4" style="text-decoration:none;color:inherit"><img src="../assets/img/p-prawn.jpg" alt="">
+          <div class="pd-bd"><div class="pd-nm">鲜活基围虾 500g</div>
+            <span class="pd-tg" style="background:#ffe9eb;color:#f03749">今日秒杀</span>
+            <div class="pd-row"><div class="pr">¥<b>19</b><sup>.9</sup><s>¥32</s></div>
+              <span class="pbtn"><svg width="16" height="16" viewBox="0 0 24 24" stroke="#fff"><use href="#x-plus"/></svg></span></div></div></a>
+      </div>
+    </div>
+
+    <div class="tg fu">
+      <div class="tg-hd"><h3>邻里拼一单</h3><em>还差 13 人成团</em></div>
+      <div class="tg-it">
+        <img src="../assets/img/p-tomato.jpg" alt="">
+        <div class="t"><b>五常新大米 10 斤 · 团长价 ¥29.9</b><p>3 号楼王婶当团长 · 送到她家楼下自取</p></div>
+        <a class="tg-go" href="deals.html" style="text-decoration:none">参团<svg width="13" height="13" viewBox="0 0 24 24" stroke="#fff"><use href="#x-arrow"/></svg></a>
+      </div>
+      <div class="tg-bar"><i></i></div>
+      <div class="tg-ft">已有 <b>37 位邻居</b>参团 · 今晚 8 点截团</div>
+    </div>
+
+    <div class="wf">
+      <div class="wf-hd"><h3><svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><use href="#x-flash"/></svg>为你推荐</h3></div>
+      <div class="wf-bd">
+        <div class="wf-col" id="wfA"></div>
+        <div class="wf-col" id="wfB"></div>
+      </div>
+      <div class="wf-load" id="wfLoad" style="display:none"><i></i>正在补货…</div>
+      <div class="wf-end" id="wfEnd" style="display:none">到底啦 · 去生活圈看看邻居们在买啥</div>
+    </div>
+
+    <div style="height:8px"></div>
+  </div>
+
+  <div class="tabbar">
+    <a class="tab" href="index.html"><svg width="23" height="23" viewBox="0 0 24 24" fill="currentColor"><use href="#f-home"/></svg>首页</a>
+    <a class="tab on" href="mall.html"><svg width="23" height="23" viewBox="0 0 24 24" fill="currentColor"><use href="#f-shop"/></svg>商城</a>
+    <a class="tab" href="quan.html"><svg width="23" height="23" viewBox="0 0 24 24" fill="currentColor"><use href="#f-chat"/></svg>生活圈</a>
+    <a class="tab" href="cart.html"><svg width="23" height="23" viewBox="0 0 24 24" fill="currentColor"><use href="#f-cart"/></svg>购物车<span class="bdg">3</span></a>
+    <a class="tab" href="me.html"><svg width="23" height="23" viewBox="0 0 24 24" fill="currentColor"><use href="#f-me"/></svg>我的</a>
+  </div>
+  </div>
+  <a class="maifab" id="maifab" href="mai.html" aria-label="小满AI"><img src="../assets/icons/mai.png" alt="小满"><em>小满</em></a>
+</div>
+
+<script>
+  var app=document.getElementById('app');
+  var sw=document.getElementById('tswitch');
+  sw.addEventListener('click',function(){
+    var dark=app.getAttribute('data-theme')==='dark';
+    app.setAttribute('data-theme',dark?'light':'dark');
+    document.getElementById('ts-tx').textContent=dark?'夜市模式':'白天市集';
+    document.getElementById('ts-ic-moon').style.display=dark?'':'none';
+    document.getElementById('ts-ic-sun').style.display=dark?'none':'';
+    document.querySelectorAll('.tabbar a,.wf-it').forEach(function(a){a.href=a.href.split('?')[0]+(dark?'':'?theme=dark');});
+  });
+  if(location.search.indexOf('theme=dark')>-1){app.classList.add('no-tr');sw.click();requestAnimationFrame(function(){requestAnimationFrame(function(){app.classList.remove('no-tr');});});}
+  document.querySelectorAll('.tabbar a').forEach(function(a){if(app.getAttribute('data-theme')==='dark')a.href+=(a.href.indexOf('?')>-1?'&':'?')+'theme=dark';});
+
+  // ===== 瀑布流：无限下拉 =====
+  var wfPool=[
+    {img:'p-banana',nm:'云南高山香蕉 3 斤',pr:'8',ps:'.9',op:'12.9',tg:'树上熟',cb:'#e7f5ec',ct:'#009146'},
+    {img:'p-berry',nm:'奶油草莓 1 斤 · 今早现摘',pr:'15',ps:'.9',op:'22',tg:'现摘',cb:'#ffe9eb',ct:'#f03749'},
+    {img:'p-milk',nm:'牧场鲜牛奶 950ml · 今日到',pr:'9',ps:'.9',op:'13.5',tg:'冷链直送',cb:'#e7f0fa',ct:'#0756a5'},
+    {img:'p-pork',nm:'精品五花肉 500g · 现切',pr:'13',ps:'.9',op:'17.9'},
+    {img:'p-broc',nm:'有机西兰花 400g',pr:'4',ps:'.9',op:'6.5',tg:'凌晨现摘',cb:'#e7f5ec',ct:'#009146'},
+    {img:'p-bread',nm:'手工鲜奶吐司 · 下午 4 点出炉',pr:'6',ps:'.9',op:'9.9',tg:'今日现烤',cb:'#fdeee7',ct:'#eb6325'},
+    {img:'p-tomato',nm:'沙瓤番茄 3 斤 · 自然熟',pr:'6',ps:'.9',op:'9.9'},
+    {img:'p-eggs',nm:'散养土鸡蛋 30 枚',pr:'9',ps:'.9',op:'15.8',tg:'可溯源',cb:'#e7f0fa',ct:'#0756a5'},
+    {img:'p-prawn',nm:'鲜活基围虾 500g',pr:'19',ps:'.9',op:'32',tg:'今日秒杀',cb:'#ffe9eb',ct:'#f03749'},
+    {img:'p-apple',nm:'红富士苹果 3 斤',pr:'11',ps:'.9',op:'16.9',tg:'坏果包赔',cb:'#fdeee7',ct:'#eb6325'},
+    {img:'p-greens',nm:'本地小青菜 500g',pr:'2',ps:'.8',op:'4.5'},
+    {img:'p-rice',nm:'五常新大米 10 斤',pr:'29',ps:'.9',op:'39.9',tg:'新米上市',cb:'#e7f5ec',ct:'#009146'},
+    {img:'n-skewer',nm:'夜市羊肉串 10 串 · 现烤',pr:'15',ps:'.9',op:'20',tg:'夜市专供',cb:'#fdeee7',ct:'#eb6325'},
+    {img:'n-crayfish',nm:'麻辣小龙虾 2 斤 · 夜宵',pr:'39',ps:'.9',op:'58'},
+    {img:'n-melon',nm:'麒麟西瓜 半个 · 包甜',pr:'12',ps:'.9',op:'16.9',tg:'不甜包退',cb:'#ffe9eb',ct:'#f03749'},
+    {img:'p-group',nm:'邻里团购蔬菜箱 8 斤',pr:'19',ps:'.9',op:'28',tg:'团长价',cb:'#e7f5ec',ct:'#009146'}
+  ];
+  var wfA=document.getElementById('wfA'),wfB=document.getElementById('wfB');
+  var wfLoad=document.getElementById('wfLoad'),wfEnd=document.getElementById('wfEnd');
+  var wfIdx=0,wfLoading=false,wfDone=false;
+  var wfH=[118,94,130,104];
+  function wfItem(it,h){
+    var q=app.getAttribute('data-theme')==='dark'?'?theme=dark':'';
+    return '<a class="wf-it" href="detail.html'+q+'"><img loading="lazy" src="../assets/img/'+it.img+'.jpg" style="height:'+h+'px" alt="">'
+      +'<div class="pd-bd"><div class="pd-nm">'+it.nm+'</div>'
+      +(it.tg?'<span class="pd-tg" style="background:'+it.cb+';color:'+it.ct+'">'+it.tg+'</span>':'')
+      +'<div class="pd-row"><div class="pr">\u00a5<b>'+it.pr+'</b><sup>'+it.ps+'</sup>'+(it.op?'<s>\u00a5'+it.op+'</s>':'')+'</div>'
+      +'<span class="pbtn"><svg width="16" height="16" viewBox="0 0 24 24" stroke="#fff"><use href="#x-plus"/></svg></span></div>'
+      +'<div class="wf-vou"><svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><use href="#x-tkt2"/></svg>最高可得 '+(it.pr+it.ps)+' 元代金券</div></div></a>';
+  }
+  function wfMore(init){
+    if(wfLoading||wfDone) return;
+    wfLoading=true; wfLoad.style.display='flex';
+    setTimeout(function(){
+      var n=init?8:6;
+      for(var k=0;k<n;k++){
+        var it=wfPool[wfIdx%wfPool.length];
+        (wfIdx%2===0?wfA:wfB).insertAdjacentHTML('beforeend',wfItem(it,wfH[wfIdx%4]));
+        wfIdx++;
+      }
+      if(wfIdx>=42){wfDone=true;wfLoad.style.display='none';wfEnd.style.display='block';}
+      wfLoading=false;
+    },init?0:300);
+  }
+  wfMore(true);
+  var scEl=document.querySelector('.scroll');
+  scEl.addEventListener('scroll',function(){
+    if(scEl.scrollTop+scEl.clientHeight>scEl.scrollHeight-640) wfMore(false);
+  });
+  if(location.search.indexOf('snap=1')>-1) document.querySelectorAll('.fu').forEach(function(el){el.style.transition='none';el.classList.add('in');});
+  var io=new IntersectionObserver(function(es){
+    es.forEach(function(e){if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target);}});
+  },{root:document.querySelector('.scroll'),threshold:.06});
+  document.querySelectorAll('.fu').forEach(function(el){io.observe(el);});
+  // 首屏兜底：脚本在 body 末尾，DOM 已就绪，直接显示首两屏内的元素
+  setTimeout(function(){
+    var lim=document.querySelector('.scroll').clientHeight*1.6;
+    document.querySelectorAll('.fu').forEach(function(el){if(el.offsetTop<lim)el.classList.add('in');});
+  },120);
+</script>
+<script>
+(function(){
+  var box=document.querySelector('.bans');if(!box)return;
+  var sl=box.querySelectorAll('.pslide'),dots=box.querySelectorAll('.pdots i');
+  var sc=document.querySelector('.scroll');var i=0,n=sl.length;
+  function go(k){i=(k+n)%n;for(var j=0;j<n;j++){sl[j].classList.toggle('on',j===i);if(dots[j])dots[j].classList.toggle('on',j===i)}var t=sl[i].getAttribute('data-tint');if(t&&sc)sc.style.setProperty('--tint',t);}
+  if(location.search.indexOf('snap=1')<0)setInterval(function(){go(i+1)},3800);
+})();
+</script>
+</body>
+</html>
