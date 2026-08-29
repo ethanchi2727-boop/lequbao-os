@@ -126,7 +126,9 @@ onShow(load);
             ><text>{{ store.cityCode || '当前城市' }} · {{ store.productCount }} 件在售</text
             ><view
               ><text>{{
-                store.distanceKm === null ? '授权后查看距离' : `${store.distanceKm}km`
+                store.distanceKm === null || store.distanceKm === undefined
+                  ? '授权后查看距离'
+                  : `${store.distanceKm}km`
               }}</text
               ><text>查看门店 ›</text></view
             ></view
@@ -149,7 +151,9 @@ onShow(load);
         <view class="store-facts"
           ><text>{{ selectedStore.productCount }} 件在售</text
           ><text>{{
-            selectedStore.distanceKm === null ? '距离待授权后计算' : `${selectedStore.distanceKm}km`
+            selectedStore.distanceKm === null || selectedStore.distanceKm === undefined
+              ? '距离待授权后计算'
+              : `${selectedStore.distanceKm}km`
           }}</text
           ><text>信息来自门店主档</text></view
         >

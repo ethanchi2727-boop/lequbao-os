@@ -1170,6 +1170,12 @@ onShow(load);
   gap: 10px;
   background: linear-gradient(120deg, #fff1f0, #ffe4e0);
 }
+.voucher-banner :deep(.navigator-wrap) {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 10px;
+}
 .voucher-banner-icon {
   display: grid;
   width: 30px;

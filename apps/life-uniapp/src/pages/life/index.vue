@@ -132,8 +132,8 @@ onShow(load);
     </template>
 
     <view class="benefit-strip">
-      <button @click="uni.navigateTo({ url: '/pages/page-253/index' })">
-        <text class="b-num">¥8</text><text>满 39 可用</text><text>立即领券 ›</text>
+      <button @click="uni.navigateTo({ url: '/pages/voucher/wallet/index' })">
+        <text class="b-num">代金券</text><text>消费分期返</text><text>我的钱包 ›</text>
       </button>
       <button @click="uni.switchTab({ url: '/pages/cart/index' })">
         <text class="b-num">¥10</text><text>首单立减</text><text>马上下单 ›</text>

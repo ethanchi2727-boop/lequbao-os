@@ -269,6 +269,12 @@ onShow(load);
   overflow: hidden;
   box-shadow: var(--shadow);
 }
+.cpn :deep(.navigator-wrap) {
+  display: flex;
+  width: 100%;
+  border-radius: 16px;
+  overflow: hidden;
+}
 .cpn-frozen,
 .cpn-void {
   opacity: 0.55;
