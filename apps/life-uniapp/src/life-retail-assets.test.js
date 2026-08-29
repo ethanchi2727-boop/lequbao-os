@@ -42,9 +42,9 @@ describe('乐趣生活 V6.3 official retail assets', () => {
     expect(page).toContain('../../assets/v63-retail/category-sprite.webp');
     expect(page).toContain('../../assets/v63-retail/product-sprite.webp');
     expect(page).toContain('retailCategories');
-    expect(page).toContain('今日热卖');
-    expect(page).toContain('life-channels');
-    expect(page).toContain('product-shelf');
+    expect(page).toContain('今日优惠');
+    expect(page).toContain('class="phone"');
+    expect(page).toContain('--hd1:#009146');
     expect(page).toContain('product.salePriceCents');
     expect(page).toContain('product.availableQuantity');
     expect(page).toContain("lifeSession.request('/api/v1/life/cart/items'");
@@ -68,6 +68,6 @@ describe('乐趣生活 V6.3 official retail assets', () => {
       expect(page).not.toMatch(/新人专享|会场5折|爆款直降|第二件半价/u);
     }
     expect(mall).toContain('theme-color="coral"');
-    expect(community).toContain('theme-color="blue"');
+    expect(community).toContain('--hd1:#1a4fb0');
   });
 });

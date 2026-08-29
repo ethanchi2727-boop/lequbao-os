@@ -59,4 +59,46 @@ describe('结算页代金券抵扣与团购详情契约', () => {
     expect(service).toContain('merchantTenantId');
     expect(service).toContain('/api/v1/life/rewards?limit=');
   });
+
+  it('navigator 内核 a.navigator-wrap 必须有 flex 穿透，防止卡片纵向堆叠', async () => {
+    const [journey, wallet] = await Promise.all([
+      source('components/LifeJourneyPage.vue'),
+      source('pages/voucher/wallet/index.vue'),
+    ]);
+    expect(journey).toContain('.voucher-banner :deep(.navigator-wrap)');
+    expect(wallet).toContain('.cpn :deep(.navigator-wrap)');
+  });
+
+  it('首页领券权益条接入真实代金券钱包且所有静态导航均已注册', async () => {
+    const [life, pagesRaw] = await Promise.all([
+      source('pages/life/index.vue'),
+      source('pages.json'),
+    ]);
+    expect(life).toContain('/pages/voucher/wallet/index');
+    expect(life).not.toContain('/pages/page-253/index');
+    const pages = JSON.parse(pagesRaw);
+    const registered = new Set([
+      ...pages.pages.map((page) => `/${page.path}`),
+      ...(pages.tabBar?.list ?? []).map((tab) => `/${tab.pagePath}`),
+    ]);
+    const glob = await import('node:fs/promises').then(async ({ readdir }) => {
+      const walk = async (dir) => {
+        const out = [];
+        for (const entry of await readdir(new URL(dir, import.meta.url), { withFileTypes: true })) {
+          if (entry.isDirectory()) out.push(...(await walk(`${dir}${entry.name}/`)));
+          else if (/\.(vue|js)$/u.test(entry.name)) out.push(`${dir}${entry.name}`);
+        }
+        return out;
+      };
+      return walk('./');
+    });
+    const pattern =
+      /(?:navigateTo|redirectTo|switchTab|reLaunch)\(\{\s*url:\s*'(\/pages\/[^'?']+)'/gu;
+    for (const file of glob) {
+      if (file.includes('.test.')) continue;
+      const text = await source(file);
+      for (const match of text.matchAll(pattern))
+        expect(registered.has(match[1]), `${file} → ${match[1]} 未注册`).toBe(true);
+    }
+  });
 });

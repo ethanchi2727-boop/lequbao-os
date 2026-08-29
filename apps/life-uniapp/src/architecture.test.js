@@ -27,12 +27,18 @@ describe('乐趣生活 UniApp 架构', () => {
     expect(topBar).toContain("'/pages/page-203/index'");
     expect(topBar).toContain('capsule-reserve');
     expect(surface).toContain('LifeTopBar');
-    for (const page of [lifePage, mallPage, communityPage, cartPage, mePage]) {
+    // life 和 community 已落地 concept-f truth 版（.phone 壳 + --hd1/--hd2 ramp）
+    expect(lifePage).toContain('class="phone"');
+    expect(lifePage).toContain('--hd1:#009146');
+    expect(lifePage).toContain('--hd2:#006b36');
+    expect(communityPage).toContain('class="phone"');
+    expect(communityPage).toContain('--hd1:#1a4fb0');
+    expect(communityPage).toContain('--hd2:#0c2a80');
+    // mall/cart/me 仍用 LifeSurface 包装
+    for (const page of [mallPage, cartPage, mePage]) {
       expect(page).toMatch(/<LifeSurface\s+primary/u);
     }
-    expect(lifePage).toContain('theme-color="coral"');
     expect(mallPage).toContain('theme-color="coral"');
-    expect(communityPage).toContain('theme-color="blue"');
   });
 
   it('uses the platform consumer audience and keeps preview data behind build-time flags', async () => {
