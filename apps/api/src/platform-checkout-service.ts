@@ -25,6 +25,12 @@ const QuoteSchema = z.object({
     )
     .max(100)
     .default([]),
+  rewardRedemption: z
+    .object({
+      action: z.enum(['APPLY', 'SKIP']),
+      rewardGrantIds: z.array(UuidSchema).max(100).optional(),
+    })
+    .optional(),
 });
 const CheckoutItemSnapshotSchema = z.object({
   cartItemId: UuidSchema,
@@ -150,6 +156,32 @@ export function createPlatformCheckoutService(
         ORDER BY merchant_tenant_id,store_id,order_type`,
       [accountId, checkoutId],
     );
+    const redemptions = await client.query<{
+      id: string;
+      checkout_group_id: string;
+      merchant_tenant_id: string;
+      reward_grant_id: string;
+      amount_cents: string | number;
+      status: string;
+      order_id: string | null;
+    }>(
+      `SELECT id,checkout_group_id,merchant_tenant_id,reward_grant_id,amount_cents,status,order_id
+         FROM platform_checkout_reward_redemptions
+        WHERE account_id=$1 AND checkout_id=$2 AND status IN ('RESERVED','SETTLED')
+        ORDER BY created_at,id`,
+      [accountId, checkoutId],
+    );
+    const rewardRedemptionCents = redemptions.rows.reduce(
+      (sum, redemption) => sum + Number(redemption.amount_cents),
+      0,
+    );
+    const groupRedemptionCents = new Map<string, number>();
+    for (const redemption of redemptions.rows)
+      groupRedemptionCents.set(
+        redemption.checkout_group_id,
+        (groupRedemptionCents.get(redemption.checkout_group_id) ?? 0) +
+          Number(redemption.amount_cents),
+      );
     return {
       id: row.id,
       cartId: row.cart_id,
@@ -160,6 +192,17 @@ export function createPlatformCheckoutService(
       shippingAmountCents: Number(row.shipping_amount_cents),
       payableAmountCents: Number(row.payable_amount_cents),
       rewardRedemptionStatus: row.reward_redemption_status,
+      rewardRedemptionCents,
+      cashPayableCents: Number(row.payable_amount_cents) - rewardRedemptionCents,
+      rewardRedemptions: redemptions.rows.map((redemption) => ({
+        id: redemption.id,
+        groupId: redemption.checkout_group_id,
+        merchantTenantId: redemption.merchant_tenant_id,
+        rewardGrantId: redemption.reward_grant_id,
+        amountCents: Number(redemption.amount_cents),
+        status: redemption.status,
+        orderId: redemption.order_id,
+      })),
       expiresAt: new Date(row.expires_at).toISOString(),
       groups: groups.rows.map((group) => ({
         id: group.id,
@@ -174,6 +217,7 @@ export function createPlatformCheckoutService(
         discountAmountCents: Number(group.discount_amount_cents),
         shippingAmountCents: Number(group.shipping_amount_cents),
         payableAmountCents: Number(group.payable_amount_cents),
+        rewardRedemptionCents: groupRedemptionCents.get(group.id) ?? 0,
         status: group.status,
         orderId: group.order_id,
         lastErrorCode: group.last_error_code,
@@ -735,12 +779,72 @@ export function createPlatformCheckoutService(
         );
         const checkoutId = randomUUID();
         const expiresAt = new Date(Date.now() + 10 * 60_000).toISOString();
+        // 代金券抵扣：仅在请求显式声明 rewardRedemption 时启用；
+        // 未声明时保持历史行为 UNAVAILABLE_PENDING_POLICY，不影响既有结算链路。
+        let rewardRedemptionStatus = 'UNAVAILABLE_PENDING_POLICY';
+        const rewardRedemptions = [] as Array<{
+          groupId: string;
+          merchantTenantId: string;
+          rewardGrantId: string;
+          amountCents: number;
+        }>;
+        if (input.rewardRedemption) {
+          rewardRedemptionStatus = 'NOT_APPLIED';
+          if (input.rewardRedemption.action === 'APPLY') {
+            const grantFilter = input.rewardRedemption.rewardGrantIds ?? null;
+            for (const group of quotedGroups) {
+              let remaining = group.payableAmountCents;
+              if (remaining <= 0) continue;
+              await client.query("SELECT set_config('app.tenant_id',$1,true)", [
+                group.merchantTenantId,
+              ]);
+              const grants = await client.query<{
+                id: string;
+                granted_amount_cents: string | number;
+                redeemed_amount_cents: string | number;
+                reversed_amount_cents: string | number;
+              }>(
+                `SELECT grant.id,grant.granted_amount_cents,
+                        grant.redeemed_amount_cents,grant.reversed_amount_cents
+                   FROM reward_grants grant
+                   JOIN reward_accounts account
+                     ON account.tenant_id=grant.tenant_id AND account.id=grant.account_id
+                  WHERE grant.tenant_id=$1 AND grant.customer_id=$2
+                    AND account.owner_type='CUSTOMER' AND account.owner_id=$2
+                    AND grant.status='AVAILABLE'
+                    AND (grant.available_at IS NULL OR grant.available_at<=now())
+                    AND (grant.expires_at IS NULL OR grant.expires_at>now())
+                    AND ($3::uuid[] IS NULL OR grant.id=ANY($3::uuid[]))
+                  ORDER BY grant.expires_at ASC NULLS LAST,grant.created_at ASC,grant.id
+                  FOR UPDATE OF grant`,
+                [group.merchantTenantId, group.customerId, grantFilter],
+              );
+              for (const grant of grants.rows) {
+                if (remaining <= 0) break;
+                const availableCents =
+                  Number(grant.granted_amount_cents) -
+                  Number(grant.redeemed_amount_cents) -
+                  Number(grant.reversed_amount_cents);
+                if (availableCents <= 0) continue;
+                const amountCents = Math.min(availableCents, remaining);
+                rewardRedemptions.push({
+                  groupId: group.id,
+                  merchantTenantId: group.merchantTenantId,
+                  rewardGrantId: grant.id,
+                  amountCents,
+                });
+                remaining -= amountCents;
+              }
+            }
+            if (rewardRedemptions.length > 0) rewardRedemptionStatus = 'APPLIED';
+          }
+        }
         await client.query(
           `INSERT INTO platform_checkout_sessions(
              id,account_id,cart_id,cart_version,idempotency_key,request_hash,status,
              goods_amount_cents,discount_amount_cents,shipping_amount_cents,payable_amount_cents,
-             reward_redemption_status,expires_at
-           ) VALUES ($1,$2,$3,$4,$5,$6,'QUOTED',$7,$8,$9,$10,'UNAVAILABLE_PENDING_POLICY',$11)`,
+             expires_at,reward_redemption_status
+           ) VALUES ($1,$2,$3,$4,$5,$6,'QUOTED',$7,$8,$9,$10,$11,$12)`,
           [
             checkoutId,
             command.identity.accountId,
@@ -753,6 +857,7 @@ export function createPlatformCheckoutService(
             totals.shipping,
             totals.payable,
             expiresAt,
+            rewardRedemptionStatus,
           ],
         );
         for (const group of quotedGroups)
@@ -779,6 +884,20 @@ export function createPlatformCheckoutService(
               group.discountAmountCents,
               group.shippingAmountCents,
               group.payableAmountCents,
+            ],
+          );
+        for (const redemption of rewardRedemptions)
+          await client.query(
+            `INSERT INTO platform_checkout_reward_redemptions(
+               checkout_id,checkout_group_id,account_id,merchant_tenant_id,reward_grant_id,amount_cents
+             ) VALUES ($1,$2,$3,$4,$5,$6)`,
+            [
+              checkoutId,
+              redemption.groupId,
+              command.identity.accountId,
+              redemption.merchantTenantId,
+              redemption.rewardGrantId,
+              redemption.amountCents,
             ],
           );
         return load(client, command.identity.accountId, checkoutId);
@@ -835,6 +954,11 @@ export function createPlatformCheckoutService(
               WHERE account_id=$1 AND checkout_id=$2 AND status<>'ORDER_CREATED'`,
             [command.identity.accountId, checkoutId],
           );
+          await client.query(
+            `UPDATE platform_checkout_reward_redemptions SET status='RELEASED',updated_at=now()
+              WHERE account_id=$1 AND checkout_id=$2 AND status='RESERVED'`,
+            [command.identity.accountId, checkoutId],
+          );
           return { expired: true, groups: [] as CheckoutGroup[] };
         }
         const cart = await client.query<{ version: number; status: string }>(
@@ -879,6 +1003,47 @@ export function createPlatformCheckoutService(
                 WHERE account_id=$1 AND checkout_id=$2 AND id=$3 AND order_id IS NULL`,
               [command.identity.accountId, checkoutId, group.id, orderId],
             );
+            const redemptions = await client.query<{
+              id: string;
+              merchant_tenant_id: string;
+              reward_grant_id: string;
+              amount_cents: string | number;
+            }>(
+              `SELECT id,merchant_tenant_id,reward_grant_id,amount_cents
+                 FROM platform_checkout_reward_redemptions
+                WHERE account_id=$1 AND checkout_id=$2 AND checkout_group_id=$3
+                  AND status='RESERVED'
+                ORDER BY created_at,id`,
+              [command.identity.accountId, checkoutId, group.id],
+            );
+            for (const redemption of redemptions.rows) {
+              await client.query("SELECT set_config('app.tenant_id',$1,true)", [
+                redemption.merchant_tenant_id,
+              ]);
+              const debited = await client.query(
+                `UPDATE reward_grants
+                    SET redeemed_amount_cents=redeemed_amount_cents+$3,
+                        status=CASE
+                          WHEN redeemed_amount_cents+$3+reversed_amount_cents>=granted_amount_cents
+                          THEN 'REDEEMED' ELSE status END,
+                        version=version+1,updated_at=now()
+                  WHERE tenant_id=$1 AND id=$2 AND status='AVAILABLE'
+                    AND granted_amount_cents-reversed_amount_cents-redeemed_amount_cents>=$3`,
+                [
+                  redemption.merchant_tenant_id,
+                  redemption.reward_grant_id,
+                  Number(redemption.amount_cents),
+                ],
+              );
+              if (debited.rowCount !== 1)
+                throw new PlatformCheckoutUnavailableError('reward redemption no longer available');
+              await client.query(
+                `UPDATE platform_checkout_reward_redemptions
+                    SET status='SETTLED',order_id=$4,updated_at=now()
+                  WHERE account_id=$1 AND checkout_id=$2 AND id=$3 AND status='RESERVED'`,
+                [command.identity.accountId, checkoutId, redemption.id, orderId],
+              );
+            }
           });
         } catch (error) {
           const errorCode =

@@ -73,6 +73,8 @@ export function shapeVoucher(reward, now = Date.now()) {
   return {
     id: String(reward?.id ?? ''),
     statusKey,
+    merchantTenantId:
+      typeof reward?.merchantTenantId === 'string' ? reward.merchantTenantId : '',
     amountCents:
       statusKey === 'active'
         ? asCents(reward?.availableAmountCents)
