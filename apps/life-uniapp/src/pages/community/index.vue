@@ -3,6 +3,7 @@ import { computed, ref } from 'vue';
 import { onShow } from '@dcloudio/uni-app';
 import LifeRetailProductCard from '../../components/LifeRetailProductCard.vue';
 import { lifeRuntimeProfile, lifeSession } from '../../services/life-session.js';
+import { lifeSurfaceState } from '../../surface-contract.js';
 
 const loading = ref(false);
 const error = ref(null);
@@ -16,6 +17,14 @@ const scenes = Object.freeze([
   ['生活服务', '日常所需在身边'],
   ['鲜花礼品', '心意今日送达'],
 ]);
+const state = computed(() =>
+  lifeSurfaceState({ loading: loading.value, error: error.value, records: stores.value }),
+);
+function safeDistanceKm(store) {
+  return store?.distanceKm === null || store?.distanceKm === undefined
+    ? null
+    : `${store.distanceKm}km`;
+}
 
 async function ensurePreviewSession() {
   if (lifeSession.load() || !lifeRuntimeProfile.developmentMocks) return;
@@ -217,6 +226,43 @@ function toggleTheme(){ isDark.value = !isDark.value; }
       <navigator url="/pages/page-228/index?c=kids" open-type="navigate"  data-t="亲子乐园团购：儿童乐园/电玩城套餐"><view class="qic"><image src="/static/v63-icons/3d-play.png" alt="" mode="aspectFit"/></view><text style="font-weight:900;display:inline-block">亲子乐园</text><text style="display:block">周末通用</text></navigator>
     </view>
 
+    <view class="community-trust fu"
+      ><text>✓ 门店真实在营</text><text>✓ 距离授权后计算</text><text>✓ 商品实时在售</text></view
+    >
+    <view v-if="state === 'loading'" class="community-state fu">正在读取真实门店…</view>
+    <view v-else-if="state === 'unauthenticated'" class="community-state fu">登录后查看附近生活</view>
+    <view v-else-if="state === 'forbidden'" class="community-state fu">当前账户无权查看附近门店</view>
+    <view v-else-if="state === 'recoverable-error'" class="community-state fu" @click="load"
+      >加载失败，点此重试</view
+    >
+    <view v-else-if="state === 'empty'" class="community-state fu">当前没有可展示的服务门店</view>
+    <view v-else class="nearby-section fu" v-if="stores.length">
+      <view class="nearby-heading"
+        ><view><text>附近服务门店</text><text>真实在营</text></view
+        ><text>{{ stores.length }} 家</text></view
+      >
+      <view class="store-grid">
+        <button
+          v-for="(store, index) in stores"
+          :key="store.id"
+          @click="openStore(store)"
+          class="store-card"
+        >
+          <view class="store-photo" :style="sceneStyle(index % scenes.length)" />
+          <view class="store-copy"
+            ><text>{{ store.name }}</text
+            ><text>{{ store.cityCode || '当前城市' }} · {{ store.productCount || 0 }} 件在售</text
+            ><view
+              ><text>{{
+                safeDistanceKm(store) ?? '授权后查看距离'
+              }}</text
+              ><text>查看门店 ›</text></view
+            ></view
+          >
+        </button>
+      </view>
+    </view>
+
     <view class="qseg fu">
       <button class="on" id="segDeal">团购套餐</button><button id="segShop">附近商家</button>
     </view>
@@ -314,6 +360,41 @@ function toggleTheme(){ isDark.value = !isDark.value; }
           <view class="drow"><view><text class="dprice">¥15.9<text style="text-decoration:line-through">¥24</text></text><text class="dsold">　已售 9800+</text></view><text class="dbuy">马上抢</text></view>
         </view>
       </navigator>
+    </view>
+  </view>
+
+  <view v-if="selectedStore" class="store-sheet" @click="selectedStore = null">
+    <view class="store-sheet-card" @click.stop>
+      <view class="store-heading"
+        ><view
+          ><text>{{ selectedStore.name }}</text
+          ><text
+            >{{ selectedStore.cityCode || '当前城市' }} ·
+            {{ selectedStore.districtCode || '服务区域' }}</text
+          ></view
+        ><button @click="selectedStore = null">关闭</button></view
+      >
+      <view class="store-facts"
+        ><text>{{ selectedStore.productCount || 0 }} 件在售</text
+        ><text>{{
+          safeDistanceKm(selectedStore) ?? '距离待授权后计算'
+        }}</text
+        ><text>信息来自门店主档</text></view
+      >
+      <view v-if="detailLoading" class="community-state">正在读取门店在售商品…</view>
+      <view v-else-if="!storeProducts.length" class="community-state"
+        >门店当前没有可购买商品</view
+      >
+      <view v-else class="store-products"
+        ><LifeRetailProductCard
+          v-for="(product, index) in storeProducts"
+          :key="product.id"
+          compact
+          :product="product"
+          :index="index"
+          @select="() => {}"
+          @add="addToCart"
+      /></view>
     </view>
   </view>
 
@@ -472,6 +553,36 @@ function toggleTheme(){ isDark.value = !isDark.value; }
 .pdots{position:absolute;right:13px;bottom:10px;display:flex;gap:5px;z-index:6}
 .pdots i{width:5px;height:5px;border-radius:99px;background:rgba(22,19,15,.16);transition:.35s}
 .pdots i.on{width:15px;background:rgba(22,19,15,.55)}
+/* ===== 巡检修复：信任三标签 + 状态 + 附近真实门店 + 门店详情浮层 ===== */
+.community-trust{display:flex;margin:14px 14px 0;gap:8px;flex-wrap:wrap}
+.community-trust>text{padding:4px 9px;border-radius:999px;background:var(--notice-bg);color:var(--notice-tx);font-size:10px;font-weight:800}
+.community-state{margin:10px 14px 0;padding:14px 12px;border-radius:14px;background:var(--card);border:1px dashed var(--line);color:var(--mut);font-size:11.5px;font-weight:700;text-align:center}
+.nearby-section{margin:10px 14px 0}
+.nearby-heading{display:flex;align-items:center;justify-content:space-between;margin:0 2px 8px}
+.nearby-heading view{display:flex;flex-direction:column;gap:2px}
+.nearby-heading view text:first-child{font-size:13.5px;font-weight:900;color:var(--ink)}
+.nearby-heading view text:last-child{font-size:9.5px;font-weight:700;color:var(--mut)}
+.nearby-heading>text:last-child{font-size:10.5px;font-weight:800;color:var(--accent)}
+.store-grid{display:grid;gap:10px;grid-template-columns:1fr}
+.store-card{margin:0;padding:10px;border:1px solid var(--line);border-radius:16px;background:var(--card);box-shadow:var(--shadow);display:flex;gap:10px;align-items:center;text-align:left;line-height:1.4}
+.store-photo{width:62px;height:62px;border-radius:14px;flex:none;background-repeat:no-repeat;background-size:500% 300%}
+.store-copy{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
+.store-copy>text:first-child{font-size:13px;font-weight:900;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.store-copy>text:nth-child(2){font-size:9.5px;font-weight:700;color:var(--mut)}
+.store-copy>view{display:flex;margin-top:3px;align-items:center;justify-content:space-between;gap:6px}
+.store-copy>view text:first-child{font-size:9.5px;font-weight:800;color:var(--notice-tx);background:var(--notice-bg);padding:2px 5px;border-radius:5px}
+.store-copy>view text:last-child{font-size:10.5px;font-weight:900;color:var(--accent)}
+/* ===== store-sheet 浮层 ===== */
+.store-sheet{position:fixed;z-index:80;top:0;right:0;bottom:0;left:0;display:flex;align-items:flex-end;background:var(--life-overlay,rgba(22,19,15,.45))}
+.store-sheet-card{width:100%;max-height:84vh;overflow:auto;padding:14px 14px calc(14px + env(safe-area-inset-bottom));border-radius:18px 18px 0 0;background:var(--bg,#f6f1e6);box-sizing:border-box}
+.store-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:10px}
+.store-heading view{display:flex;flex:1;min-width:0;flex-direction:column;gap:3px}
+.store-heading view text:first-child{font-size:16px;font-weight:900;color:var(--ink,#16130f)}
+.store-heading view text:last-child{font-size:10.5px;font-weight:700;color:var(--mut,#857c6d)}
+.store-heading button{margin:0;border-radius:999px;padding:5px 11px;background:var(--life-bg,#e6f3ea);color:var(--life-brand-deep,#0b6b3d);font-size:10.5px;font-weight:800}
+.store-facts{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+.store-facts>text{padding:4px 8px;border-radius:999px;background:var(--card,#fff);border:1px solid var(--line);font-size:10px;font-weight:700;color:var(--mut)}
+.store-products{display:grid;gap:10px;grid-template-columns:1fr}
 
 </style>
 
