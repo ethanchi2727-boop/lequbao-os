@@ -26,10 +26,18 @@ const identity = {
 };
 const result = (rows: unknown[] = [], rowCount = rows.length) => ({ rows, rowCount });
 
-function fixture(options: { session?: boolean; cartVersion?: number; replayHash?: string } = {}) {
+function fixture(
+  options: {
+    session?: boolean;
+    cartVersion?: number;
+    replayHash?: string;
+    rewardGrants?: Array<{ id: string; availableCents: number }>;
+  } = {},
+) {
   let checkoutId = '';
   let checkoutValues: readonly unknown[] = [];
   const groupRows: unknown[] = [];
+  const redemptionRows: unknown[] = [];
   const query = vi.fn(async (rawSql: string, values?: readonly unknown[]) => {
     const sql = rawSql.replace(/\s+/gu, ' ').trim();
     if (sql.startsWith('SELECT 1 FROM platform_consumer_sessions'))
@@ -97,6 +105,29 @@ function fixture(options: { session?: boolean; cartVersion?: number; replayHash?
       checkoutId = String(values?.[0]);
       return result([], 1);
     }
+    if (sql.startsWith('SELECT grant.id,grant.granted_amount_cents'))
+      return result(
+        (options.rewardGrants ?? []).map((grant) => ({
+          id: grant.id,
+          granted_amount_cents: grant.availableCents,
+          redeemed_amount_cents: 0,
+          reversed_amount_cents: 0,
+        })),
+      );
+    if (sql.startsWith('INSERT INTO platform_checkout_reward_redemptions')) {
+      redemptionRows.push({
+        id: `redemption-${redemptionRows.length + 1}`,
+        checkout_group_id: values?.[1],
+        merchant_tenant_id: values?.[3],
+        reward_grant_id: values?.[4],
+        amount_cents: values?.[5],
+        status: 'RESERVED',
+        order_id: null,
+      });
+      return result([], 1);
+    }
+    if (sql.startsWith('SELECT id,checkout_group_id,merchant_tenant_id,reward_grant_id'))
+      return result(redemptionRows);
     if (sql.startsWith('INSERT INTO platform_checkout_groups')) {
       groupRows.push({
         id: values?.[0],
@@ -129,7 +160,7 @@ function fixture(options: { session?: boolean; cartVersion?: number; replayHash?
           discount_amount_cents: checkoutValues[7],
           shipping_amount_cents: checkoutValues[8],
           payable_amount_cents: checkoutValues[9],
-          reward_redemption_status: 'UNAVAILABLE_PENDING_POLICY',
+          reward_redemption_status: checkoutValues[11] ?? 'UNAVAILABLE_PENDING_POLICY',
           expires_at: checkoutValues[10],
         },
       ]);
@@ -149,11 +180,13 @@ function submitFixture(
   options: {
     changedPrice?: boolean;
     sourceChannel?: 'LEQU_LIFE' | 'MERCHANT_MINI_PROGRAM';
+    redemptions?: Array<{ id: string; rewardGrantId: string; amountCents: number }>;
   } = {},
 ) {
   let groupStatus = 'QUOTED';
   let orderId: string | null = null;
   let checkoutStatus = 'QUOTED';
+  let redemptionsSettled = false;
   const itemSnapshot = [
     {
       cartItemId,
@@ -202,6 +235,34 @@ function submitFixture(
       return result([{ version: 3, status: 'ACTIVE' }]);
     if (sql.startsWith('SELECT id,merchant_tenant_id,customer_id,store_id'))
       return result([{ ...group, status: groupStatus, order_id: orderId }]);
+    if (sql.startsWith('SELECT id,merchant_tenant_id,reward_grant_id,amount_cents'))
+      return result(
+        redemptionsSettled
+          ? []
+          : (options.redemptions ?? []).map((redemption) => ({
+              id: redemption.id,
+              merchant_tenant_id: tenantId,
+              reward_grant_id: redemption.rewardGrantId,
+              amount_cents: redemption.amountCents,
+            })),
+      );
+    if (sql.startsWith('UPDATE reward_grants')) return result([], 1);
+    if (sql.startsWith('UPDATE platform_checkout_reward_redemptions')) {
+      if (sql.includes("status='SETTLED'")) redemptionsSettled = true;
+      return result([], 1);
+    }
+    if (sql.startsWith('SELECT id,checkout_group_id,merchant_tenant_id,reward_grant_id'))
+      return result(
+        (options.redemptions ?? []).map((redemption) => ({
+          id: redemption.id,
+          checkout_group_id: checkoutGroupId,
+          merchant_tenant_id: tenantId,
+          reward_grant_id: redemption.rewardGrantId,
+          amount_cents: redemption.amountCents,
+          status: redemptionsSettled ? 'SETTLED' : 'RESERVED',
+          order_id: orderId,
+        })),
+      );
     if (sql.startsWith('SELECT 1 FROM platform_consumer_tenant_links'))
       return result([{ ok: true }]);
     if (sql.startsWith('INSERT INTO idempotency_keys')) return result([{ id: 'idem' }]);
@@ -366,6 +427,74 @@ describe('platform checkout quote', () => {
     await expect(
       fx.service.quote({ identity, idempotencyKey: 'quote-auth', body: { cartVersion: 3 } }),
     ).rejects.toBeInstanceOf(PlatformCheckoutAuthenticationError);
+  });
+
+  it('applies available reward grants to the quote and caps them at the payable amount', async () => {
+    const grantId = '7c000000-0000-4000-8000-000000000031';
+    const fx = fixture({ rewardGrants: [{ id: grantId, availableCents: 2000 }] });
+    const quote = (await fx.service.quote({
+      identity,
+      idempotencyKey: 'quote-reward-1',
+      body: {
+        cartVersion: 3,
+        fulfillmentChoices: [],
+        rewardRedemption: { action: 'APPLY' },
+      },
+    })) as {
+      payableAmountCents: number;
+      rewardRedemptionStatus: string;
+      rewardRedemptionCents: number;
+      cashPayableCents: number;
+      rewardRedemptions: Array<{ rewardGrantId: string; amountCents: number; status: string }>;
+    };
+    expect(quote).toMatchObject({
+      payableAmountCents: 900,
+      rewardRedemptionStatus: 'APPLIED',
+      rewardRedemptionCents: 900,
+      cashPayableCents: 0,
+      rewardRedemptions: [{ rewardGrantId: grantId, amountCents: 900, status: 'RESERVED' }],
+    });
+    const redemptionInsert = fx.query.mock.calls.find(([sql]) =>
+      String(sql).includes('INSERT INTO platform_checkout_reward_redemptions'),
+    );
+    expect(redemptionInsert?.[1]).toEqual(expect.arrayContaining([grantId, 900]));
+  });
+
+  it('keeps reward redemption off when the request explicitly skips it', async () => {
+    const fx = fixture({ rewardGrants: [{ id: '7c000000-0000-4000-8000-000000000032', availableCents: 500 }] });
+    const quote = (await fx.service.quote({
+      identity,
+      idempotencyKey: 'quote-reward-skip',
+      body: { cartVersion: 3, rewardRedemption: { action: 'SKIP' } },
+    })) as { rewardRedemptionStatus: string; rewardRedemptionCents: number };
+    expect(quote).toMatchObject({ rewardRedemptionStatus: 'NOT_APPLIED', rewardRedemptionCents: 0 });
+    expect(
+      fx.query.mock.calls.some(([sql]) => String(sql).includes('FROM reward_grants')),
+    ).toBe(false);
+  });
+
+  it('debits redeemed reward amounts when the applied quote submits into orders', async () => {
+    const redemptionId = '7c000000-0000-4000-8000-000000000041';
+    const grantId = '7c000000-0000-4000-8000-000000000042';
+    const fx = submitFixture({
+      redemptions: [{ id: redemptionId, rewardGrantId: grantId, amountCents: 520 }],
+    });
+    const submitted = (await fx.service.submit({
+      identity,
+      checkoutId,
+      idempotencyKey: 'submit-reward-1',
+    })) as {
+      status: string;
+      rewardRedemptionCents: number;
+      rewardRedemptions: Array<{ status: string; orderId: string }>;
+    };
+    expect(submitted.status).toBe('ORDERS_CREATED');
+    expect(submitted.rewardRedemptionCents).toBe(520);
+    expect(submitted.rewardRedemptions[0]?.status).toBe('SETTLED');
+    const grantDebit = fx.query.mock.calls.find(([sql]) =>
+      String(sql).startsWith('UPDATE reward_grants'),
+    );
+    expect(grantDebit?.[1]).toEqual([tenantId, grantId, 520]);
   });
 
   it('submits the quote as one merchant-direct order and closes the cart only after success', async () => {

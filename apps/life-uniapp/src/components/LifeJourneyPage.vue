@@ -8,6 +8,7 @@ import {
   lifeRuntimeProfile,
   parsePaymentCredential,
 } from '../services/life-session.js';
+import { fetchLifeVouchers, groupVouchers } from '../services/life-vouchers.js';
 import { lifeSurfaceState } from '../surface-contract.js';
 
 const props = defineProps({ pageId: { type: String, required: true } });
@@ -37,6 +38,8 @@ const cart = ref({ groups: [], itemCount: 0 });
 const addresses = ref([]);
 const rewards = ref([]);
 const checkout = ref(null);
+const vouchers = ref([]);
+const selectedVoucherId = ref('');
 const deliveryMode = ref('STORE_PICKUP');
 const selectedAddressId = ref('');
 const notice = ref('');
@@ -62,7 +65,28 @@ const cartSummary = computed(() => ({
     0,
   ),
 }));
+const applicableVouchers = computed(() => {
+  const tenantIds = new Set(
+    (checkout.value?.groups?.length ? checkout.value.groups : cart.value.groups || []).map(
+      (group) => group.merchantTenantId,
+    ),
+  );
+  if (!tenantIds.size) return vouchers.value;
+  return vouchers.value.filter((voucher) => tenantIds.has(voucher.merchantTenantId));
+});
+const applicableVoucherCents = computed(() =>
+  applicableVouchers.value.reduce((sum, voucher) => sum + Number(voucher.amountCents || 0), 0),
+);
 const orderId = computed(() => query().orderId || detail.value?.id || records.value[0]?.id || '');
+const groupDiscountText = computed(() => {
+  const sale = Number(detail.value?.salePriceCents || 0);
+  const market = Number(detail.value?.marketPriceCents || 0);
+  if (sale <= 0 || market <= sale) return '';
+  return ((sale / market) * 10).toFixed(1).replace(/\.0$/u, '');
+});
+const voucherRuleUrl = computed(
+  () => `/pages/voucher/rule/index?amt=${(Number(detail.value?.salePriceCents || 0) / 100).toFixed(2)}`,
+);
 const filteredOrders = computed(() => {
   const filtered =
     props.pageId !== '237' || orderFilter.value === 'ALL'
@@ -175,6 +199,15 @@ async function load() {
         addresses.value[0]?.id ||
         '';
       checkout.value = uni.getStorageSync('lequ.life.checkout.v1') || null;
+      if (props.pageId === '229') {
+        const fulfillment = uni.getStorageSync('lequ.life.fulfillment.v1');
+        if (fulfillment?.deliveryMode) deliveryMode.value = fulfillment.deliveryMode;
+        if (fulfillment?.addressId) selectedAddressId.value = fulfillment.addressId;
+        vouchers.value = groupVouchers(
+          await fetchLifeVouchers(lifeSession, 100).catch(() => []),
+        ).active;
+        selectedVoucherId.value = '';
+      }
     }
     if (props.pageId === '228') {
       rewards.value = await lifeSession.request('/api/v1/life/rewards?limit=20');
@@ -235,6 +268,25 @@ async function addToCart(product) {
     busy.value = false;
   }
 }
+async function buyNow(product) {
+  busy.value = true;
+  try {
+    cart.value = await lifeSession.request('/api/v1/life/cart/items', {
+      method: 'PUT',
+      data: {
+        merchantTenantId: product.merchantTenantId,
+        storeId: product.storeId,
+        variantId: product.variantId,
+        quantity: 1,
+      },
+    });
+    go('224');
+  } catch {
+    uni.showToast({ title: '加入失败，请重试', icon: 'none' });
+  } finally {
+    busy.value = false;
+  }
+}
 async function removeItem(item) {
   busy.value = true;
   try {
@@ -266,7 +318,11 @@ function fulfillmentChoices() {
     })),
   );
 }
-async function quote() {
+async function quote(redemption) {
+  const rewardRedemption =
+    redemption && typeof redemption === 'object' && typeof redemption.action === 'string'
+      ? { action: redemption.action, ...(redemption.rewardGrantIds ? { rewardGrantIds: redemption.rewardGrantIds } : {}) }
+      : null;
   if (deliveryMode.value === 'PHYSICAL_DELIVERY' && !selectedAddressId.value)
     return uni.showToast({ title: '请选择配送地址', icon: 'none' });
   busy.value = true;
@@ -274,14 +330,38 @@ async function quote() {
     checkout.value = await lifeSession.request('/api/v1/life/checkouts/quote', {
       method: 'POST',
       header: { 'Idempotency-Key': key('life-quote') },
-      data: { cartVersion: cart.value.version, fulfillmentChoices: fulfillmentChoices() },
+      data: {
+        cartVersion: cart.value.version,
+        fulfillmentChoices: fulfillmentChoices(),
+        ...(rewardRedemption ? { rewardRedemption } : {}),
+      },
     });
     uni.setStorageSync('lequ.life.checkout.v1', checkout.value);
-    go('228');
+    uni.setStorageSync('lequ.life.fulfillment.v1', {
+      deliveryMode: deliveryMode.value,
+      addressId: selectedAddressId.value,
+    });
+    if (props.pageId !== '229') go('228');
   } catch {
     uni.showToast({ title: '核价失败，请刷新库存', icon: 'none' });
   } finally {
     busy.value = false;
+  }
+}
+async function toggleVoucher(voucher) {
+  if (busy.value || !cart.value?.version) return;
+  const previous = selectedVoucherId.value;
+  const next =
+    previous === voucher.id
+      ? { id: '', redemption: { action: 'SKIP' } }
+      : { id: voucher.id, redemption: { action: 'APPLY', rewardGrantIds: [voucher.id] } };
+  selectedVoucherId.value = next.id;
+  await quote(next.redemption);
+  if (checkout.value?.rewardRedemptionStatus === 'APPLIED' && !next.id)
+    selectedVoucherId.value = previous;
+  if (next.id && checkout.value?.rewardRedemptionStatus !== 'APPLIED') {
+    selectedVoucherId.value = '';
+    uni.showToast({ title: '该代金券本单暂不可抵', icon: 'none' });
   }
 }
 async function submit() {
@@ -433,25 +513,65 @@ onShow(load);
       ><view class="group-detail-copy"
         ><view class="group-price"
           ><text>{{ money(detail.salePriceCents) }}</text
-          ><text>服务端实时成交价</text></view
+          ><text
+            v-if="Number(detail.marketPriceCents) > Number(detail.salePriceCents)"
+            class="group-price-old"
+            >{{ money(detail.marketPriceCents) }}</text
+          ><text v-if="groupDiscountText" class="group-price-off"
+            >限时 {{ groupDiscountText }} 折</text
+          ><text v-else class="group-price-tag">服务端实时成交价</text></view
         ><text class="group-title">{{ detail.title }}</text
+        ><view class="drules"
+          ><text>随时退</text><text>过期自动退</text><text>免预约</text></view
         ><text class="group-store">{{ detail.storeName || '适用门店以核价结果为准' }}</text
+        ><navigator class="voucher-banner" :url="voucherRuleUrl" hover-class="none"
+          ><view class="voucher-banner-icon"><text>券</text></view
+          ><view class="voucher-banner-copy"
+            ><text class="voucher-banner-title"
+              >最高可获得 {{ money(detail.salePriceCents) }} 元代金券</text
+            ><text class="voucher-banner-desc">共50期发放完毕 · 确认收货后按期到账</text></view
+          ><text class="voucher-banner-go">规则 ›</text></navigator
+        ><view
+          class="group-shop-card"
+          @click="go('218', { storeId: detail.storeId, storeName: detail.storeName })"
+          ><view class="group-shop-copy"
+            ><text>{{ detail.storeName || '适用门店' }}</text
+            ><text>门店主档、在售商品与核销规则</text></view
+          ><text class="group-shop-go">查看门店 ›</text></view
         ><view class="group-rule-grid"
           ><view
             ><text>规格</text><text>{{ detail.variantTitle }}</text></view
           ><view
             ><text>库存</text><text>{{ detail.availableQuantity }}</text></view
           ><view><text>履约</text><text>到店核销</text></view></view
+        ><view class="group-know-card"
+          ><text class="group-know-title">购买须知</text
+          ><view class="mrow"
+            ><text>有效期</text><text>以订单核销页展示为准</text></view
+          ><view class="mrow"
+            ><text>预约</text><text>免预约，高峰期建议提前到店</text></view
+          ><view class="mrow"
+            ><text>退款</text><text class="mrow-accent">未核销可申请退款 · 售后以服务端规则为准</text></view
+          ></view
         ><text class="group-notice">成交前服务端会再次校验价格、库存与适用门店。</text></view
-      >
-      ><button
-        class="primary group-buy-button"
-        :loading="busy"
-        :disabled="detail.availableQuantity < 1"
-        @click="addToCart(detail)"
-      >
-        加入购物车
-      </button></view
+      ><view class="group-buy-bar"
+        ><button
+          class="group-cart-button"
+          :loading="busy"
+          :disabled="detail.availableQuantity < 1"
+          @click="addToCart(detail)"
+        >
+          加入购物车
+        </button
+        ><button
+          class="primary group-buy-button"
+          :loading="busy"
+          :disabled="detail.availableQuantity < 1"
+          @click="buyNow(detail)"
+        >
+          马上抢 {{ money(detail.salePriceCents) }}
+        </button></view
+      ></view
     >
     <view v-if="pageId === '224' && state === 'ready'" class="journey-cart-surface">
       <view class="journey-cart-summary">
@@ -553,7 +673,9 @@ onShow(load);
       ><view class="checkout-confirm-summary"
         ><view class="checkout-confirm-mark"><view></view></view
         ><view><text>确认订单</text><text>价格、库存与履约规则由服务端最终确认</text></view
-        ><text>{{ checkout ? money(checkout.payableAmountCents) : '待核价' }}</text></view
+        ><text>{{
+          checkout ? money(checkout.cashPayableCents ?? checkout.payableAmountCents) : '待核价'
+        }}</text></view
       ><view class="checkout-truth"
         ><view
           ><text>购物车版本</text><text>{{ cart.version }}</text></view
@@ -578,6 +700,25 @@ onShow(load);
             ><text>{{ money(group.payableAmountCents) }}</text></view
           ></view
         ></view
+      ><view class="voucher-apply-card"
+        ><view class="voucher-apply-head"
+          ><text class="voucher-apply-title">代金券抵扣</text
+          ><text class="voucher-apply-count">{{ applicableVouchers.length }} 张可用</text></view
+        ><view v-if="applicableVouchers.length" class="voucher-apply-list"
+          ><view
+            v-for="voucher in applicableVouchers"
+            :key="voucher.id"
+            class="vopt"
+            :class="{ on: selectedVoucherId === voucher.id }"
+            @click="toggleVoucher(voucher)"
+            ><view class="vopt-copy"
+              ><text class="vopt-name">通用代金券 {{ money(voucher.amountCents) }}</text
+              ><text class="vopt-desc">{{ voucher.descLine || '无门槛 · 以服务端核价为准' }}</text></view
+            ><text class="vopt-action">{{ selectedVoucherId === voucher.id ? '已选 ✓' : '选择' }}</text></view
+          ></view
+        ><view v-else class="voucher-apply-empty"
+          >暂无本单可用代金券 · 下单消费可按规则获得</view
+        ></view
       ><view class="checkout-amounts"
         ><view
           ><text>商品金额</text
@@ -588,9 +729,14 @@ onShow(load);
         ><view
           ><text>订单优惠</text
           ><text>{{ checkout ? `-${money(checkout.discountAmountCents)}` : '待核价' }}</text></view
+        ><view v-if="checkout?.rewardRedemptionCents > 0"
+          ><text>代金券抵扣</text
+          ><text class="voucher-amount">−{{ money(checkout.rewardRedemptionCents) }}</text></view
         ><view class="checkout-payable"
           ><text>应付金额</text
-          ><text>{{ checkout ? money(checkout.payableAmountCents) : '待核价' }}</text></view
+          ><text>{{
+            checkout ? money(checkout.cashPayableCents ?? checkout.payableAmountCents) : '待核价'
+          }}</text></view
         ></view
       ><view class="checkout-confirm-note"
         >提交后按商家分别创建订单；部分分组失败时，服务端会保留已成功结果并支持安全重试。</view
@@ -978,6 +1124,169 @@ onShow(load);
 }
 .group-buy-button {
   margin: 0 24rpx 24rpx;
+}
+.group-price-old {
+  color: var(--life-muted);
+  font-size: 12px;
+  font-weight: 700;
+  padding-bottom: 4px;
+  text-decoration: line-through;
+}
+.group-price-off {
+  margin-left: auto;
+  padding: 3px 7px;
+  border-radius: 6px;
+  color: #ffffff;
+  background: linear-gradient(120deg, #ff5d3d, #f03749);
+  font-size: 9.5px;
+  font-weight: 800;
+}
+.group-price-tag {
+  margin-left: auto;
+  color: var(--life-muted);
+  font-size: 9.5px;
+  font-weight: 700;
+}
+.drules {
+  display: flex;
+  margin-top: 9px;
+  gap: 6px;
+}
+.drules text {
+  padding: 3px 8px;
+  border-radius: 7px;
+  color: #e23d3d;
+  background: rgba(240, 55, 73, 0.08);
+  font-size: 9.5px;
+  font-weight: 800;
+}
+.voucher-banner {
+  display: flex;
+  margin-top: 12px;
+  padding: 11px 13px;
+  border: 1px solid #ffd5cf;
+  border-radius: 14px;
+  align-items: center;
+  gap: 10px;
+  background: linear-gradient(120deg, #fff1f0, #ffe4e0);
+}
+.voucher-banner-icon {
+  display: grid;
+  width: 30px;
+  height: 30px;
+  border-radius: 10px;
+  flex: none;
+  place-items: center;
+  background: linear-gradient(135deg, #ff5d3d, #f03749);
+}
+.voucher-banner-icon text {
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 900;
+}
+.voucher-banner-copy {
+  display: grid;
+  min-width: 0;
+  flex: 1;
+  gap: 2px;
+}
+.voucher-banner-title {
+  color: #e23d3d;
+  font-size: 12px;
+  font-weight: 900;
+}
+.voucher-banner-desc {
+  color: #e07a6a;
+  font-size: 10px;
+  font-weight: 700;
+}
+.voucher-banner-go {
+  color: #e23d3d;
+  font-size: 11px;
+  font-weight: 900;
+}
+.group-shop-card {
+  display: flex;
+  margin-top: 12px;
+  padding: 12px 13px;
+  border: 1px solid var(--life-line);
+  border-radius: 14px;
+  align-items: center;
+  gap: 10px;
+  background: var(--life-paper);
+}
+.group-shop-copy {
+  display: grid;
+  min-width: 0;
+  flex: 1;
+  gap: 2px;
+}
+.group-shop-copy text:first-child {
+  color: var(--life-ink);
+  font-size: 13px;
+  font-weight: 900;
+}
+.group-shop-copy text:last-child {
+  color: var(--life-muted);
+  font-size: 10px;
+  font-weight: 700;
+}
+.group-shop-go {
+  color: var(--life-muted);
+  font-size: 11px;
+  font-weight: 800;
+}
+.group-know-card {
+  display: grid;
+  margin-top: 14px;
+  padding: 12px 13px;
+  border: 1px solid var(--life-line);
+  border-radius: 14px;
+  gap: 9px;
+}
+.group-know-title {
+  color: var(--life-ink);
+  font-size: 13px;
+  font-weight: 900;
+}
+.mrow {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 11px;
+}
+.mrow text:first-child {
+  color: var(--life-muted);
+  font-weight: 700;
+  flex: none;
+}
+.mrow text:last-child {
+  color: var(--life-ink);
+  font-weight: 800;
+  text-align: right;
+}
+.mrow .mrow-accent {
+  color: #009146;
+}
+.group-buy-bar {
+  display: flex;
+  padding: 14px 12px 16px;
+  gap: 10px;
+}
+.group-buy-bar .group-buy-button {
+  margin: 0;
+  flex: 1;
+}
+.group-cart-button {
+  margin: 0;
+  border: 1.5px solid #009146;
+  border-radius: 999px;
+  color: #009146;
+  background: #ffffff;
+  font-size: 13px;
+  font-weight: 900;
+  flex: 1;
 }
 .journey-row > view {
   display: flex;
@@ -1723,6 +2032,81 @@ onShow(load);
 .checkout-payable text:last-child {
   color: var(--life-red);
   font-size: 28rpx;
+}
+.voucher-apply-card {
+  display: block;
+  margin-top: 20rpx;
+  padding: 12px;
+  border: 1rpx solid var(--life-line);
+  border-radius: var(--life-radius-md);
+  background: var(--life-wash);
+}
+.voucher-apply-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.voucher-apply-title {
+  color: var(--life-ink);
+  font-size: 14.5px;
+  font-weight: 900;
+}
+.voucher-apply-count {
+  color: var(--life-muted);
+  font-size: 10.5px;
+  font-weight: 700;
+}
+.voucher-apply-list {
+  display: grid;
+  margin-top: 10px;
+  gap: 8px;
+}
+.vopt {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 12px;
+  border: 1.5px solid var(--life-line);
+  border-radius: 12px;
+  background: var(--life-card, #ffffff);
+}
+.vopt.on {
+  border-color: #f03749;
+  background: rgba(240, 55, 73, 0.08);
+}
+.vopt-copy {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+  gap: 2px;
+}
+.vopt-name {
+  color: var(--life-ink);
+  font-size: 12.5px;
+  font-weight: 900;
+}
+.vopt-desc {
+  color: var(--life-muted);
+  font-size: 9.5px;
+  font-weight: 700;
+}
+.vopt-action {
+  color: var(--life-muted);
+  font-size: 11px;
+  font-weight: 900;
+}
+.vopt.on .vopt-action {
+  color: #f03749;
+}
+.voucher-apply-empty {
+  margin-top: 10px;
+  color: var(--life-muted);
+  font-size: 11px;
+  font-weight: 700;
+}
+.checkout-amounts .voucher-amount {
+  color: #f03749;
+  font-weight: 900;
 }
 .payment-truth {
   display: block;
