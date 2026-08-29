@@ -262,7 +262,7 @@ button:not([disabled]):active {
   border-radius: 20rpx;
   color: var(--bao-mobile-paper);
   background: var(--bao-mobile-gradient-ai);
-  box-shadow: 0 6rpx 16rpx rgba(102, 87, 232, 0.32);
+  box-shadow: 0 6rpx 16rpx rgba(0, 107, 54, 0.3);
   font-size: 20rpx;
   font-weight: 700;
 }
@@ -598,8 +598,8 @@ button:not([disabled]):active {
   border-radius: 50%;
   background: radial-gradient(
     closest-side,
-    rgba(37, 174, 130, 0.35),
-    rgba(37, 174, 130, 0)
+    rgba(110, 199, 38, 0.35),
+    rgba(110, 199, 38, 0)
   );
   content: '';
 }
@@ -699,7 +699,7 @@ button:not([disabled]):active {
   border: 0;
   color: var(--bao-mobile-paper);
   background: var(--bao-mobile-gradient-ai);
-  box-shadow: 0 6rpx 16rpx rgba(102, 87, 232, 0.32);
+  box-shadow: 0 6rpx 16rpx rgba(0, 107, 54, 0.3);
 }
 .timeline-step > view {
   display: flex;
@@ -755,8 +755,8 @@ button:not([disabled]):active {
   border-radius: 50%;
   background: radial-gradient(
     closest-side,
-    rgba(37, 174, 130, 0.3),
-    rgba(37, 174, 130, 0)
+    rgba(110, 199, 38, 0.3),
+    rgba(110, 199, 38, 0)
   );
   content: '';
 }
@@ -899,7 +899,7 @@ button:not([disabled]):active {
   border-radius: var(--bao-mobile-radius-control);
   color: var(--bao-mobile-paper);
   background: var(--bao-mobile-gradient-ai);
-  box-shadow: 0 6rpx 16rpx rgba(102, 87, 232, 0.28);
+  box-shadow: 0 6rpx 16rpx rgba(0, 107, 54, 0.26);
   font-size: 22rpx;
   font-weight: 700;
 }
@@ -1007,13 +1007,13 @@ button:not([disabled]):active {
 }
 @keyframes bao-ping {
   0% {
-    box-shadow: 0 0 0 0 rgba(37, 174, 130, 0.35);
+    box-shadow: 0 0 0 0 rgba(110, 199, 38, 0.35);
   }
   70% {
-    box-shadow: 0 0 0 12rpx rgba(37, 174, 130, 0);
+    box-shadow: 0 0 0 12rpx rgba(110, 199, 38, 0);
   }
   100% {
-    box-shadow: 0 0 0 0 rgba(37, 174, 130, 0);
+    box-shadow: 0 0 0 0 rgba(110, 199, 38, 0);
   }
 }
 
@@ -1081,4 +1081,486 @@ button:not([disabled]):active {
     transition: none !important;
   }
 }
+
+/* ============================================================
+   V6.5.1 概念稿精修对齐层
+   依据 bao-redesign/index.html（V2 精修）逐组件对齐：
+   稿面宽 392px，H5 画布 430px，换算系数 750/430 = 1.744。
+   字号 / 图标 / 按钮 / 间距全部按稿换算为 rpx。
+   ============================================================ */
+page,
+uni-app {
+  --bao-mobile-fresh: #6ec726;
+  --bao-mobile-fresh-ink: #06281b;
+  --bao-mobile-gradient-fresh: linear-gradient(135deg, #8fe04a, #43a016);
+  --bao-mobile-gradient-brand: linear-gradient(135deg, #12a458, #006b36);
+  --bao-mobile-gradient-ai: linear-gradient(135deg, #12a458, #006b36);
+}
+
+/* —— 卡片 · 稿 .card radius20 pad16/18 —— */
+.panel {
+  border-radius: 35rpx;
+}
+.panel-head {
+  min-height: 0;
+  padding: 28rpx 31rpx 0;
+  border-bottom: 0;
+}
+.panel-head text:first-child {
+  padding-left: 0;
+  font-size: 24rpx;
+  font-weight: 900;
+  letter-spacing: 0.02em;
+}
+.panel-head text:first-child::before {
+  display: none;
+}
+.panel-head text:last-child {
+  color: var(--bao-mobile-jade-600);
+  font-size: 19rpx;
+  font-weight: 800;
+}
+.empty-state {
+  font-size: 22rpx;
+}
+
+/* —— 主按钮 · 稿按钮字阶 900 —— */
+.m-primary {
+  height: 88rpx;
+  font-size: 24rpx;
+  font-weight: 900;
+  line-height: 88rpx;
+}
+
+/* —— 上下文 Hero · 稿 .promo radius22 pad15/18 + 双装饰环 —— */
+.m-context {
+  min-height: 0;
+  padding: 26rpx 31rpx;
+  border-radius: 38rpx;
+}
+.m-context::before {
+  position: absolute;
+  top: -101rpx;
+  right: -80rpx;
+  width: 296rpx;
+  height: 296rpx;
+  border: 45rpx solid rgba(110, 199, 38, 0.16);
+  border-radius: 50%;
+  content: '';
+}
+.m-context::after {
+  top: auto;
+  right: 63rpx;
+  bottom: -122rpx;
+  width: 227rpx;
+  height: 227rpx;
+  border: 35rpx solid rgba(110, 199, 38, 0.1);
+  border-radius: 50%;
+  background: none;
+}
+.m-context text:first-child {
+  position: relative;
+  z-index: 1;
+  color: rgba(244, 250, 246, 0.78);
+  font-size: 20rpx;
+}
+.m-context text:nth-child(2) {
+  position: relative;
+  z-index: 1;
+  margin-top: 9rpx;
+  font-size: 28rpx;
+  font-weight: 900;
+  letter-spacing: 0.02em;
+}
+.m-context text:last-child {
+  top: 24rpx;
+  right: 26rpx;
+  padding: 14rpx 26rpx;
+  color: var(--bao-mobile-fresh-ink);
+  background: var(--bao-mobile-fresh);
+  box-shadow: 0 10rpx 24rpx -7rpx rgba(110, 199, 38, 0.5);
+  font-size: 20rpx;
+  font-weight: 900;
+}
+
+/* —— 对话气泡 · 稿 .bubble pad11/14 font12.5 lh1.65 —— */
+.m-user {
+  padding: 19rpx 24rpx;
+  border-radius: 31rpx 7rpx 31rpx 31rpx;
+  box-shadow: 0 14rpx 31rpx -17rpx rgba(0, 107, 54, 0.5);
+  font-size: 22rpx;
+  line-height: 1.65;
+}
+.m-agent {
+  padding: 28rpx 31rpx;
+  border-radius: 35rpx;
+}
+.m-agent-head {
+  gap: 17rpx;
+}
+.m-agent-head > text:first-child {
+  width: 56rpx;
+  height: 56rpx;
+  border-radius: 21rpx;
+  background: var(--bao-mobile-gradient-brand);
+  box-shadow: inset 0 3rpx 0 rgba(255, 255, 255, 0.28);
+  font-size: 20rpx;
+  font-weight: 900;
+}
+.m-agent-head > text:nth-child(2) {
+  font-size: 22rpx;
+  font-weight: 800;
+}
+.m-agent-head > text:last-child {
+  font-size: 18rpx;
+  font-weight: 700;
+}
+.m-agent .agent-title {
+  margin: 19rpx 0 9rpx;
+  font-size: 26rpx;
+  font-weight: 800;
+}
+.m-agent > text {
+  color: var(--bao-mobile-ink-600);
+  font-size: 22rpx;
+  line-height: 1.65;
+}
+.m-result view {
+  padding: 19rpx 21rpx;
+}
+.m-result view text:first-child {
+  font-size: 17rpx;
+  font-weight: 600;
+}
+.m-result view text:last-child {
+  margin-top: 7rpx;
+  font-size: 33rpx;
+  font-weight: 900;
+}
+.m-agent .agent-action {
+  height: 80rpx;
+  font-size: 24rpx;
+  font-weight: 900;
+  line-height: 80rpx;
+}
+
+/* —— 输入条 · 稿 .composer pad6/7/6/18 + .send 36px —— */
+.m-composer {
+  gap: 14rpx;
+  min-height: 0;
+  padding: 10rpx 12rpx 10rpx 31rpx;
+}
+.m-composer text:first-child {
+  width: 56rpx;
+  height: 56rpx;
+}
+.m-composer text:first-child::before {
+  width: 24rpx;
+}
+.m-composer text:first-child::after {
+  height: 24rpx;
+}
+.m-composer text:nth-child(2) {
+  font-size: 22rpx;
+}
+.m-composer text:last-child {
+  width: 63rpx;
+  height: 63rpx;
+  box-shadow: 0 7rpx 17rpx -3rpx rgba(0, 107, 54, 0.45),
+    inset 0 2rpx 0 rgba(255, 255, 255, 0.3);
+}
+.m-composer text:last-child::before {
+  width: 24rpx;
+  height: 24rpx;
+  margin-top: 9rpx;
+  border-top-width: 4rpx;
+  border-left-width: 4rpx;
+}
+
+/* —— 区块标题 · 稿 .sec-tag 15px/900 —— */
+.m-section {
+  min-height: 0;
+  padding: 26rpx 4rpx 14rpx;
+}
+.m-section text:first-child {
+  padding-left: 0;
+  font-size: 26rpx;
+  font-weight: 900;
+  letter-spacing: 0.02em;
+}
+.m-section text:first-child::before {
+  display: none;
+}
+.m-section text:last-child {
+  color: var(--bao-mobile-jade-600);
+  font-size: 19rpx;
+  font-weight: 800;
+}
+
+/* —— 列表行 · 稿 .taskrow pad12/0 gap12 虚线分隔 —— */
+.task-list {
+  padding: 5rpx 31rpx 17rpx;
+}
+.task-row {
+  gap: 21rpx;
+  min-height: 0;
+  padding: 21rpx 0;
+  border-bottom: 1rpx dashed var(--bao-mobile-line);
+}
+.task-row > view text:first-child {
+  font-size: 22rpx;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+}
+.task-row > view text:last-child {
+  margin-top: 5rpx;
+  font-size: 18rpx;
+}
+.task-row > text:last-child {
+  font-size: 26rpx;
+}
+.status-chip {
+  padding: 10rpx 19rpx;
+  font-size: 18rpx;
+  font-weight: 900;
+}
+
+/* —— 行按钮 · 稿 .pill-btn 11px/900 pad8/14 + ghost —— */
+.row-action {
+  min-width: 0;
+  height: auto;
+  padding: 14rpx 24rpx;
+  box-shadow: 0 9rpx 21rpx -9rpx rgba(0, 107, 54, 0.55);
+  font-size: 19rpx;
+  font-weight: 900;
+  letter-spacing: 0.03em;
+  line-height: 1.5;
+}
+.row-action.secondary {
+  border: 1rpx solid rgba(0, 145, 70, 0.16);
+  color: var(--bao-mobile-jade-700);
+  background: rgba(0, 145, 70, 0.09);
+  box-shadow: none;
+}
+
+/* —— 表单 · 稿正文字阶 12.5px —— */
+.form-input {
+  background: var(--bao-mobile-paper);
+  font-size: 24rpx;
+}
+
+/* —— 安全提示 · 稿 .guard 全框 border radius14 pad12/15 —— */
+.guardrail {
+  gap: 9rpx;
+  padding: 21rpx 26rpx;
+  border: 1rpx solid rgba(185, 90, 23, 0.18);
+  border-radius: 24rpx;
+}
+.guardrail text:first-child {
+  font-size: 20rpx;
+  font-weight: 800;
+}
+.guardrail text:last-child {
+  color: #8a5a2b;
+  font-size: 20rpx;
+  line-height: 1.65;
+}
+
+/* —— 进度 Hero · 稿 .promo 装饰环 + 鲜绿进度环 —— */
+.m-progress-hero {
+  min-height: 0;
+  padding: 31rpx;
+  border-radius: 38rpx;
+}
+.m-progress-hero::after {
+  top: -101rpx;
+  right: -80rpx;
+  bottom: auto;
+  width: 296rpx;
+  height: 296rpx;
+  border: 45rpx solid rgba(110, 199, 38, 0.16);
+  border-radius: 50%;
+  background: none;
+}
+.m-progress-hero > view:first-child text:first-child {
+  font-size: 20rpx;
+  font-weight: 700;
+}
+.m-progress-hero > view:first-child text:nth-child(2) {
+  margin: 16rpx 0;
+  font-size: 33rpx;
+  font-weight: 900;
+}
+.m-progress-hero > view:first-child text:last-child {
+  font-size: 20rpx;
+}
+.progress-ring {
+  background: conic-gradient(
+    var(--bao-mobile-jade-300) var(--progress),
+    rgba(255, 255, 255, 0.14) 0
+  );
+}
+.progress-ring text {
+  font-size: 33rpx;
+  font-weight: 900;
+}
+
+/* —— 提示条 / 时间线 · 字阶对齐 —— */
+.m-notice {
+  padding: 19rpx 24rpx;
+  font-size: 20rpx;
+  line-height: 1.65;
+}
+.timeline-step > text:first-child {
+  width: 59rpx;
+  height: 59rpx;
+  font-size: 20rpx;
+  font-weight: 800;
+}
+.timeline-step.active > text:first-child {
+  background: var(--bao-mobile-gradient-brand);
+  box-shadow: inset 0 3rpx 0 rgba(255, 255, 255, 0.28);
+}
+.timeline-step > view text:first-child {
+  font-size: 22rpx;
+  font-weight: 800;
+}
+.timeline-step > view text:last-child {
+  margin-top: 5rpx;
+  font-size: 18rpx;
+}
+.timeline-step > text:last-child {
+  padding: 10rpx 19rpx;
+  font-size: 18rpx;
+  font-weight: 900;
+}
+
+/* —— 收益 Hero · 鲜绿数据条 —— */
+.income-hero {
+  padding: 31rpx;
+  border-radius: 38rpx;
+}
+.income-hero::before {
+  top: -101rpx;
+  right: -80rpx;
+  width: 296rpx;
+  height: 296rpx;
+  border: 45rpx solid rgba(110, 199, 38, 0.16);
+  border-radius: 50%;
+  background: none;
+}
+.income-hero::after {
+  right: 63rpx;
+  bottom: -70rpx;
+  width: 227rpx;
+  height: 227rpx;
+  border: 35rpx solid rgba(110, 199, 38, 0.1);
+  border-radius: 50%;
+  background: none;
+}
+.income-hero > text:first-child {
+  font-size: 20rpx;
+  font-weight: 700;
+}
+.income-hero > text:nth-child(2) {
+  font-size: 33rpx;
+  font-weight: 900;
+}
+.income-meta {
+  font-size: 20rpx;
+}
+.income-trend path {
+  stroke: var(--bao-mobile-jade-300);
+}
+.income-bars text {
+  background: rgba(110, 199, 38, 0.35);
+}
+.income-bars text:last-child {
+  background: var(--bao-mobile-gradient-fresh);
+}
+
+/* —— 统计卡 · 稿 .stat-row b19/900 span10/600 —— */
+.m-stats view text:first-child,
+.m-stats view text:last-child {
+  font-size: 17rpx;
+  font-weight: 600;
+}
+.m-stats view text:nth-child(2) {
+  margin: 10rpx 0 7rpx;
+  font-size: 33rpx;
+  font-weight: 900;
+}
+
+/* —— 行动卡 · 稿 .tic 34px radius12 —— */
+.m-action-card {
+  min-height: 0;
+}
+.m-action-card > text:first-child {
+  width: 59rpx;
+  height: 59rpx;
+  border-radius: 21rpx;
+  background: var(--bao-mobile-gradient-brand);
+  box-shadow: inset 0 3rpx 0 rgba(255, 255, 255, 0.28);
+  font-size: 24rpx;
+  font-weight: 900;
+}
+.m-action-card > view text:first-child {
+  font-size: 22rpx;
+  font-weight: 800;
+}
+.m-action-card > view text:last-child {
+  margin-top: 5rpx;
+  font-size: 18rpx;
+}
+.m-action-card > text:last-child {
+  font-size: 26rpx;
+}
+
+/* —— H5 底部五栏 · 稿 .tabbar 66px + 激活顶部鲜绿指示条 —— */
+/* #ifdef H5 */
+.uni-tabbar-bottom .uni-tabbar {
+  height: 66px;
+  padding: 6px 10px calc(10px + env(safe-area-inset-bottom, 0px));
+  background: rgba(255, 255, 255, 0.88) !important;
+  backdrop-filter: blur(14px);
+  box-shadow: none;
+}
+.uni-tabbar-bottom .uni-tabbar__bd {
+  position: relative;
+  height: 50px !important;
+  border-radius: 14px;
+}
+.uni-tabbar-bottom .uni-tabbar__icon,
+.uni-tabbar-bottom .uni-tabbar__icon img {
+  width: 21px !important;
+  height: 21px !important;
+}
+.uni-tabbar-bottom .uni-tabbar__label {
+  margin-top: 3px !important;
+  font-size: 10px !important;
+  font-weight: 600;
+}
+.uni-tabbar-bottom
+  .uni-tabbar__item:has(.uni-tabbar__label[style*='rgb(0, 107, 54)'])
+  .uni-tabbar__bd {
+  background: transparent;
+}
+.uni-tabbar-bottom
+  .uni-tabbar__item:has(.uni-tabbar__label[style*='rgb(0, 107, 54)'])
+  .uni-tabbar__bd::before {
+  position: absolute;
+  top: -7px;
+  left: 50%;
+  width: 18px;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--bao-mobile-gradient-fresh);
+  content: '';
+  transform: translateX(-50%);
+}
+.uni-tabbar-bottom
+  .uni-tabbar__label[style*='rgb(0, 107, 54)'] {
+  font-weight: 800 !important;
+}
+/* #endif */
 </style>

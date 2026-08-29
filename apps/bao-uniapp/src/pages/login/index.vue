@@ -126,20 +126,20 @@ function toggleAgreement() {
 }
 .login-hero-eyebrow {
   color: var(--bao-mobile-jade-200);
-  font-size: 22rpx;
-  font-weight: 600;
+  font-size: 20rpx;
+  font-weight: 700;
 }
 .login-hero-title {
   margin-top: 14rpx;
   font-size: 44rpx;
-  font-weight: 800;
-  letter-spacing: -0.01em;
+  font-weight: 900;
+  letter-spacing: 0.015em;
 }
 .login-hero-detail {
   margin-top: 14rpx;
   color: var(--bao-mobile-jade-100);
-  font-size: 24rpx;
-  line-height: 1.6;
+  font-size: 20rpx;
+  line-height: 1.65;
 }
 .login-form {
   display: flex;
@@ -149,7 +149,7 @@ function toggleAgreement() {
 }
 .login-meta {
   color: var(--bao-mobile-ink-500);
-  font-size: 22rpx;
+  font-size: 20rpx;
 }
 .login-agreement {
   display: flex;
@@ -160,8 +160,8 @@ function toggleAgreement() {
 .login-agreement-text {
   flex: 1;
   color: var(--bao-mobile-ink-600);
-  font-size: 22rpx;
-  line-height: 1.6;
+  font-size: 20rpx;
+  line-height: 1.65;
 }
 .session-note.failed {
   color: var(--bao-mobile-danger-500);

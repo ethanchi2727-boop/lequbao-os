@@ -68,7 +68,7 @@
   --bao-pc-shadow-float: 0 2px 6px rgb(22 19 15 / 6%), 0 18px 40px -14px rgb(22 19 15 / 18%);
 
   /* —— 圆角：卡片更圆润（概念稿 20px 卡片语言） —— */
-  --bao-pc-radius-lg: 18px;
+  --bao-pc-radius-lg: 20px;
   --bao-pc-radius-xl: 22px;
 
   /* —— V6.4 变量重映射：品牌/Hero/状态全部切换到乐趣生活绿系 —— */
@@ -522,4 +522,710 @@ body .source-type {
 
 body .job-summary i.running {
   box-shadow: 0 0 0 4px #e6f4e9;
+}
+
+
+/* ============================================================
+   V6.5.1 概念稿精修对齐段（PC）
+   依据 bao-redesign/index.html（V2 精修）逐组件对齐：
+   侧栏 224px、顶栏 58px、品牌 16.5px/900、导航 12.5px/600、
+   Hero 23px/900、KPI 26px/900、气泡 12.5px/1.75、
+   发送钮 图标+文字胶囊 12px/900。
+   ============================================================ */
+
+/* —— 骨架：稿 .side 224px / .topbar 58px —— */
+body .shell {
+  grid-template-columns: 224px 1fr;
+}
+body .sidebar {
+  padding: 18px 12px 14px;
+}
+body .topbar {
+  height: 58px;
+  padding: 0 24px;
+  background: rgba(255, 255, 255, 0.72);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+body .crumb {
+  color: var(--bao-pc-ink-500);
+  font-size: 13px;
+  font-weight: 900;
+  letter-spacing: 0.02em;
+}
+body .crumb b {
+  color: var(--bao-pc-ink-400);
+  font-weight: 600;
+}
+body .crumb strong {
+  color: var(--bao-pc-ink-900);
+}
+
+/* —— 品牌区：稿 .brand 16.5px/900 + 31px 鲜绿章 —— */
+body .brand {
+  gap: 10px;
+  padding: 4px 10px 18px;
+  letter-spacing: 0.03em;
+}
+body .brand > b,
+body .agent {
+  width: 31px;
+  height: 31px;
+  border-radius: 11px;
+  color: var(--bao-v65-fresh-ink);
+  background: var(--bao-v65-grad-fresh);
+  box-shadow: 0 5px 12px -3px rgba(110, 199, 38, 0.5),
+    inset 0 1.5px 0 rgba(255, 255, 255, 0.4);
+  font-size: 14.5px;
+  font-weight: 900;
+}
+body .brand strong {
+  font-size: 16.5px;
+  font-weight: 900;
+}
+
+/* —— 新建钮：稿 .newbtn 鲜绿胶囊 12.5px/900 —— */
+body .new-task {
+  height: auto;
+  margin: 0 6px 16px;
+  padding: 11px;
+  border-radius: 999px;
+  color: var(--bao-v65-fresh-ink);
+  background: var(--bao-v65-grad-fresh);
+  box-shadow: 0 10px 22px -8px rgba(110, 199, 38, 0.55),
+    inset 0 1.5px 0 rgba(255, 255, 255, 0.4);
+  font-size: 12.5px;
+  font-weight: 900;
+  letter-spacing: 0.05em;
+  text-align: center;
+}
+body .new-task kbd {
+  float: none;
+  margin-left: auto;
+  color: var(--bao-v65-fresh-ink);
+  background: rgba(6, 40, 27, 0.14);
+  font-weight: 700;
+}
+
+/* —— 导航：稿 nav a 12.5px/600 pad9.5/12 + 激活指示条 —— */
+body .sidebar nav a {
+  height: auto;
+  gap: 11px;
+  padding: 9.5px 12px;
+  border-radius: 12px;
+  color: rgba(244, 250, 246, 0.6);
+  font-size: 12.5px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+body .sidebar nav a svg {
+  width: 16.5px;
+  height: 16.5px;
+  stroke-width: 1.9;
+}
+body .sidebar nav a::before {
+  top: 22%;
+  left: -12px;
+  width: 3.5px;
+  height: 56%;
+  border-radius: 2px;
+  background: var(--bao-v65-fresh);
+  box-shadow: 0 0 10px rgba(110, 199, 38, 0.8);
+  opacity: 0;
+  transform: none;
+}
+body .sidebar nav a:hover::before {
+  height: 56%;
+}
+body .sidebar nav a.active {
+  color: #d3f5a8;
+  background: rgba(110, 199, 38, 0.15);
+  box-shadow: none;
+  font-weight: 800;
+}
+body .sidebar nav a.active::before {
+  height: 56%;
+  opacity: 1;
+}
+
+/* —— 侧栏身份卡：稿 .me b12 span10 —— */
+body .identity {
+  height: auto;
+  padding: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.06);
+}
+body .identity span {
+  font-size: 12px;
+  font-weight: 700;
+}
+body .identity small {
+  color: rgba(244, 250, 246, 0.55);
+  font-size: 10px;
+}
+
+/* —— 顶栏检索与图标钮：稿 .top-search 290px / .ticon 32px —— */
+body .topbar .search {
+  width: 290px;
+  height: auto;
+  padding: 8px 16px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+}
+body .top-actions span {
+  font-size: 12px;
+}
+body .top-actions button,
+body .chat-heading button {
+  min-width: 32px;
+  height: 32px;
+  padding: 0 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+/* —— Hero：稿 .pc-hero radius24 pad26/30 h2 23px/900 白环 —— */
+body .v62-page__hero {
+  padding: 26px 30px;
+  border-radius: 24px;
+}
+body .v62-page__hero h1 {
+  font-size: 23px;
+  font-weight: 900;
+  letter-spacing: 0.02em;
+  line-height: 1.3;
+}
+body .v62-page__hero p {
+  margin-top: 7px;
+  font-size: 12.5px;
+  line-height: 1.65;
+}
+body .dark::before,
+body .v62-page__hero::before,
+body .dedicated-page .hero::before,
+body .income-hero::before,
+body .m-progress-hero::before,
+body .v62-progress-card::before {
+  top: -90px;
+  right: -70px;
+  bottom: auto;
+  left: auto;
+  width: 280px;
+  height: 280px;
+  border: 38px solid rgba(255, 255, 255, 0.09);
+  border-radius: 50%;
+  background: none;
+}
+body .dark::after,
+body .v62-page__hero::after,
+body .dedicated-page .hero::after,
+body .income-hero::after,
+body .m-progress-hero::after,
+body .v62-progress-card::after {
+  top: auto;
+  right: 150px;
+  bottom: -120px;
+  left: auto;
+  width: 200px;
+  height: 200px;
+  border: 26px solid rgba(255, 255, 255, 0.06);
+  border-radius: 50%;
+  background: none;
+}
+
+/* —— 页头：稿 23px/900 —— */
+body .v62-page-header h1 {
+  font-size: 23px;
+  font-weight: 900;
+  letter-spacing: 0.02em;
+}
+body .v62-page-header small {
+  font-size: 11.5px;
+  font-weight: 800;
+}
+body .v62-page-header p {
+  font-size: 12.5px;
+}
+
+/* —— KPI：稿 .kpi pad16/18 small11.5/700 b26/900 涨跌10.5/900 —— */
+body .v62-kpis article {
+  min-height: 0;
+  padding: 16px 18px;
+  border-radius: 20px;
+}
+body .v62-kpis small {
+  font-size: 11.5px;
+  font-weight: 700;
+}
+body .v62-kpis b {
+  height: auto;
+  margin: 9px 0 0;
+  font-size: 26px;
+  font-weight: 900;
+  letter-spacing: 0.01em;
+}
+body .v62-kpis span {
+  font-size: 10.5px;
+  font-weight: 900;
+}
+
+/* —— 主按钮：稿 .btn-l 12.5px/900 pad11/20 胶囊 —— */
+body .v62-primary {
+  min-height: 0;
+  padding: 11px 20px;
+  border-radius: 999px;
+  font-size: 12.5px;
+  font-weight: 900;
+  letter-spacing: 0.03em;
+}
+body .v62-decision button {
+  padding: 10px 18px;
+  border-radius: 999px;
+  font-size: 12.5px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+}
+
+/* —— 状态章：稿 .status 10.5px/900 pad5.5/11 —— */
+body .v62-agent-name em {
+  margin-left: 8px;
+  padding: 5.5px 11px;
+  border-radius: 999px;
+  font-size: 10.5px;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+}
+body .v62-source-chip {
+  padding: 5.5px 11px;
+  border-radius: 999px;
+  font-size: 10.5px;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+}
+
+/* —— 对话：稿 .pc-msg 35px 章 / .pc-bubble 12.5px lh1.75 —— */
+body .v62-user-bubble {
+  max-width: 74%;
+  padding: 12px 16px;
+  border-radius: 16px 4px 16px 16px;
+  background: var(--bao-pc-gradient-brand);
+  box-shadow: 0 8px 18px -10px rgba(0, 107, 54, 0.5);
+  font-size: 12.5px;
+  line-height: 1.75;
+}
+body .v62-agent-result {
+  grid-template-columns: 35px 1fr;
+  gap: 11px;
+}
+body .v62-agent-result > i {
+  width: 35px;
+  height: 35px;
+  border-radius: 12.5px;
+  box-shadow: inset 0 1.5px 0 rgba(255, 255, 255, 0.28);
+  font-size: 11.5px;
+  font-weight: 900;
+}
+body .v62-agent-name {
+  color: var(--bao-pc-ink-400);
+  font-size: 10.5px;
+  font-weight: 700;
+}
+body .v62-agent-result h2 {
+  margin: 10px 0 6px;
+  font-size: 14px;
+  font-weight: 900;
+}
+body .v62-agent-result p {
+  font-size: 12.5px;
+  line-height: 1.75;
+}
+body .v62-thread > time {
+  font-size: 10.5px;
+}
+
+/* —— 输入条：稿 .pc-composer radius18 pad9/9/9/18 —— */
+body .v62-composer {
+  padding: 9px 9px 9px 18px;
+  border: 1px solid var(--bao-pc-line);
+  border-radius: 18px;
+  gap: 10px;
+  grid-template-columns: 1fr auto;
+}
+body .v62-composer > span {
+  font-size: 12.5px;
+}
+
+/* —— 发送钮：稿 .pc-send 图标+文字胶囊 12px/900 pad10/18 —— */
+body .v62-composer button {
+  width: auto;
+  height: auto;
+  padding: 10px 18px;
+  border-radius: 12px;
+  display: inline-flex;
+  gap: 7px;
+  align-items: center;
+  box-shadow: 0 6px 14px -6px rgba(0, 107, 54, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.28);
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.05em;
+}
+body .v62-composer button::after {
+  content: '发送';
+}
+body .v62-composer button svg {
+  width: 14px;
+  height: 14px;
+  stroke-width: 2.2;
+}
+body .v62-composer small {
+  font-size: 10.5px;
+}
+
+/* —— AI 对话页（旧版式）：去紫 + 稿气泡/发送钮对齐 —— */
+body .ai-thread {
+  background: var(--bao-pc-ink-50);
+}
+body .thread-heading h1 {
+  font-size: 23px;
+  font-weight: 900;
+  letter-spacing: 0.02em;
+}
+body .thread-heading span {
+  background: var(--bao-pc-jade-100);
+}
+body .thread-message {
+  max-width: 74%;
+  gap: 11px;
+}
+body .thread-message > b {
+  width: 35px;
+  height: 35px;
+  border-radius: 12.5px;
+  background: var(--bao-pc-gradient-brand);
+  box-shadow: inset 0 1.5px 0 rgba(255, 255, 255, 0.28);
+  font-size: 11.5px;
+  font-weight: 900;
+}
+body .thread-message div {
+  padding: 12px 16px;
+  border: 1px solid rgba(22, 19, 15, 0.05);
+  border-radius: 4px 16px 16px 16px;
+  background: #f7f2e7;
+}
+body .thread-message div p {
+  font-size: 12.5px;
+  line-height: 1.75;
+}
+body .thread-message small {
+  font-size: 10.5px;
+  font-weight: 700;
+}
+body .thread-message.user > b {
+  color: var(--bao-pc-ink-600);
+  background: var(--bao-pc-ink-100);
+  box-shadow: none;
+}
+body .thread-message.user div {
+  border: 0;
+  border-radius: 16px 4px 16px 16px;
+  color: #fff;
+  background: var(--bao-pc-gradient-brand);
+  box-shadow: 0 8px 18px -10px rgba(0, 107, 54, 0.5);
+}
+body .thread-message.system > b {
+  color: var(--bao-pc-jade-700);
+  background: var(--bao-pc-jade-100);
+  box-shadow: none;
+}
+body .thread-composer {
+  padding: 9px 9px 9px 18px;
+  border: 1px solid var(--bao-pc-line);
+  border-radius: 18px;
+  box-shadow: var(--bao-pc-shadow-float);
+}
+body .thread-actions {
+  border-top-color: var(--bao-pc-line);
+}
+body .thread-actions .thread-send {
+  width: auto;
+  height: auto;
+  padding: 10px 18px;
+  border-radius: 12px;
+  display: inline-flex;
+  gap: 7px;
+  align-items: center;
+  background: var(--bao-pc-gradient-brand);
+  box-shadow: 0 6px 14px -6px rgba(0, 107, 54, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.28);
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.05em;
+}
+body .thread-actions .thread-send::after {
+  content: '发送';
+}
+body .thread-actions .thread-send svg {
+  width: 14px;
+  height: 14px;
+  stroke-width: 2.2;
+}
+body .thread-send:disabled {
+  background: var(--bao-pc-ink-200);
+  box-shadow: none;
+}
+body .complex-composer {
+  border-radius: 18px;
+}
+
+/* ==========================================================================
+   十一、概念稿规格对齐：字号 / 图标 / 按钮与 V2 精修稿一一对应
+   （概念稿 bao-redesign/index.html 实测值，1px = 1px）
+   ========================================================================== */
+
+/* —— 侧栏：224px 宽 · 31px Logo 章 · 12.5px 导航 · 16.5px 图标 —— */
+body .shell {
+  grid-template-columns: 224px 1fr;
+}
+
+body .sidebar {
+  padding: 18px 12px;
+}
+
+body .sidebar .brand > b {
+  width: 31px;
+  height: 31px;
+  border-radius: 11px;
+  font-size: 16px;
+}
+
+body .sidebar .brand strong {
+  font-size: 16.5px;
+  font-weight: 900;
+  letter-spacing: 0.03em;
+}
+
+body .sidebar .new-task {
+  height: auto;
+  padding: 11px;
+  font-size: 12.5px;
+  font-weight: 900;
+  letter-spacing: 0.05em;
+  text-align: center;
+}
+
+body .sidebar nav a {
+  height: auto;
+  padding: 9.5px 12px;
+  border-radius: 12px;
+  gap: 11px;
+  font-size: 12.5px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+body .sidebar nav a svg {
+  width: 16.5px;
+  height: 16.5px;
+}
+
+body .sidebar nav a.active {
+  box-shadow: none;
+  font-weight: 800;
+}
+
+body .sidebar nav a.active::before {
+  top: 22%;
+  left: -12px;
+  width: 3.5px;
+  height: 56%;
+  transform: none;
+}
+
+body .sidebar .search,
+body .sidebar .search input {
+  font-size: 12px;
+}
+
+/* —— 顶栏：58px · 13px 面包屑 —— */
+body .topbar {
+  height: 58px;
+  padding: 0 24px;
+}
+
+body .crumb {
+  font-size: 13px;
+}
+
+body .top-actions button {
+  font-size: 12.5px;
+}
+
+/* —— Hero：23px/900 标题 + 12.5px 正文（概念稿 .pc-hero） —— */
+body .dark h1,
+body .v62-page__hero h1,
+body .dedicated-page .hero h1 {
+  font-size: 23px;
+  font-weight: 900;
+  letter-spacing: 0.02em;
+}
+
+body .dark p,
+body .v62-page__hero p {
+  font-size: 12.5px;
+}
+
+/* —— 标题体系：概念稿全部 900 重量 —— */
+body .v62-page-header h1,
+body .artifact-heading h1,
+body .job-queue-heading h1,
+body .session-inbox-heading h1,
+body .source-library-heading h1,
+body .confirmation-heading h1,
+body .identity-heading h1,
+body .provenance-heading h1,
+body .recognition-heading h1,
+body .missing-heading h1,
+body .complex-heading h1,
+body .thread-heading h1,
+body .ai-start-intro h1 {
+  font-weight: 900;
+}
+
+/* —— KPI：26px/900 数字 + 11.5px/700 标签（概念稿 .kpi） —— */
+body .v62-kpis b,
+body .v62-metrics b,
+body .report-kpis b {
+  font-size: 26px;
+  font-weight: 900;
+  letter-spacing: 0.01em;
+}
+
+body .v62-kpis small,
+body .v62-metrics small,
+body .report-kpis small {
+  font-size: 11.5px;
+  font-weight: 700;
+}
+
+/* —— 卡片与面板标题：14px/900 · 链接 11.5px/800 —— */
+body .job-inspector > header strong,
+body .artifact-inspector header strong,
+body .session-queue-summary > header strong,
+body .v62-projects > header strong,
+body .v62-assets > header strong,
+body .task-workspace > header strong {
+  font-size: 14px;
+  font-weight: 900;
+  letter-spacing: 0.02em;
+}
+
+/* —— 状态徽章：10.5px/900 · 5.5×11 胶囊（概念稿 .status） —— */
+body .status-succeeded,
+body .status-confirmed,
+body .status-corrected,
+body .status-waiting_approval,
+body .status-paused,
+body .status-failed,
+body .status-conflict,
+body .job-status,
+body .artifact-status,
+body .session-row-status,
+body .security-safe,
+body .security-pending,
+body .security-failed,
+body .security-rejected,
+body .safe-note,
+body .done,
+body .complete,
+body .running,
+body .active,
+body .waiting,
+body .risk,
+body .failed,
+body .blocked {
+  font-size: 10.5px;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+}
+
+/* —— 列表任务行：12.5px/800 标题 + 10.5px 描述（概念稿 .taskrow） —— */
+body .job-list li strong,
+body .session-list li strong,
+body .source-list li strong,
+body .recognition-list li strong,
+body .missing-list li strong {
+  font-size: 12.5px;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+}
+
+body .job-list li small,
+body .session-list li small,
+body .source-list li small,
+body .recognition-list li small,
+body .missing-list li small {
+  font-size: 10.5px;
+}
+
+/* —— 对话气泡：12.5px · 1.65 行高（概念稿 .bubble/.pc-bubble） —— */
+body .user-bubble,
+body .thread-message.user,
+body .v62-user-bubble {
+  padding: 11px 14px;
+  font-size: 12.5px;
+  line-height: 1.65;
+}
+
+body .thread-message,
+body .agent-result,
+body .v62-agent-result {
+  font-size: 12.5px;
+  line-height: 1.65;
+}
+
+/* —— 发送按钮：图标 + 文字胶囊（概念稿 .pc-send：12px/900 · 10×18 · 12px 圆角） —— */
+body .composer .send,
+body .thread-actions .thread-send,
+body .ai-start-composer .ai-send,
+body .complex-actions .thread-send,
+body .v62-composer .send {
+  width: auto;
+  min-width: 0;
+  padding: 10px 18px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.05em;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
+body .composer .send::after,
+body .thread-actions .thread-send::after,
+body .ai-start-composer .ai-send::after,
+body .v62-composer .send::after {
+  content: '发送';
+}
+
+body .send svg,
+body .thread-send svg,
+body .ai-send svg {
+  width: 14px;
+  height: 14px;
+}
+
+/* —— 进度条：7px 轨道（概念稿 .prog） —— */
+body progress {
+  height: 7px;
+  border-radius: 99px;
+}
+
+body progress::-webkit-progress-bar {
+  background: rgb(22 19 15 / 7%);
+  border-radius: 99px;
 }

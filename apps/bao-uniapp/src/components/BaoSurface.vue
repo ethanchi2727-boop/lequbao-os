@@ -78,19 +78,19 @@ defineProps({ eyebrow: String, title: String, detail: String });
 }
 .title {
   overflow: hidden;
-  font-size: 34rpx;
-  font-weight: 800;
-  letter-spacing: -0.01em;
+  font-size: 31rpx;
+  font-weight: 900;
+  letter-spacing: 0.02em;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 .eyebrow {
   display: flex;
-  margin-top: 6rpx;
+  margin-top: 5rpx;
   align-items: center;
   color: var(--bao-mobile-jade-600);
-  font-size: 21rpx;
-  font-weight: 600;
+  font-size: 20rpx;
+  font-weight: 700;
 }
 .eyebrow::before {
   width: 12rpx;
