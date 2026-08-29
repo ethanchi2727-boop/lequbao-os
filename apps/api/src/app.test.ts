@@ -91,9 +91,10 @@ describe('platform API shell', () => {
   it('serves the today operating view only through the authorized employee context', async () => {
     const getToday = vi.fn().mockResolvedValue({
       timezone: 'Asia/Shanghai',
-      storeScope: 'TENANT',
+      scopeType: 'TENANT',
+      storeScope: '南京拾味餐饮管理有限公司',
       metrics: { ordersCreated: 1 },
-      todos: [],
+      todos: [{ kind: 'REFUND', label: '待处理退款', title: '待处理退款', count: 1 }],
     });
     app = await buildApp({
       ...authFor(financialIdentity),
@@ -105,6 +106,14 @@ describe('platform API shell', () => {
       headers: { authorization: 'Bearer signed', 'x-tenant-id': 'attacker-tenant' },
     });
     expect(response.statusCode).toBe(200);
+    const payload = response.json();
+    expect(payload).toMatchObject({
+      timezone: 'Asia/Shanghai',
+      scopeType: 'TENANT',
+      storeScope: '南京拾味餐饮管理有限公司',
+      metrics: { ordersCreated: 1 },
+      todos: [{ kind: 'REFUND', label: '待处理退款', title: '待处理退款', count: 1 }],
+    });
     expect(getToday).toHaveBeenCalledWith(
       expect.objectContaining({ tenantId: financialIdentity.tenantId }),
     );
@@ -1731,5 +1740,222 @@ describe('platform API shell', () => {
     ).toBe(202);
     expect(expire).toHaveBeenCalledWith(expect.objectContaining({ tenantId, orderId }));
     expect(submit).toHaveBeenCalledWith(expect.objectContaining({ tenantId, refundId }));
+  });
+
+  it('exposes bao mobile surface-contract endpoints with authorized employee identity and response shapes', async () => {
+    const getMerchantProfile = vi.fn().mockResolvedValue({
+      id: 'mp-1',
+      status: 'ACTIVE',
+      legalSubjectName: '南京拾味餐饮管理有限公司',
+      merchantName: '南京拾味餐饮管理有限公司',
+      version: 2,
+    });
+    const listStores = vi.fn().mockResolvedValue([
+      {
+        id: 'store-1',
+        storeName: '拾味小馆 · 新街口店',
+        regionCodes: ['320102'],
+        version: 3,
+        status: 'ACTIVE',
+      },
+    ]);
+    const listOrders = vi
+      .fn()
+      .mockResolvedValue([{ orderNo: 'LQ001', payableAmountCents: 12800, status: 'COMPLETED' }]);
+    const listRefunds = vi
+      .fn()
+      .mockResolvedValue([{ refundNo: 'RF007', amountCents: 3200, status: 'PENDING_CONFIRM' }]);
+    const getSummary = vi.fn().mockResolvedValue({
+      distributableCents: 4373600,
+      attentionCount: 2,
+      periodLabel: '2026 年 8 月',
+    });
+    const listQueue = vi
+      .fn()
+      .mockResolvedValue([
+        { id: 'conv-1', storeId: 'store-1', riskLevel: 'NORMAL', status: 'HUMAN_QUEUED' },
+      ]);
+    const listTasks = vi.fn().mockResolvedValue([
+      {
+        id: 'task-1',
+        summary: '发票回复',
+        taskType: 'INVOICE',
+        storeName: '拾味小馆',
+        storeId: 'store-1',
+        priority: 'HIGH',
+        status: 'OPEN',
+        version: 1,
+      },
+    ]);
+    app = await buildApp({
+      ...authFor(financialIdentity),
+      merchantOperations: { getMerchantProfile, listStores, listOrders, listRefunds } as never,
+      revenueOperations: { getSummary } as never,
+      customerService: { listQueue } as never,
+      customerServiceOperations: { listTasks } as never,
+    });
+    const headers = { authorization: 'Bearer signed' };
+    // 1. merchant profile → P2: merchantName + legalSubjectName
+    const profile = await app.inject({
+      method: 'GET',
+      url: '/api/v1/merchant-operations/profile',
+      headers,
+    });
+    expect(profile.statusCode).toBe(200);
+    expect(profile.json()).toMatchObject({
+      status: 'ACTIVE',
+      legalSubjectName: '南京拾味餐饮管理有限公司',
+      merchantName: '南京拾味餐饮管理有限公司',
+    });
+    // 2. stores list → surface-contract shape
+    const stores = await app.inject({
+      method: 'GET',
+      url: '/api/v1/merchant-operations/stores',
+      headers,
+    });
+    expect(stores.statusCode).toBe(200);
+    expect(stores.json()).toMatchObject([
+      {
+        id: 'store-1',
+        storeName: '拾味小馆 · 新街口店',
+        regionCodes: ['320102'],
+        version: 3,
+        status: 'ACTIVE',
+      },
+    ]);
+    // 3. orders list
+    const orders = await app.inject({
+      method: 'GET',
+      url: '/api/v1/merchant-operations/orders?limit=50',
+      headers,
+    });
+    expect(orders.statusCode).toBe(200);
+    expect(orders.json()).toMatchObject([
+      { orderNo: 'LQ001', payableAmountCents: 12800, status: 'COMPLETED' },
+    ]);
+    // 4. refunds list
+    const refunds = await app.inject({
+      method: 'GET',
+      url: '/api/v1/merchant-operations/refunds?limit=50',
+      headers,
+    });
+    expect(refunds.statusCode).toBe(200);
+    expect(refunds.json()).toMatchObject([
+      { refundNo: 'RF007', amountCents: 3200, status: 'PENDING_CONFIRM' },
+    ]);
+    // 5. revenue summary
+    const summary = await app.inject({
+      method: 'GET',
+      url: '/api/v1/revenue-operations/summary',
+      headers,
+    });
+    expect(summary.statusCode).toBe(200);
+    expect(summary.json()).toMatchObject({
+      distributableCents: 4373600,
+      attentionCount: 2,
+      periodLabel: '2026 年 8 月',
+    });
+    // 6. CS conversations
+    const convs = await app.inject({
+      method: 'GET',
+      url: '/api/v1/customer-service/conversations',
+      headers,
+    });
+    expect(convs.statusCode).toBe(200);
+    expect(convs.json()).toMatchObject([
+      { id: 'conv-1', storeId: 'store-1', riskLevel: 'NORMAL', status: 'HUMAN_QUEUED' },
+    ]);
+    // 7. CS tasks
+    const tasks = await app.inject({
+      method: 'GET',
+      url: '/api/v1/customer-service-operations/tasks',
+      headers,
+    });
+    expect(tasks.statusCode).toBe(200);
+    expect(tasks.json()).toMatchObject([
+      {
+        id: 'task-1',
+        summary: '发票回复',
+        taskType: 'INVOICE',
+        storeName: '拾味小馆',
+        storeId: 'store-1',
+        priority: 'HIGH',
+        status: 'OPEN',
+        version: 1,
+      },
+    ]);
+    // Verify identity propagation (not attacker headers)
+    expect(getMerchantProfile).toHaveBeenCalledWith(
+      expect.objectContaining({ tenantId: financialIdentity.tenantId }),
+    );
+    expect(listStores).toHaveBeenCalledWith(
+      expect.objectContaining({ tenantId: financialIdentity.tenantId }),
+    );
+    expect(getSummary).toHaveBeenCalledWith(
+      expect.objectContaining({ tenantId: financialIdentity.tenantId }),
+      expect.anything(),
+    );
+    expect(listQueue).toHaveBeenCalledWith(
+      expect.objectContaining({ tenantId: financialIdentity.tenantId }),
+      undefined,
+    );
+    expect(listTasks).toHaveBeenCalledWith(
+      expect.objectContaining({ tenantId: financialIdentity.tenantId }),
+      expect.anything(),
+    );
+  });
+
+  it('handles bao mobile CS accept + task complete actions with idempotency boundary and auth enforcement', async () => {
+    const accept = vi
+      .fn()
+      .mockResolvedValue({ ok: true, status: 'ACCEPTED', traceId: 'trace-accept' });
+    const completeTask = vi
+      .fn()
+      .mockResolvedValue({ ok: true, status: 'DONE', traceId: 'trace-complete' });
+    app = await buildApp({
+      ...authFor(financialIdentity),
+      customerService: { accept } as never,
+      customerServiceOperations: { completeTask } as never,
+    });
+
+    // No auth → rejected (401 系列)
+    const noAuthConv = await app.inject({
+      method: 'POST',
+      url: '/api/v1/customer-service/conversations/conv-xxx/actions/accept',
+      headers: { 'idempotency-key': 'idem-bad-1' },
+    });
+    expect([401, 503]).toContain(noAuthConv.statusCode);
+
+    // Authenticated accept conversation → customerService.accept({identity, idempotencyKey, traceId, body})
+    const accepted = await app.inject({
+      method: 'POST',
+      url: '/api/v1/customer-service/conversations/conv-x/actions/accept',
+      headers: { authorization: 'Bearer signed', 'idempotency-key': 'cs-accept-1' },
+      payload: {},
+    });
+    expect(accepted.statusCode).toBe(200);
+    expect(accept).toHaveBeenCalledWith(
+      expect.objectContaining({
+        identity: expect.objectContaining({ tenantId: financialIdentity.tenantId }),
+        idempotencyKey: 'cs-accept-1',
+        body: expect.objectContaining({ conversationId: 'conv-x' }),
+      }),
+    );
+
+    // Authenticated complete CS task → completeTask(identity, taskId, key, traceId, body) positional
+    const completed = await app.inject({
+      method: 'POST',
+      url: '/api/v1/customer-service-operations/tasks/task-y/actions/complete',
+      headers: { authorization: 'Bearer signed', 'idempotency-key': 'cs-complete-1' },
+      payload: { expectedVersion: 1 },
+    });
+    expect(completed.statusCode).toBe(200);
+    expect(completeTask).toHaveBeenCalledWith(
+      expect.objectContaining({ tenantId: financialIdentity.tenantId }),
+      'task-y',
+      'cs-complete-1',
+      expect.any(String),
+      { expectedVersion: 1 },
+    );
   });
 });
