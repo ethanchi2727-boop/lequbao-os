@@ -417,6 +417,9 @@ async function requestUnshippedRefund() {
       </view>
     </template>
     <view class="service-grid">
+      <button @click="uni.navigateTo({ url: '/pages/voucher/wallet/index' })">
+        <view class="service-icon voucher-icon"></view><text>我的代金券</text><text>已到账可抵扣</text>
+      </button>
       <button @click="uni.navigateTo({ url: '/pages/page-237/index' })">
         <view class="service-icon order-icon"></view><text>全部订单</text><text>履约进度</text>
       </button>
@@ -804,6 +807,23 @@ async function requestUnshippedRefund() {
 }
 .reward-icon::after {
   background: var(--life-yellow-deep);
+}
+.voucher-icon {
+  background: var(--life-coral-soft);
+}
+.voucher-icon::before {
+  border-color: var(--life-red);
+  border-radius: 6rpx;
+}
+.voucher-icon::after {
+  left: 50%;
+  top: 20rpx;
+  bottom: 20rpx;
+  width: 0;
+  height: auto;
+  background: none;
+  border-left: 4rpx dashed var(--life-red);
+  border-radius: 0;
 }
 .privacy-icon {
   background: var(--life-blue-soft);
