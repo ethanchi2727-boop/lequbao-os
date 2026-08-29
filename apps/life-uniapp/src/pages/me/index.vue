@@ -1,16 +1,11 @@
 <script setup>
 import { computed, ref, watch } from 'vue';
 import { onShow } from '@dcloudio/uni-app';
-import LifeSurface from '../../components/LifeSurface.vue';
-import { lifeBannerThemeStyle } from '../../services/life-visual.js';
 import {
   lifeRuntimeProfile,
   lifeSession,
   parsePaymentCredential,
 } from '../../services/life-session.js';
-// 乐趣生活 V6.3 主题色字面值：与 App.vue Theme Token --life-brand-deep (#066b4c) 对齐。
-// uni-app <switch color> 为原生组件属性，仅接受具体颜色字符串，无法使用 CSS 变量，
-// 故以常量集中管理，避免散落 hex，并保证与 --life-brand-deep 同步。
 const LIFE_BRAND_DEEP_HEX = '#066b4c';
 
 const session = ref(null);
@@ -378,28 +373,27 @@ async function requestUnshippedRefund() {
 }
 
 /* ============================
-   concept-f V6.3 纯视觉辅助
-   - 无业务 API / 无金钱逻辑
-   - 仅影响 template 展示和日夜主题
+   kimi 真理 me.html 视觉辅助
+   - class 名 / 像素 / 真实 PNG：1:1 concept-f me.html
+   - 无 display:none 锚点
    ============================ */
-const surfaceStyle = computed(() => ({
-  ...lifeBannerThemeStyle('green'),
-  '--tint': '#e7f4ef',
-}));
-
 const isDark = ref(false);
+const phoneEl = ref(null);
 watch(isDark, (val) => {
   // #ifdef H5
   try {
-    const page = document.querySelector('page');
-    if (page) page.setAttribute('data-theme', val ? 'dark' : '');
+    // 1:1 真理：.phone[data-theme="dark"] 驱动，不碰全局 page
+    if (phoneEl.value) {
+      phoneEl.value.setAttribute('data-theme', val ? 'dark' : '');
+    } else {
+      const fallback = document.querySelector('.phone');
+      if (fallback) fallback.setAttribute('data-theme', val ? 'dark' : '');
+    }
   } catch (_) {}
   // #endif
-  // 小程序：data-theme 通过 App.vue + uni.setStorageSync 兜底；此处仅本地开关
   try { uni.setStorageSync('life-theme', val ? 'dark' : ''); } catch (_) {}
 });
 
-// 订单 5 宫格（纯展示，点击走订单页）
 const pendingPaymentCount = computed(() =>
   orders.value.filter((o) => o.status === 'PENDING_PAYMENT').length,
 );
@@ -418,953 +412,588 @@ const refundCount = computed(() =>
   ).length,
 );
 
+// kimi 真理：全部使用真实 3D PNG 图标，路径 /static/v63-icons
 const orderGrid = [
-  { key: 'pay', label: '待付款', glyph: '💳', hue: 'v3', badge: pendingPaymentCount, route: '/pages/page-237/index' },
-  { key: 'redeem', label: '待核销', glyph: '🎟️', hue: 'v2', badge: redeemableCount, route: '/pages/page-237/index' },
-  { key: 'ship', label: '待收货', glyph: '📦', hue: 'v4', badge: fulfillingCount, route: '/pages/page-237/index' },
-  { key: 'rate', label: '待评价', glyph: '💬', hue: 'v5', badge: completedCount, route: '/pages/page-237/index' },
-  { key: 'refund', label: '退款售后', glyph: '🛠️', hue: 'v1', badge: refundCount, route: '/pages/page-239/index' },
+  { key: 'pay', label: '待付款', icon: '/static/v63-icons/3d-phonepay.png', badge: pendingPaymentCount, route: '/pages/page-237/index' },
+  { key: 'redeem', label: '待核销', icon: '/static/v63-icons/3d-fbasket.png', badge: redeemableCount, route: '/pages/page-237/index' },
+  { key: 'ship', label: '待收货', icon: '/static/v63-icons/3d-box.png', badge: fulfillingCount, route: '/pages/page-237/index' },
+  { key: 'rate', label: '待评价', icon: '/static/v63-icons/3d-mic.png', badge: completedCount, route: '/pages/page-237/index' },
+  { key: 'refund', label: '退款售后', icon: '/static/v63-icons/3d-tools.png', badge: refundCount, route: '/pages/page-239/index' },
 ];
 
-// 常用服务 4 宫格（纯展示，点击走已有路由）
 const serviceGrid = [
-  { key: 'voucher', label: '代金券', glyph: '🎫', hue: 'v2', route: '/pages/page-252/index' },
-  { key: 'address', label: '收货地址', glyph: '🏠', hue: 'v4', route: '/pages/page-254/index' },
-  { key: 'repair', label: '家电清洗', glyph: '🧺', hue: 'v5', route: '/pages/page-252/index' },
-  { key: 'more', label: '全部服务', glyph: '⊞', hue: 'v1', route: '/pages/page-237/index' },
+  { key: 'voucher', label: '代金券', icon: '/static/v63-icons/banner-vou.png', route: '/pages/page-252/index' },
+  { key: 'address', label: '收货地址', icon: '/static/v63-icons/3d-house.png', route: '/pages/page-254/index' },
+  { key: 'repair', label: '家电清洗', icon: '/static/v63-icons/3d-washer.png', route: '/pages/page-252/index' },
+  { key: 'more', label: '全部服务', icon: '/static/v63-icons/3d-grid.png', route: '/pages/page-237/index' },
 ];
 
-// 订单累计总额（仅展示 ¥0.00 兜底，不与后端账本挂钩）
+// mlist 功能列表（1:1 me.html 真理：皇冠/发票蓝/反馈紫/安心购绿/深色 switch）
+const mlistItems = [
+  { key: 'member', icon: '/static/v63-icons/3d-cup.png', bg: 'linear-gradient(120deg,#ffe25a,#f7c400)', t: '皇冠会员', d: '每月 50 元代金券' },
+  { key: 'invoice', icon: '/static/v63-icons/3d-box.png', bg: 'linear-gradient(120deg,#1a6fc4,#0c2a80)', t: '发票蓝', d: '电子发票一键开' },
+  { key: 'feedback', icon: '/static/v63-icons/3d-mic.png', bg: 'linear-gradient(120deg,#8a5cf6,#5a2de0)', t: '意见反馈', d: '我们认真看每一条' },
+  { key: 'safeguard', icon: '/static/v63-icons/3d-play.png', bg: 'linear-gradient(120deg,#009146,#006b36)', t: '安心购保障', d: '随时退·过期自动退' },
+];
+
 const ordersTotalCents = computed(() =>
   orders.value.reduce((s, o) => s + (Number(o.payableAmountCents) || 0), 0),
 );
-
 function openGrid(item) {
   if (item.route) uni.navigateTo({ url: item.route });
   else uni.showToast({ title: `${item.label} 即将上线`, icon: 'none' });
 }
-
 function openMli(key) {
   switch (key) {
-    case 'member':
-      uni.navigateTo({ url: '/pages/page-252/index' });
-      break;
-    case 'invoice':
-      editingInvoice.value = true;
-      break;
-    case 'feedback':
-      uni.showToast({ title: '意见反馈即将上线', icon: 'none' });
-      break;
-    case 'safeguard':
-      uni.navigateTo({ url: '/pages/page-239/index' });
-      break;
-    default:
-      break;
+    case 'member': uni.navigateTo({ url: '/pages/page-252/index' }); break;
+    case 'invoice': editingInvoice.value = true; break;
+    case 'feedback': uni.showToast({ title: '意见反馈即将上线', icon: 'none' }); break;
+    case 'safeguard': uni.navigateTo({ url: '/pages/page-239/index' }); break;
+    default: break;
   }
 }
+function maiClick() {
+  uni.showToast({ title: '小满 AI 即将上线', icon: 'none' });
+}
 </script>
+
+<!-- ============================================================
+     template: 1:1 concept-f me.html —— class 名 / 像素 / 真实 PNG img
+     最外层 class="phone" 375px×760px 真理框架；无 LifeSurface 包裹
+     ============================================================ -->
 <template>
-  <LifeSurface
-    primary
-    :style="surfaceStyle"
-    theme-color="green"
-    show-mai-fab
-    eyebrow="生活账户"
-    title="我的"
-    detail="订单、售后、会员权益和隐私设置"
+  <!-- ===== 1:1 kimi 真理最外层 class=phone，主题变量显式包含 --bg:#f6f1e6 / --hd1 / --hd2 ===== -->
+  <view
+    class="phone"
+    :class="{ 'no-tr': false }"
+    :data-theme="isDark ? 'dark' : ''"
+    ref="phoneEl"
+    style="--hd1:#009146;--hd2:#006b36;--bg:#f6f1e6"
   >
-    <!-- 官方契约锚点（不渲染） -->
-    <view class="service-icon" style="display:none"></view>
+    <!-- ===== 1:1 concept-f me.html L109-L125 内联 SVG defs，确保所有 <use href> 可解析 ===== -->
+    <svg width="0" height="0" style="position:absolute"><defs>
+      <g id="x-bell"><path d="M6 9.5a6 6 0 0 1 12 0c0 4 1.6 5.4 2.2 6H3.8C4.4 14.9 6 13.5 6 9.5z"/><path d="M10 19a2.2 2.2 0 0 0 4 0z"/></g>
+      <g id="x-set"><circle cx="12" cy="12" r="3.2" fill="none" stroke-width="2"/><path d="M12 2.8v2.6M12 18.6v2.6M2.8 12h2.6M18.6 12h2.6M5.5 5.5l1.8 1.8M16.7 16.7l1.8 1.8M18.5 5.5l-1.8 1.8M7.3 16.7l-1.8 1.8" fill="none" stroke-width="2" stroke-linecap="round"/></g>
+      <g id="x-cs"><path d="M4.5 12a7.5 7.5 0 0 1 15 0v5.2a2.3 2.3 0 0 1-2.3 2.3H13" fill="none" stroke-width="2.1" stroke-linecap="round"/><rect x="3.2" y="10.5" width="3.6" height="6" rx="1.8"/><rect x="17.2" y="10.5" width="3.6" height="6" rx="1.8"/></g>
+      <g id="x-crown"><path d="M4 17.5 3 7.8l5.4 3.4L12 5.5l3.6 5.7L21 7.8l-1 9.7z"/></g>
+      <g id="x-bill"><path d="M6.5 3h11A1.5 1.5 0 0 1 19 4.5v15a1.5 1.5 0 0 1-1.5 1.5h-11A1.5 1.5 0 0 1 5 19.5v-15A1.5 1.5 0 0 1 6.5 3z"/><path d="M8.5 8h7M8.5 11.5h7M8.5 15h4.5" stroke="#fff" stroke-width="1.8" stroke-linecap="round" fill="none"/></g>
+      <g id="x-chat2"><path d="M6.5 4h11A2.5 2.5 0 0 1 20 6.5v6.8a2.5 2.5 0 0 1-2.5 2.5h-7.8l-4.5 3.6a.6.6 0 0 1-1-.5V6.5A2.5 2.5 0 0 1 6.5 4z"/><circle cx="9.2" cy="10" r="1.3" fill="#fff"/><circle cx="13.4" cy="10" r="1.3" fill="#fff"/><circle cx="17" cy="10" r="1.3" fill="#fff" opacity=".6"/></g>
+      <g id="x-moon"><path d="M20.5 14.5A8.5 8.5 0 1 1 9.5 3.5a7 7 0 0 0 11 11z"/></g>
+      <g id="x-shield"><path d="M12 2.8 19 5.5v6c0 4.6-3 7.7-7 9.7-4-2-7-5.1-7-9.7v-6z"/><path d="m8.8 12 2.2 2.2 4.2-4.4" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></g>
+      <g id="f-home"><path d="M12 4 4 10.6V20a1 1 0 0 0 1 1h4.6v-5.6h4.8V21H19a1 1 0 0 0 1-1v-9.4z"/></g>
+      <g id="f-shop"><path d="M4.6 8.6 6 4h12l1.4 4.6zM4 9.8h16V20a1 1 0 0 1-1 1h-5v-5.4h-4V21H5a1 1 0 0 1-1-1z"/><path d="M4 9.8h16v1a2.6 2.6 0 0 1-5.3 0 2.7 2.7 0 0 1-5.4 0 2.6 2.6 0 0 1-5.3 0z" opacity=".72"/></g>
+      <g id="f-chat"><path d="M6.5 4h11A2.5 2.5 0 0 1 20 6.5v6.8a2.5 2.5 0 0 1-2.5 2.5h-7.8l-4.5 3.6a.6.6 0 0 1-1-.5V6.5A2.5 2.5 0 0 1 6.5 4z"/><circle cx="9.2" cy="10" r="1.3" fill="#fff"/><circle cx="13.4" cy="10" r="1.3" fill="#fff"/><circle cx="17" cy="10" r="1.3" fill="#fff" opacity=".6"/></g>
+      <g id="f-cart"><path d="M3.6 4.4h2.3l.7 3.2H21l-1.7 7.2a1.6 1.6 0 0 1-1.6 1.3H8.7a1.6 1.6 0 0 1-1.6-1.3L5.4 6.6l-.4-1.4H3.6z"/><circle cx="9.3" cy="19.6" r="1.7"/><circle cx="16.8" cy="19.6" r="1.7"/></g>
+      <g id="f-me"><circle cx="12" cy="8.2" r="4"/><path d="M4.4 20.4c1-4.2 3.9-6.4 7.6-6.4s6.6 2.2 7.6 6.4a1 1 0 0 1-1 1.2H5.4a1 1 0 0 1-1-1.2z"/></g>
+      <g id="cap-more"><circle cx="4.5" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="19.5" cy="12" r="1.7"/></g>
+      <g id="cap-target"><circle cx="12" cy="12" r="6.4" fill="none" stroke-width="2"/><circle cx="12" cy="12" r="2.4"/></g>
+    </defs></svg>
 
-    <!-- ============================
-         concept-f me-head 头区 (绿渐变 + 金头像 + 黄金会员)
-         ============================ -->
-    <view class="me-head fu">
-      <view class="mava">乐</view>
-      <view class="mcopy">
-        <view class="mname">{{ session ? '乐趣会员' : '欢迎来到乐趣生活' }}</view>
-        <view class="mrow">
-          <view class="mbadge">黄金会员</view>
-          <view class="mid">
-            ID {{ accountLabel || '8876' }} · 已省 ¥{{
-              (Number(session?.identity?.totalSavedCents || 0) / 100).toFixed(0) || '326'
-            }}
+    <view class="scroll">
+      <!-- ========== kimi 真理顶部用户区 L33-L47 + statusbar L133-L136 信号/电池 SVG ========== -->
+      <view class="top">
+        <view class="statusbar">
+          <text>9:41</text>
+          <view style="display:flex;gap:5px;align-items:center">
+            <svg width="16" height="11" viewBox="0 0 17 12" fill="#fff"><rect x="0" y="7" width="3" height="5" rx="1"/><rect x="4.5" y="5" width="3" height="7" rx="1"/><rect x="9" y="2.5" width="3" height="9.5" rx="1"/><rect x="13.5" y="0" width="3" height="12" rx="1"/></svg>
+            <svg width="23" height="11" viewBox="0 0 25 12"><rect x="0.5" y="0.5" width="20" height="11" rx="3" fill="none" stroke="#fff"/><rect x="2.5" y="2.5" width="14" height="7" rx="1.5" fill="#fff"/><path d="M23 4v4" stroke="#fff" stroke-width="1.6" stroke-linecap="round"/></svg>
+          </view>
+        </view>
+        <view class="navrow">
+          <text class="ptitle">我的</text>
+          <!-- #ifdef MP-WEIXIN -->
+          <view class="capsule capsule-reserve">
+            <view class="cell"><svg width="20" height="20" viewBox="0 0 24 24" fill="var(--capsule-ink)" style="transition:.5s"><use href="#cap-more"/></svg></view>
+            <view class="cell"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--capsule-ink)" style="transition:.5s"><use href="#cap-target"/></svg></view>
+          </view>
+          <!-- #endif -->
+          <!-- #ifndef MP-WEIXIN -->
+          <view class="capsule">
+            <view class="cell"><svg width="20" height="20" viewBox="0 0 24 24" fill="var(--capsule-ink)" style="transition:.5s"><use href="#cap-more"/></svg></view>
+            <view class="cell"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--capsule-ink)" style="transition:.5s"><use href="#cap-target"/></svg></view>
+          </view>
+          <!-- #endif -->
+        </view>
+        <!-- ============ kimi 真理 me-head L40-L47 ============ -->
+        <view class="me-head">
+          <view class="mava">乐</view>
+          <view>
+            <view class="mname">{{ session ? '乐趣会员' : '欢迎来到乐趣生活' }}</view>
+            <view class="mrow">
+              <view class="mbadge">黄金会员</view>
+              <text class="mid">ID {{ accountLabel || '8876' }} · 已省 ¥{{
+                (Number(session?.identity?.totalSavedCents || 0) / 100).toFixed(0) || '326'
+              }}</text>
+            </view>
+          </view>
+          <view class="mact">
+            <navigator url="/pages/page-239/index" open-type="navigate"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><use href="#x-cs" /><path d="M4.5 12a7.5 7.5 0 0 1 15 0v5.2a2.3 2.3 0 0 1-2.3 2.3H13" fill="none" stroke="#fff" stroke-width="2.1" stroke-linecap="round"/><rect x="3.2" y="10.5" width="3.6" height="6" rx="1.8" fill="#fff" opacity=".9"/><rect x="17.2" y="10.5" width="3.6" height="6" rx="1.8" fill="#fff" opacity=".9"/></svg></navigator>
+            <view @click="uni.showToast({ title: '设置即将上线', icon: 'none' })"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3.2"/><path d="M12 2.8v2.6M12 18.6v2.6M2.8 12h2.6M18.6 12h2.6M5.5 5.5l1.8 1.8M16.7 16.7l1.8 1.8M18.5 5.5l-1.8 1.8M7.3 16.7l-1.8 1.8"/></svg></view>
           </view>
         </view>
       </view>
-      <view class="mact">
-        <view class="macti" @click="uni.showToast({ title: '客服', icon: 'none' })">🎧</view>
-        <view class="macti" @click="uni.showToast({ title: '设置', icon: 'none' })">⚙️</view>
-      </view>
-    </view>
 
-    <!-- ============================
-         mstat 资产统计卡 4 列
-         ============================ -->
-    <view class="mstat cc fu">
-      <view class="mstatc hot" @click="uni.navigateTo({ url: '/pages/page-252/index' })">
-        <text class="mstatv"><text class="munit">¥</text>{{ (entitlements.length * 800) / 100 > 0
-          ? ((entitlements.length * 800) / 100).toFixed(2)
-          : '15.60' }}</text>
-        <text class="mstatl">代金券</text>
+      <!-- ============ kimi 真理 mstat 4 列资产卡 L49-L55 ============ -->
+      <view class="mstat fu">
+        <navigator url="/pages/page-252/index" open-type="navigate">
+          <text class="hot"><b><i>¥</i>{{ (entitlements.length * 800) / 100 > 0
+            ? ((entitlements.length * 800) / 100).toFixed(2)
+            : '15.60' }}</b></text>
+          <text class="hot-p">代金券</text>
+        </navigator>
+        <navigator url="/pages/page-237/index" open-type="navigate">
+          <b><i>¥</i>{{ (ordersTotalCents / 100).toFixed(2) || '1,286' }}</b>
+          <p>订单总额</p>
+        </navigator>
+        <navigator url="/pages/page-252/index" open-type="navigate">
+          <b>{{ entitlements.length }}<i> 张</i></b>
+          <p>卡包张</p>
+        </navigator>
+        <view @click="uni.showToast({ title: '会员中心即将上线', icon: 'none' })">
+          <b><i>¥</i>{{ rewards.length ? '36.5' : '0.0' }}</b>
+          <p>余额</p>
+        </view>
       </view>
-      <view class="mstatc" @click="uni.navigateTo({ url: '/pages/page-237/index' })">
-        <text class="mstatv"><text class="munit">¥</text>{{ (ordersTotalCents / 100).toFixed(2) || '1,286' }}</text>
-        <text class="mstatl">订单总额</text>
-      </view>
-      <view class="mstatc" @click="uni.navigateTo({ url: '/pages/page-252/index' })">
-        <text class="mstatv">{{ entitlements.length }}<text class="munit"> 张</text></text>
-        <text class="mstatl">卡包</text>
-      </view>
-      <view class="mstatc" @click="uni.showToast({ title: '会员中心', icon: 'none' })">
-        <text class="mstatv"><text class="munit">¥</text>{{ rewards.length ? '36.5' : '0.0' }}</text>
-        <text class="mstatl">余额</text>
-      </view>
-    </view>
 
-    <!-- ============================
-         代金券福利 pink pban
-         ============================ -->
-    <view class="pban fu" @click="uni.navigateTo({ url: '/pages/page-252/index' })">
-      <view class="pban-ic">🎟️</view>
-      <text class="pban-tx">每笔订单最高可获订单金额代金券</text>
-      <text class="pban-go">查看明细 ›</text>
-    </view>
-
-    <!-- ============================
-         我的订单 5 宫格 mord
-         ============================ -->
-    <view class="sec-h fu">
-      <text class="sec-t">我的订单</text>
-      <text class="sec-mo" @click="uni.navigateTo({ url: '/pages/page-237/index' })">全部订单 ›</text>
-    </view>
-    <view class="cc mord-wrap fu">
-      <view class="mord">
-        <view
-          v-for="(item, idx) in orderGrid"
-          :key="item.key"
-          class="mordc"
-          @click="openGrid(item)"
-        >
-          <view class="oic-wrap">
-            <view class="oic" :class="`gic gic-${item.hue}`">{{ item.glyph }}</view>
+      <!-- ============ 我的订单 kimi 真理 mord 5 宫格 L62-L68 ============ -->
+      <view class="mcard fu">
+        <view class="mhd">
+          <b>我的订单</b>
+          <navigator url="/pages/page-237/index" open-type="navigate">全部订单 ›</navigator>
+        </view>
+        <view class="mord">
+          <view
+            v-for="item in orderGrid"
+            :key="item.key"
+            class="mord-cell"
+            @click="openGrid(item)"
+          >
+            <view class="oic"><image :src="item.icon" mode="aspectFit" /></view>
             <view v-if="item.badge && item.badge > 0" class="obdg">{{ item.badge > 99 ? '99+' : item.badge }}</view>
+            <b>{{ item.label }}</b>
           </view>
-          <text class="mordl">{{ item.label }}</text>
         </view>
       </view>
-    </view>
 
-    <!-- ============================
-         常用服务 4 宫格 msvc
-         ============================ -->
-    <view class="sec-h fu">
-      <text class="sec-t">常用服务</text>
-      <text class="sec-mo" @click="uni.navigateTo({ url: '/pages/page-237/index' })">全部 ›</text>
-    </view>
-    <view class="cc msvc-wrap fu">
-      <view class="msvc">
-        <view
-          v-for="item in serviceGrid"
-          :key="item.key"
-          class="msvcc"
-          @click="openGrid(item)"
-        >
-          <view class="sic gic" :class="`gic-${item.hue}`">{{ item.glyph }}</view>
-          <text class="msvcl">{{ item.label }}</text>
+      <!-- ============ 常用服务 kimi 真理 msvc 4 宫格 L70-L74 ============ -->
+      <view class="mcard fu">
+        <view class="mhd">
+          <b>常用服务</b>
+          <navigator url="/pages/page-237/index" open-type="navigate">全部 ›</navigator>
+        </view>
+        <view class="msvc">
+          <view
+            v-for="item in serviceGrid"
+            :key="item.key"
+            class="msvc-cell"
+            @click="openGrid(item)"
+          >
+            <view class="sic"><image :src="item.icon" mode="aspectFit" /></view>
+            <b>{{ item.label }}</b>
+          </view>
         </view>
       </view>
-    </view>
 
-    <!-- ============================
-         登录状态 sheet (全部保留并升级 cc 日夜卡片)
-         ============================ -->
-    <view class="sec-h fu"><text class="sec-t">登录状态</text><text class="sec-mo">{{ session ? '已登录' : '未登录' }}</text></view>
-    <view class="cc fu">
-      <view v-if="session" class="mcard-body">
+      <!-- ============ 登录状态 / 订单 / 待使用券 / 奖励 / 地址 / 发票 (保留全部真理 API 调用链) ============ -->
+      <view class="mcard fu">
+        <view class="mhd"><b>登录状态</b><text>{{ session ? '已登录' : '未登录' }}</text></view>
+        <view v-if="session">
+          <view class="mlist">
+            <view class="mli">
+              <view class="mlic" style="background:linear-gradient(135deg,#ffe25a,#f7c400);color:#5b3400"><image src="/static/v63-icons/3d-cup.png" mode="aspectFit" style="width:22px;height:22px"/></view>
+              <view>
+                <b>消费者账户 {{ accountLabel }}</b>
+                <p>身份等级 {{ session.identity.authLevel }}</p>
+              </view>
+              <text class="go-r">›</text>
+            </view>
+          </view>
+          <button class="account-button secondary" @click="logout">退出本机登录</button>
+        </view>
+        <view v-else class="login-methods">
+          <button class="account-button" :loading="busy" @click="login">微信安全登录</button>
+          <view class="login-divider"><text>或使用手机号</text></view>
+          <input v-model="mobile" class="login-input" type="number" placeholder="请输入手机号" />
+          <view v-if="otpChallenge" class="otp-row">
+            <input v-model="otpCode" class="login-input" type="number" placeholder="请输入验证码" />
+            <button class="otp-button" :loading="busy" @click="loginWithOtp">验证登录</button>
+          </view>
+          <button v-else class="account-button secondary" :loading="busy" @click="requestOtp">获取验证码</button>
+        </view>
+        <text v-if="message" class="account-message">{{ message }}</text>
+      </view>
+
+      <view class="mcard fu">
+        <view class="mhd"><b>最近订单</b><text>{{ orders.length }} 笔</text></view>
+        <view v-if="orders.length" class="orders-list">
+          <view v-for="order in orders" :key="order.id" class="order-row" @click="openOrder(order)">
+            <view class="order-line">
+              <text class="order-store">{{ order.storeName || '商家订单' }}</text>
+              <text class="order-st">{{ statusText[order.status] || order.status }}</text>
+            </view>
+            <text class="order-no">订单 {{ order.orderNo || order.orderNumber || order.id }}</text>
+            <view class="order-foot">
+              <text>{{ order.items?.length || order.itemCount || 0 }} 件商品</text>
+              <text class="price">¥{{ (order.payableAmountCents / 100).toFixed(2) }}</text>
+            </view>
+            <button
+              v-if="order.status === 'PENDING_PAYMENT'"
+              class="pay-button"
+              :loading="payingOrderId === order.id"
+              :disabled="Boolean(payingOrderId)"
+              @click.stop="payOrder(order)"
+            >微信支付</button>
+          </view>
+        </view>
+        <view v-else class="empty-safe">{{ session ? '暂无订单' : '登录后查看订单' }}</view>
+      </view>
+
+      <view v-if="orderDetailBusy" class="mcard fu empty-safe">正在读取订单详情与售后记录…</view>
+      <view v-if="selectedOrder" class="mcard fu">
+        <view class="mhd inner">
+          <b>订单详情</b><text>{{ statusText[selectedOrder.status] || selectedOrder.status }}</text>
+        </view>
+        <view v-for="item in selectedOrder.items" :key="item.id" class="detail-line">
+          <text>{{ item.title }} × {{ item.quantity }}</text>
+          <text>¥{{ (item.lineAmountCents / 100).toFixed(2) }}</text>
+        </view>
+        <view v-if="aftercare.refunds.length" class="refund-list">
+          <text class="detail-title">退款记录</text>
+          <view v-for="refund in aftercare.refunds" :key="refund.id" class="detail-line">
+            <text>{{ refund.reasonCode }} · {{ refund.status }}</text>
+            <text>¥{{ (refund.amountCents / 100).toFixed(2) }}</text>
+          </view>
+        </view>
+        <button
+          v-if="selectedOrder.paymentStatus === 'PAID' && selectedOrder.fulfillmentStatus === 'NOT_STARTED' && refundableItems.length && !hasActiveRefund"
+          class="refund-button"
+          :loading="refundBusy"
+          @click="requestUnshippedRefund"
+        >申请全部未履约退款</button>
+        <text v-else-if="hasActiveRefund" class="detail-note">已有退款正在处理中，请勿重复提交</text>
+      </view>
+
+      <view v-if="session" class="mcard fu">
+        <view class="mhd"><b>待使用券</b><text>{{ entitlements.length }} 张</text></view>
+        <view v-if="entitlements.length" class="benefit-list">
+          <view v-for="e in entitlements" :key="e.entitlementId" class="benefit-card">
+            <view>
+              <text class="bf-title">{{ e.productTitle || '到店核销权益' }}</text>
+              <text class="bf-sub">剩余 {{ e.remainingUses }} 次 · 有效至 {{ e.expiresAt?.slice(0, 10) }}</text>
+            </view>
+            <button class="bf-btn" @click="copyVerificationToken(e)">出示券码</button>
+          </view>
+        </view>
+        <view v-else class="empty-safe">当前没有可使用的核销权益</view>
+      </view>
+
+      <view v-if="session" class="mcard fu">
+        <view class="mhd"><b>消费奖励</b><text>独立奖励账本</text></view>
+        <view v-if="rewards.length" class="benefit-list">
+          <view v-for="r in rewards" :key="r.id" class="benefit-card">
+            <view>
+              <text class="bf-title">{{ r.ruleVersion || '消费奖励' }}</text>
+              <text class="bf-sub">原额 ¥{{ ((r.originalAmountCents || 0) / 100).toFixed(2) }} · 可用 ¥{{ ((r.availableAmountCents || 0) / 100).toFixed(2) }}</text>
+            </view>
+            <text class="reward-status">{{ r.status || '有效' }}</text>
+          </view>
+        </view>
+        <view v-else class="empty-safe">当前没有奖励流水</view>
+      </view>
+
+      <view v-if="session" class="mcard fu">
+        <view class="mhd"><b>配送地址</b><text>{{ addresses.length }} 个</text></view>
+        <view v-if="addresses.length" class="benefit-list">
+          <view v-for="a in addresses" :key="a.id" class="benefit-card">
+            <view>
+              <text class="bf-title">{{ a.recipientName }} {{ a.mobile }}</text>
+              <text class="bf-sub">{{ a.addressLine }}</text>
+              <text class="bf-sub">{{ a.isDefault ? '默认地址' : '普通地址' }}</text>
+            </view>
+            <button class="bf-btn" @click="archiveAddress(a)">移除</button>
+          </view>
+        </view>
+        <button class="account-button secondary compact" @click="editingAddress = !editingAddress">{{ editingAddress ? '收起地址表单' : '新增配送地址' }}</button>
+        <view v-if="editingAddress" class="account-form">
+          <input v-model="addressForm.recipientName" placeholder="收件人姓名" maxlength="80" />
+          <input v-model="addressForm.mobile" type="number" placeholder="手机号" maxlength="11" />
+          <view class="form-grid">
+            <input v-model="addressForm.provinceCode" placeholder="省编码" />
+            <input v-model="addressForm.cityCode" placeholder="市编码" />
+            <input v-model="addressForm.districtCode" placeholder="区编码" />
+          </view>
+          <input v-model="addressForm.addressLine" placeholder="街道、门牌与房间号" maxlength="300" />
+          <label class="form-check"><switch :checked="addressForm.isDefault" :color="LIFE_BRAND_DEEP_HEX" @change="addressForm.isDefault = $event.detail.value"/>设为默认地址</label>
+          <button class="account-button" :loading="busy" @click="saveAddress">确认并加密保存</button>
+        </view>
+      </view>
+
+      <view v-if="session" class="mcard fu">
+        <view class="mhd"><b>发票与抬头</b><text>{{ invoiceProfiles.length }} 个</text></view>
+        <view v-if="invoiceProfiles.length" class="benefit-list">
+          <view v-for="p in invoiceProfiles" :key="p.id" class="benefit-card">
+            <view>
+              <text class="bf-title">{{ p.title }}</text>
+              <text class="bf-sub">{{ p.profileType === 'ENTERPRISE' ? '企业抬头' : '个人抬头' }} · {{ p.isDefault ? '默认' : '非默认' }}</text>
+            </view>
+            <button class="bf-btn" @click="archiveInvoiceProfile(p)">移除</button>
+          </view>
+        </view>
+        <button class="account-button secondary compact" @click="editingInvoice = !editingInvoice">{{ editingInvoice ? '收起抬头表单' : '新增发票抬头' }}</button>
+        <view v-if="editingInvoice" class="account-form">
+          <picker :range="['个人抬头', '企业抬头']" @change="invoiceForm.profileType = Number($event.detail.value) === 1 ? 'ENTERPRISE' : 'PERSONAL'">
+            <view class="form-picker">{{ invoiceForm.profileType === 'ENTERPRISE' ? '企业抬头' : '个人抬头' }}</view>
+          </picker>
+          <input v-model="invoiceForm.title" placeholder="发票抬头" maxlength="200" />
+          <input v-if="invoiceForm.profileType === 'ENTERPRISE'" v-model="invoiceForm.taxIdentifier" placeholder="纳税人识别号" maxlength="80" />
+          <input v-model="invoiceForm.email" placeholder="接收邮箱（选填）" maxlength="255" />
+          <label class="form-check"><switch :checked="invoiceForm.isDefault" :color="LIFE_BRAND_DEEP_HEX" @change="invoiceForm.isDefault = $event.detail.value"/>设为默认抬头</label>
+          <button class="account-button" :loading="busy" @click="saveInvoiceProfile">确认并加密保存</button>
+        </view>
+      </view>
+
+      <!-- ============ kimi 真理 mlist 功能列表 + 深色模式 switch L76-L86 ============ -->
+      <view class="mcard fu">
+        <view class="mhd"><b>账户与服务</b><text>安全中心</text></view>
         <view class="mlist">
-          <view class="mli">
-            <view class="mlic crown">👑</view>
-            <view class="mli-copy">
-              <text class="mli-t">消费者账户 {{ accountLabel }}</text>
-              <text class="mli-d">身份等级 {{ session.identity.authLevel }}</text>
+          <view v-for="it in mlistItems" :key="it.key" class="mli" @click="openMli(it.key)">
+            <view class="mlic" :style="{ background: it.bg }">
+              <image :src="it.icon" mode="aspectFit" style="width:20px;height:20px" />
+            </view>
+            <view>
+              <b>{{ it.t }}</b>
+              <p>{{ it.d }}</p>
             </view>
             <text class="go-r">›</text>
           </view>
+          <!-- 深色模式 switch：1:1 me.html L83-L86 .sw/.sw.on -->
+          <view class="mli">
+            <view class="mlic" style="background:#10241a;color:#f7c400"><image src="/static/v63-icons/3d-mnt.png" mode="aspectFit" style="width:20px;height:20px"/></view>
+            <view>
+              <b>深色模式</b>
+              <p>夜间护眼</p>
+            </view>
+            <view :class="['sw', { on: isDark }]" @click="isDark = !isDark"></view>
+          </view>
         </view>
-        <button class="account-button secondary" @click="logout">退出本机登录</button>
       </view>
-      <view v-else class="login-methods">
-        <button class="account-button" :loading="busy" @click="login">微信安全登录</button>
-        <view class="login-divider"><text>或使用手机号</text></view>
-        <input v-model="mobile" class="login-input" type="number" placeholder="请输入手机号" />
-        <view v-if="otpChallenge" class="otp-row">
-          <input v-model="otpCode" class="login-input" type="number" placeholder="请输入验证码" />
-          <button class="otp-button" :loading="busy" @click="loginWithOtp">验证登录</button>
-        </view>
-        <button v-else class="account-button secondary" :loading="busy" @click="requestOtp">
-          获取验证码
-        </button>
-      </view>
-      <text v-if="message" class="account-message">{{ message }}</text>
+
+      <view style="height:20px"></view>
     </view>
 
-    <!-- ============================
-         最近订单 + 订单详情 + 待使用券 + 奖励 + 地址 + 发票 (保留全部业务函数调用)
-         ============================ -->
-    <view class="sec-h fu">
-      <text class="sec-t">最近订单</text>
-      <text class="sec-mo">{{ orders.length }} 笔</text>
-    </view>
-    <view class="cc fu">
-      <view v-if="orders.length" class="orders-list">
-        <view
-          v-for="order in orders"
-          :key="order.id"
-          class="order-row"
-          @click="openOrder(order)"
-        >
-          <view class="order-head account-order-head">
-            <text class="order-store">{{ order.storeName || '商家订单' }}</text>
-            <text class="order-st">{{ statusText[order.status] || order.status }}</text>
-          </view>
-          <text class="order-no">订单 {{ order.orderNo || order.orderNumber || order.id }}</text>
-          <view class="order-foot">
-            <text>{{ order.items?.length || order.itemCount || 0 }} 件商品</text>
-            <text class="price">¥{{ (order.payableAmountCents / 100).toFixed(2) }}</text>
-          </view>
-          <button
-            v-if="order.status === 'PENDING_PAYMENT'"
-            class="pay-button"
-            :loading="payingOrderId === order.id"
-            :disabled="Boolean(payingOrderId)"
-            @click.stop="payOrder(order)"
-          >
-            微信支付
-          </button>
-        </view>
-      </view>
-      <view v-else class="empty-safe">{{ session ? '暂无订单' : '登录后查看订单' }}</view>
-    </view>
-
-    <view v-if="orderDetailBusy" class="cc fu empty-safe">正在读取订单详情与售后记录…</view>
-    <view v-if="selectedOrder" class="cc fu order-detail">
-      <view class="sec-h inner">
-        <text class="sec-t">订单详情</text>
-        <text class="sec-mo">{{ statusText[selectedOrder.status] || selectedOrder.status }}</text>
-      </view>
-      <view v-for="item in selectedOrder.items" :key="item.id" class="detail-line">
-        <text>{{ item.title }} × {{ item.quantity }}</text>
-        <text>¥{{ (item.lineAmountCents / 100).toFixed(2) }}</text>
-      </view>
-      <view v-if="aftercare.refunds.length" class="refund-list">
-        <text class="detail-title">退款记录</text>
-        <view v-for="refund in aftercare.refunds" :key="refund.id" class="detail-line">
-          <text>{{ refund.reasonCode }} · {{ refund.status }}</text>
-          <text>¥{{ (refund.amountCents / 100).toFixed(2) }}</text>
-        </view>
-      </view>
-      <button
-        v-if="
-          selectedOrder.paymentStatus === 'PAID' &&
-          selectedOrder.fulfillmentStatus === 'NOT_STARTED' &&
-          refundableItems.length &&
-          !hasActiveRefund
-        "
-        class="refund-button"
-        :loading="refundBusy"
-        @click="requestUnshippedRefund"
-      >
-        申请全部未履约退款
-      </button>
-      <text v-else-if="hasActiveRefund" class="detail-note">已有退款正在处理中，请勿重复提交</text>
-    </view>
-
-    <view v-if="session" class="sec-h fu">
-      <text class="sec-t">待使用券</text>
-      <text class="sec-mo">{{ entitlements.length }} 张</text>
-    </view>
-    <view v-if="session" class="cc fu">
-      <view v-if="entitlements.length" class="benefit-list">
-        <view v-for="entitlement in entitlements" :key="entitlement.entitlementId" class="benefit-card">
-          <view>
-            <text class="bf-title">{{ entitlement.productTitle || '到店核销权益' }}</text>
-            <text class="bf-sub"
-              >剩余 {{ entitlement.remainingUses }} 次 · 有效至
-              {{ entitlement.expiresAt?.slice(0, 10) }}</text
-            >
-          </view>
-          <button size="mini" class="bf-btn" @click="copyVerificationToken(entitlement)">出示券码</button>
-        </view>
-      </view>
-      <view v-else class="empty-safe">当前没有可使用的核销权益</view>
-    </view>
-
-    <view v-if="session" class="sec-h fu">
-      <text class="sec-t">消费奖励</text>
-      <text class="sec-mo">独立奖励账本</text>
-    </view>
-    <view v-if="session" class="cc fu">
-      <view v-if="rewards.length" class="benefit-list">
-        <view v-for="reward in rewards" :key="reward.id" class="benefit-card">
-          <view>
-            <text class="bf-title">{{ reward.ruleVersion || '消费奖励' }}</text>
-            <text class="bf-sub"
-              >原额 ¥{{ ((reward.originalAmountCents || 0) / 100).toFixed(2) }} · 可用 ¥{{
-                ((reward.availableAmountCents || 0) / 100).toFixed(2)
-              }}</text
-            >
-          </view>
-          <text class="reward-status">{{ reward.status || '有效' }}</text>
-        </view>
-      </view>
-      <view v-else class="empty-safe">当前没有奖励流水</view>
-    </view>
-
-    <view v-if="session" class="sec-h fu">
-      <text class="sec-t">配送地址</text>
-      <text class="sec-mo">{{ addresses.length }} 个</text>
-    </view>
-    <view v-if="session" class="cc fu">
-      <view v-if="addresses.length" class="benefit-list">
-        <view v-for="address in addresses" :key="address.id" class="benefit-card">
-          <view>
-            <text class="bf-title">{{ address.recipientName }} {{ address.mobile }}</text>
-            <text class="bf-sub">{{ address.addressLine }}</text>
-            <text class="bf-sub">{{ address.isDefault ? '默认地址' : '普通地址' }}</text>
-          </view>
-          <button size="mini" class="bf-btn" @click="archiveAddress(address)">移除</button>
-        </view>
-      </view>
-      <button class="account-button secondary compact" @click="editingAddress = !editingAddress">
-        {{ editingAddress ? '收起地址表单' : '新增配送地址' }}
-      </button>
-      <view v-if="editingAddress" class="account-form">
-        <input v-model="addressForm.recipientName" placeholder="收件人姓名" maxlength="80" />
-        <input v-model="addressForm.mobile" type="number" placeholder="手机号" maxlength="11" />
-        <view class="form-grid">
-          <input v-model="addressForm.provinceCode" placeholder="省编码" />
-          <input v-model="addressForm.cityCode" placeholder="市编码" />
-          <input v-model="addressForm.districtCode" placeholder="区编码" />
-        </view>
-        <input v-model="addressForm.addressLine" placeholder="街道、门牌与房间号" maxlength="300" />
-        <label class="form-check">
-          <switch
-            :checked="addressForm.isDefault"
-            :color="LIFE_BRAND_DEEP_HEX"
-            @change="addressForm.isDefault = $event.detail.value"
-          />设为默认地址
-        </label>
-        <button class="account-button" :loading="busy" @click="saveAddress">
-          确认并加密保存
-        </button>
+    <!-- ============ kimi 真理 tabbar L208-L213（5栏 SVG use href，23×23，购物车 bdg 3，我的 on） ============ -->
+    <view class="tabbar">
+      <navigator url="/pages/life/index" open-type="switchTab" class="tab">
+        <svg width="23" height="23" viewBox="0 0 24 24" fill="currentColor"><use href="#f-home"/></svg>
+        <text>首页</text>
+      </navigator>
+      <navigator url="/pages/mall/index" open-type="switchTab" class="tab">
+        <svg width="23" height="23" viewBox="0 0 24 24" fill="currentColor"><use href="#f-shop"/></svg>
+        <text>商城</text>
+      </navigator>
+      <navigator url="/pages/community/index" open-type="switchTab" class="tab">
+        <svg width="23" height="23" viewBox="0 0 24 24" fill="currentColor"><use href="#f-chat"/></svg>
+        <text>生活圈</text>
+      </navigator>
+      <navigator url="/pages/cart/index" open-type="switchTab" class="tab">
+        <svg width="23" height="23" viewBox="0 0 24 24" fill="currentColor"><use href="#f-cart"/></svg>
+        <text>购物车</text>
+        <view class="bdg">3</view>
+      </navigator>
+      <view class="tab on">
+        <svg width="23" height="23" viewBox="0 0 24 24" fill="currentColor"><use href="#f-me"/></svg>
+        <text>我的</text>
       </view>
     </view>
 
-    <view v-if="session" class="sec-h fu">
-      <text class="sec-t">发票与抬头</text>
-      <text class="sec-mo">{{ invoiceProfiles.length }} 个</text>
-    </view>
-    <view v-if="session" class="cc fu">
-      <view v-if="invoiceProfiles.length" class="benefit-list">
-        <view v-for="profile in invoiceProfiles" :key="profile.id" class="benefit-card">
-          <view>
-            <text class="bf-title">{{ profile.title }}</text>
-            <text class="bf-sub"
-              >{{ profile.profileType === 'ENTERPRISE' ? '企业抬头' : '个人抬头' }} ·
-              {{ profile.isDefault ? '默认' : '非默认' }}</text
-            >
-          </view>
-          <button size="mini" class="bf-btn" @click="archiveInvoiceProfile(profile)">移除</button>
-        </view>
-      </view>
-      <button class="account-button secondary compact" @click="editingInvoice = !editingInvoice">
-        {{ editingInvoice ? '收起抬头表单' : '新增发票抬头' }}
-      </button>
-      <view v-if="editingInvoice" class="account-form">
-        <picker
-          :range="['个人抬头', '企业抬头']"
-          @change="
-            invoiceForm.profileType = Number($event.detail.value) === 1 ? 'ENTERPRISE' : 'PERSONAL'
-          "
-        >
-          <view class="form-picker">{{
-            invoiceForm.profileType === 'ENTERPRISE' ? '企业抬头' : '个人抬头'
-          }}</view>
-        </picker>
-        <input v-model="invoiceForm.title" placeholder="发票抬头" maxlength="200" />
-        <input
-          v-if="invoiceForm.profileType === 'ENTERPRISE'"
-          v-model="invoiceForm.taxIdentifier"
-          placeholder="纳税人识别号"
-          maxlength="80"
-        />
-        <input v-model="invoiceForm.email" placeholder="接收邮箱（选填）" maxlength="255" />
-        <label class="form-check">
-          <switch
-            :checked="invoiceForm.isDefault"
-            :color="LIFE_BRAND_DEEP_HEX"
-            @change="invoiceForm.isDefault = $event.detail.value"
-          />设为默认抬头
-        </label>
-        <button class="account-button" :loading="busy" @click="saveInvoiceProfile">
-          确认并加密保存
-        </button>
-      </view>
-    </view>
+    <!-- ============ kimi 真理 toast L94-L95 ============ -->
+    <view :class="['toast', { show: message }]" v-if="message">{{ message }}</view>
 
-    <!-- ============================
-         mlist 功能列表 (会员/发票/反馈/安心购/深色模式 switch)
-         ============================ -->
-    <view class="sec-h fu"><text class="sec-t">账户与服务</text><text class="sec-mo">安全中心</text></view>
-    <view class="cc fu">
-      <view class="mlist">
-        <view class="mli" @click="openMli('member')">
-          <view class="mlic crown">👑</view>
-          <view class="mli-copy">
-            <text class="mli-t">会员中心</text>
-            <text class="mli-d">黄金会员 · 每月 ¥50 代金券</text>
-          </view>
-          <text class="go-r">›</text>
-        </view>
-        <view class="mli" @click="openMli('invoice')">
-          <view class="mlic blue">📄</view>
-          <view class="mli-copy">
-            <text class="mli-t">发票助手</text>
-            <text class="mli-d">支持电子发票</text>
-          </view>
-          <text class="go-r">›</text>
-        </view>
-        <view class="mli" @click="openMli('feedback')">
-          <view class="mlic purple">💬</view>
-          <view class="mli-copy">
-            <text class="mli-t">意见反馈</text>
-            <text class="mli-d">你的建议我们认真看</text>
-          </view>
-          <text class="go-r">›</text>
-        </view>
-        <view class="mli" @click="openMli('safeguard')">
-          <view class="mlic green">🛡️</view>
-          <view class="mli-copy">
-            <text class="mli-t">安心购保障</text>
-            <text class="mli-d">随时退 · 过期自动退</text>
-          </view>
-          <text class="go-r">›</text>
-        </view>
-        <view class="mli">
-          <view class="mlic dark">🌙</view>
-          <view class="mli-copy">
-            <text class="mli-t">深色模式</text>
-            <text class="mli-d">夜间护眼</text>
-          </view>
-          <switch
-            class="sw-uni"
-            :checked="isDark"
-            :color="LIFE_BRAND_DEEP_HEX"
-            @change="isDark = $event.detail.value"
-          />
-        </view>
-      </view>
+    <!-- ============ kimi 真理 maifab L96-L101（真实 mai.png） ============ -->
+    <view class="maifab" @click="maiClick">
+      <image src="/static/v63-icons/mai.png" mode="aspectFit" />
+      <text>小满</text>
     </view>
-
-    <view style="height: 40rpx"></view>
-  </LifeSurface>
+  </view>
 </template>
+
+<!-- ============================================================
+     style: 1:1 concept-f me.html <style> L14-L105（375px 基准，像素 1:1）
+     ============================================================ -->
 <style scoped>
-/* ====== concept-f me-head 渐变头区 ====== */
-.me-head {
-  position: relative;
-  display: flex;
-  align-items: center;
-  gap: 22rpx;
-  margin: 8rpx 24rpx 0;
-  padding: 32rpx 26rpx 34rpx;
-  border-radius: 30rpx;
-  background: linear-gradient(165deg, var(--hd1, #009146), var(--hd2, #006b36));
-  color: #fff;
-  box-shadow: var(--shadow, 0 10px 26px rgba(22,19,15,.12));
-  box-sizing: border-box;
-  z-index: 2;
+/* ===== 1:1 kimi 真理主题 Token L15-L26 ===== */
+.phone{
+  --hd1:#009146; --hd2:#006b36; --bg:#f6f1e6; --card:#ffffff; --ink:#16130f;
+  --mut:#857c6d; --accent:#009146; --promo:#f03749; --hot:#eb6325; --yel:#fee600;
+  --tabbar:#ffffff; --line:rgba(22,19,15,.08); --notice-bg:#e6f3ea; --notice-tx:#0b6b3d;
+  --capsule-bg:rgba(255,255,255,.94); --capsule-line:rgba(22,19,15,.12); --capsule-ink:#16130f;
+  --cnt-bg:#16130f; --cnt-tx:#fee600; --shadow:0 10px 26px rgba(22,19,15,.09);
 }
-.mava {
-  width: 116rpx;
-  height: 116rpx;
-  border-radius: 50%;
-  display: grid;
-  place-items: center;
-  font-size: 48rpx;
-  font-weight: 900;
-  color: #5b3400;
-  background: linear-gradient(135deg, #ffe25a, #f7c400);
-  border: 4rpx solid rgba(255, 255, 255, .85);
-  box-shadow: 0 12rpx 32rpx rgba(0, 0, 0, .22);
-  flex: none;
+.phone[data-theme="dark"]{
+  --hd1:#10241a; --hd2:#0c1212; --bg:#0c1212; --card:#141d1d; --ink:#ffffff;
+  --mut:#9fb0a8; --accent:#6ec726; --promo:#ff5d3d; --hot:#f7c400; --yel:#f7c400;
+  --tabbar:#0a0f0f; --line:rgba(255,255,255,.08); --notice-bg:rgba(110,199,38,.13); --notice-tx:#8fe33f;
+  --capsule-bg:rgba(12,18,18,.45); --capsule-line:rgba(255,255,255,.22); --capsule-ink:#ffffff;
+  --cnt-bg:#0c1212; --cnt-tx:#6ec726; --shadow:0 10px 26px rgba(0,0,0,.4);
 }
-.mcopy { min-width: 0; flex: 1; display: flex; flex-direction: column; gap: 6rpx; }
-.mname { font-size: 34rpx; font-weight: 900; }
-.mrow { display: flex; align-items: center; gap: 14rpx; margin-top: 8rpx; flex-wrap: wrap; }
-.mbadge {
-  font-size: 18rpx;
-  font-weight: 900;
-  background: linear-gradient(120deg, #3a2c10, #16130f);
-  color: #ffd76a;
-  border-radius: 10rpx;
-  padding: 6rpx 14rpx;
-  border: 1rpx solid rgba(255, 217, 138, .4);
-  flex: none;
+/* ===== kimi 真理 phone 外框 L28-L33 ===== */
+.phone{
+  width:375px;height:760px;background:var(--bg);border-radius:44px;position:relative;overflow:hidden;
+  display:flex;flex-direction:column;flex:none;color:var(--ink);
+  box-shadow:0 40px 90px rgba(0,0,0,.55);transition:background .5s,color .5s;
 }
-.mid { font-size: 20rpx; font-weight: 700; color: rgba(255,255,255,.75); }
-.mact { display: flex; gap: 14rpx; align-self: flex-start; }
-.macti {
-  width: 64rpx; height: 64rpx;
-  border-radius: 50%;
-  background: rgba(255,255,255,.16);
-  display: grid; place-items: center;
-  color: #fff;
-  font-size: 28rpx;
-  backdrop-filter: blur(4px);
-}
+.phone.no-tr,.phone.no-tr *{transition:none!important}
+.scroll{flex:1;overflow-y:auto;scrollbar-width:none}
+.scroll::-webkit-scrollbar{display:none}
 
-/* ====== mstat 4 列资产卡 ====== */
-.mstat {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  margin: -36rpx 28rpx 0;
-  padding: 24rpx 0;
-  position: relative;
-  z-index: 3;
-}
-.mstatc {
-  text-align: center;
-  position: relative;
-  padding: 4rpx 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-}
-.mstatc + .mstatc::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 18%;
-  height: 64%;
-  width: 1rpx;
-  background: var(--line, rgba(22,19,15,.08));
-}
-.mstatv {
-  font-size: 32rpx;
-  font-weight: 900;
-  color: var(--ink, #16130f);
-  line-height: 1.15;
-}
-.munit {
-  font-style: normal;
-  font-size: 20rpx;
-  font-weight: 800;
-  margin-right: 2rpx;
-}
-.mstatl {
-  font-size: 20rpx;
-  font-weight: 800;
-  color: var(--mut, #857c6d);
-  margin-top: 8rpx;
-}
-.mstatc.hot .mstatv { color: var(--promo, #f03749); }
+/* ===== kimi 真理 top/navrow/capsule L33-L39 ===== */
+.top{background:linear-gradient(165deg,var(--hd1),var(--hd2));padding:10px 16px 44px;transition:background .5s}
+.statusbar{display:flex;justify-content:space-between;align-items:center;font-size:13px;font-weight:700;color:#fff}
+.navrow{display:flex;align-items:center;gap:8px;margin-top:10px;position:relative;z-index:2}
+.ptitle{font-size:19px;font-weight:900;color:#fff}
+.capsule{width:87px;height:32px;border-radius:16px;background:var(--capsule-bg);border:1px solid var(--capsule-line);display:flex;overflow:hidden;backdrop-filter:blur(8px);transition:background .5s,border-color .5s;margin-left:auto}
+.cell{flex:1;display:grid;place-items:center;color:var(--capsule-ink);font-size:12px}
+.cell:first-child{border-right:1px solid var(--capsule-line)}
 
-/* ====== 代金券 pban 粉红渐变 banner ====== */
-.pban {
-  display: flex;
-  align-items: center;
-  gap: 18rpx;
-  margin: 22rpx 28rpx 0;
-  padding: 22rpx 26rpx;
-  border-radius: 28rpx;
-  background: linear-gradient(120deg, #fff1f0, #ffe4e0);
-  border: 1rpx solid #ffd5cf;
-  box-sizing: border-box;
-}
-.pban-ic {
-  width: 56rpx; height: 56rpx;
-  border-radius: 18rpx;
-  background: linear-gradient(135deg, #ff5d3d, #f03749);
-  display: grid; place-items: center;
-  color: #fff;
-  font-size: 28rpx;
-  flex: none;
-}
-.pban-tx {
-  flex: 1;
-  min-width: 0;
-  font-size: 24rpx;
-  font-weight: 900;
-  color: #e23d3d;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.pban-go {
-  font-size: 20rpx;
-  font-weight: 900;
-  color: #e07a6a;
-  flex: none;
-}
+/* ===== kimi 真理 me-head L40-L47 ===== */
+.me-head{display:flex;align-items:center;gap:12px;margin-top:16px}
+.mava{width:58px;height:58px;border-radius:50%;background:linear-gradient(135deg,#ffe25a,#f7c400);display:grid;place-items:center;font-size:22px;font-weight:900;color:#5b3400;border:2.5px solid rgba(255,255,255,.85);box-shadow:0 6px 16px rgba(0,0,0,.22);flex:none}
+.mname{font-size:17px;font-weight:900;color:#fff}
+.mrow{display:flex;align-items:center;gap:6px;margin-top:5px}
+.mbadge{font-size:9px;font-weight:900;background:linear-gradient(120deg,#3a2c10,#16130f);color:#ffd76a;border-radius:6px;padding:2.5px 7px;border:1px solid rgba(255,217,138,.4)}
+.mid{font-size:9.5px;font-weight:700;color:rgba(255,255,255,.7)}
+.mact{margin-left:auto;display:flex;gap:8px}
+.mact navigator,.mact view{width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,.16);display:grid;place-items:center;color:#fff;text-decoration:none;backdrop-filter:blur(4px)}
 
-/* ====== 订单宫格 mord ====== */
-.mord-wrap { margin: 14rpx 28rpx 0; padding: 22rpx 10rpx 24rpx; }
-.mord { display: grid; grid-template-columns: repeat(5, 1fr); }
-.mordc {
-  text-align: center;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8rpx;
-  position: relative;
-}
-.oic-wrap {
-  position: relative;
-  width: 88rpx;
-  height: 88rpx;
-  margin: 0 auto;
-  display: grid;
-  place-items: center;
-}
-.oic {
-  width: 80rpx;
-  height: 80rpx;
-  display: grid;
-  place-items: center;
-  font-size: 38rpx;
-  border-radius: 24rpx;
-  background: radial-gradient(circle at 50% 44%, rgba(255,208,105,.34), rgba(255,208,105,0) 72%);
-}
-.obdg {
-  position: absolute;
-  top: -6rpx;
-  right: calc(50% - 48rpx);
-  min-width: 30rpx;
-  height: 30rpx;
-  border-radius: 16rpx;
-  background: var(--promo, #f03749);
-  color: #fff;
-  font-size: 18rpx;
-  font-weight: 900;
-  display: grid;
-  place-items: center;
-  padding: 0 8rpx;
-  border: 3rpx solid var(--card, #fff);
-  box-sizing: border-box;
-  line-height: 24rpx;
-}
-.mordl { font-size: 22rpx; font-weight: 800; color: var(--ink, #16130f); }
+/* ===== kimi 真理 mstat L49-L55 ===== */
+.mstat{margin:-26px 14px 0;background:var(--card);border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow);display:grid;grid-template-columns:repeat(4,1fr);padding:14px 0;position:relative;z-index:2;transition:background .5s}
+.mstat navigator,.mstat view{text-align:center;text-decoration:none;color:var(--ink);position:relative}
+.mstat navigator+.mstat navigator::before,
+.mstat navigator+view::before,
+.mstat view+navigator::before,
+.mstat view+view::before{content:"";position:absolute;left:0;top:18%;height:64%;width:1px;background:var(--line)}
+.mstat b{font-size:16px;font-weight:900;display:block;line-height:1.2}
+.mstat b i{font-style:normal;font-size:10px;font-weight:800}
+.mstat p{font-size:9.5px;font-weight:800;color:var(--mut);margin-top:3px}
+.mstat .hot b{color:var(--promo)}
 
-/* ====== 常用服务 4 宫格 msvc ====== */
-.msvc-wrap { margin: 14rpx 28rpx 0; padding: 22rpx 10rpx 24rpx; }
-.msvc { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20rpx 0; }
-.msvcc {
-  text-align: center;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8rpx;
-}
-.sic {
-  width: 80rpx;
-  height: 80rpx;
-  display: grid;
-  place-items: center;
-  font-size: 38rpx;
-  border-radius: 24rpx;
-}
-.msvcl { font-size: 22rpx; font-weight: 800; color: var(--ink, #16130f); }
+/* ===== kimi 真理 mcard L57-L60 ===== */
+.mcard{margin:12px 14px 0;background:var(--card);border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow);padding:13px 14px;transition:background .5s}
+.mhd{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:11px}
+.mhd b{font-size:13.5px;font-weight:900;color:var(--ink)}
+.mhd navigator,.mhd text{font-size:10px;font-weight:800;color:var(--mut);text-decoration:none}
+.mhd.inner{padding:4px 0 11px;margin-bottom:0;border-bottom:1px solid var(--line)}
 
-/* ====== sec-h 分区头 (全局 sec-h 已在 App.vue，此处补充内层) ====== */
-.sec-h.inner {
-  padding: 4rpx 0 18rpx;
-  margin-bottom: 0;
-  border-bottom: 1rpx solid var(--line, rgba(22,19,15,.08));
-}
+/* ===== kimi 真理 mord L62-L68 ===== */
+.mord{display:grid;grid-template-columns:repeat(5,1fr)}
+.mord-cell{text-align:center;position:relative}
+.mord .oic{width:44px;height:44px;margin:0 auto;display:grid;place-items:center;background:radial-gradient(circle at 50% 44%,rgba(255,208,105,.34),rgba(255,208,105,0) 72%)}
+.phone[data-theme="dark"] .mord .oic{background:radial-gradient(circle at 50% 44%,rgba(255,220,150,.10),rgba(255,220,150,0) 72%)}
+.mord .oic image{width:40px;height:40px;filter:drop-shadow(0 3px 5px rgba(30,30,50,.14))}
+.mord b{font-size:10px;font-weight:800;display:block;margin-top:3px;color:var(--ink)}
+.obdg{position:absolute;top:-2px;right:calc(50% - 24px);min-width:15px;height:15px;border-radius:8px;background:var(--promo);color:#fff;font-size:8.5px;font-weight:900;display:grid;place-items:center;padding:0 4px;border:1.5px solid var(--card)}
 
-/* ====== 登录/OTP / 订单 / 地址 / 发票 ====== */
-.mcard-body { display: flex; flex-direction: column; gap: 18rpx; }
-.login-methods { display: flex; flex-direction: column; gap: 18rpx; }
-.login-divider { color: var(--mut, #857c6d); text-align: center; font-size: 22rpx; font-weight: 700; }
-.login-input {
-  height: 86rpx;
-  padding: 0 28rpx;
-  border: 1rpx solid var(--line, rgba(22,19,15,.1));
-  border-radius: 22rpx;
-  background: var(--cnt-bg, rgba(22,19,15,.04));
-  color: var(--ink, #16130f);
-  box-sizing: border-box;
-  font-size: 28rpx;
-}
-page[data-theme='dark'] .login-input {
-  background: rgba(255,255,255,.06);
-}
-.otp-row { display: grid; grid-template-columns: 1fr auto; gap: 16rpx; }
-.otp-button {
-  margin: 0;
-  color: #fff;
-  background: linear-gradient(120deg, var(--hd1, #009146), var(--hd2, #006b36));
-  border-radius: 22rpx;
-  font-size: 24rpx;
-  font-weight: 800;
-  padding: 0 28rpx;
-  height: 86rpx;
-  line-height: 86rpx;
-}
-.account-button {
-  color: #fff;
-  background: linear-gradient(120deg, var(--hd1, #009146), var(--hd2, #006b36));
-  border-radius: 999rpx;
-  font-size: 28rpx;
-  font-weight: 800;
-  height: 86rpx;
-  line-height: 86rpx;
-  margin: 0;
-}
-.account-button.secondary {
-  color: var(--accent, #009146);
-  background: var(--tone-soft, #E7F7F0);
-}
-page[data-theme='dark'] .account-button.secondary {
-  color: #8fe33f;
-  background: rgba(110,199,38,.14);
-}
-.account-button.compact {
-  margin-top: 20rpx;
-  font-size: 24rpx;
-  height: 72rpx;
-  line-height: 72rpx;
-}
-.account-message {
-  display: block;
-  margin-top: 18rpx;
-  color: var(--mut, #857c6d);
-  text-align: center;
-  font-size: 24rpx;
-}
-.orders-list { display: flex; flex-direction: column; gap: 16rpx; }
-.order-row {
-  padding: 22rpx;
-  border: 1rpx solid var(--line, rgba(22,19,15,.08));
-  border-radius: 22rpx;
-  background: var(--cnt-bg, rgba(22,19,15,.03));
-}
-page[data-theme='dark'] .order-row { background: rgba(255,255,255,.04); }
-.order-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 14rpx;
-}
-.order-store { font-size: 28rpx; font-weight: 900; color: var(--ink, #16130f); }
-.order-st {
-  padding: 8rpx 18rpx;
-  border-radius: 999rpx;
-  background: var(--tone-soft, #E7F7F0);
-  color: var(--accent, #009146);
-  font-size: 18rpx;
-  font-weight: 800;
-}
-.order-no {
-  display: block;
-  margin-top: 10rpx;
-  color: var(--mut, #857c6d);
-  font-size: 22rpx;
-}
-.order-foot {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-top: 12rpx;
-  color: var(--mut, #857c6d);
-  font-size: 22rpx;
-}
-.order-foot .price { color: var(--hot, #eb6325); font-size: 32rpx; font-weight: 900; }
-.pay-button {
-  width: 100%;
-  margin-top: 16rpx;
-  color: #fff;
-  background: linear-gradient(120deg, var(--hot, #eb6325), var(--promo, #f03749));
-  border-radius: 999rpx;
-  font-size: 24rpx;
-  font-weight: 800;
-  height: 72rpx;
-  line-height: 72rpx;
-}
-.empty-safe {
-  padding: 32rpx 20rpx;
-  text-align: center;
-  color: var(--mut, #857c6d);
-  font-size: 24rpx;
-}
-.order-detail { display: flex; flex-direction: column; gap: 14rpx; }
-.detail-line {
-  display: flex;
-  justify-content: space-between;
-  gap: 20rpx;
-  color: var(--mut, #857c6d);
-  font-size: 24rpx;
-  padding: 10rpx 0;
-}
-.detail-title {
-  display: block;
-  margin: 8rpx 0 12rpx;
-  font-weight: 800;
-  color: var(--ink, #16130f);
-  font-size: 26rpx;
-}
-.refund-list {
-  padding-top: 16rpx;
-  margin-top: 4rpx;
-  border-top: 1rpx solid var(--line, rgba(22,19,15,.08));
-  display: flex;
-  flex-direction: column;
-  gap: 8rpx;
-}
-.refund-button {
-  margin-top: 14rpx;
-  color: #fff;
-  background: linear-gradient(120deg, #ff5d3d, #f03749);
-  border-radius: 999rpx;
-  font-size: 24rpx;
-  font-weight: 800;
-  height: 72rpx;
-  line-height: 72rpx;
-}
-.detail-note {
-  color: var(--promo, #f03749);
-  text-align: center;
-  font-size: 24rpx;
-  padding: 14rpx 0 6rpx;
-}
-.benefit-list { display: flex; flex-direction: column; gap: 16rpx; }
-.benefit-card {
-  display: flex;
-  padding: 22rpx;
-  border: 1rpx solid var(--line, rgba(22,19,15,.08));
-  border-radius: 22rpx;
-  align-items: center;
-  justify-content: space-between;
-  gap: 20rpx;
-  background: var(--cnt-bg, rgba(22,19,15,.03));
-}
-page[data-theme='dark'] .benefit-card { background: rgba(255,255,255,.04); }
-.benefit-card > view {
-  display: flex;
-  min-width: 0;
-  flex: 1;
-  flex-direction: column;
-  gap: 10rpx;
-}
-.bf-title { font-size: 28rpx; font-weight: 800; color: var(--ink, #16130f); }
-.bf-sub { color: var(--mut, #857c6d); font-size: 22rpx; }
-.bf-btn {
-  margin: 0;
-  color: var(--accent, #009146);
-  background: var(--tone-soft, #E7F7F0);
-  border-radius: 999rpx;
-  font-size: 22rpx;
-  font-weight: 800;
-  padding: 10rpx 24rpx;
-}
-page[data-theme='dark'] .bf-btn {
-  color: #8fe33f;
-  background: rgba(110,199,38,.14);
-}
-.reward-status {
-  color: var(--promo, #f03749);
-  font-size: 22rpx;
-  font-weight: 800;
-}
-.account-form {
-  display: grid;
-  gap: 18rpx;
-  margin-top: 22rpx;
-  padding-top: 22rpx;
-  border-top: 1rpx solid var(--line, rgba(22,19,15,.08));
-}
-.account-form input,
-.form-picker {
-  height: 84rpx;
-  padding: 0 26rpx;
-  border: 1rpx solid var(--line, rgba(22,19,15,.1));
-  border-radius: 22rpx;
-  background: var(--cnt-bg, rgba(22,19,15,.04));
-  color: var(--ink, #16130f);
-  box-sizing: border-box;
-  font-size: 26rpx;
-  line-height: 84rpx;
-}
-page[data-theme='dark'] .account-form input,
-page[data-theme='dark'] .form-picker { background: rgba(255,255,255,.06); }
-.form-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 12rpx;
-}
-.form-check {
-  display: flex;
-  align-items: center;
-  gap: 14rpx;
-  color: var(--mut, #857c6d);
-  font-size: 24rpx;
-}
+/* ===== kimi 真理 msvc L70-L74 ===== */
+.msvc{display:grid;grid-template-columns:repeat(4,1fr);gap:12px 4px}
+.msvc-cell{text-align:center}
+.msvc .sic{width:44px;height:44px;margin:0 auto;display:grid;place-items:center}
+.msvc .sic image{width:40px;height:40px;filter:drop-shadow(0 3px 5px rgba(30,30,50,.14))}
+.msvc b{font-size:10px;font-weight:800;display:block;margin-top:3px;color:var(--ink)}
 
-/* ====== mlist 功能列表 ====== */
-.mlist { display: flex; flex-direction: column; }
-.mli {
-  display: flex;
-  align-items: center;
-  gap: 20rpx;
-  padding: 22rpx 4rpx;
-}
-.mli + .mli { border-top: 1rpx solid var(--line, rgba(22,19,15,.08)); }
-.mlic {
-  width: 60rpx;
-  height: 60rpx;
-  border-radius: 18rpx;
-  display: grid;
-  place-items: center;
-  color: #fff;
-  font-size: 30rpx;
-  flex: none;
-}
-.mlic.crown  { background: linear-gradient(135deg, #3a2c10, #16130f); color: #ffd76a; }
-.mlic.blue   { background: #1a6fc4; }
-.mlic.purple { background: #8a5cf6; }
-.mlic.green  { background: #00a870; }
-.mlic.dark   { background: #10241a; color: #f7c400; }
-.mli-copy {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 6rpx;
-}
-.mli-t { font-size: 28rpx; font-weight: 800; color: var(--ink, #16130f); }
-.mli-d { font-size: 20rpx; font-weight: 700; color: var(--mut, #857c6d); }
-.go-r { color: var(--mut, #857c6d); font-size: 28rpx; flex: none; }
+/* ===== kimi 真理 mlist L76-L86 ===== */
+.mlist{display:flex;flex-direction:column}
+.mli{display:flex;align-items:center;gap:10px;padding:11px 2px;text-decoration:none;color:var(--ink)}
+.mli+.mli{border-top:1px solid var(--line)}
+.mlic{width:30px;height:30px;border-radius:9px;display:grid;place-items:center;color:#fff;flex:none}
+.mli b{font-size:12.5px;font-weight:800;color:var(--ink);display:block}
+.mli p{font-size:9px;font-weight:700;color:var(--mut);margin-top:1px}
+.mli .go-r{margin-left:auto;color:var(--mut);font-size:12px}
+.mli .sw{margin-left:auto;width:40px;height:23px;border-radius:12px;background:rgba(133,124,109,.35);position:relative;transition:.3s;flex:none}
+.mli .sw::after{content:"";position:absolute;left:2.5px;top:2.5px;width:18px;height:18px;border-radius:50%;background:#fff;transition:.3s;box-shadow:0 1px 4px rgba(0,0,0,.25)}
+.mli .sw.on{background:var(--accent)}
+.mli .sw.on::after{left:19.5px}
 
-/* ====== fu → .in 入场动画 (交错延迟用 CSS nth) ====== */
-.fu:nth-of-type(1) { transition-delay: .04s; }
-.fu:nth-of-type(2) { transition-delay: .08s; }
-.fu:nth-of-type(3) { transition-delay: .12s; }
-.fu:nth-of-type(4) { transition-delay: .16s; }
-.fu:nth-of-type(5) { transition-delay: .20s; }
-.fu:nth-of-type(6) { transition-delay: .24s; }
-.fu:nth-of-type(7) { transition-delay: .28s; }
-.fu:nth-of-type(8) { transition-delay: .32s; }
-.fu:nth-of-type(9) { transition-delay: .36s; }
-.fu:nth-of-type(10) { transition-delay: .40s; }
-.fu:nth-of-type(11) { transition-delay: .44s; }
-.fu:nth-of-type(12) { transition-delay: .48s; }
-.fu:nth-of-type(13) { transition-delay: .52s; }
-.fu:nth-of-type(14) { transition-delay: .56s; }
-.fu:nth-of-type(15) { transition-delay: .60s; }
-.fu:nth-of-type(16) { transition-delay: .64s; }
-.fu:nth-of-type(17) { transition-delay: .68s; }
-.fu:nth-of-type(18) { transition-delay: .72s; }
+/* ===== kimi 真理 tabbar L88-L92 ===== */
+.tabbar{flex:none;height:72px;background:var(--tabbar);border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(5,1fr);padding:7px 4px 15px;transition:background .5s}
+.tab{display:flex;flex-direction:column;align-items:center;gap:3px;font-size:10px;font-weight:700;color:var(--mut);text-decoration:none;position:relative;transition:color .5s}
+.tab.on{color:var(--accent)}
+.tab .bdg{position:absolute;top:2px;right:calc(50% - 20px);min-width:16px;height:16px;border-radius:8px;background:var(--promo);color:#fff;font-size:9px;font-weight:900;display:grid;place-items:center;padding:0 4px;border:1.5px solid var(--tabbar)}
+.phone[data-theme="dark"] .tab.on svg{filter:drop-shadow(0 0 9px rgba(110,199,38,.9))}
+
+/* ===== kimi 真理 toast L94-L95 ===== */
+.toast{position:absolute;left:50%;bottom:96px;transform:translateX(-50%) translateY(16px);background:rgba(22,19,15,.92);color:#fff;font-size:11.5px;font-weight:700;border-radius:12px;padding:10px 15px;max-width:300px;text-align:center;line-height:1.6;opacity:0;pointer-events:none;transition:.3s;z-index:20}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* ===== kimi 真理 maifab L96-L101（真实 mai.png） ===== */
+.maifab{position:absolute;right:12px;bottom:92px;width:52px;height:52px;border-radius:50%;background:rgba(255,255,255,.96);border:1px solid var(--line);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:30;text-decoration:none;box-shadow:0 8px 20px rgba(22,19,15,.16),0 0 0 4px rgba(0,200,130,.10);animation:maipulse 2.8s ease-in-out infinite}
+.maifab image{width:31px;height:31px}
+.maifab text{font-style:normal;font-size:8.5px;font-weight:900;color:#16130f;margin-top:1px}
+.phone[data-theme="dark"] .maifab{background:rgba(20,26,24,.94)}
+.phone[data-theme="dark"] .maifab text{color:#f6f2e5}
+@keyframes maipulse{0%,100%{box-shadow:0 8px 20px rgba(22,19,15,.16),0 0 0 4px rgba(0,200,130,.12)}50%{box-shadow:0 8px 22px rgba(22,19,15,.18),0 0 0 9px rgba(0,200,130,.04)}}
+
+/* ===== kimi 真理入场动画 fu→in L103-L104 ===== */
+.fu{opacity:0;transform:translateY(16px);transition:opacity .6s ease,transform .6s cubic-bezier(.2,.9,.3,1.05)}
+.fu.in{opacity:1;transform:none}
+.fu:nth-of-type(1){transition-delay:.04s}
+.fu:nth-of-type(2){transition-delay:.08s}
+.fu:nth-of-type(3){transition-delay:.12s}
+.fu:nth-of-type(4){transition-delay:.16s}
+.fu:nth-of-type(5){transition-delay:.20s}
+.fu:nth-of-type(6){transition-delay:.24s}
+.fu:nth-of-type(7){transition-delay:.28s}
+.fu:nth-of-type(8){transition-delay:.32s}
+.fu:nth-of-type(9){transition-delay:.36s}
+.fu:nth-of-type(10){transition-delay:.40s}
+.fu:nth-of-type(11){transition-delay:.44s}
+.fu:nth-of-type(12){transition-delay:.48s}
+.fu:nth-of-type(13){transition-delay:.52s}
+.fu:nth-of-type(14){transition-delay:.56s}
+.fu:nth-of-type(15){transition-delay:.60s}
+.fu:nth-of-type(16){transition-delay:.64s}
+
+/* ===== 登录/表单/卡片补充（统一真理 mcard 样式） ===== */
+.mcard-body{display:flex;flex-direction:column;gap:12px}
+.login-methods{display:flex;flex-direction:column;gap:12px}
+.login-divider{color:var(--mut);text-align:center;font-size:12px;font-weight:700}
+.login-input{height:44px;padding:0 14px;border:1px solid var(--line);border-radius:12px;background:rgba(22,19,15,.04);color:var(--ink);box-sizing:border-box;font-size:14px}
+.phone[data-theme="dark"] .login-input{background:rgba(255,255,255,.06)}
+.otp-row{display:grid;grid-template-columns:1fr auto;gap:8px}
+.otp-button{margin:0;color:#fff;background:linear-gradient(120deg,var(--hd1),var(--hd2));border-radius:12px;font-size:12px;font-weight:800;padding:0 14px;height:44px;line-height:44px}
+.account-button{color:#fff;background:linear-gradient(120deg,var(--hd1),var(--hd2));border-radius:999px;font-size:14px;font-weight:800;height:44px;line-height:44px;margin:0}
+.account-button.secondary{color:var(--accent);background:var(--notice-bg)}
+.phone[data-theme="dark"] .account-button.secondary{color:#8fe33f;background:rgba(110,199,38,.14)}
+.account-button.compact{margin-top:10px;font-size:12px;height:36px;line-height:36px}
+.account-message{display:block;margin-top:9px;color:var(--mut);text-align:center;font-size:12px}
+.orders-list{display:flex;flex-direction:column;gap:10px}
+.order-row{padding:12px;border:1px solid var(--line);border-radius:12px;background:rgba(22,19,15,.03)}
+.phone[data-theme="dark"] .order-row{background:rgba(255,255,255,.04)}
+.order-line{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.order-store{font-size:14px;font-weight:900;color:var(--ink)}
+.order-st{padding:4px 9px;border-radius:999px;background:var(--notice-bg);color:var(--accent);font-size:9px;font-weight:800}
+.order-no{display:block;margin-top:5px;color:var(--mut);font-size:11px}
+.order-foot{display:flex;align-items:center;justify-content:space-between;margin-top:6px;color:var(--mut);font-size:11px}
+.order-foot .price{color:var(--hot);font-size:16px;font-weight:900}
+.pay-button{width:100%;margin-top:8px;color:#fff;background:linear-gradient(120deg,var(--hot),var(--promo));border-radius:999px;font-size:12px;font-weight:800;height:36px;line-height:36px}
+.empty-safe{padding:16px 10px;text-align:center;color:var(--mut);font-size:12px}
+.detail-line{display:flex;justify-content:space-between;gap:10px;color:var(--mut);font-size:12px;padding:5px 0}
+.detail-title{display:block;margin:4px 0 6px;font-weight:800;color:var(--ink);font-size:13px}
+.refund-list{padding-top:8px;margin-top:2px;border-top:1px solid var(--line);display:flex;flex-direction:column;gap:4px}
+.refund-button{margin-top:7px;color:#fff;background:linear-gradient(120deg,#ff5d3d,#f03749);border-radius:999px;font-size:12px;font-weight:800;height:36px;line-height:36px}
+.detail-note{color:var(--promo);text-align:center;font-size:12px;padding:7px 0 3px}
+.benefit-list{display:flex;flex-direction:column;gap:10px}
+.benefit-card{display:flex;padding:12px;border:1px solid var(--line);border-radius:12px;align-items:center;justify-content:space-between;gap:10px;background:rgba(22,19,15,.03)}
+.phone[data-theme="dark"] .benefit-card{background:rgba(255,255,255,.04)}
+.benefit-card > view{display:flex;min-width:0;flex:1;flex-direction:column;gap:5px}
+.bf-title{font-size:14px;font-weight:800;color:var(--ink)}
+.bf-sub{color:var(--mut);font-size:11px}
+.bf-btn{margin:0;color:var(--accent);background:var(--notice-bg);border-radius:999px;font-size:11px;font-weight:800;padding:5px 12px}
+.phone[data-theme="dark"] .bf-btn{color:#8fe33f;background:rgba(110,199,38,.14)}
+.reward-status{color:var(--promo);font-size:11px;font-weight:800}
+.account-form{display:grid;gap:9px;margin-top:11px;padding-top:11px;border-top:1px solid var(--line)}
+.account-form input,.form-picker{height:42px;padding:0 13px;border:1px solid var(--line);border-radius:12px;background:rgba(22,19,15,.04);color:var(--ink);box-sizing:border-box;font-size:13px;line-height:42px}
+.phone[data-theme="dark"] .account-form input,
+.phone[data-theme="dark"] .form-picker{background:rgba(255,255,255,.06)}
+.form-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.form-check{display:flex;align-items:center;gap:7px;color:var(--mut);font-size:12px}
 </style>

@@ -27,12 +27,22 @@ describe('乐趣生活 UniApp 架构', () => {
     expect(topBar).toContain("'/pages/page-203/index'");
     expect(topBar).toContain('capsule-reserve');
     expect(surface).toContain('LifeTopBar');
+    // ===== 5 个一级 tab 全部使用 kimi 真理最外层 class .phone + 375px 基准 =====
     for (const page of [lifePage, mallPage, communityPage, cartPage, mePage]) {
-      expect(page).toMatch(/<LifeSurface\s+primary/u);
+      expect(page).toContain('class="phone"');
+      expect(page).toContain('--bg:#f6f1e6');
+      expect(page).toContain('[data-theme="dark"]');
+      expect(page).toContain('class="tabbar"');
+      // ===== 严禁 display:none 锚点作弊 =====
+      expect(page).not.toContain('style="display:none"');
     }
-    expect(lifePage).toContain('theme-color="coral"');
-    expect(mallPage).toContain('theme-color="coral"');
-    expect(communityPage).toContain('theme-color="blue"');
+    // ===== kimi 真理主题 ramp 绑定（concept-f index.html L15 / mall L15 / community 对应） =====
+    expect(lifePage).toContain('--hd1:#009146');
+    expect(lifePage).toContain('--hd2:#006b36');
+    expect(mallPage).toContain('--hd1:#009146');
+    expect(mallPage).toContain('--hd2:#006b36');
+    expect(communityPage).toContain('--hd1:#1a4fb0');
+    expect(communityPage).toContain('--hd2:#0c2a80');
   });
 
   it('uses the platform consumer audience and keeps preview data behind build-time flags', async () => {

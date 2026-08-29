@@ -66,12 +66,25 @@ describe('天下摄影消费视觉迁移', () => {
 
   it('把商城购物车的信息密度和金额清单接在服务端核价链路上', async () => {
     const cart = await source('pages/cart/index.vue');
-    expect(cart).toContain('basket-mark');
-    expect(cart).toContain('cart-group');
-    expect(cart).toContain('amount-lines');
+    // ===== kimi 真理购物车结构（concept-f cart.html 真实 class：pi/pt/bar/clist/ci/bot/paybar/sum） =====
+    // ===== 严禁旧 V6.1 作弊锚点 display:none / basket-mark / cart-group / amount-lines / 🛒 emoji =====
+    expect(cart).not.toContain('style="display:none"');
+    expect(cart).not.toContain('basket-mark');
+    expect(cart).not.toContain('cart-group');
+    expect(cart).not.toContain('amount-lines');
+    expect(cart).not.toContain('🛒');
+    // ===== cart.html 真实结构（一个都不能少、一个都不能自创） =====
+    expect(cart).toMatch(/class="[^"]*\bpi\b/);       // 自提/配送图标区（cart.html Lx）
+    expect(cart).toMatch(/class="[^"]*\bpt\b/);       // 总览标题文案（件数/库存核验）
+    expect(cart).toMatch(/class="[^"]*\bbar\b/);      // 满减进度条
+    expect(cart).toMatch(/class="[^"]*\bclist\b/);    // 商品行容器
+    expect(cart).toMatch(/class="[^"]*\bci\b/);       // 单个商品行（图/标题/规格/价格/step）
+    expect(cart).toMatch(/class="[^"]*\bbot\b/);      // 履约选择+配送地址
+    expect(cart).toMatch(/class="[^"]*\bpaybar\b/);   // 底部结算条（合计+提交CTA）
+    expect(cart).toMatch(/class="[^"]*\bsum\b/);      // 合计金额区块
+    // ===== 真实后端核价链路（kimi JS chunk 契约：quote / actions/submit 幂等） =====
     expect(cart).toContain('/api/v1/life/checkouts/quote');
     expect(cart).toContain('/actions/submit');
-    expect(cart).not.toContain('🛒');
   });
 
   it('让结算订单和账户中心使用正式卡片层级且保留真实服务端状态', async () => {
@@ -79,12 +92,20 @@ describe('天下摄影消费视觉迁移', () => {
       source('components/LifeJourneyPage.vue'),
       source('pages/me/index.vue'),
     ]);
+    // ===== 严禁旧 V6.1 display:none 作弊锚点 / service-icon / account-order-head 伪锚点 =====
+    expect(account).not.toContain('style="display:none"');
+    expect(account).not.toContain('service-icon');
+    expect(account).not.toContain('account-order-head');
+    // ===== kimi 真理我的页面结构锚点（concept-f me.html 真实 class） =====
+    expect(account).toMatch(/class="[^"]*\bme-head\b/);
+    expect(account).toMatch(/class="[^"]*\bmstat\b/);
+    expect(account).toMatch(/class="[^"]*\bmord\b/);
+    expect(account).toMatch(/class="[^"]*\bmsvc\b/);
+    expect(account).toMatch(/class="[^"]*\bmlist\b/);
     expect(journey).toContain('delivery-tabs');
     expect(journey).toContain('checkout-amounts');
     expect(journey).toContain('order-card-summary');
     expect(journey).toContain('/api/v1/life/orders?');
-    expect(account).toContain('service-icon');
-    expect(account).toContain('account-order-head');
     expect(account).toContain('/api/v1/life/orders?limit=10');
     expect(account).toContain('/api/v1/life/invoice-profiles');
   });
