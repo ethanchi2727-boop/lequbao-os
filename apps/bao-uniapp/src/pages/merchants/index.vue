@@ -4,6 +4,7 @@ import { onShow } from '@dcloudio/uni-app';
 import BaoSurface from '../../components/BaoSurface.vue';
 import BaoTaskDirectory from '../../components/BaoTaskDirectory.vue';
 import { baoSession } from '../../services/bao-session.js';
+import { profileStatusLabel, storeStatusLabel } from '../../services/display-labels.js';
 
 const loading = ref(false);
 const error = ref(false);
@@ -65,7 +66,7 @@ onShow(load);
       >
       <view
         ><text>待跟进</text><text>{{ revenue ? revenue.attentionCount : '—' }}</text
-        ><text>{{ profile ? profile.status : '服务端确认' }}</text></view
+        ><text>{{ profile ? profileStatusLabel(profile.status) : '服务端确认' }}</text></view
       >
     </view>
 
@@ -108,7 +109,7 @@ onShow(load);
             ></view
           >
           <text :class="['status-chip', store.status !== 'ACTIVE' ? 'warning' : '']">{{
-            store.status
+            storeStatusLabel(store.status)
           }}</text>
         </view>
       </view>

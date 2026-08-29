@@ -1563,4 +1563,57 @@ uni-app {
   font-weight: 800 !important;
 }
 /* #endif */
+
+/* —— 任务大厅 · 稿 taskrow：图标瓦 + 标题描述 + 幽灵胶囊 —— */
+.dir-row .navigator-wrap {
+  display: flex;
+  gap: 21rpx;
+  align-items: center;
+  width: 100%;
+  min-width: 0;
+}
+.dir-row .navigator-wrap > view {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+}
+.dir-row .navigator-wrap > view > text:first-child {
+  overflow: hidden;
+  font-size: 22rpx;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.dir-row .navigator-wrap > view > text:last-child {
+  margin-top: 5rpx;
+  overflow: hidden;
+  color: var(--bao-mobile-ink-500);
+  font-size: 18rpx;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.dir-tic {
+  display: grid;
+  width: 59rpx;
+  height: 59rpx;
+  place-items: center;
+  flex: none;
+  border-radius: 21rpx;
+  background: var(--bao-mobile-jade-50);
+  box-shadow: inset 0 0 0 1rpx rgba(22, 19, 15, 0.05);
+  font-size: 26rpx;
+}
+.dir-go {
+  padding: 10rpx 19rpx;
+  flex: none;
+  border: 1rpx solid rgba(0, 145, 70, 0.16);
+  border-radius: 999rpx;
+  color: var(--bao-mobile-jade-700);
+  background: rgba(0, 145, 70, 0.09);
+  font-size: 19rpx;
+  font-weight: 900;
+  letter-spacing: 0.03em;
+}
 </style>

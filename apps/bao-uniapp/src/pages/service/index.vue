@@ -4,11 +4,17 @@ import { onShow } from '@dcloudio/uni-app';
 import BaoSurface from '../../components/BaoSurface.vue';
 import BaoTaskDirectory from '../../components/BaoTaskDirectory.vue';
 import { baoSession } from '../../services/bao-session.js';
+import {
+  priorityLabel,
+  riskLevelLabel,
+  taskTypeLabel,
+} from '../../services/display-labels.js';
 
 const loading = ref(false);
 const error = ref(false);
 const conversations = ref([]);
 const tasks = ref([]);
+const stores = ref([]);
 const acceptingId = ref('');
 const completingTaskId = ref('');
 
@@ -16,16 +22,18 @@ async function load() {
   loading.value = true;
   error.value = false;
   try {
-    [conversations.value, tasks.value] = await Promise.all([
+    [conversations.value, tasks.value, stores.value] = await Promise.all([
       baoSession.request('/api/v1/customer-service/conversations?status=HUMAN_QUEUED'),
       baoSession
         .request('/api/v1/customer-service-operations/tasks')
         .then((items) => items.filter((item) => ['OPEN', 'ASSIGNED'].includes(item.status))),
+      baoSession.request('/api/v1/merchant-operations/stores').catch(() => []),
     ]);
   } catch {
     error.value = true;
     conversations.value = [];
     tasks.value = [];
+    stores.value = [];
   } finally {
     loading.value = false;
   }
@@ -84,6 +92,10 @@ async function confirmTaskCompletion(task) {
   }
 }
 
+function storeNameOf(storeId) {
+  return stores.value.find((store) => store.id === storeId)?.storeName ?? '授权门店';
+}
+
 onShow(load);
 </script>
 
@@ -108,10 +120,9 @@ onShow(load);
         >
         <view v-for="conversation in conversations" :key="conversation.id" class="task-row">
           <view
-            ><text>会话 {{ conversation.id.slice(0, 8) }}…</text
+            ><text>{{ storeNameOf(conversation.storeId) }} · 顾客待人工</text
             ><text
-              >门店 {{ conversation.storeId.slice(0, 8) }}… ·
-              {{ conversation.riskLevel || 'NORMAL' }}</text
+              >{{ riskLevelLabel(conversation.riskLevel) }}风险 · 智能机器人已停发，等待接管</text
             ></view
           >
           <button
@@ -133,9 +144,9 @@ onShow(load);
       <view class="task-list">
         <view v-for="task in tasks" :key="task.id" class="task-row">
           <view
-            ><text>{{ task.summary || task.taskType || '客户服务任务' }}</text
+            ><text>{{ task.summary || taskTypeLabel(task.taskType) }}</text
             ><text
-              >{{ task.storeName || task.storeId }} · {{ task.priority || 'NORMAL' }}</text
+              >{{ task.storeName || storeNameOf(task.storeId) }} · {{ priorityLabel(task.priority) }}优先级</text
             ></view
           >
           <button

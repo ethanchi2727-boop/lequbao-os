@@ -89,7 +89,7 @@ describe('乐趣宝成果预览', () => {
     });
     expect(html).toContain('data-experience="provenance-timeline"');
     expect(html).toContain('merchant-operations');
-    expect(html).toContain('HUMAN_CONFIRMATION');
+    expect(html).toContain('人工确认记录');
     expect(html).toContain('审计记录不可改写');
     expect(html).toContain('/bao/page-006?demo=1&taskId=demo-task');
   });
@@ -118,7 +118,7 @@ describe('乐趣宝成果预览', () => {
       escapeHtml,
     });
     expect(html).toContain('LIVE_STEP');
-    expect(html).toContain('UPSTREAM_TIMEOUT');
+    expect(html).toContain('上游服务超时');
     expect(html).not.toContain('READ_OPERATION_FACTS');
   });
 
@@ -132,8 +132,8 @@ describe('乐趣宝成果预览', () => {
     });
     expect(html).toContain('data-experience="session-inbox"');
     expect(html).toContain('data-action="conversation-search"');
-    expect(html).toContain('REFUND_DISPUTE');
-    expect(html).toContain('URGENT · OPEN');
+    expect(html).toContain('退款纠纷');
+    expect(html).toContain('紧急 · 待处理');
     expect(html).toContain('/bao/page-100?demo=1&conversationId=demo-conversation-1');
     expect(html).toContain('列表不预取消息正文');
   });
@@ -174,8 +174,8 @@ describe('乐趣宝成果预览', () => {
     });
     expect(html).toContain('data-experience="job-queue"');
     expect(html).toContain('data-action="task-search"');
-    expect(html).toContain('WAITING_APPROVAL');
-    expect(html).toContain('UPSTREAM_TIMEOUT');
+    expect(html).toContain('等待审批');
+    expect(html).toContain('上游服务超时');
     expect(html).toContain('未知外部结果不允许直接重试');
   });
 
@@ -201,7 +201,7 @@ describe('乐趣宝成果预览', () => {
       escapeHtml,
     });
     expect(html).toContain('live-task-7');
-    expect(html).toContain('PROVIDER_TIMEOUT');
+    expect(html).toContain('供应商超时');
     expect(html).not.toContain('UPSTREAM_TIMEOUT');
   });
 
@@ -216,7 +216,7 @@ describe('乐趣宝成果预览', () => {
     expect(html).toContain('data-experience="source-library"');
     expect(html).toContain('data-action="material-search"');
     expect(html).toContain('营业执照.jpg');
-    expect(html).toContain('MALWARE_DETECTED');
+    expect(html).toContain('检测到恶意文件');
     expect(html).toContain('2 个字段引用');
     expect(html).toContain('不向浏览器返回对象存储地址');
   });
@@ -269,7 +269,7 @@ describe('乐趣宝成果预览', () => {
     expect(html).toContain('MP3 / WAV / M4A / AMR');
     expect(html).toContain('店长补充说明.wav');
     expect(html).toContain('选择文件并安全上传');
-    expect(html).toContain('PROCESSING');
+    expect(html).toContain('处理中');
     expect(html).toContain('/bao/page-011?demo=1&sessionId=demo-intake-session');
   });
 
@@ -284,7 +284,7 @@ describe('乐趣宝成果预览', () => {
     expect(html).toContain('data-experience="recognition-review"');
     expect(html).toContain('merchant.legalName');
     expect(html).toContain('99%');
-    expect(html).toContain('CONFLICT');
+    expect(html).toContain('冲突');
     expect(html).toContain('店长补充说明.wav');
     expect(html).toContain('/bao/page-018?demo=1&sessionId=demo-intake-session');
     expect(html).not.toContain('AI 自动确认');
@@ -358,7 +358,7 @@ describe('乐趣宝成果预览', () => {
       escapeHtml,
     });
     expect(html).toContain('data-experience="identity-switcher"');
-    expect(html).toContain('STORE_MANAGER');
+    expect(html).toContain('门店店长');
     expect(html).toContain('tenant-live');
     expect(html).toContain('data-tenant-switch');
     expect(html).not.toContain('accessToken');

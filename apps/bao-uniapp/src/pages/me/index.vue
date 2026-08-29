@@ -4,6 +4,7 @@ import { onShow } from '@dcloudio/uni-app';
 import BaoSurface from '../../components/BaoSurface.vue';
 import BaoTaskDirectory from '../../components/BaoTaskDirectory.vue';
 import { baoSession } from '../../services/bao-session.js';
+import { roleLabel } from '../../services/display-labels.js';
 
 const session = ref(null);
 const context = ref(null);
@@ -44,7 +45,7 @@ async function logout() {
 
 async function switchTenant() {
   if (!/^[0-9a-f-]{36}$/iu.test(targetTenantId.value)) {
-    message.value = '请输入邀请链接或管理员提供的组织 ID';
+    message.value = '请输入邀请链接或管理员提供的组织编号';
     return;
   }
   busy.value = true;
@@ -72,7 +73,7 @@ onShow(loadContext);
   >
     <view class="m-context"
       ><text>当前工作空间</text
-      ><text>{{ context ? `员工 ${context.userId.slice(0, 8)}…` : '尚未登录' }}</text
+      ><text>{{ context ? `${roleLabel(context.roleCodes[0])} · 身份已核验` : '尚未登录' }}</text
       ><text>{{ context ? '在线' : '—' }}</text></view
     >
 
@@ -83,8 +84,8 @@ onShow(loadContext);
       <view class="task-list">
         <view v-if="context" class="task-row"
           ><view
-            ><text>{{ context.roleCodes.join(' · ') }}</text
-            ><text>{{ context.storeIds.length || '租户级' }} 门店范围</text></view
+            ><text>{{ context.roleCodes.map(roleLabel).join(' · ') }}</text
+            ><text>{{ context.storeIds.length ? `${context.storeIds.length} 家门店在授权范围` : '租户级范围' }}</text></view
           ><text class="status-chip">在线</text></view
         >
         <button v-if="context" class="m-primary" :loading="busy" @click="logout">
@@ -100,12 +101,12 @@ onShow(loadContext);
     <view v-if="context" class="panel">
       <view class="panel-head"><text>切换工作空间</text><text>服务端重新授权</text></view>
       <view class="form-stack"
-        ><text>输入管理员或邀请链接提供的组织 ID；本页不会枚举其他租户。</text
+        ><text>输入管理员或邀请链接提供的组织编号；本页不会枚举其他租户。</text
         ><input
           v-model.trim="targetTenantId"
           class="form-input"
           type="text"
-          placeholder="目标组织 ID"
+          placeholder="目标组织编号"
         /><button class="m-primary" :loading="busy" @click="switchTenant">验证并切换</button></view
       >
     </view>

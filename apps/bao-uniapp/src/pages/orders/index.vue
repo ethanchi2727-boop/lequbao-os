@@ -4,6 +4,7 @@ import { onShow } from '@dcloudio/uni-app';
 import BaoSurface from '../../components/BaoSurface.vue';
 import BaoTaskDirectory from '../../components/BaoTaskDirectory.vue';
 import { baoSession } from '../../services/bao-session.js';
+import { orderStatusLabel } from '../../services/display-labels.js';
 
 const loading = ref(false);
 const error = ref(false);
@@ -83,7 +84,7 @@ onShow(load);
         <view
           ><text>{{ order.orderNo }}</text
           ><text
-            >¥{{ (order.payableAmountCents / 100).toFixed(2) }} · {{ order.status }}</text
+            >¥{{ (order.payableAmountCents / 100).toFixed(2) }} · {{ orderStatusLabel(order.status) }}</text
           ></view
         >
         <text>{{ index < completedCount ? '完成' : '处理中' }}</text>

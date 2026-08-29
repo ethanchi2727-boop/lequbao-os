@@ -1,3 +1,50 @@
+const apiDomainLabels = Object.freeze({
+  adapter: '渠道适配',
+  agent: '智能体',
+  analytics: '经营分析',
+  aftersale: '售后',
+  attachment: '材料',
+  attribution: '归因',
+  audit: '审计',
+  business: '经营',
+  confirmation: '人工确认',
+  cost: '成本',
+  'cost-allocation': '成本分摊',
+  customer: '客户',
+  delivery: '交付',
+  entitlement: '权益',
+  fulfillment: '履约',
+  geo: 'GEO',
+  job: '任务',
+  knowledge: '知识库',
+  memory: '客户记忆',
+  'merchant-intake': '商户建档',
+  'merchant-master': '商户主档',
+  miniapp: '小程序',
+  'miniapp-release': '小程序发布',
+  order: '订单',
+  payment: '支付',
+  permission: '权限',
+  privacy: '隐私',
+  receipt: '回执',
+  release: '发布',
+  report: '报表',
+  revenue: '收益',
+  'revenue-right': '收益权',
+  'revenue-share': '分润',
+  'reward-ledger': '激励台账',
+  secret: '密钥',
+  service: '客服',
+  'service-message': '客服消息',
+  assignment: '派单',
+  subscription: '订阅',
+  'subscription-ledger': '订阅台账',
+  tenant: '租户',
+  usage: '用量',
+  'wechat-open': '微信开放',
+});
+const apiDomainLabel = (domain) => apiDomainLabels[domain] ?? '业务';
+
 const deepPages = new Map([
   ['page-019', 5],
   ['page-020', 6],
@@ -68,7 +115,7 @@ export function renderBaoV62ExperiencePage({
     .join('');
   return `<section class="v62-page v62-page--${family}" data-page-id="${contract.id}" data-layout="${escapeHtml(experience.layout)}" data-level="${level}">
     <header class="v62-page__hero"><div class="v62-page__mark">${icon(familyIcon)}</div><div><small>${escapeHtml(experience.kicker)}</small><h1>${escapeHtml(experience.headline)}</h1><p>${escapeHtml(experience.description)}</p></div><span class="v62-page__mode">${demoMode ? '演示结构' : '权威数据模式'}</span></header>
-    <div class="v62-page__scope"><b>${escapeHtml(familyLabel)}</b><span>${escapeHtml(contract.primaryRole)}</span>${contract.apiDomains.map((domain) => `<em>${escapeHtml(domain)}</em>`).join('')}<i>服务端权限最终裁决</i></div>
+    <div class="v62-page__scope"><b>${escapeHtml(familyLabel)}</b><span>${escapeHtml(contract.primaryRole)}</span>${contract.apiDomains.map((domain) => `<em>${escapeHtml(apiDomainLabel(domain))}</em>`).join('')}<i>服务端权限最终裁决</i></div>
     <div class="v62-page__workspace"><article class="v62-page__facts"><header><span><small>${liveData ? '实时业务事实' : '受保护内容区'}</small><strong>${escapeHtml(contract.title)}</strong></span><b>${String(level).padStart(2, '0')} 级任务</b></header>${facts}</article>
       <aside class="v62-page__path"><header><small>任务路径</small><strong>完成当前工作的关键步骤</strong></header><ol>${experience.panels
         .map(
