@@ -1,78 +1,263 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="zh-CN">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>乐趣生活 · 前端重做概念稿 第二辑</title>
-<style>
-  *{margin:0;padding:0;box-sizing:border-box}
-  body{background:#100e0c;color:#f6f2e5;font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;min-height:100vh;padding:56px 24px 80px}
-  .wrap{max-width:1180px;margin:0 auto}
-  header{text-align:center}
-  .kicker{font-size:12px;letter-spacing:.4em;color:#6ec726;font-weight:800}
-  h1{font-size:clamp(28px,4vw,44px);margin-top:14px;font-weight:900}
-  .sub{color:rgba(246,242,229,.55);font-size:14px;margin-top:12px;line-height:1.8}
-  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(360px,1fr));gap:30px;margin-top:46px}
-  .card{border-radius:26px;padding:26px 22px 26px;border:1px solid rgba(246,242,229,.1);transition:transform .25s,border-color .25s}
-  .card.d{background:linear-gradient(165deg,#12281a,#100e0c)}
-  .card.e{background:linear-gradient(165deg,#0c1212,#100e0c)}
-  .card:hover{transform:translateY(-5px)}
-  .card.d:hover{border-color:rgba(0,145,70,.6)}
-  .card.e:hover{border-color:rgba(110,199,38,.6)}
-  .badge{display:inline-block;font-size:11px;font-weight:900;letter-spacing:.14em;border-radius:6px;padding:5px 10px;margin-bottom:14px}
-  .d .badge{background:#fee600;color:#141313}
-  .e .badge{background:#f7c400;color:#141313}
-  .name{font-size:24px;font-weight:900}
-  .name small{font-size:11.5px;margin-left:10px;letter-spacing:.2em;font-weight:800;opacity:.6}
-  .desc{font-size:13.5px;line-height:1.8;color:rgba(246,242,229,.62);margin-top:10px}
-  .tag-row{display:flex;gap:7px;flex-wrap:wrap;margin:14px 0 16px}
-  .chip{font-size:11.5px;font-weight:700;border-radius:999px;padding:5px 11px;border:1px solid rgba(246,242,229,.22);color:rgba(246,242,229,.85)}
-  .frame{border-radius:20px;overflow:hidden;background:#000;height:580px;border:1px solid rgba(246,242,229,.12)}
-  .frame iframe{width:200%;height:200%;transform:scale(.5);transform-origin:0 0;border:none}
-  .open{display:inline-flex;align-items:center;gap:8px;margin-top:18px;font-size:14px;font-weight:900;text-decoration:none;border-radius:999px;padding:13px 26px}
-  .d .open{background:#009146;color:#fff}
-  .e .open{background:#6ec726;color:#0c1212}
-  .open:hover{filter:brightness(1.12)}
-  .archive{margin-top:56px;border-top:1px solid rgba(246,242,229,.1);padding-top:30px;text-align:center}
-  .archive h2{font-size:15px;font-weight:800;color:rgba(246,242,229,.5);letter-spacing:.2em}
-  .archive .links{display:flex;gap:12px;justify-content:center;margin-top:16px;flex-wrap:wrap}
-  .archive a{font-size:13px;font-weight:700;color:rgba(246,242,229,.65);text-decoration:none;border:1px solid rgba(246,242,229,.18);border-radius:999px;padding:9px 18px}
-  .archive a:hover{color:#f6f2e5;border-color:rgba(246,242,229,.4)}
-  .note{margin-top:40px;text-align:center;font-size:13px;color:rgba(246,242,229,.45);line-height:2}
-  @media(max-width:480px){body{padding:32px 14px 56px}.frame{height:520px}}
-</style>
-</head>
-<body>
-<div class="wrap">
-  <header>
-    <div class="kicker">LEQU LIFE · FINAL CONCEPT</div>
-    <h1>乐趣生活 · 概念终稿</h1>
-    <p class="sub">数字生活供应链总入口：点餐 / 买菜 / 充值 / 打车 / 票务 / 出行 / 家政 / 健康，32 项已对接能力一屏直达。<br>浅色 / 深色双主题，五个页面全部可点。手机内全部可点可滚动，也可点下方按钮新开页面。</p>
-  </header>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>乐趣生活 · 前端重做概念稿 第二辑</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      body {
+        background: #100e0c;
+        color: #f6f2e5;
+        font-family: -apple-system, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+        min-height: 100vh;
+        padding: 56px 24px 80px;
+      }
+      .wrap {
+        max-width: 1180px;
+        margin: 0 auto;
+      }
+      header {
+        text-align: center;
+      }
+      .kicker {
+        font-size: 12px;
+        letter-spacing: 0.4em;
+        color: #6ec726;
+        font-weight: 800;
+      }
+      h1 {
+        font-size: clamp(28px, 4vw, 44px);
+        margin-top: 14px;
+        font-weight: 900;
+      }
+      .sub {
+        color: rgba(246, 242, 229, 0.55);
+        font-size: 14px;
+        margin-top: 12px;
+        line-height: 1.8;
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+        gap: 30px;
+        margin-top: 46px;
+      }
+      .card {
+        border-radius: 26px;
+        padding: 26px 22px 26px;
+        border: 1px solid rgba(246, 242, 229, 0.1);
+        transition:
+          transform 0.25s,
+          border-color 0.25s;
+      }
+      .card.d {
+        background: linear-gradient(165deg, #12281a, #100e0c);
+      }
+      .card.e {
+        background: linear-gradient(165deg, #0c1212, #100e0c);
+      }
+      .card:hover {
+        transform: translateY(-5px);
+      }
+      .card.d:hover {
+        border-color: rgba(0, 145, 70, 0.6);
+      }
+      .card.e:hover {
+        border-color: rgba(110, 199, 38, 0.6);
+      }
+      .badge {
+        display: inline-block;
+        font-size: 11px;
+        font-weight: 900;
+        letter-spacing: 0.14em;
+        border-radius: 6px;
+        padding: 5px 10px;
+        margin-bottom: 14px;
+      }
+      .d .badge {
+        background: #fee600;
+        color: #141313;
+      }
+      .e .badge {
+        background: #f7c400;
+        color: #141313;
+      }
+      .name {
+        font-size: 24px;
+        font-weight: 900;
+      }
+      .name small {
+        font-size: 11.5px;
+        margin-left: 10px;
+        letter-spacing: 0.2em;
+        font-weight: 800;
+        opacity: 0.6;
+      }
+      .desc {
+        font-size: 13.5px;
+        line-height: 1.8;
+        color: rgba(246, 242, 229, 0.62);
+        margin-top: 10px;
+      }
+      .tag-row {
+        display: flex;
+        gap: 7px;
+        flex-wrap: wrap;
+        margin: 14px 0 16px;
+      }
+      .chip {
+        font-size: 11.5px;
+        font-weight: 700;
+        border-radius: 999px;
+        padding: 5px 11px;
+        border: 1px solid rgba(246, 242, 229, 0.22);
+        color: rgba(246, 242, 229, 0.85);
+      }
+      .frame {
+        border-radius: 20px;
+        overflow: hidden;
+        background: #000;
+        height: 580px;
+        border: 1px solid rgba(246, 242, 229, 0.12);
+      }
+      .frame iframe {
+        width: 200%;
+        height: 200%;
+        transform: scale(0.5);
+        transform-origin: 0 0;
+        border: none;
+      }
+      .open {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        margin-top: 18px;
+        font-size: 14px;
+        font-weight: 900;
+        text-decoration: none;
+        border-radius: 999px;
+        padding: 13px 26px;
+      }
+      .d .open {
+        background: #009146;
+        color: #fff;
+      }
+      .e .open {
+        background: #6ec726;
+        color: #0c1212;
+      }
+      .open:hover {
+        filter: brightness(1.12);
+      }
+      .archive {
+        margin-top: 56px;
+        border-top: 1px solid rgba(246, 242, 229, 0.1);
+        padding-top: 30px;
+        text-align: center;
+      }
+      .archive h2 {
+        font-size: 15px;
+        font-weight: 800;
+        color: rgba(246, 242, 229, 0.5);
+        letter-spacing: 0.2em;
+      }
+      .archive .links {
+        display: flex;
+        gap: 12px;
+        justify-content: center;
+        margin-top: 16px;
+        flex-wrap: wrap;
+      }
+      .archive a {
+        font-size: 13px;
+        font-weight: 700;
+        color: rgba(246, 242, 229, 0.65);
+        text-decoration: none;
+        border: 1px solid rgba(246, 242, 229, 0.18);
+        border-radius: 999px;
+        padding: 9px 18px;
+      }
+      .archive a:hover {
+        color: #f6f2e5;
+        border-color: rgba(246, 242, 229, 0.4);
+      }
+      .note {
+        margin-top: 40px;
+        text-align: center;
+        font-size: 13px;
+        color: rgba(246, 242, 229, 0.45);
+        line-height: 2;
+      }
+      @media (max-width: 480px) {
+        body {
+          padding: 32px 14px 56px;
+        }
+        .frame {
+          height: 520px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <header>
+        <div class="kicker">LEQU LIFE · FINAL CONCEPT</div>
+        <h1>乐趣生活 · 概念终稿</h1>
+        <p class="sub">
+          数字生活供应链总入口：点餐 / 买菜 / 充值 / 打车 / 票务 / 出行 / 家政 / 健康，32
+          项已对接能力一屏直达。<br />浅色 /
+          深色双主题，五个页面全部可点。手机内全部可点可滚动，也可点下方按钮新开页面。
+        </p>
+      </header>
 
-  <div class="grid" style="grid-template-columns:minmax(360px,560px);justify-content:center">
-    <div class="card d">
-      <span class="badge">最终方案</span>
-      <div class="name">乐趣生活 · 日夜双主题<small>LIGHT × DARK</small></div>
-      <div class="desc">首页按「数字生活供应链总入口」重构：顶部城市+自然语言搜索+消息+胶囊，小满 AI 入口轻量保留；进行中订单置顶（无单自动隐藏）；金刚位十大高频刚需；大牌吃喝品牌墙（肯德基/瑞幸/叮咚/大润发/山姆等 19 家全部来自已对接接口）；生活服务、出行车主、休闲旅行、健康礼赠四大分区；此刻推荐按时间段自动切换；底部为你定制（常用服务 / 一键复购 / 附近可用）。每个入口点击都会提示对应的真实供应链接口与去向。</div>
-      <div class="tag-row"><span class="chip">供应链总入口</span><span class="chip">32 项真实接口</span><span class="chip">小满 AI</span><span class="chip">时段动态推荐</span><span class="chip">五页完整可点</span></div>
-      <div class="frame"><iframe src="concept-f/index.html" loading="lazy" title="乐趣生活供应链总入口"></iframe></div>
-      <a class="open" href="concept-f/index.html" target="_blank">打开完整稿（五个页面都可点，点任意入口看接口去向）→</a>
+      <div
+        class="grid"
+        style="grid-template-columns: minmax(360px, 560px); justify-content: center"
+      >
+        <div class="card d">
+          <span class="badge">最终方案</span>
+          <div class="name">乐趣生活 · 日夜双主题<small>LIGHT × DARK</small></div>
+          <div class="desc">
+            首页按「数字生活供应链总入口」重构：顶部城市+自然语言搜索+消息+胶囊，小满 AI
+            入口轻量保留；进行中订单置顶（无单自动隐藏）；金刚位十大高频刚需；大牌吃喝品牌墙（肯德基/瑞幸/叮咚/大润发/山姆等
+            19
+            家全部来自已对接接口）；生活服务、出行车主、休闲旅行、健康礼赠四大分区；此刻推荐按时间段自动切换；底部为你定制（常用服务
+            / 一键复购 / 附近可用）。每个入口点击都会提示对应的真实供应链接口与去向。
+          </div>
+          <div class="tag-row">
+            <span class="chip">供应链总入口</span><span class="chip">32 项真实接口</span
+            ><span class="chip">小满 AI</span><span class="chip">时段动态推荐</span
+            ><span class="chip">五页完整可点</span>
+          </div>
+          <div class="frame">
+            <iframe src="concept-f/index.html" loading="lazy" title="乐趣生活供应链总入口"></iframe>
+          </div>
+          <a class="open" href="concept-f/index.html" target="_blank"
+            >打开完整稿（五个页面都可点，点任意入口看接口去向）→</a
+          >
+        </div>
+      </div>
+
+      <div class="archive">
+        <h2>过程稿归档</h2>
+        <div class="links">
+          <a href="concept-d/index.html" target="_blank">D · 鲜绿市集</a>
+          <a href="concept-e/index.html" target="_blank">E · 夜市烟火</a>
+          <a href="concept-a/index.html" target="_blank">A · 暖阳邻里</a>
+          <a href="concept-b/index.html" target="_blank">B · 集市招贴</a>
+          <a href="concept-c/index.html" target="_blank">C · 暖红生活</a>
+        </div>
+      </div>
+
+      <p class="note">
+        概念终稿为首页高保真方案（真实业务内容：鲜货 / 秒杀 / 团购 / 办事服务）。<br />确认后即落到
+        43 个页面 + 5 个组件，并跑通 58 项测试与双端构建门禁。
+      </p>
     </div>
-  </div>
-
-  <div class="archive">
-    <h2>过程稿归档</h2>
-    <div class="links">
-      <a href="concept-d/index.html" target="_blank">D · 鲜绿市集</a>
-      <a href="concept-e/index.html" target="_blank">E · 夜市烟火</a>
-      <a href="concept-a/index.html" target="_blank">A · 暖阳邻里</a>
-      <a href="concept-b/index.html" target="_blank">B · 集市招贴</a>
-      <a href="concept-c/index.html" target="_blank">C · 暖红生活</a>
-    </div>
-  </div>
-
-  <p class="note">概念终稿为首页高保真方案（真实业务内容：鲜货 / 秒杀 / 团购 / 办事服务）。<br>确认后即落到 43 个页面 + 5 个组件，并跑通 58 项测试与双端构建门禁。</p>
-</div>
-</body>
+  </body>
 </html>

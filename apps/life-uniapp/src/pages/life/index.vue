@@ -172,7 +172,9 @@ onShow(load);
           }}</text>
           <view class="retail-price-group">
             <text class="retail-price">¥{{ (product.salePriceCents / 100).toFixed(2) }}</text>
-            <text class="retail-was-price">¥{{ ((product.salePriceCents * 1.35) / 100).toFixed(2) }}</text>
+            <text class="retail-was-price"
+              >¥{{ ((product.salePriceCents * 1.35) / 100).toFixed(2) }}</text
+            >
           </view>
         </button>
       </view>
@@ -226,7 +228,9 @@ onShow(load);
       <view class="goods-grid">
         <view v-for="(product, index) in products" :key="product.id" @click="openProduct(product)">
           <view class="product-photo goods-photo" :style="productStyle(index)">
-            <text class="goods-promo-badge">{{ ['新人价', '立减', '直降', '包邮', '限时', '秒杀'][index % 6] }}</text>
+            <text class="goods-promo-badge">{{
+              ['新人价', '立减', '直降', '包邮', '限时', '秒杀'][index % 6]
+            }}</text>
           </view>
           <text class="stock-badge">{{
             product.availableQuantity > 0 ? `仅剩 ${product.availableQuantity}` : '暂时售罄'
@@ -237,9 +241,15 @@ onShow(load);
             <view class="goods-price-col">
               <text class="goods-yuan">¥</text
               ><text class="goods-now">{{ (product.salePriceCents / 100).toFixed(0) }}</text
-              ><text class="goods-decimal">.{{ ((product.salePriceCents % 100) + '00').slice(0, 2) }}</text>
-              <text class="goods-was">¥{{ ((product.salePriceCents * 1.35) / 100).toFixed(2) }}</text>
-              <text class="goods-save">省¥{{ Math.round(product.salePriceCents * 0.35 / 100) }}</text>
+              ><text class="goods-decimal"
+                >.{{ ((product.salePriceCents % 100) + '00').slice(0, 2) }}</text
+              >
+              <text class="goods-was"
+                >¥{{ ((product.salePriceCents * 1.35) / 100).toFixed(2) }}</text
+              >
+              <text class="goods-save"
+                >省¥{{ Math.round((product.salePriceCents * 0.35) / 100) }}</text
+              >
             </view>
             <button
               :disabled="product.availableQuantity < 1"
@@ -262,7 +272,7 @@ onShow(load);
   margin: 8rpx 24rpx 0;
   border-radius: 30rpx;
   overflow: hidden;
-  background: linear-gradient(135deg, #E53935, #FF8F1F);
+  background: linear-gradient(135deg, #e53935, #ff8f1f);
   box-shadow: 0 12rpx 40rpx rgba(229, 57, 53, 0.32);
 }
 .festival > image {
@@ -294,8 +304,8 @@ onShow(load);
   align-self: flex-start;
   padding: 10rpx 22rpx;
   border-radius: 999rpx;
-  background: linear-gradient(90deg, #F6B830, #FFD87A);
-  color: #7A2E00;
+  background: linear-gradient(90deg, #f6b830, #ffd87a);
+  color: #7a2e00;
   font-size: 26rpx;
   font-weight: 900;
   letter-spacing: 0.5rpx;
@@ -312,7 +322,7 @@ onShow(load);
 }
 .festival-title text:last-child {
   margin-top: 6rpx;
-  background: linear-gradient(90deg, #FFE169, #FFB566);
+  background: linear-gradient(90deg, #ffe169, #ffb566);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
@@ -329,8 +339,8 @@ onShow(load);
   padding: 0 38rpx;
   min-height: 88rpx;
   border-radius: 999rpx;
-  color: #7A2E00;
-  background: linear-gradient(90deg, #FFE89A, #FFC146);
+  color: #7a2e00;
+  background: linear-gradient(90deg, #ffe89a, #ffc146);
   font-size: 30rpx;
   font-weight: 900;
   letter-spacing: 0.5rpx;
@@ -349,15 +359,15 @@ onShow(load);
   justify-content: center;
   flex-direction: column;
   color: #fff;
-  background: linear-gradient(135deg, #E53935, #FF8F1F);
+  background: linear-gradient(135deg, #e53935, #ff8f1f);
   box-shadow: 0 10rpx 32rpx rgba(229, 57, 53, 0.55);
   transform: rotate(6deg);
-  border: 3rpx solid #FFD87A;
+  border: 3rpx solid #ffd87a;
 }
 .festival-badge text:first-child {
   font-size: 30rpx;
   font-weight: 900;
-  background: linear-gradient(90deg, #FFE169, #fff);
+  background: linear-gradient(90deg, #ffe169, #fff);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
@@ -377,8 +387,10 @@ onShow(load);
   grid-template-columns: repeat(5, 1fr);
   gap: 26rpx 10rpx;
   background: var(--life-paper);
-  box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.04), 0 6rpx 24rpx rgba(229, 57, 53, 0.05);
-  border: 1rpx solid #FFE4D6;
+  box-shadow:
+    0 2rpx 12rpx rgba(0, 0, 0, 0.04),
+    0 6rpx 24rpx rgba(229, 57, 53, 0.05);
+  border: 1rpx solid #ffe4d6;
 }
 .category-grid button {
   position: relative;
@@ -397,7 +409,9 @@ onShow(load);
   background-image: url('../../assets/v63-retail/category-sprite.webp');
   background-size: 500% 300%;
   background-position: var(--sprite-x) var(--sprite-y);
-  box-shadow: 0 6rpx 18rpx rgba(229, 57, 53, 0.18), inset 0 0 0 1rpx rgba(255, 255, 255, 0.72);
+  box-shadow:
+    0 6rpx 18rpx rgba(229, 57, 53, 0.18),
+    inset 0 0 0 1rpx rgba(255, 255, 255, 0.72);
 }
 .category-grid button > text:nth-child(2) {
   display: block;
@@ -405,7 +419,7 @@ onShow(load);
   overflow: hidden;
   font-size: 26rpx;
   font-weight: 900;
-  color: #1A1A1A;
+  color: #1a1a1a;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -413,7 +427,7 @@ onShow(load);
   display: block;
   margin-top: 6rpx;
   overflow: hidden;
-  color: #E53935;
+  color: #e53935;
   font-size: 22rpx;
   font-weight: 700;
   text-overflow: ellipsis;
@@ -426,7 +440,7 @@ onShow(load);
   padding: 6rpx 12rpx;
   border-radius: 999rpx;
   color: #fff;
-  background: linear-gradient(90deg, #E53935, #FF8F1F);
+  background: linear-gradient(90deg, #e53935, #ff8f1f);
   font-size: 20rpx;
   font-weight: 800;
   box-shadow: 0 4rpx 10rpx rgba(229, 57, 53, 0.35);
@@ -438,9 +452,9 @@ onShow(load);
   border-radius: 24rpx;
   grid-template-columns: 1fr 1fr 1fr;
   gap: 12rpx;
-  background: linear-gradient(135deg, #FFFBF5, #FFF2D9);
+  background: linear-gradient(135deg, #fffbf5, #fff2d9);
   box-shadow: 0 2rpx 12rpx rgba(246, 184, 48, 0.12);
-  border: 1rpx solid #FFE8B2;
+  border: 1rpx solid #ffe8b2;
 }
 .benefit-strip button {
   display: flex;
@@ -452,7 +466,7 @@ onShow(load);
   justify-content: center;
   flex-direction: column;
   color: #fff;
-  background: linear-gradient(145deg, #E53935 0%, #FF5A36 55%, #FF8F1F 100%);
+  background: linear-gradient(145deg, #e53935 0%, #ff5a36 55%, #ff8f1f 100%);
   font-size: 22rpx;
   line-height: 1.3;
   position: relative;
@@ -474,7 +488,7 @@ onShow(load);
   font-weight: 900;
   line-height: 1;
   letter-spacing: -1rpx;
-  background: linear-gradient(90deg, #FFE89A, #fff);
+  background: linear-gradient(90deg, #ffe89a, #fff);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
@@ -492,18 +506,18 @@ onShow(load);
   font-weight: 800;
   width: fit-content;
   border-radius: 999rpx;
-  color: #7A2E00;
-  background: linear-gradient(90deg, #FFE89A, #FFC146);
+  color: #7a2e00;
+  background: linear-gradient(90deg, #ffe89a, #ffc146);
   padding: 6rpx 16rpx;
 }
 .benefit-strip > button:last-child {
-  background: linear-gradient(145deg, #0EA15F, #69C18F);
+  background: linear-gradient(145deg, #0ea15f, #69c18f);
   box-shadow: 0 6rpx 18rpx rgba(14, 161, 95, 0.22);
 }
 .benefit-strip > button:last-child .b-num {
   font-size: 34rpx;
   letter-spacing: 0;
-  background: linear-gradient(90deg, #FFE89A, #fff);
+  background: linear-gradient(90deg, #ffe89a, #fff);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
@@ -528,7 +542,7 @@ onShow(load);
   overflow: hidden;
   background: var(--life-paper);
   box-shadow: 0 2rpx 14rpx rgba(0, 0, 0, 0.04);
-  border: 1rpx solid #FFE8D9;
+  border: 1rpx solid #ffe8d9;
 }
 .block-heading {
   display: flex;
@@ -536,7 +550,7 @@ onShow(load);
   padding: 20rpx 24rpx;
   align-items: center;
   justify-content: space-between;
-  background: linear-gradient(90deg, #FFEFDF, var(--life-paper));
+  background: linear-gradient(90deg, #ffefdf, var(--life-paper));
   box-sizing: border-box;
   position: relative;
 }
@@ -548,7 +562,7 @@ onShow(load);
   bottom: 24rpx;
   width: 6rpx;
   border-radius: 999rpx;
-  background: linear-gradient(180deg, #E53935, #FF8F1F);
+  background: linear-gradient(180deg, #e53935, #ff8f1f);
 }
 .block-heading > view {
   display: flex;
@@ -559,14 +573,14 @@ onShow(load);
 .block-heading view text:first-child {
   font-size: 36rpx;
   font-weight: 900;
-  color: #1A1A1A;
+  color: #1a1a1a;
   letter-spacing: 0.5rpx;
 }
 .block-heading view text:last-child {
   padding: 8rpx 16rpx;
   border-radius: 999rpx;
   color: #fff;
-  background: linear-gradient(90deg, #E53935, #FF8F1F);
+  background: linear-gradient(90deg, #e53935, #ff8f1f);
   font-size: 22rpx;
   font-weight: 800;
   box-shadow: 0 4rpx 10rpx rgba(229, 57, 53, 0.3);
@@ -575,7 +589,7 @@ onShow(load);
   min-height: 64rpx;
   margin: 0;
   padding: 0 12rpx;
-  color: #E53935;
+  color: #e53935;
   background: transparent;
   font-size: 24rpx;
   font-weight: 800;
@@ -591,11 +605,11 @@ onShow(load);
   min-height: 88rpx;
   margin: 0;
   padding: 12rpx 10rpx 14rpx;
-  background: linear-gradient(180deg, #FFF7EE, #fff);
+  background: linear-gradient(180deg, #fff7ee, #fff);
   border-radius: 20rpx;
   line-height: 1.3;
   text-align: left;
-  border: 1rpx solid #FFE4CC;
+  border: 1rpx solid #ffe4cc;
 }
 .product-photo {
   width: 100%;
@@ -617,7 +631,7 @@ onShow(load);
   padding: 6rpx 14rpx;
   border-radius: 999rpx;
   color: #fff;
-  background: linear-gradient(90deg, #E53935, #FF8F1F);
+  background: linear-gradient(90deg, #e53935, #ff8f1f);
   font-size: 20rpx;
   font-weight: 900;
   letter-spacing: 0.5rpx;
@@ -629,7 +643,7 @@ onShow(load);
   overflow: hidden;
   font-size: 24rpx;
   font-weight: 900;
-  color: #1A1A1A;
+  color: #1a1a1a;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -638,8 +652,8 @@ onShow(load);
   margin-top: 8rpx;
   padding: 6rpx 10rpx;
   border-radius: 999rpx;
-  color: #E53935;
-  background: #FFEEEB;
+  color: #e53935;
+  background: #ffeeeb;
   font-size: 20rpx;
   font-weight: 800;
 }
@@ -651,7 +665,7 @@ onShow(load);
   flex-wrap: wrap;
 }
 .retail-price {
-  color: #E53935;
+  color: #e53935;
   font-size: 34rpx;
   font-weight: 900;
   line-height: 1;
@@ -753,9 +767,9 @@ onShow(load);
   border-radius: 24rpx;
   align-items: center;
   justify-content: space-around;
-  color: #B01E1E;
-  background: linear-gradient(90deg, #FFEFDF, #FFF8EE);
-  border: 1rpx solid #FFDCC0;
+  color: #b01e1e;
+  background: linear-gradient(90deg, #ffefdf, #fff8ee);
+  border: 1rpx solid #ffdcc0;
   font-size: 24rpx;
   font-weight: 800;
   letter-spacing: 0.5rpx;
@@ -768,7 +782,7 @@ onShow(load);
   margin-right: 10rpx;
   vertical-align: -6rpx;
   border-radius: 999rpx;
-  background: linear-gradient(90deg, #E53935, #FF8F1F);
+  background: linear-gradient(90deg, #e53935, #ff8f1f);
   color: #fff;
   position: relative;
 }
@@ -786,19 +800,19 @@ onShow(load);
   padding: 24rpx;
   border-radius: 24rpx;
   flex-direction: column;
-  background: linear-gradient(145deg, #FFF5E6, #fff);
-  border: 1rpx solid #FFE0BF;
+  background: linear-gradient(145deg, #fff5e6, #fff);
+  border: 1rpx solid #ffe0bf;
   text-align: left;
   box-shadow: 0 2rpx 10rpx rgba(229, 57, 53, 0.06);
 }
 .store-scroll button text:first-child {
   font-size: 28rpx;
   font-weight: 900;
-  color: #1A1A1A;
+  color: #1a1a1a;
 }
 .store-scroll button text:last-child {
   margin-top: 12rpx;
-  color: #E53935;
+  color: #e53935;
   font-size: 24rpx;
   font-weight: 800;
 }
@@ -814,12 +828,12 @@ onShow(load);
   bottom: 12rpx;
   width: 6rpx;
   border-radius: 999rpx;
-  background: linear-gradient(180deg, #E53935, #FF8F1F);
+  background: linear-gradient(180deg, #e53935, #ff8f1f);
 }
 .shelf-heading > text {
   font-size: 36rpx;
   font-weight: 900;
-  color: #1A1A1A;
+  color: #1a1a1a;
   padding-left: 14rpx;
   letter-spacing: 1rpx;
 }
@@ -838,10 +852,10 @@ onShow(load);
   line-height: 56rpx;
 }
 .shelf-heading view .active {
-  border-bottom: 4rpx solid #E53935;
-  color: #E53935;
+  border-bottom: 4rpx solid #e53935;
+  color: #e53935;
   font-weight: 900;
-  background: #FFEFDF;
+  background: #ffefdf;
   border-top-left-radius: 16rpx;
   border-top-right-radius: 16rpx;
 }
@@ -850,7 +864,7 @@ onShow(load);
   padding: 20rpx 16rpx;
   grid-template-columns: repeat(2, 1fr);
   gap: 20rpx;
-  background: linear-gradient(180deg, #FFFBF5, #FFF6EC 24%, #FFF 100%);
+  background: linear-gradient(180deg, #fffbf5, #fff6ec 24%, #fff 100%);
 }
 .goods-grid > view {
   position: relative;
@@ -861,7 +875,7 @@ onShow(load);
   overflow: hidden;
   background: #fff;
   box-shadow: 0 4rpx 18rpx rgba(229, 57, 53, 0.08);
-  border: 1rpx solid #FFE4CC;
+  border: 1rpx solid #ffe4cc;
   line-height: 1.3;
   text-align: left;
 }
@@ -876,7 +890,7 @@ onShow(load);
   padding: 8rpx 16rpx;
   border-radius: 999rpx;
   color: #fff;
-  background: linear-gradient(90deg, #E53935, #FF8F1F);
+  background: linear-gradient(90deg, #e53935, #ff8f1f);
   font-size: 22rpx;
   font-weight: 900;
   letter-spacing: 0.5rpx;
@@ -890,7 +904,7 @@ onShow(load);
   padding: 6rpx 14rpx;
   border-radius: 12rpx;
   color: #fff;
-  background: linear-gradient(90deg, #1A1A1A, #444);
+  background: linear-gradient(90deg, #1a1a1a, #444);
   font-size: 20rpx;
   font-weight: 800;
   z-index: 2;
@@ -905,7 +919,7 @@ onShow(load);
   overflow: hidden;
   font-size: 28rpx;
   font-weight: 900;
-  color: #1A1A1A;
+  color: #1a1a1a;
   text-overflow: ellipsis;
   white-space: nowrap;
   letter-spacing: 0.3rpx;
@@ -930,18 +944,18 @@ onShow(load);
   line-height: 1;
 }
 .goods-yuan {
-  color: #E53935;
+  color: #e53935;
   font-size: 26rpx;
   font-weight: 900;
 }
 .goods-now {
-  color: #E53935;
+  color: #e53935;
   font-size: 48rpx;
   font-weight: 900;
   letter-spacing: -2rpx;
 }
 .goods-decimal {
-  color: #E53935;
+  color: #e53935;
   font-size: 28rpx;
   font-weight: 900;
 }
@@ -956,8 +970,8 @@ onShow(load);
   display: inline-block;
   padding: 6rpx 12rpx;
   border-radius: 999rpx;
-  color: #B01E1E;
-  background: #FFE2DB;
+  color: #b01e1e;
+  background: #ffe2db;
   font-size: 20rpx;
   font-weight: 900;
   margin-top: 6rpx;
@@ -971,7 +985,7 @@ onShow(load);
   padding: 0;
   border-radius: 50%;
   color: #fff;
-  background: linear-gradient(145deg, #E53935, #FF8F1F);
+  background: linear-gradient(145deg, #e53935, #ff8f1f);
   font-size: 42rpx;
   line-height: 72rpx;
   font-weight: 700;

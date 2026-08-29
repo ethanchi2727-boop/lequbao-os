@@ -74,7 +74,8 @@
   /* —— V6.4 变量重映射：品牌/Hero/状态全部切换到乐趣生活绿系 —— */
   --bao-v64-brand: linear-gradient(135deg, #12a458, #006b36);
   --bao-v64-brand-hover: linear-gradient(135deg, #1fb765, #0d7c43);
-  --bao-v64-hero: radial-gradient(560px 240px at 86% -70px, rgb(110 199 38 / 20%), transparent 62%),
+  --bao-v64-hero:
+    radial-gradient(560px 240px at 86% -70px, rgb(110 199 38 / 20%), transparent 62%),
     linear-gradient(135deg, #0e3a26, #07231a);
   --bao-v64-hero-flat: linear-gradient(135deg, #0e3a26, #07231a);
   --bao-v64-jade-glow: 0 10px 24px rgb(0 107 54 / 26%);
@@ -129,7 +130,9 @@ body .sidebar::after {
 body .sidebar .brand > b {
   background: var(--bao-v65-grad-fresh);
   color: var(--bao-v65-fresh-ink);
-  box-shadow: 0 5px 12px -3px rgb(110 199 38 / 50%), inset 0 1.5px 0 rgb(255 255 255 / 40%);
+  box-shadow:
+    0 5px 12px -3px rgb(110 199 38 / 50%),
+    inset 0 1.5px 0 rgb(255 255 255 / 40%);
 }
 
 /* 新建任务 CTA：鲜绿渐变胶囊 + 深绿字 */
@@ -138,11 +141,15 @@ body .sidebar .new-task {
   color: var(--bao-v65-fresh-ink);
   font-weight: 800;
   letter-spacing: 0.04em;
-  box-shadow: 0 10px 22px -8px rgb(110 199 38 / 55%), inset 0 1.5px 0 rgb(255 255 255 / 40%);
+  box-shadow:
+    0 10px 22px -8px rgb(110 199 38 / 55%),
+    inset 0 1.5px 0 rgb(255 255 255 / 40%);
 }
 
 body .sidebar .new-task:hover {
-  box-shadow: 0 12px 26px -8px rgb(110 199 38 / 65%), inset 0 1.5px 0 rgb(255 255 255 / 40%);
+  box-shadow:
+    0 12px 26px -8px rgb(110 199 38 / 65%),
+    inset 0 1.5px 0 rgb(255 255 255 / 40%);
 }
 
 body .sidebar nav a.active {
@@ -313,7 +320,9 @@ body .identity-avatar,
 body .session-avatar {
   background: var(--bao-v64-brand);
   color: #fff;
-  box-shadow: 0 8px 18px -8px rgb(0 107 54 / 55%), inset 0 1.5px 0 rgb(255 255 255 / 28%);
+  box-shadow:
+    0 8px 18px -8px rgb(0 107 54 / 55%),
+    inset 0 1.5px 0 rgb(255 255 255 / 28%);
 }
 
 /* 补丁段残留小字：冷灰绿 → 暖墨弱提示（米色画布上 4.7:1） */
@@ -458,8 +467,8 @@ body .sidebar nav em {
 
 /* AI 起始页：旧紫晕白底 → 米色画布 + 鲜绿光晕 */
 body .ai-start {
-  background: radial-gradient(circle at 50% 25%, rgb(110 199 38 / 10%), transparent 33%),
-    var(--bao-pc-canvas);
+  background:
+    radial-gradient(circle at 50% 25%, rgb(110 199 38 / 10%), transparent 33%), var(--bao-pc-canvas);
 }
 
 /* 步骤数字圆圈：旧淡紫渐变+描边 → 暖墨底；当前步保持绿渐变 */

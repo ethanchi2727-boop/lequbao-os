@@ -12,6 +12,7 @@ export default tseslint.config(
       '**/node_modules/**',
       '**/.pnpm-store/**',
       'runtime/deepseek-harness-official/**',
+      'design/prototype/assets/**',
     ],
   },
   eslint.configs.recommended,

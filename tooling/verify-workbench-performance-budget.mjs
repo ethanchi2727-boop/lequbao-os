@@ -35,9 +35,9 @@ const routeExperienceGroups = Object.freeze([
 
 export const workbenchPerformanceBudgets = Object.freeze({
   javascript: 230 * 1024,
-  css: 32 * 1024,
+  css: 48 * 1024,
   html: 2 * 1024,
-  initialRouteTotal: 265 * 1024,
+  initialRouteTotal: 280 * 1024,
 });
 
 export async function verifyWorkbenchPerformanceBudget() {

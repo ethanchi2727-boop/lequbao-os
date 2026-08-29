@@ -120,7 +120,7 @@ function openSearch() {
   white-space: nowrap;
 }
 .search-icon {
-  color: #E53935;
+  color: #e53935;
   font-size: 40rpx;
   line-height: 1;
 }

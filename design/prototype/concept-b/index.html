@@ -1,256 +1,821 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="zh-CN">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>概念 B · 集市招贴 — 乐趣生活</title>
-<style>
-  :root{
-    --sage:#dddec9; --paper:#ffffff; --ink:#000000;
-    --yel:#ffe600; --cream:#fcedb1; --sky:#aae2ff;
-  }
-  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-  body{
-    background:#c9cab5;
-    font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;
-    display:flex;flex-direction:column;align-items:center;
-    padding:36px 16px 60px;color:var(--ink);
-  }
-  .cap{margin-bottom:18px;text-align:center}
-  .cap h1{font-size:22px;letter-spacing:.3em;font-weight:900}
-  .cap p{font-size:12px;margin-top:6px;letter-spacing:.14em;opacity:.6}
-  .phone{
-    width:375px;height:760px;background:var(--paper);
-    position:relative;overflow:hidden;display:flex;flex-direction:column;flex:none;
-    border:2px solid var(--ink);
-    box-shadow:10px 10px 0 var(--ink);
-  }
-  .statusbar{height:40px;flex:none;display:flex;justify-content:space-between;align-items:center;padding:0 20px;font-size:13px;font-weight:800;border-bottom:1px solid var(--ink)}
-  .scroll{flex:1;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:none}
-  .scroll::-webkit-scrollbar{display:none}
-  /* 跑马灯 */
-  .mq{
-    flex:none;background:var(--yel);border-bottom:1px solid var(--ink);
-    overflow:hidden;white-space:nowrap;height:38px;display:flex;align-items:center;
-  }
-  .mq-in{display:inline-block;animation:mq 16s linear infinite;font-size:13.5px;font-weight:800;letter-spacing:.06em}
-  @keyframes mq{from{transform:translateX(0)}to{transform:translateX(-50%)}}
-  /* 头部 */
-  .hd{padding:14px 16px 12px;border-bottom:1px solid var(--ink);display:flex;align-items:center;justify-content:space-between}
-  .brand{line-height:1}
-  .brand .en{font-size:11px;font-weight:900;letter-spacing:.28em}
-  .brand .cn{font-size:24px;font-weight:900;letter-spacing:.08em;margin-top:2px}
-  .hd .loc{font-size:12.5px;font-weight:700;border:1px solid var(--ink);padding:8px 10px;background:var(--sage)}
-  .search{
-    margin:0;border-bottom:1px solid var(--ink);padding:11px 16px;display:flex;gap:10px;align-items:center;
-    font-size:14px;font-weight:600;color:rgba(0,0,0,.45);
-  }
-  .search .go{margin-left:auto;background:var(--ink);color:var(--yel);font-size:12.5px;font-weight:800;padding:7px 14px;border-radius:15px}
-  /* 公告 */
-  .bn{margin:14px 16px 0;background:var(--cream);border:1px solid var(--ink);padding:11px 13px;font-size:13px;line-height:1.6;font-weight:600;display:flex;gap:8px}
-  .bn .tag{flex:none;background:var(--ink);color:#fff;font-size:11px;padding:2px 7px;height:fit-content;font-weight:800}
-  /* 分类：连体格 */
-  .cats{margin:16px 16px 0;border:1px solid var(--ink);display:grid;grid-template-columns:repeat(4,1fr)}
-  .cat{border-right:1px solid var(--ink);padding:13px 4px 11px;text-align:center;cursor:pointer;position:relative}
-  .cat:nth-child(4n){border-right:none}
-  .cat:nth-child(-n+4){border-bottom:1px solid var(--ink)}
-  .cat:hover{background:var(--sage)}
-  .cat svg{display:block;margin:0 auto 7px}
-  .cat span{font-size:12.5px;font-weight:800}
-  /* 栏目标题：上下划线 */
-  .sec-hd{
-    margin:22px 16px 0;padding:9px 2px;
-    border-top:1px solid var(--ink);border-bottom:1px solid var(--ink);
-    display:flex;align-items:baseline;justify-content:space-between;
-  }
-  .sec-hd h3{font-size:19px;font-weight:900;letter-spacing:.1em}
-  .sec-hd h3 small{font-size:11px;letter-spacing:.2em;font-weight:800;opacity:.5;margin-left:8px}
-  .sec-hd a{font-size:12.5px;font-weight:800;text-decoration:none;color:var(--ink)}
-  /* 商品 */
-  .goods{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:14px 16px 0}
-  .good{border:1px solid var(--ink);background:#fff}
-  .gpic{height:104px;border-bottom:1px solid var(--ink);display:grid;place-items:center;position:relative}
-  .gpic .off{
-    position:absolute;top:0;left:0;background:var(--yel);border-right:1px solid var(--ink);border-bottom:1px solid var(--ink);
-    font-size:11px;font-weight:900;padding:4px 8px;
-  }
-  .g-bd{padding:10px 11px 11px}
-  .g-name{font-size:14.5px;font-weight:800;line-height:1.45}
-  .g-sub{font-size:11.5px;font-weight:600;color:rgba(0,0,0,.5);margin-top:3px}
-  .g-row{display:flex;align-items:center;justify-content:space-between;margin-top:9px}
-  .price{font-size:12px;font-weight:900}
-  .price b{font-size:20px}
-  .price s{font-weight:600;opacity:.4;font-size:11px;margin-left:4px}
-  .add{
-    background:var(--yel);border:1px solid var(--ink);border-radius:15px;
-    font-size:12px;font-weight:900;padding:7px 12px;cursor:pointer;font-family:inherit;
-  }
-  .add:active{background:var(--ink);color:var(--yel)}
-  /* 服务条 */
-  .svc{margin:22px 16px 0;border:1px solid var(--ink)}
-  .svc-r{display:flex;align-items:center;gap:12px;padding:12px 13px;border-bottom:1px solid var(--ink)}
-  .svc-r:last-child{border-bottom:none}
-  .svc-r .k{font-size:15px;font-weight:900}
-  .svc-r .v{font-size:11.5px;font-weight:600;opacity:.55;margin-top:2px}
-  .svc-r .b{margin-left:auto;flex:none;background:var(--yel);border:1px solid var(--ink);border-radius:15px;font-size:12px;font-weight:900;padding:8px 14px;font-family:inherit;cursor:pointer}
-  .svc-r .b.alt{background:var(--sky)}
-  /* 生活圈 */
-  .feed{margin:0 16px;padding:0}
-  .post{border:1px solid var(--ink);margin-top:12px;padding:12px 13px;background:#fff}
-  .post .who{display:flex;align-items:center;gap:9px}
-  .post .av{width:34px;height:34px;border:1px solid var(--ink);border-radius:50%;display:grid;place-items:center;font-weight:900;font-size:14px;background:var(--sage)}
-  .post .nm{font-size:13.5px;font-weight:800}
-  .post .tm{font-size:11px;opacity:.5;font-weight:600}
-  .post .tx{font-size:13.5px;line-height:1.65;margin-top:9px;font-weight:600}
-  .foot-note{text-align:center;font-size:11px;letter-spacing:.3em;font-weight:800;opacity:.45;padding:26px 0 14px}
-  /* tabbar */
-  .tabbar{
-    flex:none;height:70px;border-top:2px solid var(--ink);background:#fff;
-    display:grid;grid-template-columns:repeat(5,1fr);padding-bottom:12px;
-  }
-  .tab{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font-size:11px;font-weight:800;color:rgba(0,0,0,.5);position:relative}
-  .tab.on{color:var(--ink)}
-  .tab.on::after{content:"";position:absolute;bottom:6px;width:20px;height:5px;background:var(--yel);border:1px solid var(--ink)}
-  @media(max-width:480px){ body{padding:0} .phone{width:100%;height:100vh;box-shadow:none;border-width:0} .cap{display:none} }
-</style>
-</head>
-<body>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>概念 B · 集市招贴 — 乐趣生活</title>
+    <style>
+      :root {
+        --sage: #dddec9;
+        --paper: #ffffff;
+        --ink: #000000;
+        --yel: #ffe600;
+        --cream: #fcedb1;
+        --sky: #aae2ff;
+      }
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        -webkit-tap-highlight-color: transparent;
+      }
+      body {
+        background: #c9cab5;
+        font-family: -apple-system, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 36px 16px 60px;
+        color: var(--ink);
+      }
+      .cap {
+        margin-bottom: 18px;
+        text-align: center;
+      }
+      .cap h1 {
+        font-size: 22px;
+        letter-spacing: 0.3em;
+        font-weight: 900;
+      }
+      .cap p {
+        font-size: 12px;
+        margin-top: 6px;
+        letter-spacing: 0.14em;
+        opacity: 0.6;
+      }
+      .phone {
+        width: 375px;
+        height: 760px;
+        background: var(--paper);
+        position: relative;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        flex: none;
+        border: 2px solid var(--ink);
+        box-shadow: 10px 10px 0 var(--ink);
+      }
+      .statusbar {
+        height: 40px;
+        flex: none;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0 20px;
+        font-size: 13px;
+        font-weight: 800;
+        border-bottom: 1px solid var(--ink);
+      }
+      .scroll {
+        flex: 1;
+        overflow-y: auto;
+        overscroll-behavior: contain;
+        scrollbar-width: none;
+      }
+      .scroll::-webkit-scrollbar {
+        display: none;
+      }
+      /* 跑马灯 */
+      .mq {
+        flex: none;
+        background: var(--yel);
+        border-bottom: 1px solid var(--ink);
+        overflow: hidden;
+        white-space: nowrap;
+        height: 38px;
+        display: flex;
+        align-items: center;
+      }
+      .mq-in {
+        display: inline-block;
+        animation: mq 16s linear infinite;
+        font-size: 13.5px;
+        font-weight: 800;
+        letter-spacing: 0.06em;
+      }
+      @keyframes mq {
+        from {
+          transform: translateX(0);
+        }
+        to {
+          transform: translateX(-50%);
+        }
+      }
+      /* 头部 */
+      .hd {
+        padding: 14px 16px 12px;
+        border-bottom: 1px solid var(--ink);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+      .brand {
+        line-height: 1;
+      }
+      .brand .en {
+        font-size: 11px;
+        font-weight: 900;
+        letter-spacing: 0.28em;
+      }
+      .brand .cn {
+        font-size: 24px;
+        font-weight: 900;
+        letter-spacing: 0.08em;
+        margin-top: 2px;
+      }
+      .hd .loc {
+        font-size: 12.5px;
+        font-weight: 700;
+        border: 1px solid var(--ink);
+        padding: 8px 10px;
+        background: var(--sage);
+      }
+      .search {
+        margin: 0;
+        border-bottom: 1px solid var(--ink);
+        padding: 11px 16px;
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        font-size: 14px;
+        font-weight: 600;
+        color: rgba(0, 0, 0, 0.45);
+      }
+      .search .go {
+        margin-left: auto;
+        background: var(--ink);
+        color: var(--yel);
+        font-size: 12.5px;
+        font-weight: 800;
+        padding: 7px 14px;
+        border-radius: 15px;
+      }
+      /* 公告 */
+      .bn {
+        margin: 14px 16px 0;
+        background: var(--cream);
+        border: 1px solid var(--ink);
+        padding: 11px 13px;
+        font-size: 13px;
+        line-height: 1.6;
+        font-weight: 600;
+        display: flex;
+        gap: 8px;
+      }
+      .bn .tag {
+        flex: none;
+        background: var(--ink);
+        color: #fff;
+        font-size: 11px;
+        padding: 2px 7px;
+        height: fit-content;
+        font-weight: 800;
+      }
+      /* 分类：连体格 */
+      .cats {
+        margin: 16px 16px 0;
+        border: 1px solid var(--ink);
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+      }
+      .cat {
+        border-right: 1px solid var(--ink);
+        padding: 13px 4px 11px;
+        text-align: center;
+        cursor: pointer;
+        position: relative;
+      }
+      .cat:nth-child(4n) {
+        border-right: none;
+      }
+      .cat:nth-child(-n + 4) {
+        border-bottom: 1px solid var(--ink);
+      }
+      .cat:hover {
+        background: var(--sage);
+      }
+      .cat svg {
+        display: block;
+        margin: 0 auto 7px;
+      }
+      .cat span {
+        font-size: 12.5px;
+        font-weight: 800;
+      }
+      /* 栏目标题：上下划线 */
+      .sec-hd {
+        margin: 22px 16px 0;
+        padding: 9px 2px;
+        border-top: 1px solid var(--ink);
+        border-bottom: 1px solid var(--ink);
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+      }
+      .sec-hd h3 {
+        font-size: 19px;
+        font-weight: 900;
+        letter-spacing: 0.1em;
+      }
+      .sec-hd h3 small {
+        font-size: 11px;
+        letter-spacing: 0.2em;
+        font-weight: 800;
+        opacity: 0.5;
+        margin-left: 8px;
+      }
+      .sec-hd a {
+        font-size: 12.5px;
+        font-weight: 800;
+        text-decoration: none;
+        color: var(--ink);
+      }
+      /* 商品 */
+      .goods {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+        padding: 14px 16px 0;
+      }
+      .good {
+        border: 1px solid var(--ink);
+        background: #fff;
+      }
+      .gpic {
+        height: 104px;
+        border-bottom: 1px solid var(--ink);
+        display: grid;
+        place-items: center;
+        position: relative;
+      }
+      .gpic .off {
+        position: absolute;
+        top: 0;
+        left: 0;
+        background: var(--yel);
+        border-right: 1px solid var(--ink);
+        border-bottom: 1px solid var(--ink);
+        font-size: 11px;
+        font-weight: 900;
+        padding: 4px 8px;
+      }
+      .g-bd {
+        padding: 10px 11px 11px;
+      }
+      .g-name {
+        font-size: 14.5px;
+        font-weight: 800;
+        line-height: 1.45;
+      }
+      .g-sub {
+        font-size: 11.5px;
+        font-weight: 600;
+        color: rgba(0, 0, 0, 0.5);
+        margin-top: 3px;
+      }
+      .g-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-top: 9px;
+      }
+      .price {
+        font-size: 12px;
+        font-weight: 900;
+      }
+      .price b {
+        font-size: 20px;
+      }
+      .price s {
+        font-weight: 600;
+        opacity: 0.4;
+        font-size: 11px;
+        margin-left: 4px;
+      }
+      .add {
+        background: var(--yel);
+        border: 1px solid var(--ink);
+        border-radius: 15px;
+        font-size: 12px;
+        font-weight: 900;
+        padding: 7px 12px;
+        cursor: pointer;
+        font-family: inherit;
+      }
+      .add:active {
+        background: var(--ink);
+        color: var(--yel);
+      }
+      /* 服务条 */
+      .svc {
+        margin: 22px 16px 0;
+        border: 1px solid var(--ink);
+      }
+      .svc-r {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px 13px;
+        border-bottom: 1px solid var(--ink);
+      }
+      .svc-r:last-child {
+        border-bottom: none;
+      }
+      .svc-r .k {
+        font-size: 15px;
+        font-weight: 900;
+      }
+      .svc-r .v {
+        font-size: 11.5px;
+        font-weight: 600;
+        opacity: 0.55;
+        margin-top: 2px;
+      }
+      .svc-r .b {
+        margin-left: auto;
+        flex: none;
+        background: var(--yel);
+        border: 1px solid var(--ink);
+        border-radius: 15px;
+        font-size: 12px;
+        font-weight: 900;
+        padding: 8px 14px;
+        font-family: inherit;
+        cursor: pointer;
+      }
+      .svc-r .b.alt {
+        background: var(--sky);
+      }
+      /* 生活圈 */
+      .feed {
+        margin: 0 16px;
+        padding: 0;
+      }
+      .post {
+        border: 1px solid var(--ink);
+        margin-top: 12px;
+        padding: 12px 13px;
+        background: #fff;
+      }
+      .post .who {
+        display: flex;
+        align-items: center;
+        gap: 9px;
+      }
+      .post .av {
+        width: 34px;
+        height: 34px;
+        border: 1px solid var(--ink);
+        border-radius: 50%;
+        display: grid;
+        place-items: center;
+        font-weight: 900;
+        font-size: 14px;
+        background: var(--sage);
+      }
+      .post .nm {
+        font-size: 13.5px;
+        font-weight: 800;
+      }
+      .post .tm {
+        font-size: 11px;
+        opacity: 0.5;
+        font-weight: 600;
+      }
+      .post .tx {
+        font-size: 13.5px;
+        line-height: 1.65;
+        margin-top: 9px;
+        font-weight: 600;
+      }
+      .foot-note {
+        text-align: center;
+        font-size: 11px;
+        letter-spacing: 0.3em;
+        font-weight: 800;
+        opacity: 0.45;
+        padding: 26px 0 14px;
+      }
+      /* tabbar */
+      .tabbar {
+        flex: none;
+        height: 70px;
+        border-top: 2px solid var(--ink);
+        background: #fff;
+        display: grid;
+        grid-template-columns: repeat(5, 1fr);
+        padding-bottom: 12px;
+      }
+      .tab {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 3px;
+        font-size: 11px;
+        font-weight: 800;
+        color: rgba(0, 0, 0, 0.5);
+        position: relative;
+      }
+      .tab.on {
+        color: var(--ink);
+      }
+      .tab.on::after {
+        content: '';
+        position: absolute;
+        bottom: 6px;
+        width: 20px;
+        height: 5px;
+        background: var(--yel);
+        border: 1px solid var(--ink);
+      }
+      @media (max-width: 480px) {
+        body {
+          padding: 0;
+        }
+        .phone {
+          width: 100%;
+          height: 100vh;
+          box-shadow: none;
+          border-width: 0;
+        }
+        .cap {
+          display: none;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <svg width="0" height="0" style="position: absolute">
+      <defs>
+        <g id="b-leaf">
+          <path
+            d="M12 21c-5 0-8-3.2-8-8 0-5.5 4.5-8.5 9-9-.6 4.8-1 8.2 1.5 10.5C16.6 16.6 18 18.5 18 20c-1.8.7-3.9 1-6 1z"
+            fill="none"
+            stroke-width="2.2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+          <path d="M7 17c2-3 5-6 8.5-8.5" fill="none" stroke-width="2.2" stroke-linecap="round" />
+        </g>
+        <g id="b-egg">
+          <ellipse cx="12" cy="13.5" rx="7" ry="8.5" fill="none" stroke-width="2.2" />
+          <path
+            d="M9 10.5c.8-1.4 2-2.2 3.4-2.4"
+            fill="none"
+            stroke-width="2.2"
+            stroke-linecap="round"
+          />
+        </g>
+        <g id="b-wheat">
+          <path d="M12 21V8" fill="none" stroke-width="2.2" stroke-linecap="round" />
+          <path
+            d="M12 8c-2.5-1-3.5-3-3-5 2.2.6 3.4 2 3 5zm0 0c2.5-1 3.5-3 3-5-2.2.6-3.4 2-3 5zm0 5c-2.5-1-3.5-3-3-5 2.2.6 3.4 2 3 5zm0 0c2.5-1 3.5-3 3-5-2.2.6-3.4 2-3 5z"
+            fill="none"
+            stroke-width="2.2"
+            stroke-linejoin="round"
+          />
+        </g>
+        <g id="b-apple">
+          <path
+            d="M12 8c-4.5-2.5-8 .5-8 4.5 0 4.5 3.5 8.5 8 8.5s8-4 8-8.5c0-4-3.5-7-8-4.5z"
+            fill="none"
+            stroke-width="2.2"
+            stroke-linejoin="round"
+          />
+          <path
+            d="M12 8V5.5A2.5 2.5 0 0 1 14.5 3"
+            fill="none"
+            stroke-width="2.2"
+            stroke-linecap="round"
+          />
+        </g>
+        <g id="b-home2">
+          <path
+            d="M4 11l8-6.5L20 11v9a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 20z"
+            fill="none"
+            stroke-width="2.2"
+            stroke-linejoin="round"
+          />
+          <path d="M9.5 21v-6h5v6" fill="none" stroke-width="2.2" stroke-linejoin="round" />
+        </g>
+        <g id="b-cut">
+          <circle cx="7" cy="7" r="2.8" fill="none" stroke-width="2.2" />
+          <circle cx="7" cy="17" r="2.8" fill="none" stroke-width="2.2" />
+          <path
+            d="M9.3 9.3 19 19M9.3 14.7 19 5"
+            fill="none"
+            stroke-width="2.2"
+            stroke-linecap="round"
+          />
+        </g>
+        <g id="b-bill">
+          <rect x="5" y="3.5" width="14" height="17" rx="2" fill="none" stroke-width="2.2" />
+          <path d="M8.5 8.5h7M8.5 12h7M8.5 15.5h4.5" stroke-width="2.2" stroke-linecap="round" />
+        </g>
+        <g id="b-group">
+          <circle cx="8.5" cy="8.5" r="3.2" fill="none" stroke-width="2.2" />
+          <circle cx="16.5" cy="9.5" r="2.6" fill="none" stroke-width="2.2" />
+          <path
+            d="M3.5 20c0-3.3 2.2-5.5 5-5.5s5 2.2 5 5.5M14 15.6c2.6.3 4.5 2.2 4.5 4.9"
+            fill="none"
+            stroke-width="2.2"
+            stroke-linecap="round"
+          />
+        </g>
+        <g id="b-home">
+          <path
+            d="M4 10.5 12 4l8 6.5V20a1 1 0 0 1-1 1h-4.5v-6h-5v6H5a1 1 0 0 1-1-1z"
+            fill="none"
+            stroke-width="2.2"
+            stroke-linejoin="round"
+          />
+        </g>
+        <g id="b-shop">
+          <path
+            d="M4 9l1.2-4.5h13.6L20 9M4 9v11h16V9M4 9h16M9.5 20v-6h5v6"
+            fill="none"
+            stroke-width="2.2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+        </g>
+        <g id="b-chat">
+          <path
+            d="M4 6.5A2.5 2.5 0 0 1 6.5 4h11A2.5 2.5 0 0 1 20 6.5v7a2.5 2.5 0 0 1-2.5 2.5H9l-4.2 3.4c-.4.3-.8 0-.8-.4z"
+            fill="none"
+            stroke-width="2.2"
+            stroke-linejoin="round"
+          />
+        </g>
+        <g id="b-cart">
+          <path
+            d="M3.5 4.5h2.4l2 11h10.4l1.9-8H8"
+            fill="none"
+            stroke-width="2.2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+          <circle cx="9.5" cy="19.5" r="1.6" fill="none" stroke-width="2.2" />
+          <circle cx="16.5" cy="19.5" r="1.6" fill="none" stroke-width="2.2" />
+        </g>
+        <g id="b-me">
+          <circle cx="12" cy="8.5" r="3.8" fill="none" stroke-width="2.2" />
+          <path
+            d="M4.8 20c.8-3.8 3.6-6 7.2-6s6.4 2.2 7.2 6"
+            fill="none"
+            stroke-width="2.2"
+            stroke-linecap="round"
+          />
+        </g>
+        <g id="b-search">
+          <circle cx="11" cy="11" r="6.5" fill="none" stroke-width="2.2" />
+          <path d="m16 16 4.2 4.2" stroke-width="2.2" stroke-linecap="round" />
+        </g>
+      </defs>
+    </svg>
 
-<svg width="0" height="0" style="position:absolute"><defs>
-  <g id="b-leaf"><path d="M12 21c-5 0-8-3.2-8-8 0-5.5 4.5-8.5 9-9-.6 4.8-1 8.2 1.5 10.5C16.6 16.6 18 18.5 18 20c-1.8.7-3.9 1-6 1z" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/><path d="M7 17c2-3 5-6 8.5-8.5" fill="none" stroke-width="2.2" stroke-linecap="round"/></g>
-  <g id="b-egg"><ellipse cx="12" cy="13.5" rx="7" ry="8.5" fill="none" stroke-width="2.2"/><path d="M9 10.5c.8-1.4 2-2.2 3.4-2.4" fill="none" stroke-width="2.2" stroke-linecap="round"/></g>
-  <g id="b-wheat"><path d="M12 21V8" fill="none" stroke-width="2.2" stroke-linecap="round"/><path d="M12 8c-2.5-1-3.5-3-3-5 2.2.6 3.4 2 3 5zm0 0c2.5-1 3.5-3 3-5-2.2.6-3.4 2-3 5zm0 5c-2.5-1-3.5-3-3-5 2.2.6 3.4 2 3 5zm0 0c2.5-1 3.5-3 3-5-2.2.6-3.4 2-3 5z" fill="none" stroke-width="2.2" stroke-linejoin="round"/></g>
-  <g id="b-apple"><path d="M12 8c-4.5-2.5-8 .5-8 4.5 0 4.5 3.5 8.5 8 8.5s8-4 8-8.5c0-4-3.5-7-8-4.5z" fill="none" stroke-width="2.2" stroke-linejoin="round"/><path d="M12 8V5.5A2.5 2.5 0 0 1 14.5 3" fill="none" stroke-width="2.2" stroke-linecap="round"/></g>
-  <g id="b-home2"><path d="M4 11l8-6.5L20 11v9a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 20z" fill="none" stroke-width="2.2" stroke-linejoin="round"/><path d="M9.5 21v-6h5v6" fill="none" stroke-width="2.2" stroke-linejoin="round"/></g>
-  <g id="b-cut"><circle cx="7" cy="7" r="2.8" fill="none" stroke-width="2.2"/><circle cx="7" cy="17" r="2.8" fill="none" stroke-width="2.2"/><path d="M9.3 9.3 19 19M9.3 14.7 19 5" fill="none" stroke-width="2.2" stroke-linecap="round"/></g>
-  <g id="b-bill"><rect x="5" y="3.5" width="14" height="17" rx="2" fill="none" stroke-width="2.2"/><path d="M8.5 8.5h7M8.5 12h7M8.5 15.5h4.5" stroke-width="2.2" stroke-linecap="round"/></g>
-  <g id="b-group"><circle cx="8.5" cy="8.5" r="3.2" fill="none" stroke-width="2.2"/><circle cx="16.5" cy="9.5" r="2.6" fill="none" stroke-width="2.2"/><path d="M3.5 20c0-3.3 2.2-5.5 5-5.5s5 2.2 5 5.5M14 15.6c2.6.3 4.5 2.2 4.5 4.9" fill="none" stroke-width="2.2" stroke-linecap="round"/></g>
-  <g id="b-home"><path d="M4 10.5 12 4l8 6.5V20a1 1 0 0 1-1 1h-4.5v-6h-5v6H5a1 1 0 0 1-1-1z" fill="none" stroke-width="2.2" stroke-linejoin="round"/></g>
-  <g id="b-shop"><path d="M4 9l1.2-4.5h13.6L20 9M4 9v11h16V9M4 9h16M9.5 20v-6h5v6" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></g>
-  <g id="b-chat"><path d="M4 6.5A2.5 2.5 0 0 1 6.5 4h11A2.5 2.5 0 0 1 20 6.5v7a2.5 2.5 0 0 1-2.5 2.5H9l-4.2 3.4c-.4.3-.8 0-.8-.4z" fill="none" stroke-width="2.2" stroke-linejoin="round"/></g>
-  <g id="b-cart"><path d="M3.5 4.5h2.4l2 11h10.4l1.9-8H8" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="9.5" cy="19.5" r="1.6" fill="none" stroke-width="2.2"/><circle cx="16.5" cy="19.5" r="1.6" fill="none" stroke-width="2.2"/></g>
-  <g id="b-me"><circle cx="12" cy="8.5" r="3.8" fill="none" stroke-width="2.2"/><path d="M4.8 20c.8-3.8 3.6-6 7.2-6s6.4 2.2 7.2 6" fill="none" stroke-width="2.2" stroke-linecap="round"/></g>
-  <g id="b-search"><circle cx="11" cy="11" r="6.5" fill="none" stroke-width="2.2"/><path d="m16 16 4.2 4.2" stroke-width="2.2" stroke-linecap="round"/></g>
-</defs></svg>
-
-<div class="cap">
-  <h1>概念 B · 集市招贴</h1>
-  <p>印刷格 / 1PX 黑框 / 明黄行动点 / 零阴影零渐变</p>
-</div>
-
-<div class="phone">
-  <div class="statusbar"><span>9:41</span><span>信号·电量</span></div>
-  <div class="mq"><div class="mq-in">
-    今日特价：土鸡蛋 9.9 元 30 枚　·　新米上市 29.9 元 10 斤　·　满 59 元免费送到家　·　理发老人小孩 8 元　·　今日特价：土鸡蛋 9.9 元 30 枚　·　新米上市 29.9 元 10 斤　·　满 59 元免费送到家　·　理发老人小孩 8 元　·
-  </div></div>
-  <div class="scroll">
-
-    <div class="hd">
-      <div class="brand"><div class="en">LEQU LIFE</div><div class="cn">乐趣生活</div></div>
-      <div class="loc">幸福里社区 ▾</div>
+    <div class="cap">
+      <h1>概念 B · 集市招贴</h1>
+      <p>印刷格 / 1PX 黑框 / 明黄行动点 / 零阴影零渐变</p>
     </div>
-    <div class="search">
-      <svg width="18" height="18" viewBox="0 0 24 24" stroke="#000"><use href="#b-search"/></svg>
-      找东西、找服务，写在这儿
-      <span class="go">搜索</span>
-    </div>
 
-    <div class="bn"><span class="tag">告示</span>高温关怀券已到账：满 30 减 8；孤寡老人下单免配送费，有需要就找楼长登记。</div>
-
-    <div class="cats">
-      <div class="cat"><svg width="26" height="26" viewBox="0 0 24 24" stroke="#000"><use href="#b-leaf"/></svg><span>时令蔬菜</span></div>
-      <div class="cat"><svg width="26" height="26" viewBox="0 0 24 24" stroke="#000"><use href="#b-egg"/></svg><span>肉禽蛋奶</span></div>
-      <div class="cat"><svg width="26" height="26" viewBox="0 0 24 24" stroke="#000"><use href="#b-wheat"/></svg><span>粮油米面</span></div>
-      <div class="cat"><svg width="26" height="26" viewBox="0 0 24 24" stroke="#000"><use href="#b-apple"/></svg><span>新鲜水果</span></div>
-      <div class="cat"><svg width="26" height="26" viewBox="0 0 24 24" stroke="#000"><use href="#b-home2"/></svg><span>家政维修</span></div>
-      <div class="cat"><svg width="26" height="26" viewBox="0 0 24 24" stroke="#000"><use href="#b-cut"/></svg><span>理发洗护</span></div>
-      <div class="cat"><svg width="26" height="26" viewBox="0 0 24 24" stroke="#000"><use href="#b-bill"/></svg><span>缴费代办</span></div>
-      <div class="cat"><svg width="26" height="26" viewBox="0 0 24 24" stroke="#000"><use href="#b-group"/></svg><span>邻里团购</span></div>
-    </div>
-
-    <div class="sec-hd"><h3>今日鲜货<small>FRESH TODAY</small></h3><a href="#">全部 →</a></div>
-    <div class="goods">
-      <div class="good">
-        <div class="gpic" style="background:var(--sage)"><span class="off">-38%</span>
-          <svg width="52" height="52" viewBox="0 0 24 24" stroke="#000"><use href="#b-egg"/></svg></div>
-        <div class="g-bd">
-          <div class="g-name">林下散养土鸡蛋 30 枚</div>
-          <div class="g-sub">张家庄王婶家 · 今早现捡</div>
-          <div class="g-row"><div class="price">¥<b>9.9</b><s>15.8</s></div><button class="add">加购</button></div>
+    <div class="phone">
+      <div class="statusbar"><span>9:41</span><span>信号·电量</span></div>
+      <div class="mq">
+        <div class="mq-in">
+          今日特价：土鸡蛋 9.9 元 30 枚　·　新米上市 29.9 元 10 斤　·　满 59
+          元免费送到家　·　理发老人小孩 8 元　·　今日特价：土鸡蛋 9.9 元 30 枚　·　新米上市 29.9 元
+          10 斤　·　满 59 元免费送到家　·　理发老人小孩 8 元　·
         </div>
       </div>
-      <div class="good">
-        <div class="gpic" style="background:var(--cream)"><span class="off">-38%</span>
-          <svg width="52" height="52" viewBox="0 0 24 24" stroke="#000"><use href="#b-leaf"/></svg></div>
-        <div class="g-bd">
-          <div class="g-name">本地小青菜 500g</div>
-          <div class="g-sub">村东大棚 · 凌晨现摘</div>
-          <div class="g-row"><div class="price">¥<b>2.8</b><s>4.5</s></div><button class="add">加购</button></div>
+      <div class="scroll">
+        <div class="hd">
+          <div class="brand">
+            <div class="en">LEQU LIFE</div>
+            <div class="cn">乐趣生活</div>
+          </div>
+          <div class="loc">幸福里社区 ▾</div>
         </div>
-      </div>
-      <div class="good">
-        <div class="gpic" style="background:var(--sky)">
-          <svg width="52" height="52" viewBox="0 0 24 24" stroke="#000"><use href="#b-apple"/></svg></div>
-        <div class="g-bd">
-          <div class="g-name">红富士苹果 3 斤装</div>
-          <div class="g-sub">邻县果园直发 · 坏果包赔</div>
-          <div class="g-row"><div class="price">¥<b>11.9</b><s>16.9</s></div><button class="add">加购</button></div>
+        <div class="search">
+          <svg width="18" height="18" viewBox="0 0 24 24" stroke="#000">
+            <use href="#b-search" />
+          </svg>
+          找东西、找服务，写在这儿
+          <span class="go">搜索</span>
         </div>
+
+        <div class="bn">
+          <span class="tag">告示</span>高温关怀券已到账：满 30 减
+          8；孤寡老人下单免配送费，有需要就找楼长登记。
+        </div>
+
+        <div class="cats">
+          <div class="cat">
+            <svg width="26" height="26" viewBox="0 0 24 24" stroke="#000">
+              <use href="#b-leaf" /></svg
+            ><span>时令蔬菜</span>
+          </div>
+          <div class="cat">
+            <svg width="26" height="26" viewBox="0 0 24 24" stroke="#000"><use href="#b-egg" /></svg
+            ><span>肉禽蛋奶</span>
+          </div>
+          <div class="cat">
+            <svg width="26" height="26" viewBox="0 0 24 24" stroke="#000">
+              <use href="#b-wheat" /></svg
+            ><span>粮油米面</span>
+          </div>
+          <div class="cat">
+            <svg width="26" height="26" viewBox="0 0 24 24" stroke="#000">
+              <use href="#b-apple" /></svg
+            ><span>新鲜水果</span>
+          </div>
+          <div class="cat">
+            <svg width="26" height="26" viewBox="0 0 24 24" stroke="#000">
+              <use href="#b-home2" /></svg
+            ><span>家政维修</span>
+          </div>
+          <div class="cat">
+            <svg width="26" height="26" viewBox="0 0 24 24" stroke="#000"><use href="#b-cut" /></svg
+            ><span>理发洗护</span>
+          </div>
+          <div class="cat">
+            <svg width="26" height="26" viewBox="0 0 24 24" stroke="#000">
+              <use href="#b-bill" /></svg
+            ><span>缴费代办</span>
+          </div>
+          <div class="cat">
+            <svg width="26" height="26" viewBox="0 0 24 24" stroke="#000">
+              <use href="#b-group" /></svg
+            ><span>邻里团购</span>
+          </div>
+        </div>
+
+        <div class="sec-hd">
+          <h3>今日鲜货<small>FRESH TODAY</small></h3>
+          <a href="#">全部 →</a>
+        </div>
+        <div class="goods">
+          <div class="good">
+            <div class="gpic" style="background: var(--sage)">
+              <span class="off">-38%</span>
+              <svg width="52" height="52" viewBox="0 0 24 24" stroke="#000">
+                <use href="#b-egg" />
+              </svg>
+            </div>
+            <div class="g-bd">
+              <div class="g-name">林下散养土鸡蛋 30 枚</div>
+              <div class="g-sub">张家庄王婶家 · 今早现捡</div>
+              <div class="g-row">
+                <div class="price">¥<b>9.9</b><s>15.8</s></div>
+                <button class="add">加购</button>
+              </div>
+            </div>
+          </div>
+          <div class="good">
+            <div class="gpic" style="background: var(--cream)">
+              <span class="off">-38%</span>
+              <svg width="52" height="52" viewBox="0 0 24 24" stroke="#000">
+                <use href="#b-leaf" />
+              </svg>
+            </div>
+            <div class="g-bd">
+              <div class="g-name">本地小青菜 500g</div>
+              <div class="g-sub">村东大棚 · 凌晨现摘</div>
+              <div class="g-row">
+                <div class="price">¥<b>2.8</b><s>4.5</s></div>
+                <button class="add">加购</button>
+              </div>
+            </div>
+          </div>
+          <div class="good">
+            <div class="gpic" style="background: var(--sky)">
+              <svg width="52" height="52" viewBox="0 0 24 24" stroke="#000">
+                <use href="#b-apple" />
+              </svg>
+            </div>
+            <div class="g-bd">
+              <div class="g-name">红富士苹果 3 斤装</div>
+              <div class="g-sub">邻县果园直发 · 坏果包赔</div>
+              <div class="g-row">
+                <div class="price">¥<b>11.9</b><s>16.9</s></div>
+                <button class="add">加购</button>
+              </div>
+            </div>
+          </div>
+          <div class="good">
+            <div class="gpic" style="background: #fff">
+              <span class="off">团长价</span>
+              <svg width="52" height="52" viewBox="0 0 24 24" stroke="#000">
+                <use href="#b-wheat" />
+              </svg>
+            </div>
+            <div class="g-bd">
+              <div class="g-name">五常新大米 10 斤</div>
+              <div class="g-sub">37 位邻居已参团</div>
+              <div class="g-row">
+                <div class="price">¥<b>29.9</b><s>39.9</s></div>
+                <button class="add">参团</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="sec-hd">
+          <h3>办事服务<small>SERVICES</small></h3>
+          <a href="#">全部 →</a>
+        </div>
+        <div class="svc">
+          <div class="svc-r">
+            <svg width="24" height="24" viewBox="0 0 24 24" stroke="#000">
+              <use href="#b-bill" />
+            </svg>
+            <div>
+              <div class="k">缴电费水费</div>
+              <div class="v">报户号就行，我们帮您跑</div>
+            </div>
+            <button class="b">去缴费</button>
+          </div>
+          <div class="svc-r">
+            <svg width="24" height="24" viewBox="0 0 24 24" stroke="#000">
+              <use href="#b-cut" />
+            </svg>
+            <div>
+              <div class="k">阿芳理发</div>
+              <div class="v">150 米 · 老人小孩 8 元</div>
+            </div>
+            <button class="b alt">预约</button>
+          </div>
+          <div class="svc-r">
+            <svg width="24" height="24" viewBox="0 0 24 24" stroke="#000">
+              <use href="#b-home2" />
+            </svg>
+            <div>
+              <div class="k">修水管换灯泡</div>
+              <div class="v">张师傅 · 30 分钟上门</div>
+            </div>
+            <button class="b">叫人</button>
+          </div>
+        </div>
+
+        <div class="sec-hd">
+          <h3>生活圈<small>NEIGHBORS</small></h3>
+          <a href="#">逛逛 →</a>
+        </div>
+        <div class="feed">
+          <div class="post">
+            <div class="who">
+              <div class="av">王</div>
+              <div>
+                <div class="nm">3 号楼王婶</div>
+                <div class="tm">10 分钟前</div>
+              </div>
+            </div>
+            <div class="tx">今早的鸡蛋捡了 200 多个，要新鲜鸡蛋的抓紧，下午就能送到楼下。</div>
+          </div>
+          <div class="post">
+            <div class="who">
+              <div class="av" style="background: var(--sky)">李</div>
+              <div>
+                <div class="nm">东门李师傅</div>
+                <div class="tm">1 小时前</div>
+              </div>
+            </div>
+            <div class="tx">明早赶集，顺路帮大家带镇上的豆腐乳和挂面，要的楼下留言。</div>
+          </div>
+        </div>
+
+        <div class="foot-note">— LEQU LIFE · 乐趣生活 —</div>
+        <div style="height: 10px"></div>
       </div>
-      <div class="good">
-        <div class="gpic" style="background:#fff"><span class="off">团长价</span>
-          <svg width="52" height="52" viewBox="0 0 24 24" stroke="#000"><use href="#b-wheat"/></svg></div>
-        <div class="g-bd">
-          <div class="g-name">五常新大米 10 斤</div>
-          <div class="g-sub">37 位邻居已参团</div>
-          <div class="g-row"><div class="price">¥<b>29.9</b><s>39.9</s></div><button class="add">参团</button></div>
+
+      <div class="tabbar">
+        <div class="tab on">
+          <svg width="23" height="23" viewBox="0 0 24 24" stroke="currentColor">
+            <use href="#b-home" /></svg
+          >首页
+        </div>
+        <div class="tab">
+          <svg width="23" height="23" viewBox="0 0 24 24" stroke="currentColor">
+            <use href="#b-shop" /></svg
+          >商城
+        </div>
+        <div class="tab">
+          <svg width="23" height="23" viewBox="0 0 24 24" stroke="currentColor">
+            <use href="#b-chat" /></svg
+          >生活圈
+        </div>
+        <div class="tab">
+          <svg width="23" height="23" viewBox="0 0 24 24" stroke="currentColor">
+            <use href="#b-cart" /></svg
+          >购物车
+        </div>
+        <div class="tab">
+          <svg width="23" height="23" viewBox="0 0 24 24" stroke="currentColor">
+            <use href="#b-me" /></svg
+          >我的
         </div>
       </div>
     </div>
-
-    <div class="sec-hd"><h3>办事服务<small>SERVICES</small></h3><a href="#">全部 →</a></div>
-    <div class="svc">
-      <div class="svc-r">
-        <svg width="24" height="24" viewBox="0 0 24 24" stroke="#000"><use href="#b-bill"/></svg>
-        <div><div class="k">缴电费水费</div><div class="v">报户号就行，我们帮您跑</div></div>
-        <button class="b">去缴费</button>
-      </div>
-      <div class="svc-r">
-        <svg width="24" height="24" viewBox="0 0 24 24" stroke="#000"><use href="#b-cut"/></svg>
-        <div><div class="k">阿芳理发</div><div class="v">150 米 · 老人小孩 8 元</div></div>
-        <button class="b alt">预约</button>
-      </div>
-      <div class="svc-r">
-        <svg width="24" height="24" viewBox="0 0 24 24" stroke="#000"><use href="#b-home2"/></svg>
-        <div><div class="k">修水管换灯泡</div><div class="v">张师傅 · 30 分钟上门</div></div>
-        <button class="b">叫人</button>
-      </div>
-    </div>
-
-    <div class="sec-hd"><h3>生活圈<small>NEIGHBORS</small></h3><a href="#">逛逛 →</a></div>
-    <div class="feed">
-      <div class="post">
-        <div class="who"><div class="av">王</div><div><div class="nm">3 号楼王婶</div><div class="tm">10 分钟前</div></div></div>
-        <div class="tx">今早的鸡蛋捡了 200 多个，要新鲜鸡蛋的抓紧，下午就能送到楼下。</div>
-      </div>
-      <div class="post">
-        <div class="who"><div class="av" style="background:var(--sky)">李</div><div><div class="nm">东门李师傅</div><div class="tm">1 小时前</div></div></div>
-        <div class="tx">明早赶集，顺路帮大家带镇上的豆腐乳和挂面，要的楼下留言。</div>
-      </div>
-    </div>
-
-    <div class="foot-note">— LEQU LIFE · 乐趣生活 —</div>
-    <div style="height:10px"></div>
-  </div>
-
-  <div class="tabbar">
-    <div class="tab on"><svg width="23" height="23" viewBox="0 0 24 24" stroke="currentColor"><use href="#b-home"/></svg>首页</div>
-    <div class="tab"><svg width="23" height="23" viewBox="0 0 24 24" stroke="currentColor"><use href="#b-shop"/></svg>商城</div>
-    <div class="tab"><svg width="23" height="23" viewBox="0 0 24 24" stroke="currentColor"><use href="#b-chat"/></svg>生活圈</div>
-    <div class="tab"><svg width="23" height="23" viewBox="0 0 24 24" stroke="currentColor"><use href="#b-cart"/></svg>购物车</div>
-    <div class="tab"><svg width="23" height="23" viewBox="0 0 24 24" stroke="currentColor"><use href="#b-me"/></svg>我的</div>
-  </div>
-</div>
-
-</body>
+  </body>
 </html>

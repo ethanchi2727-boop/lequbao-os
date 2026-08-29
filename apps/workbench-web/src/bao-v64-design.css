@@ -12,7 +12,8 @@
   --bao-v64-brand: linear-gradient(135deg, #0b9569, #087d59);
   --bao-v64-brand-hover: linear-gradient(135deg, #0aa673, #0b9569);
   /* V6.4 深色 Hero：深玉墨渐变（与移动端 --bao-mobile-gradient-hero 同构） */
-  --bao-v64-hero: radial-gradient(640px 260px at 84% -60px, rgb(11 149 105 / 30%), transparent 62%),
+  --bao-v64-hero:
+    radial-gradient(640px 260px at 84% -60px, rgb(11 149 105 / 30%), transparent 62%),
     linear-gradient(155deg, #0b1312, #0e382c 58%, #0b4a36);
   --bao-v64-hero-flat: linear-gradient(155deg, #0b1312, #0e382c 58%, #0b4a36);
   --bao-v64-jade-glow: 0 10px 24px rgb(8 100 72 / 26%);
@@ -78,7 +79,9 @@ body .sidebar .brand span {
 body .sidebar nav a {
   border-radius: 10px;
   color: rgb(255 255 255 / 62%);
-  transition: background 0.16s var(--bao-v64-ease), color 0.16s var(--bao-v64-ease),
+  transition:
+    background 0.16s var(--bao-v64-ease),
+    color 0.16s var(--bao-v64-ease),
     transform 0.16s var(--bao-v64-ease);
 }
 
@@ -174,8 +177,11 @@ body .top-actions .new-task {
   font-weight: 600;
   letter-spacing: 0.02em;
   box-shadow: var(--bao-v64-jade-glow-soft);
-  transition: transform 0.18s var(--bao-v64-ease), box-shadow 0.24s var(--bao-v64-ease),
-    background-position 0.6s var(--bao-v64-ease), filter 0.18s var(--bao-v64-ease);
+  transition:
+    transform 0.18s var(--bao-v64-ease),
+    box-shadow 0.24s var(--bao-v64-ease),
+    background-position 0.6s var(--bao-v64-ease),
+    filter 0.18s var(--bao-v64-ease);
 }
 
 body .new-task:hover,
@@ -214,8 +220,11 @@ body .artifact-heading-actions button {
   background: var(--bao-pc-paper);
   color: var(--bao-pc-ink-700);
   font-weight: 500;
-  transition: border-color 0.16s var(--bao-v64-ease), color 0.16s var(--bao-v64-ease),
-    background 0.16s var(--bao-v64-ease), transform 0.16s var(--bao-v64-ease);
+  transition:
+    border-color 0.16s var(--bao-v64-ease),
+    color 0.16s var(--bao-v64-ease),
+    background 0.16s var(--bao-v64-ease),
+    transform 0.16s var(--bao-v64-ease);
 }
 
 body .top-actions button:not(.new-task):hover,
@@ -234,8 +243,8 @@ body .artifact-heading-actions button:hover {
 /* 筛选选中态：玉色胶囊 */
 body .job-filters button.active,
 body .session-filters button.active,
-body .job-filters button[aria-pressed="true"],
-body .session-filters button[aria-pressed="true"] {
+body .job-filters button[aria-pressed='true'],
+body .session-filters button[aria-pressed='true'] {
   background: var(--bao-v64-brand);
   border-color: transparent;
   color: #fff;
@@ -290,7 +299,9 @@ body .state-panel {
   border: 1px solid var(--bao-pc-line);
   background: var(--bao-pc-paper);
   box-shadow: var(--bao-pc-shadow-card);
-  transition: transform 0.2s var(--bao-v64-ease), box-shadow 0.24s var(--bao-v64-ease),
+  transition:
+    transform 0.2s var(--bao-v64-ease),
+    box-shadow 0.24s var(--bao-v64-ease),
     border-color 0.2s var(--bao-v64-ease);
 }
 
@@ -573,7 +584,9 @@ body textarea {
   border: 1px solid var(--bao-pc-line-strong);
   background: var(--bao-pc-paper);
   color: var(--bao-pc-ink-900);
-  transition: border-color 0.16s var(--bao-v64-ease), box-shadow 0.2s var(--bao-v64-ease);
+  transition:
+    border-color 0.16s var(--bao-v64-ease),
+    box-shadow 0.2s var(--bao-v64-ease);
 }
 
 /* ==========================================================================
@@ -869,8 +882,11 @@ body .missing-heading button {
   font-weight: 600;
   letter-spacing: 0.02em;
   box-shadow: var(--bao-v64-jade-glow-soft);
-  transition: transform 0.18s var(--bao-v64-ease), box-shadow 0.24s var(--bao-v64-ease),
-    background-position 0.6s var(--bao-v64-ease), filter 0.18s var(--bao-v64-ease);
+  transition:
+    transform 0.18s var(--bao-v64-ease),
+    box-shadow 0.24s var(--bao-v64-ease),
+    background-position 0.6s var(--bao-v64-ease),
+    filter 0.18s var(--bao-v64-ease);
 }
 
 body .job-queue-heading button:hover,
@@ -896,7 +912,9 @@ body .session-filters a {
   background: var(--bao-pc-paper);
   color: var(--bao-pc-ink-700);
   font-weight: 500;
-  transition: border-color 0.16s var(--bao-v64-ease), color 0.16s var(--bao-v64-ease),
+  transition:
+    border-color 0.16s var(--bao-v64-ease),
+    color 0.16s var(--bao-v64-ease),
     background 0.16s var(--bao-v64-ease);
 }
 
@@ -956,7 +974,6 @@ body .progress span {
   color: rgb(255 255 255 / 72%);
 }
 
-
 /* —— ⑬ 内页巡检收尾：artifact 家族动态注入层残留紫蓝 → 玉色（body 前缀压过 app.js 后置注入） —— */
 body .identity-grid aside button,
 body .identity-return,
@@ -975,7 +992,10 @@ body .session-row-status a {
   color: #fff;
   border-color: transparent;
   box-shadow: 0 10px 20px -10px rgb(8 100 72 / 52%);
-  transition: transform .28s var(--bao-v64-ease), box-shadow .28s var(--bao-v64-ease), filter .28s var(--bao-v64-ease);
+  transition:
+    transform 0.28s var(--bao-v64-ease),
+    box-shadow 0.28s var(--bao-v64-ease),
+    filter 0.28s var(--bao-v64-ease);
 }
 body .identity-grid aside button:hover,
 body .identity-return:hover,
@@ -1007,22 +1027,43 @@ body .source-inspector nav a:first-child {
   background: var(--bao-v64-brand);
 }
 body .session-filters a.active,
-body .job-filters a.active { border-bottom-color: #0b9569; }
-body .session-filters b { color: #087d59; }
-body .session-avatar { color: #087d59; }
-body .job-summary i.running { background: #0b9569; }
+body .job-filters a.active {
+  border-bottom-color: #0b9569;
+}
+body .session-filters b {
+  color: #087d59;
+}
+body .session-avatar {
+  color: #087d59;
+}
+body .job-summary i.running {
+  background: #0b9569;
+}
 
 /* 报告纸眉标 / 文件类型徽章 / 确认与溯源页注释 → 墨色与玉色 */
-body .report-paper > header small { color: #087d59; }
-body .artifact-files article > b { color: #087d59; }
+body .report-paper > header small {
+  color: #087d59;
+}
+body .artifact-files article > b {
+  color: #087d59;
+}
 body .confirmation-layout small,
-body .provenance-layout small { color: rgb(35 52 48 / 68%); }
+body .provenance-layout small {
+  color: rgb(35 52 48 / 68%);
+}
 
 /* 原生进度条 → 玉色 */
-body progress { accent-color: #0b9569; }
-body progress::-webkit-progress-value { background: var(--bao-v64-brand); border-radius: 999px; }
-body progress::-moz-progress-bar { background: var(--bao-v64-brand); border-radius: 999px; }
-
+body progress {
+  accent-color: #0b9569;
+}
+body progress::-webkit-progress-value {
+  background: var(--bao-v64-brand);
+  border-radius: 999px;
+}
+body progress::-moz-progress-bar {
+  background: var(--bao-v64-brand);
+  border-radius: 999px;
+}
 
 /* —— ⑭ 巡检二轮：ai-conversation 注入层残留蓝 #2787ee + provenance 页眉注释 —— */
 body .complex-assistant > b,
@@ -1038,12 +1079,21 @@ body .complex-actions .thread-send {
   border-radius: 999px;
   box-shadow: 0 10px 22px -10px rgb(8 100 72 / 55%);
 }
-body .task-workspace progress { accent-color: #0b9569; }
-body .task-workspace progress::-webkit-progress-value { background: var(--bao-v64-brand); border-radius: 999px; }
-body .task-workspace progress::-moz-progress-bar { background: var(--bao-v64-brand); border-radius: 999px; }
+body .task-workspace progress {
+  accent-color: #0b9569;
+}
+body .task-workspace progress::-webkit-progress-value {
+  background: var(--bao-v64-brand);
+  border-radius: 999px;
+}
+body .task-workspace progress::-moz-progress-bar {
+  background: var(--bao-v64-brand);
+  border-radius: 999px;
+}
 body .provenance-page small,
-body .confirmation-page small { color: rgb(35 52 48 / 68%); }
-
+body .confirmation-page small {
+  color: rgb(35 52 48 / 68%);
+}
 
 /* —— ⑮ 巡检三轮：artifact 家族 22 处游离靛蓝 → 官方 AI 紫 Token / 玉色链接 / 墨色页签 —— */
 body .identity-scope header > span,
@@ -1088,15 +1138,24 @@ body .source-inspector nav a:first-child {
   color: #fff;
 }
 
-
 /* —— ⑯ 巡检四轮：收尾状态徽章 / 计数 / 溯源代码 / 返回链接 —— */
-body .artifact-inspector header > span { color: #086448; }
-body .session-queue-summary section > div b { color: #087d59; }
+body .artifact-inspector header > span {
+  color: #086448;
+}
+body .session-queue-summary section > div b {
+  color: #087d59;
+}
 body .provenance-path > header code,
-body .provenance-path > header span { color: var(--bao-pc-ai-700); }
+body .provenance-path > header span {
+  color: var(--bao-pc-ai-700);
+}
 body .confirmation-heading a,
 body .missing-heading a,
-body .provenance-heading a { color: #087d59; }
+body .provenance-heading a {
+  color: #087d59;
+}
 
 /* 缺项处理进度条 → 玉色品牌渐变 */
-body .missing-progress > div span { background: var(--bao-v64-brand); }
+body .missing-progress > div span {
+  background: var(--bao-v64-brand);
+}
