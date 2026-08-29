@@ -59,9 +59,14 @@ function openAuthority() {
     title="页面不可用"
     detail="页面标识不存在或不属于当前移动端正式任务范围。"
     ><view class="m-agent"
-      ><view class="m-agent-head"><text>!</text><text>页面不可用</text><text>安全关闭</text></view>
-      <text class="agent-title">返回五栏工作台后重新进入</text>
-      <text>未知页面不会读取或显示任何业务数据。</text></view
+      ><text class="m-avatar">!</text
+      ><view class="m-thread"
+        ><text class="m-who">页面不可用 · 安全关闭</text>
+        <view class="m-bubble"
+          ><text class="agent-title">返回五栏工作台后重新进入</text>
+          <text>未知页面不会读取或显示任何业务数据。</text></view
+        ></view
+      ></view
     ></BaoSurface
   >
 </template>

@@ -1616,4 +1616,258 @@ uni-app {
   font-weight: 900;
   letter-spacing: 0.03em;
 }
+.dir-go.solid {
+  border-color: transparent;
+  color: var(--bao-mobile-paper);
+  background: var(--bao-mobile-gradient-brand);
+  box-shadow: 0 9rpx 21rpx -9rpx rgba(0, 107, 54, 0.55);
+}
+
+/* ============================================================
+   V6.7 概念稿完全一致层
+   与 bao-redesign V2 精修稿同一套语言：
+   问候大字 / 快捷意图 chip / 小满头像气泡 / 纸飞机发送钮 /
+   宫格工具瓷贴 / 头像身份卡 / 安全提示条。
+   ============================================================ */
+page,
+uni-app {
+  --bao-mobile-gradient-deep: linear-gradient(135deg, #0e3a26, #07231a);
+}
+
+/* —— 问候 · 稿 .greet 25px/900 lh1.3 —— */
+.m-greet {
+  padding: 8rpx 4rpx 2rpx;
+  font-size: 44rpx;
+  font-weight: 900;
+  letter-spacing: 0.015em;
+  line-height: 1.3;
+}
+.m-greet > text {
+  display: block;
+}
+.m-greet .greet-hl {
+  color: var(--bao-mobile-jade-600);
+}
+
+/* —— 快捷意图 · 稿 .chip pad8/14 12px/700 + .hot 渐变 —— */
+.m-chips {
+  display: flex;
+  margin-top: 24rpx;
+  flex-wrap: wrap;
+  gap: 14rpx;
+}
+.m-chip {
+  padding: 14rpx 24rpx;
+  border: 1rpx solid var(--bao-mobile-line);
+  border-radius: 999rpx;
+  color: var(--bao-mobile-ink-900);
+  background: var(--bao-mobile-paper);
+  box-shadow: 0 2rpx 4rpx rgba(22, 19, 15, 0.04);
+  font-size: 21rpx;
+  font-weight: 700;
+}
+.m-chip.hot {
+  border-color: transparent;
+  color: var(--bao-mobile-paper);
+  background: var(--bao-mobile-gradient-brand);
+  box-shadow: 0 10rpx 24rpx -10rpx rgba(0, 107, 54, 0.5);
+}
+
+/* —— 小满消息 · 稿 .msg：头像 32px 圆角 12 + 气泡 4/18/18/18 —— */
+.m-agent {
+  display: flex;
+  padding: 0;
+  align-items: flex-start;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  gap: 17rpx;
+}
+.m-agent > .m-avatar {
+  display: grid;
+  width: 56rpx;
+  height: 56rpx;
+  place-items: center;
+  flex: none;
+  border-radius: 21rpx;
+  color: var(--bao-mobile-paper);
+  background: var(--bao-mobile-gradient-brand);
+  box-shadow: inset 0 3rpx 0 rgba(255, 255, 255, 0.28);
+  font-size: 20rpx;
+  font-weight: 900;
+}
+.m-thread {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+}
+.m-who {
+  margin-bottom: 9rpx;
+  color: var(--bao-mobile-ink-400);
+  font-size: 18rpx;
+  font-weight: 700;
+}
+.m-bubble {
+  padding: 19rpx 24rpx;
+  border: 1rpx solid rgba(22, 19, 15, 0.04);
+  border-radius: 7rpx 31rpx 31rpx 31rpx;
+  background: var(--bao-mobile-paper);
+  box-shadow: var(--bao-mobile-shadow-card);
+}
+.m-bubble .agent-title {
+  display: block;
+  margin: 0 0 7rpx;
+  font-size: 22rpx;
+  font-weight: 800;
+  line-height: 1.65;
+}
+.m-bubble > text {
+  display: block;
+  color: var(--bao-mobile-ink-600);
+  font-size: 22rpx;
+  line-height: 1.65;
+}
+.m-thread .m-result {
+  margin-top: 14rpx;
+}
+.m-thread .agent-action {
+  margin-top: 14rpx;
+}
+
+/* —— 输入条 · 稿 .composer：占位 + 36px 纸飞机圆钮 —— */
+.m-composer > text.m-ph {
+  display: block;
+  width: auto;
+  height: auto;
+  flex: 1;
+  border-radius: 0;
+  color: var(--bao-mobile-ink-400);
+  background: none;
+  box-shadow: none;
+  font-size: 22rpx;
+}
+.m-composer > text.m-ph::before,
+.m-composer > text.m-ph::after {
+  display: none;
+  content: none;
+}
+.m-composer > text.m-send {
+  position: relative;
+  display: grid;
+  width: 63rpx;
+  height: 63rpx;
+  place-items: center;
+  flex: none;
+  border-radius: 50%;
+  color: var(--bao-mobile-paper);
+  background: var(--bao-mobile-gradient-brand);
+  box-shadow: 0 7rpx 17rpx -3rpx rgba(0, 107, 54, 0.45),
+    inset 0 2rpx 0 rgba(255, 255, 255, 0.3);
+  font-size: 0;
+}
+.m-composer > text.m-send::before {
+  width: 28rpx;
+  height: 28rpx;
+  margin: 0 0 0 -2rpx;
+  border: 0;
+  border-radius: 0;
+  background: var(--bao-mobile-paper);
+  content: '';
+  transform: none;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2.1' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M22 2 11 13'/%3E%3Cpath d='M22 2 15 22l-4-9-9-4z'/%3E%3C/svg%3E")
+    center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2.1' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M22 2 11 13'/%3E%3Cpath d='M22 2 15 22l-4-9-9-4z'/%3E%3C/svg%3E")
+    center / contain no-repeat;
+}
+.m-composer > text.m-send::after {
+  display: none;
+  content: none;
+}
+
+/* —— 宫格工具 · 稿 .grid8：46px 瓷贴 + 11px 标签 —— */
+.g8-grid {
+  display: grid;
+  padding: 26rpx 31rpx 31rpx;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 28rpx 14rpx;
+}
+.g8-item {
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+  color: var(--bao-mobile-ink-600);
+  font-size: 19rpx;
+  font-weight: 700;
+  gap: 12rpx;
+}
+.g8-tile {
+  display: grid;
+  width: 80rpx;
+  height: 80rpx;
+  place-items: center;
+  border-radius: 28rpx;
+  box-shadow: inset 0 0 0 1rpx rgba(22, 19, 15, 0.05);
+  font-size: 33rpx;
+}
+.g8-tile.t-green {
+  background: rgba(0, 145, 70, 0.1);
+}
+.g8-tile.t-fresh {
+  background: rgba(110, 199, 38, 0.14);
+}
+.g8-tile.t-red {
+  background: rgba(213, 52, 44, 0.09);
+}
+.g8-tile.t-amber {
+  background: rgba(185, 90, 23, 0.1);
+}
+.g8-tile.t-ink {
+  background: rgba(22, 19, 15, 0.05);
+}
+
+/* —— 身份卡 · 稿 .avatar-x 52px 圆角 17 品牌渐变 —— */
+.m-profile {
+  display: flex;
+  padding: 28rpx 31rpx;
+  align-items: center;
+  border: 1rpx solid rgba(22, 19, 15, 0.04);
+  border-radius: 35rpx;
+  background: var(--bao-mobile-paper);
+  box-shadow: var(--bao-mobile-shadow-card);
+  gap: 24rpx;
+}
+.avatar-x {
+  display: grid;
+  width: 91rpx;
+  height: 91rpx;
+  place-items: center;
+  flex: none;
+  border-radius: 30rpx;
+  color: var(--bao-mobile-paper);
+  background: var(--bao-mobile-gradient-brand);
+  box-shadow: 0 14rpx 31rpx -14rpx rgba(0, 107, 54, 0.55),
+    inset 0 3rpx 0 rgba(255, 255, 255, 0.28);
+  font-size: 37rpx;
+  font-weight: 900;
+}
+.m-profile-main {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+}
+.m-profile-main text:first-child {
+  overflow: hidden;
+  font-size: 28rpx;
+  font-weight: 900;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.m-profile-main text:last-child {
+  margin-top: 7rpx;
+  color: var(--bao-mobile-ink-500);
+  font-size: 20rpx;
+}
 </style>

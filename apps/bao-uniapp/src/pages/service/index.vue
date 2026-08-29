@@ -119,6 +119,7 @@ onShow(load);
           >当前没有待接管会话</view
         >
         <view v-for="conversation in conversations" :key="conversation.id" class="task-row">
+          <text class="dir-tic">🎧</text>
           <view
             ><text>{{ storeNameOf(conversation.storeId) }} · 顾客待人工</text
             ><text

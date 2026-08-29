@@ -70,6 +70,37 @@ onShow(load);
       >
     </view>
 
+    <!-- 门店工具 · 概念稿宫格瓷贴 -->
+    <view class="panel">
+      <view class="panel-head"><text>门店工具</text><text>直达 ›</text></view>
+      <view class="g8-grid">
+        <view class="g8-item" @click="goDeep('page-180')"
+          ><text class="g8-tile t-green">📦</text>交付进度</view
+        >
+        <view class="g8-item" @click="goDeep('page-181')"
+          ><text class="g8-tile t-fresh">🤝</text>确认协助</view
+        >
+        <view class="g8-item" @click="goDeep('page-183')"
+          ><text class="g8-tile t-green">💰</text>收益总览</view
+        >
+        <view class="g8-item" @click="goDeep('page-185')"
+          ><text class="g8-tile t-fresh">📊</text>成本明细</view
+        >
+        <view class="g8-item" @click="goTab('/pages/orders/index')"
+          ><text class="g8-tile t-green">🧾</text>订单管理</view
+        >
+        <view class="g8-item" @click="goTab('/pages/service/index')"
+          ><text class="g8-tile t-red">🎧</text>客服消息</view
+        >
+        <view class="g8-item" @click="goDeep('page-184')"
+          ><text class="g8-tile t-amber">🏪</text>商户收益</view
+        >
+        <view class="g8-item" @click="goTab('/pages/me/index')"
+          ><text class="g8-tile t-ink">⚙️</text>我的设置</view
+        >
+      </view>
+    </view>
+
     <view class="m-section"><text>今天先做</text><text>全部</text></view>
     <view v-if="error" class="m-action-card" @click="load">
       <text>AI</text

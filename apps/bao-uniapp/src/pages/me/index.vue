@@ -77,6 +77,18 @@ onShow(loadContext);
       ><text>{{ context ? '在线' : '—' }}</text></view
     >
 
+    <!-- 身份卡 · 概念稿头像卡 -->
+    <view v-if="context" class="m-profile">
+      <text class="avatar-x">{{ roleLabel(context.roleCodes[0]).slice(0, 1) }}</text>
+      <view class="m-profile-main"
+        ><text>{{ context.roleCodes.map(roleLabel).join(' · ') }}</text
+        ><text>{{
+          context.storeIds.length ? `${context.storeIds.length} 家门店在授权范围` : '租户级范围'
+        }}</text></view
+      >
+      <text class="dir-go solid">在线</text>
+    </view>
+
     <view class="panel">
       <view class="panel-head"
         ><text>当前身份</text><text>{{ context ? '服务端已确认' : '未登录' }}</text></view

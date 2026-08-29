@@ -113,6 +113,7 @@ defineProps({ eyebrow: String, title: String, detail: String });
     box-shadow: 0 0 0 0 rgba(110, 199, 38, 0);
   }
 }
+/* 概念稿头部右侧：白底铃铛圆钮 + 红点角标（稿 .ticon 32px） */
 .new-action {
   position: relative;
   display: grid;
@@ -120,24 +121,32 @@ defineProps({ eyebrow: String, title: String, detail: String });
   height: 72rpx;
   place-items: center;
   flex: none;
+  border: 1rpx solid var(--bao-mobile-line);
   border-radius: 50%;
-  background: var(--bao-mobile-gradient-brand);
-  box-shadow: 0 8rpx 20rpx rgba(0, 145, 70, 0.32);
-}
-.new-action::before,
-.new-action::after {
-  position: absolute;
-  border-radius: 999rpx;
   background: var(--bao-mobile-paper);
-  content: '';
+  box-shadow: var(--bao-mobile-shadow-card);
 }
 .new-action::before {
-  width: 28rpx;
-  height: 5rpx;
+  width: 30rpx;
+  height: 30rpx;
+  border-radius: 0;
+  background: var(--bao-mobile-ink-900);
+  content: '';
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9'/%3E%3Cpath d='M13.7 21a2 2 0 0 1-3.4 0'/%3E%3C/svg%3E")
+    center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9'/%3E%3Cpath d='M13.7 21a2 2 0 0 1-3.4 0'/%3E%3C/svg%3E")
+    center / contain no-repeat;
 }
 .new-action::after {
-  width: 5rpx;
-  height: 28rpx;
+  position: absolute;
+  top: 14rpx;
+  right: 16rpx;
+  width: 14rpx;
+  height: 14rpx;
+  border: 3rpx solid var(--bao-mobile-paper);
+  border-radius: 50%;
+  background: var(--bao-mobile-danger-500);
+  content: '';
 }
 .mobile-content {
   position: relative;
