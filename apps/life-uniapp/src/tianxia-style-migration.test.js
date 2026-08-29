@@ -144,8 +144,9 @@ describe('天下摄影消费视觉迁移', () => {
 
   it('把附近门店、门店货架和团购详情迁移到正式深层页', async () => {
     const journey = await source('components/LifeJourneyPage.vue');
-    expect(journey).toContain('journey-store-card');
-    expect(journey).toContain('journey-product-grid');
+    // ===== kimi 真理 orders.html + shop.html 真实 class（无旧 V6.1 journey-store-card 自创锚点）=====
+    expect(journey).toContain('ocard');
+    expect(journey).toContain('otabs');
     expect(journey).toContain('group-detail-surface');
     expect(journey).toContain('LifeRetailProductCard');
     expect(journey).toContain('/api/v1/life/discovery/stores?limit=30');
@@ -207,9 +208,10 @@ describe('天下摄影消费视觉迁移', () => {
 
   it('把跨门店购物车、履约选择和消费奖励迁移成正式结算前链路', async () => {
     const journey = await source('components/LifeJourneyPage.vue');
-    expect(journey).toContain('journey-cart-summary');
-    expect(journey).toContain('journey-cart-group');
-    expect(journey).toContain('journey-cart-rail');
+    // ===== kimi 真理 checkout.html 真实 class（无旧 V6.1 journey-cart-* 自创锚点）=====
+    expect(journey).toContain('olist');
+    expect(journey).toContain('ocard');
+    expect(journey).toContain('obtn');
     expect(journey).toContain('fulfillment-summary');
     expect(journey).toContain('fulfillment-tip');
     expect(journey).toContain('reward-choice-summary');
