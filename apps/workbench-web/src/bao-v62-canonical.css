@@ -890,7 +890,9 @@
   cursor: not-allowed;
 }
 
-@media (max-width: 1400px) {
+/* V6.7.1：标准桌面目标宽度 1280px——≥1280 一律渲染完整 PC 桌面布局，
+   压缩断点下移到 1279px，避免 1280 恰好命中旧 1400px 断点被降级 */
+@media (max-width: 1279px) {
   .v62-ai-workspace {
     grid-template-columns: minmax(0, 1fr) 310px;
   }

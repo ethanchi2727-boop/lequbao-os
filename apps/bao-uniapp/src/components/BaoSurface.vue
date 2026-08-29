@@ -127,8 +127,11 @@ defineProps({ eyebrow: String, title: String, detail: String });
   box-shadow: var(--bao-mobile-shadow-card);
 }
 .new-action::before {
+  position: absolute;
+  inset: 0;
   width: 30rpx;
   height: 30rpx;
+  margin: auto;
   border-radius: 0;
   background: var(--bao-mobile-ink-900);
   content: '';
@@ -159,5 +162,39 @@ defineProps({ eyebrow: String, title: String, detail: String });
   overflow: hidden;
   clip: rect(0, 0, 0, 0);
   white-space: nowrap;
+}
+
+/* —— V6.7.1 概念稿 M1 头部：无白底横条，画布上小字标题 + 32px 铃铛 —— */
+.mobile-top {
+  gap: 0;
+  min-height: 0;
+  padding: 26rpx 28rpx 0;
+  border-bottom: 0;
+  background: transparent;
+}
+.app-grid {
+  display: none;
+}
+.title {
+  font-size: 26rpx;
+  letter-spacing: 0.01em;
+}
+.eyebrow {
+  display: none;
+}
+.new-action {
+  width: 62rpx;
+  height: 62rpx;
+}
+.new-action::before {
+  width: 27rpx;
+  height: 27rpx;
+}
+.new-action::after {
+  top: 11rpx;
+  right: 13rpx;
+}
+.mobile-content {
+  padding-top: 26rpx;
 }
 </style>

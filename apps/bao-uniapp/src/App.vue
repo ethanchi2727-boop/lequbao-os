@@ -1173,8 +1173,9 @@ uni-app {
   letter-spacing: 0.02em;
 }
 .m-context text:last-child {
-  top: 24rpx;
+  top: 50%;
   right: 26rpx;
+  transform: translateY(-50%);
   padding: 14rpx 26rpx;
   color: var(--bao-mobile-fresh-ink);
   background: var(--bao-mobile-fresh);
@@ -1436,8 +1437,10 @@ uni-app {
 }
 
 /* —— 收益 Hero · 鲜绿数据条 —— */
+/* V6.7.1：对齐概念稿工作页紧凑 hero，去掉中段大留白，底部预留数据条空间 */
 .income-hero {
-  padding: 31rpx;
+  min-height: 0;
+  padding: 31rpx 31rpx 176rpx;
   border-radius: 38rpx;
 }
 .income-hero::before {
@@ -1622,6 +1625,12 @@ uni-app {
   background: var(--bao-mobile-gradient-brand);
   box-shadow: 0 9rpx 21rpx -9rpx rgba(0, 107, 54, 0.55);
 }
+/* V6.7.1：修正 .task-row > text:last-child(0,2,1) 误伤行按钮字号——稿值 19rpx/900 */
+.task-row > text.dir-go:last-child {
+  font-size: 19rpx;
+  font-weight: 900;
+  letter-spacing: 0.03em;
+}
 
 /* ============================================================
    V6.7 概念稿完全一致层
@@ -1768,9 +1777,11 @@ uni-app {
   font-size: 0;
 }
 .m-composer > text.m-send::before {
+  position: absolute;
+  inset: 0;
   width: 28rpx;
   height: 28rpx;
-  margin: 0 0 0 -2rpx;
+  margin: auto;
   border: 0;
   border-radius: 0;
   background: var(--bao-mobile-paper);
@@ -1869,5 +1880,18 @@ uni-app {
   margin-top: 7rpx;
   color: var(--bao-mobile-ink-500);
   font-size: 20rpx;
+}
+
+/* —— V6.7.1 概念稿 M1：输入条常驻悬浮于 tabbar 上方（稿 composer 始终可见） —— */
+.m-composer {
+  position: fixed;
+  right: 28rpx;
+  bottom: calc(132rpx + env(safe-area-inset-bottom, 0px));
+  left: 28rpx;
+  z-index: 30;
+  margin-top: 0;
+}
+.mobile-content:has(.m-composer) {
+  padding-bottom: 128rpx;
 }
 </style>
