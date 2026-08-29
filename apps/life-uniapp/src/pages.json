@@ -42,7 +42,10 @@
     { "path": "pages/page-258/index", "style": { "navigationBarTitleText": "小满生活助手" } },
     { "path": "pages/page-259/index", "style": { "navigationBarTitleText": "订单与售后工具" } },
     { "path": "pages/page-262/index", "style": { "navigationBarTitleText": "乐趣生活客服" } },
-    { "path": "pages/page-264/index", "style": { "navigationBarTitleText": "我的工单" } }
+    { "path": "pages/page-264/index", "style": { "navigationBarTitleText": "我的工单" } },
+    { "path": "pages/voucher/wallet/index", "style": { "navigationStyle": "custom" } },
+    { "path": "pages/voucher/rule/index", "style": { "navigationStyle": "custom" } },
+    { "path": "pages/voucher/detail/index", "style": { "navigationStyle": "custom" } }
   ],
   "tabBar": {
     "color": "#6B7280",
