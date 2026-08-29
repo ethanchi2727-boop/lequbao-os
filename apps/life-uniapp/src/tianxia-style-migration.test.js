@@ -6,10 +6,15 @@ const source = (path) => readFile(new URL(path, import.meta.url), 'utf8');
 describe('天下摄影消费视觉迁移', () => {
   it('把精细商品卡结构迁移到真实乐趣生活商品投影', async () => {
     const card = await source('components/LifeRetailProductCard.vue');
-    expect(card).toContain('discount-badge');
+    // ===== kimi 真理 orders.html 真实 class（gcell/gt/gp/gplus/dtag/gtag）=====
+    expect(card).toContain('gcell');
+    expect(card).toContain('gt');
+    expect(card).toContain('gp');
+    expect(card).toContain('gplus');
+    expect(card).toContain('dtag');
+    expect(card).toContain('gtag');
     expect(card).toContain('store-badge');
     expect(card).toContain('marketPriceCents');
-    expect(card).toContain('photo-add');
     expect(card).toContain('availableQuantity');
     expect(card).toContain('typeLabel(product.productType)');
     expect(card).not.toContain('product.sold');
@@ -19,9 +24,9 @@ describe('天下摄影消费视觉迁移', () => {
   it('把分类胶囊、品类横幅和排序货架接到现有发现接口', async () => {
     const page = await source('pages/page-201/index.vue');
     expect(page).toContain('lifeCategories');
-    expect(page).toContain('category-tabs');
-    expect(page).toContain('category-banner');
-    expect(page).toContain('sort-bar');
+    expect(page).toContain('chiprow');
+    expect(page).toContain('l-hero');
+    expect(page).toContain('grid2');
     expect(page).toContain('/api/v1/life/discovery/products');
     expect(page).toContain('/api/v1/life/cart/items');
   });
@@ -31,7 +36,7 @@ describe('天下摄影消费视觉迁移', () => {
     expect(page).toContain('discountPercent');
     expect(page).toContain('marketPriceCents');
     expect(page).toContain('preferredVariant');
-    expect(page).toContain('product.updatedAt');
+    expect(page).toContain('updatedAt');
     expect(page).toContain('/api/v1/life/discovery/products/');
     expect(page).toContain('/api/v1/life/cart/items');
   });
@@ -54,12 +59,12 @@ describe('天下摄影消费视觉迁移', () => {
       source('pages/page-203/index.vue'),
       source('pages/page-204/index.vue'),
     ]);
-    expect(search).toContain('search-mark');
-    expect(search).toContain('历史搜索');
+    expect(search).toContain('sbox');
+    expect(search).toContain('搜索历史');
     expect(search).toContain('热门搜索');
     expect(search).toContain('recentLifeSearches');
-    expect(results).toContain('result-search-mark');
-    expect(results).toContain('result-tabs');
+    expect(results).toContain('sbox');
+    expect(results).toContain('grid2');
     expect(results).toContain('/api/v1/life/discovery/products?limit=100');
     expect(results).toContain('/api/v1/life/discovery/stores?limit=100');
   });
@@ -131,7 +136,8 @@ describe('天下摄影消费视觉迁移', () => {
     expect(trace).toContain('trace-seal');
     expect(trace).toContain('evidence-node');
     expect(trace).toContain('/trace-report');
-    expect(event).toContain('event-banner');
+    // ===== kimi 真理 deals.html（page-213 团购套餐列表，无旧 V6.1 event-banner 锚点）=====
+    expect(event).toContain('chiprow');
     expect(event).toContain('LifeRetailProductCard');
     expect(event).toContain('productType=GROUP_BUY');
   });
@@ -173,9 +179,9 @@ describe('天下摄影消费视觉迁移', () => {
       source('pages/page-200/index.vue'),
       source('pages/page-207/index.vue'),
     ]);
-    expect(category).toContain('search-entry-mark');
-    expect(category).toContain('category-grid');
-    expect(category).toContain('repeat(4, 1fr)');
+    expect(category).toContain('svgrid');
+    expect(category).toContain('svcell');
+    expect(category).toContain('svic');
     expect(mall).toContain('mall-banner');
     expect(mall).toContain('mall-search-mark');
     expect(mall).toContain('LifeRetailProductCard');

@@ -573,7 +573,6 @@ onShow(load);
     :eyebrow="`PAGE-${pageId}`"
     :title="meta[0]"
     :detail="meta[1]"
-    :theme-color="meta[2] === 'orange' || meta[2] === 'red' ? 'coral' : meta[2]"
   >
     <view v-if="state === 'loading'" class="section empty-safe">正在读取服务端真实状态…</view>
     <view

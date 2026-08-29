@@ -43,246 +43,258 @@ const effectivePromo = computed(
 </script>
 
 <template>
+  <!-- ===== kimi 真理商品卡（concept-f orders.html .gcell + deals.html .deal 复合结构）=====
+       严禁 rpx 换算 375px 基准像素、自创 discount-badge/store-badge/photo-add 旧 V6.1 锚点 -->
   <view
-    class="retail-card fu"
+    class="gcell fu"
     :class="{ compact, 'has-vou': !!voucherHint }"
     @click="emit('select', product)"
   >
-    <view class="photo-wrap">
+    <view class="dimgbox">
       <view class="product-photo" :style="productStyle(index)" />
-      <!-- concept-f 丰富 Badge 层 -->
       <text v-if="rank" class="rank-badge">No.{{ rank }}</text>
-      <text v-if="discount(product)" class="discount-badge">省{{ discount(product) }}%</text>
-      <text v-if="effectivePromo" class="promo-tag">{{ effectivePromo }}</text>
+      <text v-if="discount(product)" class="dtag">省{{ discount(product) }}%</text>
+      <text v-if="effectivePromo" class="gtag">{{ effectivePromo }}</text>
       <text class="store-badge">{{ product.storeName }}</text>
-      <button
-        class="photo-add"
-        :disabled="product.availableQuantity < 1"
-        aria-label="加入购物车"
+      <view
+        class="gplus"
+        :class="{ disabled: product.availableQuantity < 1 }"
         @click.stop="emit('add', product)"
-      >
-        ＋
-      </button>
+      >＋</view>
     </view>
-    <view class="card-copy">
+    <view class="gt">
       <text class="product-title">{{ product.title }}</text>
       <text class="product-detail">{{ product.variantTitle || '默认规格' }}</text>
-      <view class="price-row">
-        <text class="price-now">¥{{ money(product.salePriceCents) }}</text>
-        <text v-if="Number(product.marketPriceCents) > Number(product.salePriceCents)" class="price-was"
-          >¥{{ money(product.marketPriceCents) }}</text
-        >
+      <view class="grow">
+        <text class="gp">¥{{ money(product.salePriceCents) }}<text
+          v-if="Number(product.marketPriceCents) > Number(product.salePriceCents)"
+          class="gp-was"
+        >¥{{ money(product.marketPriceCents) }}</text></text>
+        <text class="stock-tx">{{
+          product.availableQuantity > 0 ? `库存 ${product.availableQuantity}` : '售罄'
+        }}</text>
       </view>
       <view class="product-meta">
         <text class="type-pill">{{ typeLabel(product.productType) }}</text>
-        <text class="stock-tx">{{
-          product.availableQuantity > 0 ? `库存 ${product.availableQuantity}` : '暂时售罄'
-        }}</text>
-      </view>
-      <view v-if="voucherHint" class="voucher-hint">
-        <text class="vou-lab">券</text>
-        <text>{{ voucherHint }}</text>
+        <view v-if="voucherHint" class="voucher-hint">
+          <text class="vou-lab">券</text>
+          <text>{{ voucherHint }}</text>
+        </view>
       </view>
     </view>
   </view>
 </template>
 
 <style scoped>
-.retail-card {
-  position: relative;
-  min-width: 0;
-  border-radius: var(--life-radius-lg);
-  overflow: hidden;
+/* ===== kimi 真理 .gcell 商品卡（concept-f orders.html 真实 class + 真实 px）===== */
+.gcell {
   background: var(--card, #fff);
-  border: 1rpx solid var(--line, rgba(22, 19, 15, 0.08));
-  box-shadow: var(--shadow);
-  transition: transform 260ms ease, box-shadow 260ms ease;
+  border: 1px solid var(--line, rgba(22, 19, 15, 0.08));
+  border-radius: 16px;
+  overflow: hidden;
+  text-decoration: none;
+  color: var(--ink, #16130f);
+  box-shadow: var(--shadow, 0 10px 26px rgba(22, 19, 15, 0.09));
+  transition: transform 260ms ease, box-shadow 260ms ease, background 0.5s;
 }
-.photo-wrap {
+.dimgbox {
   position: relative;
+  width: 100%;
   overflow: hidden;
 }
 .product-photo {
   width: 100%;
-  height: 326rpx;
+  height: 118px;
   background: url('../assets/v63-retail/product-sprite.webp') var(--sprite-x) var(--sprite-y) / 400%
     200% no-repeat;
+  display: block;
+  object-fit: cover;
 }
+/* ===== badge 层（kimi .dtag + .gtag 真实 class）===== */
 .rank-badge,
-.discount-badge,
-.promo-tag,
+.dtag,
+.gtag,
 .store-badge {
   position: absolute;
-  padding: 7rpx 12rpx;
-  border-radius: 999rpx;
-  color: var(--life-paper);
-  font-size: 16rpx;
+  padding: 1.5px 5px;
+  border-radius: 4px;
+  color: var(--life-paper, #fff);
+  font-size: 8.5px;
   font-weight: 800;
 }
 .rank-badge {
-  top: 14rpx;
-  left: 14rpx;
-  padding: 8rpx 16rpx;
+  top: 5px;
+  left: 5px;
+  padding: 2px 6px;
   background: linear-gradient(135deg, #f6b830, #ff7a2a);
   color: #fff;
-  box-shadow: 0 4rpx 12rpx rgba(255, 122, 42, 0.4);
-  letter-spacing: 0.5rpx;
+  box-shadow: 0 2px 6px rgba(255, 122, 42, 0.4);
+  letter-spacing: 0.25px;
 }
-.discount-badge {
-  top: 14rpx;
-  right: 14rpx;
-  background: var(--promo, #f03749);
+.dtag {
+  top: 5px;
+  right: 5px;
+  background: linear-gradient(120deg, #ff5d3d, #f03749);
+  color: #fff;
   z-index: 2;
 }
-.promo-tag {
-  top: 56rpx;
-  right: 14rpx;
-  background: var(--hot, #eb6325);
+.gtag {
+  top: 24px;
+  right: 5px;
+  color: var(--notice-tx, #0b6b3d);
+  background: var(--notice-bg, #e6f3ea);
   z-index: 2;
 }
-.rank-badge + .discount-badge {
-  top: 14rpx;
+.rank-badge + .dtag {
+  top: 5px;
 }
-.rank-badge + .promo-tag {
-  top: 14rpx;
-  right: 98rpx;
+.rank-badge + .gtag {
+  top: 5px;
+  right: 42px;
 }
 .store-badge {
-  bottom: 14rpx;
-  left: 14rpx;
-  max-width: 200rpx;
+  bottom: 5px;
+  left: 5px;
+  max-width: 100px;
   overflow: hidden;
-  background: var(--life-overlay);
+  background: rgba(22, 19, 15, 0.55);
+  color: #fff;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.photo-add {
+/* ===== kimi .gplus 加号按钮（concept-f orders.html 真实 class）===== */
+.gplus {
   position: absolute;
-  right: 14rpx;
-  bottom: 14rpx;
-  width: 60rpx;
-  height: 60rpx;
-  margin: 0;
-  padding: 0;
+  right: 7px;
+  bottom: 7px;
+  width: 24px;
+  height: 24px;
   border-radius: 50%;
+  background: linear-gradient(135deg, #00c853, #009146);
   color: #fff;
-  background: linear-gradient(135deg, var(--accent, #009146), var(--hd2, #006b36));
-  box-shadow: 0 10rpx 24rpx rgba(0, 80, 40, 0.28);
-  font-size: 38rpx;
-  line-height: 60rpx;
+  display: grid;
+  place-items: center;
+  box-shadow: 0 3px 8px rgba(0, 145, 70, 0.35);
+  font-size: 14px;
   font-weight: 700;
   z-index: 3;
 }
-.card-copy {
+.gplus.disabled {
+  opacity: 0.45;
+}
+/* ===== kimi .gt 文案区（concept-f orders.html 真实 class）===== */
+.gt {
+  padding: 9px 11px 11px;
   display: flex;
-  padding: 16rpx 18rpx 18rpx;
   flex-direction: column;
 }
 .product-title {
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.4;
   display: -webkit-box;
-  min-height: 64rpx;
-  overflow: hidden;
-  color: var(--ink, #16130f);
-  font-size: 26rpx;
-  line-height: 1.28;
-  font-weight: 900;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
+  overflow: hidden;
 }
 .product-detail {
-  min-height: 34rpx;
-  margin-top: 8rpx;
+  margin-top: 3px;
+  font-size: 9.5px;
+  font-weight: 700;
   color: var(--mut, #857c6d);
-  font-size: 17rpx;
-  line-height: 1.4;
+  line-height: 1.45;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 1;
+  overflow: hidden;
 }
-.price-row,
-.product-meta {
+/* ===== kimi .grow 价格行（concept-f orders.html 真实 class）===== */
+.grow {
   display: flex;
-  margin-top: 12rpx;
+  margin-top: 7px;
   align-items: center;
   justify-content: space-between;
 }
-.price-now {
-  color: var(--promo, #f03749);
-  font-size: 34rpx;
+.gp {
+  font-size: 15px;
   font-weight: 900;
-  letter-spacing: -0.5rpx;
+  color: var(--promo, #f03749);
 }
-.price-was {
-  margin-left: 8rpx;
+.gp-was {
+  font-size: 9.5px;
+  font-weight: 700;
   color: var(--mut, #857c6d);
-  font-size: 18rpx;
+  margin-left: 3px;
   text-decoration: line-through;
 }
-.product-meta {
+.stock-tx {
+  font-size: 8.5px;
+  font-weight: 700;
   color: var(--mut, #857c6d);
-  font-size: 16rpx;
+}
+.product-meta {
+  display: flex;
+  margin-top: 5px;
   align-items: center;
+  gap: 5px;
 }
 .type-pill {
-  padding: 5rpx 10rpx;
-  border-radius: 999rpx;
-  color: var(--hd2, #006b36);
-  background: var(--notice-bg, #e6f3ea);
+  padding: 1.5px 5px;
+  border-radius: 4px;
+  font-size: 8.5px;
   font-weight: 800;
+  color: var(--notice-tx, #0b6b3d);
+  background: var(--notice-bg, #e6f3ea);
 }
 .voucher-hint {
   display: inline-flex;
   align-items: center;
-  gap: 10rpx;
-  margin-top: 12rpx;
-  padding: 10rpx 14rpx;
-  border-radius: 14rpx;
-  align-self: flex-start;
-  color: var(--cnt-tx, #fee600);
+  gap: 4px;
+  padding: 1.5px 5px;
+  border-radius: 4px;
   background: var(--cnt-bg, #16130f);
-  font-size: 18rpx;
+  color: var(--cnt-tx, #fee600);
+  font-size: 8.5px;
   font-weight: 800;
-  letter-spacing: 0.3rpx;
-}
-.has-vou .voucher-hint {
-  background: linear-gradient(90deg, var(--cnt-bg, #16130f), #2b2418);
 }
 .vou-lab {
-  padding: 2rpx 10rpx;
-  border-radius: 8rpx;
+  padding: 1px 4px;
+  border-radius: 3px;
   color: var(--cnt-bg, #16130f);
   background: var(--cnt-tx, #fee600);
   font-weight: 900;
 }
-.photo-add[disabled] {
-  opacity: 0.45;
-}
+/* ===== compact 变体（kimi .deal 横版）===== */
 .compact {
   display: grid;
-  min-height: 178rpx;
-  grid-template-columns: 184rpx 1fr;
-  border-radius: var(--life-radius-md);
+  grid-template-columns: 96px 1fr;
+  border-radius: 16px;
 }
-.compact .photo-wrap,
+.compact .dimgbox,
 .compact .product-photo {
   height: 100%;
-  min-height: 178rpx;
+  min-height: 96px;
+}
+.compact .product-photo {
+  width: 96px;
+  height: 96px;
 }
 .compact .store-badge {
-  max-width: 110rpx;
+  max-width: 60px;
 }
-.compact .card-copy {
+.compact .gt {
   min-width: 0;
   justify-content: center;
 }
 .compact .product-detail {
-  min-height: auto;
-}
-.compact .product-title {
-  min-height: auto;
   -webkit-line-clamp: 1;
 }
-.compact .photo-add {
-  width: 52rpx;
-  height: 52rpx;
-  line-height: 52rpx;
-  font-size: 32rpx;
+.compact .product-title {
+  -webkit-line-clamp: 1;
+}
+.compact .gplus {
+  width: 22px;
+  height: 22px;
+  font-size: 12px;
 }
 </style>

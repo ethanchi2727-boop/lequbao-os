@@ -102,7 +102,8 @@ describe('乐趣生活 UniApp 架构', () => {
     expect(variantPage).toContain('/api/v1/life/cart/items');
     expect(tracePage).toContain('/trace-report');
     expect(tracePage).toContain('不会用商品宣传文案替代');
-    expect(eventPage).toContain('不虚构活动倒计时或原价');
+    // ===== kimi 真理 deals.html（page-213 已落地为团购套餐列表，无旧 V6.1 文案免责声明）=====
+    expect(eventPage).toContain('/api/v1/life/discovery/products?productType=GROUP_BUY');
     expect(journeyPage).toContain('/api/v1/life/checkouts/quote');
     expect(journeyPage).toContain('/api/v1/life/payment-intents');
     expect(journeyPage).toContain('/refunds');

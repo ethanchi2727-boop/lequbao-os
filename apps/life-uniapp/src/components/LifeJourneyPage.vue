@@ -365,7 +365,6 @@ onShow(load);
     :eyebrow="`PAGE-${pageId}`"
     :title="meta[0]"
     :detail="meta[1]"
-    :theme-color="meta[2] === 'orange' ? 'coral' : meta[2]"
   >
     <view v-if="state === 'loading'" class="section empty-safe">正在读取服务端真实状态…</view>
     <view
@@ -455,7 +454,6 @@ onShow(load);
     >
     <view v-if="pageId === '224' && state === 'ready'" class="journey-cart-surface">
       <view class="journey-cart-summary">
-        <view class="journey-basket-mark"><view></view></view>
         <view
           ><text>{{ cartSummary.items }} 件商品</text
           ><text>{{ cartSummary.stores }} 家门店分别履约</text></view
@@ -1074,42 +1072,7 @@ onShow(load);
   background: linear-gradient(135deg, var(--life-brand), var(--life-brand-deep));
   box-shadow: var(--life-shadow);
 }
-.journey-basket-mark {
-  position: relative;
-  width: 54rpx;
-  height: 45rpx;
-  border: 4rpx solid var(--life-paper);
-  border-top: 0;
-  border-radius: 7rpx 7rpx 13rpx 13rpx;
-  box-sizing: border-box;
-  flex: 0 0 auto;
-}
-.journey-basket-mark::before,
-.journey-basket-mark::after {
-  position: absolute;
-  bottom: -14rpx;
-  width: 7rpx;
-  height: 7rpx;
-  border-radius: 50%;
-  background: var(--life-paper);
-  content: '';
-}
-.journey-basket-mark::before {
-  left: 7rpx;
-}
-.journey-basket-mark::after {
-  right: 7rpx;
-}
-.journey-basket-mark view {
-  position: absolute;
-  top: -12rpx;
-  left: -12rpx;
-  width: 18rpx;
-  height: 4rpx;
-  border-radius: 99rpx;
-  background: var(--life-paper);
-}
-.journey-cart-summary > view:nth-child(2),
+.journey-cart-summary > view:first-child,
 .fulfillment-summary > view,
 .reward-choice-summary > view {
   display: flex;
@@ -1118,13 +1081,13 @@ onShow(load);
   flex-direction: column;
   gap: 4rpx;
 }
-.journey-cart-summary > view:nth-child(2) text:first-child,
+.journey-cart-summary > view:first-child text:first-child,
 .fulfillment-summary > view text:first-child,
 .reward-choice-summary > view text:first-child {
   font-size: 24rpx;
   font-weight: 900;
 }
-.journey-cart-summary > view:nth-child(2) text:last-child,
+.journey-cart-summary > view:first-child text:last-child,
 .fulfillment-summary > view text:last-child,
 .reward-choice-summary > view text:last-child {
   opacity: 0.82;
