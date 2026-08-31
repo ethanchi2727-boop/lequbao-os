@@ -27,18 +27,22 @@ describe('乐趣生活 UniApp 架构', () => {
     expect(topBar).toContain("'/pages/page-203/index'");
     expect(topBar).toContain('capsule-reserve');
     expect(surface).toContain('LifeTopBar');
-    // life 和 community 已落地 concept-f truth 版（.phone 壳 + --hd1/--hd2 ramp）
-    expect(lifePage).toContain('class="phone"');
+    // ===== 5 个一级 tab 全部使用 kimi 真理最外层 class .phone + 375px 基准 =====
+    for (const page of [lifePage, mallPage, communityPage, cartPage, mePage]) {
+      expect(page).toContain('class="phone"');
+      expect(page).toContain('--bg:#f6f1e6');
+      expect(page).toContain('[data-theme="dark"]');
+      expect(page).toContain('class="tabbar"');
+      // ===== 严禁 display:none 锚点作弊 =====
+      expect(page).not.toContain('style="display:none"');
+    }
+    // ===== kimi 真理主题 ramp 绑定（concept-f index.html L15 / mall L15 / community 对应） =====
     expect(lifePage).toContain('--hd1:#009146');
     expect(lifePage).toContain('--hd2:#006b36');
-    expect(communityPage).toContain('class="phone"');
+    expect(mallPage).toContain('--hd1:#009146');
+    expect(mallPage).toContain('--hd2:#006b36');
     expect(communityPage).toContain('--hd1:#1a4fb0');
     expect(communityPage).toContain('--hd2:#0c2a80');
-    // mall/cart/me 仍用 LifeSurface 包装
-    for (const page of [mallPage, cartPage, mePage]) {
-      expect(page).toMatch(/<LifeSurface\s+primary/u);
-    }
-    expect(mallPage).toContain('theme-color="coral"');
   });
 
   it('uses the platform consumer audience and keeps preview data behind build-time flags', async () => {
@@ -98,7 +102,8 @@ describe('乐趣生活 UniApp 架构', () => {
     expect(variantPage).toContain('/api/v1/life/cart/items');
     expect(tracePage).toContain('/trace-report');
     expect(tracePage).toContain('不会用商品宣传文案替代');
-    expect(eventPage).toContain('不虚构活动倒计时或原价');
+    // ===== kimi 真理 deals.html（page-213 已落地为团购套餐列表，无旧 V6.1 文案免责声明）=====
+    expect(eventPage).toContain('/api/v1/life/discovery/products?productType=GROUP_BUY');
     expect(journeyPage).toContain('/api/v1/life/checkouts/quote');
     expect(journeyPage).toContain('/api/v1/life/payment-intents');
     expect(journeyPage).toContain('/refunds');

@@ -445,7 +445,6 @@ onShow(load);
     :eyebrow="`PAGE-${pageId}`"
     :title="meta[0]"
     :detail="meta[1]"
-    :theme-color="meta[2] === 'orange' ? 'coral' : meta[2]"
   >
     <view v-if="state === 'loading'" class="section empty-safe">正在读取服务端真实状态…</view>
     <view
@@ -469,10 +468,10 @@ onShow(load);
       <button
         v-for="(store, index) in records"
         :key="store.id"
-        class="journey-store-card"
+        class="store-card"
         @click="go('218', { storeId: store.id, storeName: store.name })"
       >
-        <view class="journey-store-photo" :style="{ '--store-x': `${(index % 4) * 25}%` }"
+        <view class="store-photo" :style="{ '--store-x': `${(index % 4) * 25}%` }"
           ><text v-if="store.distanceKm !== null">{{ store.distanceKm }}km</text></view
         ><view
           ><text>{{ store.name }}</text
@@ -492,7 +491,7 @@ onShow(load);
           ><text>{{ records.length }} 件商品与服务在售</text></view
         ></view
       ><view class="section-head"><text>门店在售</text><text>库存实时更新</text></view
-      ><view class="journey-product-grid"
+      ><view class="grid2"
         ><LifeRetailProductCard
           v-for="(product, index) in records"
           :key="product.id"
@@ -573,24 +572,23 @@ onShow(load);
         </button></view
       ></view
     >
-    <view v-if="pageId === '224' && state === 'ready'" class="journey-cart-surface">
-      <view class="journey-cart-summary">
-        <view class="journey-basket-mark"><view></view></view>
+    <view v-if="pageId === '224' && state === 'ready'" class="olist">
+      <view class="ocard">
         <view
           ><text>{{ cartSummary.items }} 件商品</text
           ><text>{{ cartSummary.stores }} 家门店分别履约</text></view
         >
         <text>{{ money(cartSummary.subtotal) }}</text>
       </view>
-      <view v-for="group in cart.groups" :key="group.storeId" class="journey-cart-group">
-        <view class="journey-cart-store">
-          <view class="journey-store-mark"></view>
+      <view v-for="group in cart.groups" :key="group.storeId" class="ogrp">
+        <view class="ostore">
+          <view class="store-mark"></view>
           <text>{{ group.storeName || '当前门店' }}</text
           ><text>{{ money(group.subtotalCents) }}</text>
         </view>
-        <view v-for="item in group.items" :key="item.id" class="journey-cart-item">
-          <view class="journey-item-photo"><view></view></view>
-          <view class="journey-item-copy">
+        <view v-for="item in group.items" :key="item.id" class="oitem">
+          <view class="oiphoto"><view></view></view>
+          <view class="oicopy">
             <text>{{ item.productTitle }}</text>
             <text>{{ item.available ? item.variantTitle : '库存或价格已变化' }}</text>
             <text>数量 × {{ item.quantity }}</text>
@@ -598,7 +596,7 @@ onShow(load);
           <button size="mini" @click="removeItem(item)">移除</button>
         </view>
       </view>
-      <view class="journey-cart-rail">
+      <view class="obtnrow">
         <view
           ><text>合计</text><text>{{ money(cartSummary.subtotal) }}</text></view
         >
@@ -741,7 +739,7 @@ onShow(load);
       ><view class="checkout-confirm-note"
         >提交后按商家分别创建订单；部分分组失败时，服务端会保留已成功结果并支持安全重试。</view
       >
-      ><button class="primary" :loading="busy" @click="submit">
+      ><button class="primary obtn" :loading="busy" @click="submit">
         {{ checkout ? '确认创建订单' : '重新核价' }}
       </button></view
     >
@@ -870,7 +868,7 @@ onShow(load);
         <input v-model="orderSearch" type="text" placeholder="搜索订单号或商家" />
         <text v-if="orderSearch" @click="orderSearch = ''">清除</text>
       </view>
-      <scroll-view scroll-x class="order-filters">
+      <scroll-view scroll-x class="order-filters otabs">
         <button
           v-for="filter in orderFilters"
           :key="filter[0]"
@@ -880,11 +878,11 @@ onShow(load);
           {{ filter[1] }}
         </button>
       </scroll-view>
-      <view v-if="filteredOrders.length" class="card-list">
+      <view v-if="filteredOrders.length" class="card-list olist">
         <view
           v-for="order in filteredOrders"
           :key="order.id"
-          class="order-card"
+          class="order-card ocard fu"
           @click="go('238', { orderId: order.id })"
         >
           <view class="order-card-head"
@@ -935,90 +933,90 @@ onShow(load);
 </template>
 
 <style scoped>
-.journey-row {
+.jrow {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 20rpx;
-  padding: 20rpx 0;
-  border-bottom: 1rpx solid var(--life-line);
+  gap: 10px;
+  padding: 10px 0;
+  border-bottom: 0.5px solid var(--life-line);
 }
 .store-discovery,
 .store-detail-surface,
 .group-detail-surface {
-  margin-top: 20rpx;
+  margin-top: 10px;
 }
 .store-discovery {
-  padding: 24rpx;
+  padding: 12px;
   border-radius: var(--life-radius-lg);
   background: var(--life-paper);
   box-shadow: var(--life-shadow-soft);
 }
-.journey-store-card {
+.store-card {
   display: flex;
   width: 100%;
   margin: 0;
-  padding: 17rpx 0;
-  border-bottom: 1rpx solid var(--life-line);
+  padding: 8.5px 0;
+  border-bottom: 0.5px solid var(--life-line);
   align-items: center;
-  gap: 18rpx;
+  gap: 9px;
   text-align: left;
   background: transparent;
 }
-.journey-store-card:last-child {
+.store-card:last-child {
   border-bottom: 0;
 }
-.journey-store-photo,
+.store-photo,
 .store-detail-photo {
-  width: 146rpx;
-  height: 116rpx;
-  border-radius: 18rpx;
+  width: 73px;
+  height: 58px;
+  border-radius: 9px;
   flex: none;
   background: url('../assets/v63-retail/category-sprite.webp') var(--store-x, 50%) 100% / 500% 300%
     no-repeat;
 }
-.journey-store-photo {
+.store-photo {
   position: relative;
 }
-.journey-store-photo > text {
+.store-photo > text {
   position: absolute;
-  right: 7rpx;
-  bottom: 7rpx;
-  padding: 3rpx 7rpx;
-  border-radius: 999rpx;
+  right: 3.5px;
+  bottom: 3.5px;
+  padding: 1.5px 3.5px;
+  border-radius: 499.5px;
   color: var(--life-paper);
   background: rgba(7, 68, 49, 0.8);
-  font-size: 13rpx;
+  font-size: 6.5px;
 }
-.journey-store-card > view:last-child {
+.store-card > view:last-child {
   display: flex;
   min-width: 0;
   flex: 1;
   flex-direction: column;
-  gap: 8rpx;
+  gap: 4px;
 }
-.journey-store-card > view:last-child > text:first-child {
-  font-size: 25rpx;
+.store-card > view:last-child > text:first-child {
+  font-size: 12.5px;
   font-weight: 900;
 }
-.journey-store-card > view:last-child > text:nth-child(2) {
+.store-card > view:last-child > text:nth-child(2) {
   color: var(--life-muted);
-  font-size: 18rpx;
+  font-size: 9px;
 }
-.journey-store-card > view:last-child > view {
+.store-card > view:last-child > view {
   display: flex;
   justify-content: space-between;
   color: var(--life-brand-deep);
-  font-size: 18rpx;
+  font-size: 9px;
   font-weight: 800;
 }
 .store-detail-head {
   display: flex;
-  margin-bottom: 22rpx;
-  padding: 20rpx;
+  margin-bottom: 11px;
+  padding: 10px;
   border-radius: var(--life-radius-lg);
   align-items: center;
-  gap: 20rpx;
+  gap: 10px;
   background: var(--life-paper);
   box-shadow: var(--life-shadow-soft);
 }
@@ -1026,20 +1024,20 @@ onShow(load);
   display: flex;
   min-width: 0;
   flex-direction: column;
-  gap: 7rpx;
+  gap: 3.5px;
 }
 .store-detail-head > view:last-child text:first-child {
-  font-size: 28rpx;
+  font-size: 14px;
   font-weight: 900;
 }
 .store-detail-head > view:last-child text:not(:first-child) {
   color: var(--life-muted);
-  font-size: 17rpx;
+  font-size: 8.5px;
 }
-.journey-product-grid {
+.grid2 {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 16rpx;
+  gap: 8px;
 }
 .group-detail-surface {
   overflow: hidden;
@@ -1049,81 +1047,81 @@ onShow(load);
 }
 .group-detail-photo {
   display: flex;
-  height: 360rpx;
-  padding: 20rpx;
+  height: 180px;
+  padding: 10px;
   align-items: flex-start;
   justify-content: space-between;
   background: url('../assets/v63-retail/product-sprite.webp') 33.333% 100% / 400% 200% no-repeat;
   box-sizing: border-box;
 }
 .group-detail-photo > text {
-  padding: 6rpx 11rpx;
-  border-radius: 999rpx;
+  padding: 3px 5.5px;
+  border-radius: 499.5px;
   color: var(--life-paper);
   background: rgba(108, 39, 17, 0.84);
-  font-size: 16rpx;
+  font-size: 8px;
   font-weight: 900;
 }
 .group-detail-copy {
-  padding: 24rpx;
+  padding: 12px;
 }
 .group-price {
   display: flex;
   align-items: baseline;
-  gap: 12rpx;
+  gap: 6px;
 }
 .group-price text:first-child {
   color: var(--life-red);
-  font-size: 40rpx;
+  font-size: 20px;
   font-weight: 900;
 }
 .group-price text:last-child,
 .group-store,
 .group-notice {
   color: var(--life-muted);
-  font-size: 17rpx;
+  font-size: 8.5px;
 }
 .group-title {
   display: block;
-  margin-top: 10rpx;
-  font-size: 30rpx;
+  margin-top: 5px;
+  font-size: 15px;
   font-weight: 900;
 }
 .group-store {
   display: block;
-  margin-top: 7rpx;
+  margin-top: 3.5px;
 }
 .group-rule-grid {
   display: grid;
-  margin-top: 20rpx;
+  margin-top: 10px;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 10rpx;
+  gap: 5px;
 }
 .group-rule-grid > view {
   display: flex;
-  padding: 15rpx 8rpx;
-  border-radius: 16rpx;
+  padding: 7.5px 4px;
+  border-radius: 8px;
   align-items: center;
   flex-direction: column;
-  gap: 5rpx;
+  gap: 2.5px;
   background: var(--life-coral-soft);
 }
 .group-rule-grid text:first-child {
   color: var(--life-muted);
-  font-size: 14rpx;
+  font-size: 7px;
 }
 .group-rule-grid text:last-child {
   color: var(--life-coral-ink);
-  font-size: 18rpx;
+  font-size: 9px;
   font-weight: 900;
 }
 .group-notice {
   display: block;
-  margin-top: 17rpx;
+  margin-top: 8.5px;
   line-height: 1.55;
 }
 .group-buy-button {
-  margin: 0 24rpx 24rpx;
+  margin: 0 12px 12px;
 }
 .group-price-old {
   color: var(--life-muted);
@@ -1295,52 +1293,53 @@ onShow(load);
   flex: 1;
 }
 .jrow > view {
+ (feat(life): 结算页代金券抵扣全链路——quote APPLY/SKIP 记账、submit 核销 reward_grants、团购详情按确认概念改版)
   display: flex;
   min-width: 0;
   flex: 1;
   flex-direction: column;
-  gap: 8rpx;
+  gap: 4px;
 }
-.journey-row view text:first-child {
-  font-size: 26rpx;
+.jrow view text:first-child {
+  font-size: 13px;
   font-weight: 800;
 }
-.journey-row view text:last-child,
+.jrow view text:last-child,
 .notice {
   color: var(--life-muted);
-  font-size: 21rpx;
+  font-size: 10.5px;
 }
-.journey-row > text {
+.jrow > text {
   color: var(--life-brand);
-  font-size: 23rpx;
+  font-size: 11.5px;
   font-weight: 800;
 }
-.journey-row button {
+.jrow button {
   margin: 0;
   color: var(--life-coral-ink);
   background: var(--life-coral-soft);
-  border-radius: 999rpx;
-  font-size: 20rpx;
+  border-radius: 499.5px;
+  font-size: 10px;
 }
 .facts {
   display: flex;
-  gap: 12rpx;
+  gap: 6px;
   flex-wrap: wrap;
-  margin: 20rpx 0;
+  margin: 10px 0;
 }
 .facts text {
-  padding: 10rpx 16rpx;
-  border-radius: 999rpx;
+  padding: 5px 8px;
+  border-radius: 499.5px;
   color: var(--life-brand-deep);
   background: var(--life-brand-soft);
-  font-size: 20rpx;
+  font-size: 10px;
 }
 .primary,
 .secondary,
 .danger {
-  margin-top: 24rpx;
-  border-radius: 999rpx;
-  font-size: 24rpx;
+  margin-top: 12px;
+  border-radius: 499.5px;
+  font-size: 12px;
   font-weight: 800;
 }
 .primary {
@@ -1358,247 +1357,212 @@ onShow(load);
 .tabs {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 14rpx;
+  gap: 7px;
 }
 .tabs button {
   color: var(--life-muted);
   background: var(--life-wash);
-  border-radius: 18rpx;
-  font-size: 23rpx;
+  border-radius: 9px;
+  font-size: 11.5px;
 }
 .tabs button.active {
   color: var(--life-paper);
   background: var(--life-brand-deep);
 }
-.journey-cart-surface,
+.olist,
 .fulfillment-surface,
 .reward-choice-surface {
   display: grid;
-  margin-top: 20rpx;
-  gap: 16rpx;
+  margin-top: 10px;
+  gap: 8px;
 }
-.journey-cart-summary,
+.ocard,
 .fulfillment-summary,
 .reward-choice-summary {
   display: flex;
-  padding: 22rpx;
+  padding: 11px;
   border-radius: var(--life-radius-lg);
   align-items: center;
-  gap: 16rpx;
+  gap: 8px;
   color: var(--life-paper);
   background: linear-gradient(135deg, var(--life-brand), var(--life-brand-deep));
   box-shadow: var(--life-shadow);
 }
-.journey-basket-mark {
-  position: relative;
-  width: 54rpx;
-  height: 45rpx;
-  border: 4rpx solid var(--life-paper);
-  border-top: 0;
-  border-radius: 7rpx 7rpx 13rpx 13rpx;
-  box-sizing: border-box;
-  flex: 0 0 auto;
-}
-.journey-basket-mark::before,
-.journey-basket-mark::after {
-  position: absolute;
-  bottom: -14rpx;
-  width: 7rpx;
-  height: 7rpx;
-  border-radius: 50%;
-  background: var(--life-paper);
-  content: '';
-}
-.journey-basket-mark::before {
-  left: 7rpx;
-}
-.journey-basket-mark::after {
-  right: 7rpx;
-}
-.journey-basket-mark view {
-  position: absolute;
-  top: -12rpx;
-  left: -12rpx;
-  width: 18rpx;
-  height: 4rpx;
-  border-radius: 99rpx;
-  background: var(--life-paper);
-}
-.journey-cart-summary > view:nth-child(2),
+.ocard > view:first-child,
 .fulfillment-summary > view,
 .reward-choice-summary > view {
   display: flex;
   min-width: 0;
   flex: 1;
   flex-direction: column;
-  gap: 4rpx;
+  gap: 2px;
 }
-.journey-cart-summary > view:nth-child(2) text:first-child,
+.ocard > view:first-child text:first-child,
 .fulfillment-summary > view text:first-child,
 .reward-choice-summary > view text:first-child {
-  font-size: 24rpx;
+  font-size: 12px;
   font-weight: 900;
 }
-.journey-cart-summary > view:nth-child(2) text:last-child,
+.ocard > view:first-child text:last-child,
 .fulfillment-summary > view text:last-child,
 .reward-choice-summary > view text:last-child {
   opacity: 0.82;
-  font-size: 15rpx;
+  font-size: 7.5px;
 }
-.journey-cart-summary > text,
+.ocard > text,
 .fulfillment-summary > text,
 .reward-choice-summary > text {
   flex: 0 0 auto;
-  font-size: 22rpx;
+  font-size: 11px;
   font-weight: 900;
 }
-.journey-cart-group {
+.ogrp {
   overflow: hidden;
-  border: 1rpx solid var(--life-line);
+  border: 0.5px solid var(--life-line);
   border-radius: var(--life-radius-md);
   background: var(--life-paper);
   box-shadow: var(--life-shadow-soft);
 }
-.journey-cart-store {
+.ostore {
   display: flex;
-  padding: 17rpx 20rpx;
+  padding: 8.5px 10px;
   align-items: center;
-  gap: 10rpx;
+  gap: 5px;
   background: var(--life-bg);
 }
-.journey-store-mark {
-  width: 23rpx;
-  height: 19rpx;
-  border: 3rpx solid var(--life-brand-deep);
-  border-radius: 3rpx;
+.store-mark {
+  width: 11.5px;
+  height: 9.5px;
+  border: 1.5px solid var(--life-brand-deep);
+  border-radius: 1.5px;
   box-sizing: border-box;
 }
-.journey-cart-store text:nth-child(2) {
+.ostore text:nth-child(2) {
   overflow: hidden;
   flex: 1;
-  font-size: 19rpx;
+  font-size: 9.5px;
   font-weight: 900;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.journey-cart-store text:last-child {
+.ostore text:last-child {
   color: var(--life-red);
-  font-size: 18rpx;
+  font-size: 9px;
   font-weight: 900;
 }
-.journey-cart-item {
+.oitem {
   display: flex;
-  padding: 17rpx;
-  border-top: 1rpx solid var(--life-line);
+  padding: 8.5px;
+  border-top: 0.5px solid var(--life-line);
   align-items: center;
-  gap: 13rpx;
+  gap: 6.5px;
 }
-.journey-item-photo {
+.oiphoto {
   display: flex;
-  width: 78rpx;
-  height: 78rpx;
-  border-radius: 17rpx;
+  width: 39px;
+  height: 39px;
+  border-radius: 8.5px;
   align-items: center;
   justify-content: center;
   flex: 0 0 auto;
   background: linear-gradient(145deg, var(--life-yellow-soft), var(--life-coral-soft));
 }
-.journey-item-photo view {
-  width: 32rpx;
-  height: 32rpx;
+.oiphoto view {
+  width: 16px;
+  height: 16px;
   border-radius: 50% 45% 55% 40%;
   background: var(--life-coral);
   transform: rotate(-18deg);
 }
-.journey-item-copy {
+.oicopy {
   display: flex;
   min-width: 0;
   flex: 1;
   flex-direction: column;
-  gap: 4rpx;
+  gap: 2px;
 }
-.journey-item-copy text:first-child {
+.oicopy text:first-child {
   overflow: hidden;
-  font-size: 19rpx;
+  font-size: 9.5px;
   font-weight: 900;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.journey-item-copy text:not(:first-child) {
+.oicopy text:not(:first-child) {
   color: var(--life-muted);
-  font-size: 14rpx;
+  font-size: 7px;
 }
-.journey-cart-item button {
+.oitem button {
   margin: 0;
   flex: 0 0 auto;
   color: var(--life-coral-ink);
   background: var(--life-coral-soft);
-  font-size: 14rpx;
+  font-size: 7px;
 }
-.journey-cart-rail {
+.obtnrow {
   display: flex;
-  padding: 14rpx 16rpx;
-  border: 1rpx solid var(--life-line);
-  border-radius: 999rpx;
+  padding: 7px 8px;
+  border: 0.5px solid var(--life-line);
+  border-radius: 499.5px;
   align-items: center;
-  gap: 16rpx;
+  gap: 8px;
   background: var(--life-paper);
   box-shadow: var(--life-shadow);
 }
-.journey-cart-rail > view {
+.obtnrow > view {
   display: flex;
   min-width: 0;
   flex: 1;
   flex-direction: column;
 }
-.journey-cart-rail > view text:first-child {
+.obtnrow > view text:first-child {
   color: var(--life-muted);
-  font-size: 14rpx;
+  font-size: 7px;
 }
-.journey-cart-rail > view text:last-child {
+.obtnrow > view text:last-child {
   color: var(--life-red);
-  font-size: 25rpx;
+  font-size: 12.5px;
   font-weight: 900;
 }
-.journey-cart-rail button {
+.obtnrow button {
   width: auto;
   margin: 0;
-  padding: 0 32rpx;
+  padding: 0 16px;
 }
 .fulfillment-summary {
   background: linear-gradient(135deg, var(--life-blue-deep), var(--life-blue-ink));
 }
 .delivery-tabs button {
   display: flex;
-  min-height: 108rpx;
-  padding: 17rpx 20rpx;
+  min-height: 54px;
+  padding: 8.5px 10px;
   flex-direction: column;
   justify-content: center;
   text-align: left;
 }
 .delivery-tabs button text:first-child {
-  font-size: 23rpx;
+  font-size: 11.5px;
   font-weight: 900;
 }
 .delivery-tabs button text:last-child {
-  margin-top: 4rpx;
-  font-size: 16rpx;
+  margin-top: 2px;
+  font-size: 8px;
   opacity: 0.74;
 }
 .fulfillment-tip {
   display: grid;
-  padding: 18rpx 20rpx;
+  padding: 9px 10px;
   border-radius: var(--life-radius-md);
-  gap: 5rpx;
+  gap: 2.5px;
   color: var(--life-brand-deep);
   background: var(--life-brand-soft);
 }
 .fulfillment-tip text:first-child {
-  font-size: 19rpx;
+  font-size: 9.5px;
   font-weight: 900;
 }
 .fulfillment-tip text:last-child {
-  font-size: 15rpx;
+  font-size: 7.5px;
   line-height: 1.5;
 }
 .reward-choice-summary {
@@ -1606,22 +1570,22 @@ onShow(load);
 }
 .reward-choice-list {
   display: grid;
-  gap: 12rpx;
+  gap: 6px;
 }
 .reward-choice-card {
   display: flex;
-  padding: 19rpx;
-  border: 1rpx solid var(--life-line);
+  padding: 9.5px;
+  border: 0.5px solid var(--life-line);
   border-radius: var(--life-radius-md);
   align-items: center;
-  gap: 14rpx;
+  gap: 7px;
   background: var(--life-paper);
   box-shadow: var(--life-shadow-soft);
 }
 .reward-choice-mark {
   display: flex;
-  width: 58rpx;
-  height: 58rpx;
+  width: 29px;
+  height: 29px;
   border-radius: 50%;
   align-items: center;
   justify-content: center;
@@ -1629,9 +1593,9 @@ onShow(load);
   background: var(--life-yellow-soft);
 }
 .reward-choice-mark view {
-  width: 25rpx;
-  height: 25rpx;
-  border: 5rpx solid var(--life-yellow-deep);
+  width: 12.5px;
+  height: 12.5px;
+  border: 2.5px solid var(--life-yellow-deep);
   border-radius: 50%;
   box-sizing: border-box;
 }
@@ -1640,64 +1604,64 @@ onShow(load);
   min-width: 0;
   flex: 1;
   flex-direction: column;
-  gap: 5rpx;
+  gap: 2.5px;
 }
 .reward-choice-card > view:last-child > view {
   display: flex;
   justify-content: space-between;
-  gap: 12rpx;
+  gap: 6px;
 }
 .reward-choice-card > view:last-child > view text:first-child {
-  font-size: 19rpx;
+  font-size: 9.5px;
   font-weight: 900;
 }
 .reward-choice-card > view:last-child > view text:last-child {
   color: var(--life-yellow-ink);
-  font-size: 14rpx;
+  font-size: 7px;
 }
 .reward-choice-card > view:last-child > text:nth-child(2) {
   color: var(--life-red);
-  font-size: 22rpx;
+  font-size: 11px;
   font-weight: 900;
 }
 .reward-choice-card > view:last-child > text:last-child {
   color: var(--life-muted);
-  font-size: 14rpx;
+  font-size: 7px;
 }
 .reward-choice-note {
-  padding: 17rpx 20rpx;
-  border-radius: 16rpx;
+  padding: 8.5px 10px;
+  border-radius: 8px;
   color: var(--life-coral-ink);
   background: var(--life-coral-soft);
-  font-size: 16rpx;
+  font-size: 8px;
   line-height: 1.5;
 }
 .picker {
-  margin-top: 18rpx;
-  padding: 22rpx;
-  border: 1rpx solid var(--life-line);
-  border-radius: 20rpx;
+  margin-top: 9px;
+  padding: 11px;
+  border: 0.5px solid var(--life-line);
+  border-radius: 10px;
   background: var(--life-wash);
-  font-size: 22rpx;
+  font-size: 11px;
 }
 .notice {
   display: block;
-  margin-top: 20rpx;
+  margin-top: 10px;
   line-height: 1.7;
 }
 .order-list-surface {
   display: grid;
-  margin-top: 20rpx;
-  gap: 14rpx;
+  margin-top: 10px;
+  gap: 7px;
 }
 .order-list-summary,
 .checkout-confirm-summary,
 .order-detail-summary {
   display: flex;
-  padding: 24rpx;
+  padding: 12px;
   border-radius: var(--life-radius-lg);
   align-items: center;
-  gap: 16rpx;
+  gap: 8px;
   color: var(--life-paper);
   background: linear-gradient(135deg, var(--life-brand), var(--life-brand-deep));
   box-shadow: var(--life-shadow);
@@ -1706,10 +1670,10 @@ onShow(load);
 .checkout-confirm-mark,
 .order-detail-mark {
   display: flex;
-  width: 56rpx;
-  height: 56rpx;
-  border: 3rpx solid var(--life-paper);
-  border-radius: 17rpx;
+  width: 28px;
+  height: 28px;
+  border: 1.5px solid var(--life-paper);
+  border-radius: 8.5px;
   align-items: center;
   justify-content: center;
   flex: 0 0 auto;
@@ -1718,11 +1682,11 @@ onShow(load);
 .order-list-mark view,
 .checkout-confirm-mark view,
 .order-detail-mark view {
-  width: 24rpx;
-  height: 17rpx;
-  border-bottom: 5rpx solid var(--life-paper);
-  border-left: 5rpx solid var(--life-paper);
-  transform: rotate(-45deg) translate(2rpx, -2rpx);
+  width: 12px;
+  height: 8.5px;
+  border-bottom: 2.5px solid var(--life-paper);
+  border-left: 2.5px solid var(--life-paper);
+  transform: rotate(-45deg) translate(1px, -1px);
 }
 .order-list-summary > view:nth-child(2),
 .checkout-confirm-summary > view:nth-child(2),
@@ -1731,13 +1695,13 @@ onShow(load);
   min-width: 0;
   flex: 1;
   flex-direction: column;
-  gap: 4rpx;
+  gap: 2px;
 }
 .order-list-summary > view:nth-child(2) text:first-child,
 .checkout-confirm-summary > view:nth-child(2) text:first-child,
 .order-detail-summary > view:nth-child(2) text:first-child {
   overflow: hidden;
-  font-size: 24rpx;
+  font-size: 12px;
   font-weight: 900;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -1746,41 +1710,41 @@ onShow(load);
 .checkout-confirm-summary > view:nth-child(2) text:last-child,
 .order-detail-summary > view:nth-child(2) text:last-child {
   opacity: 0.82;
-  font-size: 15rpx;
+  font-size: 7.5px;
 }
 .order-list-summary > text,
 .checkout-confirm-summary > text,
 .order-detail-summary > text {
   flex: 0 0 auto;
-  font-size: 18rpx;
+  font-size: 9px;
   font-weight: 900;
 }
 .order-search {
   display: grid;
-  padding: 13rpx 18rpx;
-  border: 1rpx solid var(--life-line);
-  border-radius: 999rpx;
-  grid-template-columns: 25rpx 1fr auto;
+  padding: 6.5px 9px;
+  border: 0.5px solid var(--life-line);
+  border-radius: 499.5px;
+  grid-template-columns: 12.5px 1fr auto;
   align-items: center;
-  gap: 10rpx;
+  gap: 5px;
   background: var(--life-paper);
   box-shadow: var(--life-shadow-soft);
 }
 .order-search-mark {
-  width: 18rpx;
-  height: 18rpx;
-  border: 4rpx solid var(--life-muted);
+  width: 9px;
+  height: 9px;
+  border: 2px solid var(--life-muted);
   border-radius: 50%;
   box-sizing: border-box;
 }
 .order-search input {
   min-width: 0;
   color: var(--life-ink);
-  font-size: 18rpx;
+  font-size: 9px;
 }
 .order-search > text {
   color: var(--life-brand-deep);
-  font-size: 15rpx;
+  font-size: 7.5px;
 }
 .order-filters {
   width: 100%;
@@ -1788,12 +1752,12 @@ onShow(load);
 }
 .order-filters button {
   display: inline-flex;
-  margin: 0 12rpx 0 0;
-  padding: 8rpx 25rpx;
-  border-radius: 999rpx;
+  margin: 0 6px 0 0;
+  padding: 4px 12.5px;
+  border-radius: 499.5px;
   color: var(--life-muted);
   background: var(--life-paper);
-  font-size: 19rpx;
+  font-size: 9.5px;
 }
 .order-filters button.active {
   color: var(--life-paper);
@@ -1801,7 +1765,7 @@ onShow(load);
   font-weight: 900;
 }
 .order-card {
-  padding: 24rpx;
+  padding: 12px;
   border-radius: var(--life-radius-md);
   background: var(--life-paper);
   box-shadow: var(--life-shadow-soft);
@@ -1813,61 +1777,61 @@ onShow(load);
   justify-content: space-between;
 }
 .order-card-head text:first-child {
-  font-size: 25rpx;
+  font-size: 12.5px;
   font-weight: 900;
 }
 .order-card-head text:last-child {
-  padding: 6rpx 10rpx;
-  border-radius: 10rpx;
+  padding: 3px 5px;
+  border-radius: 5px;
   color: var(--life-brand-deep);
   background: var(--life-brand-soft);
-  font-size: 16rpx;
+  font-size: 8px;
 }
 .order-number {
   display: block;
-  margin: 15rpx 0;
+  margin: 7.5px 0;
   color: var(--life-muted);
-  font-size: 18rpx;
+  font-size: 9px;
 }
 .order-card-summary {
   display: flex;
-  margin: 0 0 16rpx;
-  padding: 14rpx 16rpx;
-  border-radius: 14rpx;
+  margin: 0 0 8px;
+  padding: 7px 8px;
+  border-radius: 7px;
   justify-content: space-between;
   color: var(--life-muted);
   background: var(--life-wash);
-  font-size: 17rpx;
+  font-size: 8.5px;
 }
 .order-card-foot text:first-child {
   color: var(--life-red);
-  font-size: 30rpx;
+  font-size: 15px;
   font-weight: 900;
 }
 .order-card-foot text:last-child {
   color: var(--life-brand-deep);
-  font-size: 18rpx;
+  font-size: 9px;
   font-weight: 800;
 }
 .checkout-confirm-surface,
 .order-detail-surface {
   display: grid;
-  margin-top: 20rpx;
-  gap: 16rpx;
+  margin-top: 10px;
+  gap: 8px;
 }
 .checkout-confirm-summary {
   background: linear-gradient(135deg, var(--life-coral), var(--life-red));
 }
 .checkout-group-list {
   display: grid;
-  gap: 12rpx;
+  gap: 6px;
 }
 .checkout-group-card {
   display: grid;
-  padding: 19rpx;
-  border: 1rpx solid var(--life-line);
+  padding: 9.5px;
+  border: 0.5px solid var(--life-line);
   border-radius: var(--life-radius-md);
-  gap: 8rpx;
+  gap: 4px;
   background: var(--life-paper);
   box-shadow: var(--life-shadow-soft);
 }
@@ -1876,35 +1840,35 @@ onShow(load);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12rpx;
+  gap: 6px;
 }
 .checkout-group-card > view:first-child text:first-child {
-  font-size: 19rpx;
+  font-size: 9.5px;
   font-weight: 900;
 }
 .checkout-group-card > view:first-child text:last-child {
   color: var(--life-brand-deep);
-  font-size: 15rpx;
+  font-size: 7.5px;
 }
 .checkout-group-card > text {
   color: var(--life-muted);
-  font-size: 15rpx;
+  font-size: 7.5px;
 }
 .checkout-group-benefit text:first-child {
   color: var(--life-red);
-  font-size: 16rpx;
+  font-size: 8px;
 }
 .checkout-group-benefit text:last-child {
   color: var(--life-red);
-  font-size: 23rpx;
+  font-size: 11.5px;
   font-weight: 900;
 }
 .checkout-confirm-note {
-  padding: 17rpx 20rpx;
-  border-radius: 16rpx;
+  padding: 8.5px 10px;
+  border-radius: 8px;
   color: var(--life-brand-deep);
   background: var(--life-brand-soft);
-  font-size: 15rpx;
+  font-size: 7.5px;
   line-height: 1.55;
 }
 .order-detail-summary {
@@ -1912,55 +1876,55 @@ onShow(load);
 }
 .order-truth-grid {
   display: grid;
-  margin-top: 18rpx;
+  margin-top: 9px;
   grid-template-columns: repeat(2, 1fr);
-  gap: 12rpx;
+  gap: 6px;
 }
 .order-truth-grid > view {
   display: flex;
-  padding: 18rpx;
-  border-radius: 18rpx;
+  padding: 9px;
+  border-radius: 9px;
   flex-direction: column;
-  gap: 7rpx;
+  gap: 3.5px;
   background: var(--life-brand-soft);
 }
 .order-truth-grid text:first-child {
   color: var(--life-muted);
-  font-size: 16rpx;
+  font-size: 8px;
 }
 .order-truth-grid text:last-child {
   color: var(--life-brand-deep);
-  font-size: 22rpx;
+  font-size: 11px;
   font-weight: 900;
 }
 .order-item-list {
   display: grid;
-  margin-top: 18rpx;
-  gap: 10rpx;
+  margin-top: 9px;
+  gap: 5px;
 }
 .order-item-list > view {
   display: flex;
-  padding: 14rpx;
-  border-bottom: 1rpx solid var(--life-line);
-  border-radius: 16rpx;
+  padding: 7px;
+  border-bottom: 0.5px solid var(--life-line);
+  border-radius: 8px;
   align-items: center;
   justify-content: space-between;
-  gap: 13rpx;
+  gap: 6.5px;
   background: var(--life-paper);
 }
 .order-detail-photo {
   display: flex;
-  width: 68rpx;
-  height: 68rpx;
-  border-radius: 15rpx;
+  width: 34px;
+  height: 34px;
+  border-radius: 7.5px;
   align-items: center;
   justify-content: center;
   flex: 0 0 auto;
   background: var(--life-yellow-soft);
 }
 .order-detail-photo view {
-  width: 27rpx;
-  height: 27rpx;
+  width: 13.5px;
+  height: 13.5px;
   border-radius: 50% 45% 55% 40%;
   transform: rotate(-18deg);
   background: var(--life-coral);
@@ -1970,74 +1934,74 @@ onShow(load);
   min-width: 0;
   flex: 1;
   flex-direction: column;
-  gap: 5rpx;
+  gap: 2.5px;
 }
 .order-detail-item > view:nth-child(2) text:first-child {
   overflow: hidden;
-  font-size: 18rpx;
+  font-size: 9px;
   font-weight: 900;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 .order-detail-item > view:nth-child(2) text:last-child {
   color: var(--life-muted);
-  font-size: 14rpx;
+  font-size: 7px;
 }
 .order-detail-item > text:last-child {
   color: var(--life-red);
   flex: 0 0 auto;
-  font-size: 19rpx;
+  font-size: 9.5px;
   font-weight: 900;
 }
 .checkout-truth {
   display: grid;
-  margin-top: 18rpx;
+  margin-top: 9px;
   grid-template-columns: repeat(3, 1fr);
-  gap: 10rpx;
+  gap: 5px;
 }
 .checkout-truth > view {
   display: flex;
   min-width: 0;
-  padding: 16rpx 8rpx;
-  border-radius: 18rpx;
+  padding: 8px 4px;
+  border-radius: 9px;
   align-items: center;
   flex-direction: column;
   background: var(--life-brand-soft);
 }
 .checkout-truth text:first-child {
   color: var(--life-muted);
-  font-size: 14rpx;
+  font-size: 7px;
 }
 .checkout-truth text:last-child {
-  margin-top: 6rpx;
+  margin-top: 3px;
   color: var(--life-brand-deep);
-  font-size: 19rpx;
+  font-size: 9.5px;
   font-weight: 900;
 }
 .checkout-amounts {
   display: grid;
-  margin-top: 20rpx;
-  padding: 20rpx;
-  border: 1rpx solid var(--life-line);
+  margin-top: 10px;
+  padding: 10px;
+  border: 0.5px solid var(--life-line);
   border-radius: var(--life-radius-md);
-  gap: 13rpx;
+  gap: 6.5px;
   background: var(--life-wash);
 }
 .checkout-amounts > view {
   display: flex;
   justify-content: space-between;
   color: var(--life-muted);
-  font-size: 20rpx;
+  font-size: 10px;
 }
 .checkout-amounts .checkout-payable {
-  padding-top: 14rpx;
-  border-top: 1rpx solid var(--life-line);
+  padding-top: 7px;
+  border-top: 0.5px solid var(--life-line);
   color: var(--life-ink);
   font-weight: 900;
 }
 .checkout-payable text:last-child {
   color: var(--life-red);
-  font-size: 28rpx;
+  font-size: 14px;
 }
 .voucher-apply-card {
   display: block;
@@ -2116,39 +2080,39 @@ onShow(load);
 }
 .payment-truth {
   display: block;
-  margin-top: 16rpx;
-  padding: 18rpx;
-  border-radius: 18rpx;
+  margin-top: 8px;
+  padding: 9px;
+  border-radius: 9px;
   color: var(--life-blue-ink);
   background: var(--life-blue-soft);
-  font-size: 18rpx;
+  font-size: 9px;
   line-height: 1.55;
 }
 .payment-status-panel {
   display: flex;
-  margin-top: 18rpx;
-  padding: 24rpx;
+  margin-top: 9px;
+  padding: 12px;
   border-radius: var(--life-radius-lg);
   align-items: center;
-  gap: 20rpx;
+  gap: 10px;
   background: var(--life-blue-soft);
 }
 .payment-seal {
   display: flex;
-  width: 82rpx;
-  height: 82rpx;
-  border: 5rpx solid var(--life-blue-deep);
+  width: 41px;
+  height: 41px;
+  border: 2.5px solid var(--life-blue-deep);
   border-radius: 50%;
   align-items: center;
   justify-content: center;
   flex: none;
 }
 .payment-seal > view {
-  width: 29rpx;
-  height: 14rpx;
-  border-bottom: 6rpx solid var(--life-blue-deep);
-  border-left: 6rpx solid var(--life-blue-deep);
-  transform: rotate(-45deg) translate(2rpx, -2rpx);
+  width: 14.5px;
+  height: 7px;
+  border-bottom: 3px solid var(--life-blue-deep);
+  border-left: 3px solid var(--life-blue-deep);
+  transform: rotate(-45deg) translate(1px, -1px);
 }
 .payment-status-panel.paid {
   background: var(--life-brand-soft);
@@ -2163,11 +2127,11 @@ onShow(load);
   display: flex;
   min-width: 0;
   flex-direction: column;
-  gap: 5rpx;
+  gap: 2.5px;
 }
 .payment-status-panel > view:last-child text:first-child {
   color: var(--life-blue-ink);
-  font-size: 24rpx;
+  font-size: 12px;
   font-weight: 900;
 }
 .payment-status-panel.paid > view:last-child text:first-child {
@@ -2175,15 +2139,15 @@ onShow(load);
 }
 .payment-status-panel > view:last-child text:nth-child(2) {
   color: var(--life-red);
-  font-size: 34rpx;
+  font-size: 17px;
   font-weight: 900;
 }
 .payment-status-panel > view:last-child text:last-child {
   color: var(--life-muted);
-  font-size: 16rpx;
+  font-size: 8px;
 }
 .refund-card {
-  padding: 22rpx;
+  padding: 11px;
   border-radius: var(--life-radius-md);
   background: var(--life-paper);
   box-shadow: var(--life-shadow-soft);
@@ -2193,11 +2157,11 @@ onShow(load);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16rpx;
+  gap: 8px;
 }
 .refund-progress {
   display: grid;
-  margin: 16rpx 0;
+  margin: 8px 0;
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 .refund-progress > view {
@@ -2205,17 +2169,17 @@ onShow(load);
   position: relative;
   align-items: center;
   flex-direction: column;
-  gap: 7rpx;
+  gap: 3.5px;
   color: var(--life-muted);
-  font-size: 14rpx;
+  font-size: 7px;
 }
 .refund-progress > view::before {
   position: absolute;
   z-index: 0;
-  top: 8rpx;
+  top: 4px;
   left: 0;
   width: 100%;
-  height: 3rpx;
+  height: 1.5px;
   background: var(--life-line);
   content: '';
 }
@@ -2228,12 +2192,12 @@ onShow(load);
 }
 .refund-progress > view > text:first-child {
   z-index: 1;
-  width: 18rpx;
-  height: 18rpx;
-  border: 4rpx solid var(--life-paper);
+  width: 9px;
+  height: 9px;
+  border: 2px solid var(--life-paper);
   border-radius: 50%;
   background: var(--life-line);
-  box-shadow: 0 0 0 2rpx var(--life-line);
+  box-shadow: 0 0 0 1px var(--life-line);
 }
 .refund-progress > view.active {
   color: var(--life-brand-deep);
@@ -2244,51 +2208,51 @@ onShow(load);
 }
 .refund-progress > view.active > text:first-child {
   background: var(--life-brand);
-  box-shadow: 0 0 0 2rpx var(--life-brand);
+  box-shadow: 0 0 0 1px var(--life-brand);
 }
 .refund-card-head text:first-child {
   overflow: hidden;
-  font-size: 22rpx;
+  font-size: 11px;
   font-weight: 900;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 .refund-card-head text:last-child {
-  padding: 6rpx 10rpx;
-  border-radius: 10rpx;
+  padding: 3px 5px;
+  border-radius: 5px;
   color: var(--life-coral-ink);
   background: var(--life-coral-soft);
-  font-size: 15rpx;
+  font-size: 7.5px;
 }
 .refund-card > text {
   display: block;
-  margin: 14rpx 0;
+  margin: 7px 0;
   color: var(--life-muted);
-  font-size: 18rpx;
+  font-size: 9px;
 }
 .refund-card-foot text:first-child {
   color: var(--life-red);
-  font-size: 27rpx;
+  font-size: 13.5px;
   font-weight: 900;
 }
 .refund-card-foot text:last-child {
   color: var(--life-coral-ink);
-  font-size: 16rpx;
+  font-size: 8px;
 }
 .member-benefit-grid {
   display: grid;
-  margin-top: 18rpx;
+  margin-top: 9px;
   grid-template-columns: repeat(3, 1fr);
-  gap: 10rpx;
+  gap: 5px;
 }
 .member-surface {
   display: grid;
-  margin-top: 20rpx;
-  gap: 16rpx;
+  margin-top: 10px;
+  gap: 8px;
 }
 .member-card {
   overflow: hidden;
-  padding: 28rpx;
+  padding: 14px;
   border-radius: var(--life-radius-lg);
   color: var(--life-paper);
   background:
@@ -2301,14 +2265,14 @@ onShow(load);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16rpx;
+  gap: 8px;
 }
 .member-emblem {
   display: flex;
-  width: 56rpx;
-  height: 56rpx;
-  border: 2rpx solid rgba(255, 255, 255, 0.65);
-  border-radius: 18rpx;
+  width: 28px;
+  height: 28px;
+  border: 1px solid rgba(255, 255, 255, 0.65);
+  border-radius: 9px;
   align-items: center;
   justify-content: center;
   flex: 0 0 auto;
@@ -2316,8 +2280,8 @@ onShow(load);
   background: rgba(255, 255, 255, 0.14);
 }
 .member-emblem view {
-  width: 17rpx;
-  height: 17rpx;
+  width: 8.5px;
+  height: 8.5px;
   border-radius: 50%;
   background: var(--life-paper);
 }
@@ -2326,84 +2290,84 @@ onShow(load);
   min-width: 0;
   flex: 1;
   flex-direction: column;
-  gap: 4rpx;
+  gap: 2px;
 }
 .member-card-head > view:nth-child(2) text:first-child {
-  font-size: 25rpx;
+  font-size: 12.5px;
   font-weight: 900;
 }
 .member-card-head > view:nth-child(2) text:last-child,
 .member-card-head > text,
 .member-since {
   opacity: 0.82;
-  font-size: 14rpx;
+  font-size: 7px;
 }
 .member-card-head > text {
-  letter-spacing: 2rpx;
+  letter-spacing: 1px;
 }
 .member-balance {
-  margin: 32rpx 0 22rpx;
+  margin: 16px 0 11px;
   justify-content: flex-start;
-  gap: 58rpx;
+  gap: 29px;
 }
 .member-balance > view {
   display: flex;
   flex-direction: column;
-  gap: 5rpx;
+  gap: 2.5px;
 }
 .member-balance text:first-child {
-  font-size: 32rpx;
+  font-size: 16px;
   font-weight: 900;
 }
 .member-balance text:last-child {
   opacity: 0.82;
-  font-size: 15rpx;
+  font-size: 7.5px;
 }
 .member-rules {
   display: grid;
-  padding: 6rpx 20rpx;
-  border: 1rpx solid var(--life-line);
+  padding: 3px 10px;
+  border: 0.5px solid var(--life-line);
   border-radius: var(--life-radius-md);
   background: var(--life-paper);
   box-shadow: var(--life-shadow-soft);
 }
 .member-rules > view {
   display: grid;
-  padding: 17rpx 0;
-  border-bottom: 1rpx solid var(--life-line);
-  gap: 5rpx;
+  padding: 8.5px 0;
+  border-bottom: 0.5px solid var(--life-line);
+  gap: 2.5px;
 }
 .member-rules > view:last-child {
   border-bottom: 0;
 }
 .member-rules text:first-child {
   color: var(--life-ink);
-  font-size: 19rpx;
+  font-size: 9.5px;
   font-weight: 900;
 }
 .member-rules text:last-child {
   color: var(--life-muted);
-  font-size: 15rpx;
+  font-size: 7.5px;
   line-height: 1.55;
 }
 .member-benefit-grid > view {
   display: flex;
   min-width: 0;
-  padding: 18rpx 8rpx;
-  border-radius: 18rpx;
+  padding: 9px 4px;
+  border-radius: 9px;
   align-items: center;
   flex-direction: column;
   background: var(--life-yellow-soft);
 }
 .member-benefit-grid text:first-child {
   color: var(--life-yellow-ink);
-  font-size: 26rpx;
+  font-size: 13px;
   font-weight: 900;
 }
 .member-benefit-grid text:last-child {
-  margin-top: 5rpx;
+  margin-top: 2.5px;
   color: var(--life-muted);
   text-align: center;
-  font-size: 14rpx;
+  font-size: 7px;
 }
 </style>

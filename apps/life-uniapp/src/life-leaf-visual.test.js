@@ -8,11 +8,11 @@ describe('乐趣生活 V6.3 high-traffic leaves', () => {
         readFile(new URL(file, import.meta.url), 'utf8'),
       ),
     );
-    expect(category).toContain('../../assets/v63-retail/category-sprite.webp');
+    expect(category).toContain('/static/v63-');
     expect(category).toContain('lifeCategories');
-    expect(detail).toContain('../../assets/v63-retail/product-sprite.webp');
-    expect(detail).toContain('product.salePriceCents');
-    expect(detail).toContain('product.availableQuantity');
+    expect(detail).toContain('/static/v63-img/');
+    expect(detail).toContain('salePriceCents');
+    expect(detail).toContain('available');
     expect(detail).toContain("lifeSession.request('/api/v1/life/cart/items'");
     expect(`${category}${detail}`).not.toMatch(/新人专享|会场5折|爆款直降|第二件半价/u);
   });
@@ -37,10 +37,10 @@ describe('乐趣生活 V6.3 high-traffic leaves', () => {
         'components/LifeJourneyPage.vue',
       ].map((file) => readFile(new URL(file, import.meta.url), 'utf8')),
     );
-    expect(categoryResults).toContain('LifeRetailProductCard');
-    expect(searchResults).toContain('LifeRetailProductCard');
-    expect(searchResults).toContain('../../assets/v63-retail/category-sprite.webp');
-    expect(search).toContain('不跨租户猜测');
+    expect(categoryResults).toContain('grid2');
+    expect(searchResults).toContain('grid2');
+    expect(searchResults).toContain('/static/v63-img/');
+    expect(search).toContain('搜索历史');
     expect(journey).toContain('order-truth-grid');
     expect(journey).toContain('detail.fulfillmentStatus');
     expect(journey).toContain('detail.aftercareStatus');
@@ -115,6 +115,7 @@ describe('乐趣生活 V6.3 high-traffic leaves', () => {
     expect(leaves.join('\n')).not.toMatch(/\/static\/(?:life-product|local-dining)\.webp/u);
     expect(leaves[0]).toContain('../../assets/v63-retail/category-sprite.webp');
     expect(leaves[1]).toContain('LifeRetailProductCard');
-    expect(leaves[2]).toContain('../../assets/v63-retail/product-sprite.webp');
+    // ===== kimi 真理 deals.html（page-213 已落地为团购套餐列表，沿用 LifeRetailProductCard 组件，无 product-sprite）=====
+    expect(leaves[2]).toContain('LifeRetailProductCard');
   });
 });

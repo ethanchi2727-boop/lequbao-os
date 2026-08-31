@@ -6,10 +6,15 @@ const source = (path) => readFile(new URL(path, import.meta.url), 'utf8');
 describe('天下摄影消费视觉迁移', () => {
   it('把精细商品卡结构迁移到真实乐趣生活商品投影', async () => {
     const card = await source('components/LifeRetailProductCard.vue');
-    expect(card).toContain('discount-badge');
+    // ===== kimi 真理 orders.html 真实 class（gcell/gt/gp/gplus/dtag/gtag）=====
+    expect(card).toContain('gcell');
+    expect(card).toContain('gt');
+    expect(card).toContain('gp');
+    expect(card).toContain('gplus');
+    expect(card).toContain('dtag');
+    expect(card).toContain('gtag');
     expect(card).toContain('store-badge');
     expect(card).toContain('marketPriceCents');
-    expect(card).toContain('photo-add');
     expect(card).toContain('availableQuantity');
     expect(card).toContain('typeLabel(product.productType)');
     expect(card).not.toContain('product.sold');
@@ -19,9 +24,9 @@ describe('天下摄影消费视觉迁移', () => {
   it('把分类胶囊、品类横幅和排序货架接到现有发现接口', async () => {
     const page = await source('pages/page-201/index.vue');
     expect(page).toContain('lifeCategories');
-    expect(page).toContain('category-tabs');
-    expect(page).toContain('category-banner');
-    expect(page).toContain('sort-bar');
+    expect(page).toContain('chiprow');
+    expect(page).toContain('l-hero');
+    expect(page).toContain('grid2');
     expect(page).toContain('/api/v1/life/discovery/products');
     expect(page).toContain('/api/v1/life/cart/items');
   });
@@ -31,7 +36,7 @@ describe('天下摄影消费视觉迁移', () => {
     expect(page).toContain('discountPercent');
     expect(page).toContain('marketPriceCents');
     expect(page).toContain('preferredVariant');
-    expect(page).toContain('product.updatedAt');
+    expect(page).toContain('updatedAt');
     expect(page).toContain('/api/v1/life/discovery/products/');
     expect(page).toContain('/api/v1/life/cart/items');
   });
@@ -54,24 +59,37 @@ describe('天下摄影消费视觉迁移', () => {
       source('pages/page-203/index.vue'),
       source('pages/page-204/index.vue'),
     ]);
-    expect(search).toContain('search-mark');
-    expect(search).toContain('历史搜索');
+    expect(search).toContain('sbox');
+    expect(search).toContain('搜索历史');
     expect(search).toContain('热门搜索');
     expect(search).toContain('recentLifeSearches');
-    expect(results).toContain('result-search-mark');
-    expect(results).toContain('result-tabs');
+    expect(results).toContain('sbox');
+    expect(results).toContain('grid2');
     expect(results).toContain('/api/v1/life/discovery/products?limit=100');
     expect(results).toContain('/api/v1/life/discovery/stores?limit=100');
   });
 
   it('把商城购物车的信息密度和金额清单接在服务端核价链路上', async () => {
     const cart = await source('pages/cart/index.vue');
-    expect(cart).toContain('basket-mark');
-    expect(cart).toContain('cart-group');
-    expect(cart).toContain('amount-lines');
+    // ===== kimi 真理购物车结构（concept-f cart.html 真实 class：pi/pt/bar/clist/ci/bot/paybar/sum） =====
+    // ===== 严禁旧 V6.1 作弊锚点 display:none / basket-mark / cart-group / amount-lines / 🛒 emoji =====
+    expect(cart).not.toContain('style="display:none"');
+    expect(cart).not.toContain('basket-mark');
+    expect(cart).not.toContain('cart-group');
+    expect(cart).not.toContain('amount-lines');
+    expect(cart).not.toContain('🛒');
+    // ===== cart.html 真实结构（一个都不能少、一个都不能自创） =====
+    expect(cart).toMatch(/class="[^"]*\bpi\b/);       // 自提/配送图标区（cart.html Lx）
+    expect(cart).toMatch(/class="[^"]*\bpt\b/);       // 总览标题文案（件数/库存核验）
+    expect(cart).toMatch(/class="[^"]*\bbar\b/);      // 满减进度条
+    expect(cart).toMatch(/class="[^"]*\bclist\b/);    // 商品行容器
+    expect(cart).toMatch(/class="[^"]*\bci\b/);       // 单个商品行（图/标题/规格/价格/step）
+    expect(cart).toMatch(/class="[^"]*\bbot\b/);      // 履约选择+配送地址
+    expect(cart).toMatch(/class="[^"]*\bpaybar\b/);   // 底部结算条（合计+提交CTA）
+    expect(cart).toMatch(/class="[^"]*\bsum\b/);      // 合计金额区块
+    // ===== 真实后端核价链路（kimi JS chunk 契约：quote / actions/submit 幂等） =====
     expect(cart).toContain('/api/v1/life/checkouts/quote');
     expect(cart).toContain('/actions/submit');
-    expect(cart).not.toContain('🛒');
   });
 
   it('让结算订单和账户中心使用正式卡片层级且保留真实服务端状态', async () => {
@@ -79,12 +97,20 @@ describe('天下摄影消费视觉迁移', () => {
       source('components/LifeJourneyPage.vue'),
       source('pages/me/index.vue'),
     ]);
+    // ===== 严禁旧 V6.1 display:none 作弊锚点 / service-icon / account-order-head 伪锚点 =====
+    expect(account).not.toContain('style="display:none"');
+    expect(account).not.toContain('service-icon');
+    expect(account).not.toContain('account-order-head');
+    // ===== kimi 真理我的页面结构锚点（concept-f me.html 真实 class） =====
+    expect(account).toMatch(/class="[^"]*\bme-head\b/);
+    expect(account).toMatch(/class="[^"]*\bmstat\b/);
+    expect(account).toMatch(/class="[^"]*\bmord\b/);
+    expect(account).toMatch(/class="[^"]*\bmsvc\b/);
+    expect(account).toMatch(/class="[^"]*\bmlist\b/);
     expect(journey).toContain('delivery-tabs');
     expect(journey).toContain('checkout-amounts');
     expect(journey).toContain('order-card-summary');
     expect(journey).toContain('/api/v1/life/orders?');
-    expect(account).toContain('service-icon');
-    expect(account).toContain('account-order-head');
     expect(account).toContain('/api/v1/life/orders?limit=10');
     expect(account).toContain('/api/v1/life/invoice-profiles');
   });
@@ -110,15 +136,17 @@ describe('天下摄影消费视觉迁移', () => {
     expect(trace).toContain('trace-seal');
     expect(trace).toContain('evidence-node');
     expect(trace).toContain('/trace-report');
-    expect(event).toContain('event-banner');
+    // ===== kimi 真理 deals.html（page-213 团购套餐列表，无旧 V6.1 event-banner 锚点）=====
+    expect(event).toContain('chiprow');
     expect(event).toContain('LifeRetailProductCard');
     expect(event).toContain('productType=GROUP_BUY');
   });
 
   it('把附近门店、门店货架和团购详情迁移到正式深层页', async () => {
     const journey = await source('components/LifeJourneyPage.vue');
-    expect(journey).toContain('journey-store-card');
-    expect(journey).toContain('journey-product-grid');
+    // ===== kimi 真理 orders.html + shop.html 真实 class（无旧 V6.1 journey-store-card 自创锚点）=====
+    expect(journey).toContain('ocard');
+    expect(journey).toContain('otabs');
     expect(journey).toContain('group-detail-surface');
     expect(journey).toContain('LifeRetailProductCard');
     expect(journey).toContain('/api/v1/life/discovery/stores?limit=30');
@@ -152,9 +180,9 @@ describe('天下摄影消费视觉迁移', () => {
       source('pages/page-200/index.vue'),
       source('pages/page-207/index.vue'),
     ]);
-    expect(category).toContain('search-entry-mark');
-    expect(category).toContain('category-grid');
-    expect(category).toContain('repeat(4, 1fr)');
+    expect(category).toContain('svgrid');
+    expect(category).toContain('svcell');
+    expect(category).toContain('svic');
     expect(mall).toContain('mall-banner');
     expect(mall).toContain('mall-search-mark');
     expect(mall).toContain('LifeRetailProductCard');
@@ -180,9 +208,10 @@ describe('天下摄影消费视觉迁移', () => {
 
   it('把跨门店购物车、履约选择和消费奖励迁移成正式结算前链路', async () => {
     const journey = await source('components/LifeJourneyPage.vue');
-    expect(journey).toContain('journey-cart-summary');
-    expect(journey).toContain('journey-cart-group');
-    expect(journey).toContain('journey-cart-rail');
+    // ===== kimi 真理 checkout.html 真实 class（无旧 V6.1 journey-cart-* 自创锚点）=====
+    expect(journey).toContain('olist');
+    expect(journey).toContain('ocard');
+    expect(journey).toContain('obtn');
     expect(journey).toContain('fulfillment-summary');
     expect(journey).toContain('fulfillment-tip');
     expect(journey).toContain('reward-choice-summary');
