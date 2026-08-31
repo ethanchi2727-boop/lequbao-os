@@ -109,6 +109,7 @@ export function createMerchantOperationsService(
         return {
           id: row.id,
           legalSubjectName: row.legal_subject_name,
+          merchantName: row.legal_subject_name,
           industryCode: row.industry_code,
           serviceRegionCodes: row.service_region_codes,
           status: row.profile_status,

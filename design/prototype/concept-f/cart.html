@@ -1,320 +1,1573 @@
 <!doctype html>
 <html lang="zh-CN">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>购物车 · 乐趣生活</title>
-<style>
-  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-  body{background:#191511;font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;display:flex;flex-direction:column;align-items:center;padding:36px 16px 60px;color:#f6f2e5}
-  .cap{margin-bottom:18px;text-align:center}
-  .cap h1{font-size:22px;letter-spacing:.1em;font-weight:900}
-  .cap p{font-size:12px;margin-top:6px;letter-spacing:.12em;opacity:.55}
-  /* ============ 主题变量 ============ */
-  .phone{
-    --hd1:#009146; --hd2:#006b36; --bg:#f6f1e6; --card:#ffffff; --ink:#16130f;
-    --mut:#857c6d; --accent:#009146; --promo:#f03749; --hot:#eb6325; --yel:#fee600;
-    --tabbar:#ffffff; --line:rgba(22,19,15,.08); --notice-bg:#e6f3ea; --notice-tx:#0b6b3d;
-    --capsule-bg:rgba(255,255,255,.94); --capsule-line:rgba(22,19,15,.12); --capsule-ink:#16130f;
-    --cnt-bg:#16130f; --cnt-tx:#fee600; --shadow:0 10px 26px rgba(22,19,15,.09);
-  }
-  .phone[data-theme="dark"]{
-    --hd1:#10241a; --hd2:#0c1212; --bg:#0c1212; --card:#141d1d; --ink:#ffffff;
-    --mut:#9fb0a8; --accent:#6ec726; --promo:#ff5d3d; --hot:#f7c400; --yel:#f7c400;
-    --tabbar:#0a0f0f; --line:rgba(255,255,255,.08); --notice-bg:rgba(110,199,38,.13); --notice-tx:#8fe33f;
-    --capsule-bg:rgba(12,18,18,.45); --capsule-line:rgba(255,255,255,.22); --capsule-ink:#ffffff;
-    --cnt-bg:#0c1212; --cnt-tx:#6ec726; --shadow:0 10px 26px rgba(0,0,0,.4);
-  }
-  .phone{
-    width:375px;height:760px;background:var(--bg);border-radius:44px;position:relative;overflow:hidden;
-    display:flex;flex-direction:column;flex:none;color:var(--ink);
-    box-shadow:0 30px 80px -20px rgba(0,0,0,.55),0 0 0 10px #141210;
-    transition:background .5s;
-  }
-  .scroll{flex:1;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:none}
-  .scroll::-webkit-scrollbar{display:none}
-  /* ============ 顶部（搜索 + 胶囊） ============ */
-  .top{background:linear-gradient(165deg,var(--hd1),var(--hd2));padding:10px 16px 34px;transition:background .5s;position:relative;overflow:hidden}
-  .top::after{content:"";position:absolute;right:-46px;top:-52px;width:150px;height:150px;border-radius:50%;background:rgba(254,230,0,.14)}
-  .statusbar{display:flex;justify-content:space-between;align-items:center;font-size:13px;font-weight:700;color:#fff;padding:4px 10px 0;position:relative;z-index:2}
-  .navrow{display:flex;align-items:center;gap:8px;margin-top:10px;position:relative;z-index:2}
-  .loc{display:flex;align-items:center;gap:3px;color:#fff;font-size:12.5px;font-weight:800;flex-shrink:0;max-width:104px;background:rgba(255,255,255,.16);border-radius:999px;padding:7px 9px}
-  .loc b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:800}
-  .loc svg{flex-shrink:0}
-  .search{
-    flex:1;height:34px;background:rgba(255,255,255,.95);border-radius:17px;
-    display:flex;align-items:center;gap:7px;padding:0 13px;font-size:12.5px;color:#9a938a;
-  }
-  [data-theme="dark"] .search{background:rgba(255,255,255,.14);backdrop-filter:blur(8px);color:rgba(255,255,255,.75)}
-  .capsule{
-    width:87px;height:32px;flex:none;border-radius:16px;background:var(--capsule-bg);
-    display:flex;align-items:center;box-shadow:0 2px 8px rgba(0,0,0,.14);transition:background .5s;
-  }
-  [data-theme="dark"] .capsule{backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.25);box-shadow:none}
-  .capsule .cell{flex:1;display:grid;place-items:center;height:100%}
-  .capsule .cell:first-child{border-right:1px solid var(--capsule-line)}
-  /* ============ 主图（日夜双图切换） ============ */
-  .hero{margin:-22px 14px 0;border-radius:18px;overflow:hidden;position:relative;z-index:3;box-shadow:var(--shadow);height:136px}
-  .hero img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transition:opacity .6s}
-  .hero .img-d{opacity:0}
-  [data-theme="dark"] .hero .img-d{opacity:1}
-  [data-theme="dark"] .hero .img-l{opacity:0}
-  .hero .ov{position:absolute;inset:0;background:linear-gradient(100deg,rgba(22,19,15,.6) 6%,transparent 60%)}
-  .hero .tx{position:absolute;left:15px;top:13px;color:#fff}
-  .hero .tx .k{display:inline-block;background:var(--yel);color:#16130f;font-size:10px;font-weight:900;padding:3px 7px;border-radius:6px;letter-spacing:.06em}
-  .hero .tx h2{font-size:19.5px;font-weight:900;margin-top:6px;line-height:1.3;text-shadow:0 2px 10px rgba(0,0,0,.4)}
-  .hero .tx p{font-size:11px;font-weight:700;opacity:.92;margin-top:3px}
-  /* 主题切换开关 */
-  .tswitch{
-    position:absolute;right:12px;bottom:12px;z-index:4;border:none;cursor:pointer;font-family:inherit;
-    display:flex;align-items:center;gap:6px;border-radius:999px;padding:8px 13px;
-    background:rgba(22,19,15,.55);backdrop-filter:blur(8px);color:#fff;font-size:11.5px;font-weight:800;
-    border:1px solid rgba(255,255,255,.25);
-  }
-  /* ============ 公告（轻盈版） ============ */
-  .notice{
-    margin:12px 14px 0;height:38px;border-radius:12px;background:var(--notice-bg);
-    display:flex;align-items:center;gap:8px;padding:0 13px;overflow:hidden;transition:background .5s;
-  }
-  .notice .lb{flex:none;display:flex;align-items:center;gap:5px;font-size:11.5px;font-weight:900;color:var(--notice-tx)}
-  .notice .roll{flex:1;min-width:0;overflow:hidden;white-space:nowrap;font-size:12px;font-weight:600;color:var(--notice-tx)}
-  .notice .roll-in{display:inline-block;animation:roll 22s linear infinite;will-change:transform}
-  @keyframes roll{from{transform:translateX(0)}to{transform:translateX(-50%)}}
-  /* ============ 秒杀（减重版） ============ */
-  .sk{margin:12px 14px 0;background:var(--card);border-radius:18px;padding:13px 13px 12px;box-shadow:var(--shadow);transition:background .5s}
-  .sk-hd{display:flex;align-items:center;justify-content:space-between}
-  .sk-hd h3{font-size:16.5px;font-weight:900;color:var(--ink);display:flex;align-items:center;gap:6px}
-  .sk-hd h3 svg{color:var(--promo)}
-  .sk-hd h3 em{font-style:normal;font-size:10px;font-weight:900;color:#fff;background:var(--promo);border-radius:5px;padding:2px 6px;letter-spacing:.06em}
-  .cnt{display:flex;align-items:center;gap:4px;font-size:10.5px;font-weight:700;color:var(--mut)}
-  .cnt b{background:var(--cnt-bg);color:var(--cnt-tx);border-radius:5px;padding:3px 6px;font-size:11.5px;font-weight:900}
-  .sk-rail{display:flex;gap:10px;margin-top:11px;overflow-x:auto;scrollbar-width:none}
-  .sk-rail::-webkit-scrollbar{display:none}
-  .sk-card{flex:none;width:112px;border-radius:13px;overflow:hidden;border:1px solid var(--line);background:var(--card)}
-  .sk-card img{width:100%;height:80px;object-fit:cover;display:block}
-  .sk-bd{padding:7px 9px 9px}
-  .sk-nm{font-size:11.5px;font-weight:800;line-height:1.35;height:30px;overflow:hidden;color:var(--ink)}
-  .sk-pr{margin-top:4px;display:flex;align-items:baseline;gap:5px}
-  .sk-pr b{color:var(--promo);font-size:16px;font-weight:900}
-  .sk-pr s{font-size:10px;color:var(--mut)}
-  .sk-bar{height:12px;border-radius:6px;background:color-mix(in srgb,var(--promo) 12%,transparent);margin-top:6px;position:relative;overflow:hidden}
-  .sk-bar i{position:absolute;inset:0;right:auto;background:linear-gradient(90deg,var(--hot),var(--promo));border-radius:6px}
-  .sk-bar span{position:absolute;inset:0;text-align:center;font-size:8.5px;font-weight:900;color:#fff;line-height:12px;text-shadow:0 1px 2px rgba(0,0,0,.3)}
-  /* ============ 分类 ============ */
-  .cats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px 8px;padding:16px 14px 2px}
-  .cat{display:flex;flex-direction:column;align-items:center;gap:7px;cursor:pointer;transition:transform .15s}
-  .cat:active{transform:scale(.92)}
-  .badge{width:56px;height:56px;border-radius:19px;overflow:hidden;box-shadow:var(--shadow)}
-  .badge img{width:100%;height:100%;object-fit:cover;display:block}
-  .badge.duo{display:grid;place-items:center}
-  .cat span{font-size:11.5px;font-weight:800;color:var(--ink)}
-  /* ============ 分区货架 ============ */
-  .aisle{margin:16px 14px 0}
-  .aisle-hd{display:flex;align-items:center;justify-content:space-between;padding:2px 4px 11px}
-  .aisle-hd h3{font-size:17px;font-weight:900;display:flex;align-items:center;gap:8px;color:var(--ink)}
-  .aisle-hd h3 .chip-ic{width:22px;height:22px;border-radius:7px;display:grid;place-items:center;color:#fff}
-  .aisle-hd a{font-size:11.5px;font-weight:800;text-decoration:none}
-  .aisle-hd a.c-grn{color:#009146}
-  .aisle-hd a.c-blu{color:#1a6fc4}
-  .phone[data-theme="dark"] .aisle-hd a.c-grn{color:#6ec726}
-  .phone[data-theme="dark"] .aisle-hd a.c-blu{color:#5ea8f0}
-  .aisle-bd{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-  .pd{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden;box-shadow:var(--shadow);transition:background .5s}
-  .pd img{width:100%;height:100px;object-fit:cover;display:block}
-  .pd-bd{padding:8px 10px 10px}
-  .pd-nm{font-size:13px;font-weight:800;line-height:1.4;color:var(--ink)}
-  .pd-tg{display:inline-block;font-size:9.5px;font-weight:800;border-radius:5px;padding:2px 6px;margin-top:4px}
-  .pd-row{display:flex;align-items:flex-end;justify-content:space-between;margin-top:6px}
-  .pr{color:var(--promo);font-weight:900;font-size:11px}
-  .pr b{font-size:20px;letter-spacing:-.02em}
-  .pr sup{font-size:10.5px;font-weight:900}
-  .pr s{color:var(--mut);font-size:10px;font-weight:600;margin-left:4px}
-  .pbtn{width:34px;height:34px;border-radius:50%;border:none;cursor:pointer;display:grid;place-items:center;background:linear-gradient(145deg,#19b26b,var(--green,#009146));background:linear-gradient(145deg,color-mix(in srgb,var(--accent) 70%,#3dff8f),var(--accent));box-shadow:0 6px 13px color-mix(in srgb,var(--accent) 40%,transparent),inset 0 1.5px 0 rgba(255,255,255,.35);transition:transform .12s}
-  .pbtn:active{transform:scale(.86)}
-  /* ============ 团购 ============ */
-  .tg{margin:14px 14px 0;background:var(--card);border-radius:18px;padding:14px;box-shadow:var(--shadow);transition:background .5s}
-  .tg-hd{display:flex;justify-content:space-between;align-items:center}
-  .tg-hd h3{font-size:16.5px;font-weight:900;color:var(--ink)}
-  .tg-hd em{font-style:normal;background:linear-gradient(135deg,#ff8a3d,var(--hot,#eb6325));color:#fff;font-size:10.5px;font-weight:900;border-radius:7px;padding:4px 9px}
-  .tg-it{display:flex;gap:12px;margin-top:11px;align-items:center}
-  .tg-it img{width:66px;height:66px;border-radius:13px;object-fit:cover}
-  .tg-it .t{flex:1}
-  .tg-it .t b{font-size:14px;font-weight:800;color:var(--ink)}
-  .tg-it .t p{font-size:11px;color:var(--mut);font-weight:600;margin-top:3px}
-  .tg-go{border:none;border-radius:999px;font-size:12.5px;font-weight:900;padding:11px 16px;font-family:inherit;cursor:pointer;white-space:nowrap;color:#fff;display:flex;align-items:center;gap:5px;background:linear-gradient(135deg,#ff5d3a,var(--promo));box-shadow:0 7px 15px color-mix(in srgb,var(--promo) 40%,transparent),inset 0 1.5px 0 rgba(255,255,255,.3)}
-  .tg-bar{height:9px;border-radius:5px;background:var(--line);margin-top:11px;overflow:hidden}
-  .tg-bar i{display:block;height:100%;width:74%;background:linear-gradient(90deg,var(--yel),var(--hot));border-radius:5px}
-  .tg-ft{font-size:11px;font-weight:700;color:var(--mut);margin-top:7px}
-  .tg-ft b{color:var(--accent)}
-  .foot-note{text-align:center;font-size:10.5px;letter-spacing:.24em;font-weight:800;color:var(--mut);padding:20px 0 14px;opacity:.7}
-  /* ============ Tabbar ============ */
-  /* ============ 瀑布流推荐 ============ */
-  .wf{margin:20px 14px 0}
-  .wf-hd{display:flex;align-items:center;justify-content:center;gap:10px;padding:0 0 13px;color:var(--ink)}
-  .wf-hd::before,.wf-hd::after{content:"";width:30px;height:1px;background:var(--mut);opacity:.45}
-  .wf-hd h3{font-size:16px;font-weight:900;display:flex;align-items:center;gap:6px}
-  .wf-hd h3 svg{color:var(--hot)}
-  .wf-bd{display:flex;gap:10px;align-items:flex-start}
-  .wf-col{flex:1;display:flex;flex-direction:column;gap:10px;min-width:0}
-  .wf-it{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden;box-shadow:var(--shadow);transition:background .5s;animation:wfIn .45s ease both}
-  @keyframes wfIn{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
-  .wf-it img{width:100%;object-fit:cover;display:block}
-  .wf-it .pd-bd{padding:8px 10px 10px}
-  .wf-load{display:flex;align-items:center;justify-content:center;gap:8px;padding:14px 0 4px;font-size:11.5px;font-weight:700;color:var(--mut)}
-  .wf-load i{width:14px;height:14px;border-radius:50%;border:2px solid var(--line);border-top-color:var(--accent);animation:spin .8s linear infinite}
-  @keyframes spin{to{transform:rotate(360deg)}}
-  .wf-end{text-align:center;padding:16px 0 4px;font-size:11.5px;font-weight:700;color:var(--mut)}
-  .tabbar{flex:none;height:72px;background:var(--tabbar);border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(5,1fr);padding:7px 4px 15px;transition:background .5s}
-  .tab{display:flex;flex-direction:column;align-items:center;gap:3px;font-size:10.5px;font-weight:700;color:var(--mut);padding-top:5px;position:relative}
-  .tab.on{color:var(--accent)}
-  [data-theme="dark"] .tab.on svg{filter:drop-shadow(0 0 9px rgba(110,199,38,.9))}
-  .tab .bdg{position:absolute;top:2px;right:calc(50% - 20px);min-width:16px;height:16px;border-radius:8px;background:var(--promo);color:#fff;font-size:9px;font-weight:900;display:grid;place-items:center;padding:0 4px;border:1.5px solid var(--tabbar)}
-  .fu{opacity:0;transform:translateY(16px);transition:opacity .6s ease,transform .6s ease}
-  .fu.in{opacity:1;transform:none}
-  @media(max-width:480px){body{padding:0}.phone{width:100%;height:100vh;border-radius:0;box-shadow:none}.cap{display:none}}
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>购物车 · 乐趣生活</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        -webkit-tap-highlight-color: transparent;
+      }
+      body {
+        background: #191511;
+        font-family: -apple-system, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 36px 16px 60px;
+        color: #f6f2e5;
+      }
+      .cap {
+        margin-bottom: 18px;
+        text-align: center;
+      }
+      .cap h1 {
+        font-size: 22px;
+        letter-spacing: 0.1em;
+        font-weight: 900;
+      }
+      .cap p {
+        font-size: 12px;
+        margin-top: 6px;
+        letter-spacing: 0.12em;
+        opacity: 0.55;
+      }
+      /* ============ 主题变量 ============ */
+      .phone {
+        --hd1: #009146;
+        --hd2: #006b36;
+        --bg: #f6f1e6;
+        --card: #ffffff;
+        --ink: #16130f;
+        --mut: #857c6d;
+        --accent: #009146;
+        --promo: #f03749;
+        --hot: #eb6325;
+        --yel: #fee600;
+        --tabbar: #ffffff;
+        --line: rgba(22, 19, 15, 0.08);
+        --notice-bg: #e6f3ea;
+        --notice-tx: #0b6b3d;
+        --capsule-bg: rgba(255, 255, 255, 0.94);
+        --capsule-line: rgba(22, 19, 15, 0.12);
+        --capsule-ink: #16130f;
+        --cnt-bg: #16130f;
+        --cnt-tx: #fee600;
+        --shadow: 0 10px 26px rgba(22, 19, 15, 0.09);
+      }
+      .phone[data-theme='dark'] {
+        --hd1: #10241a;
+        --hd2: #0c1212;
+        --bg: #0c1212;
+        --card: #141d1d;
+        --ink: #ffffff;
+        --mut: #9fb0a8;
+        --accent: #6ec726;
+        --promo: #ff5d3d;
+        --hot: #f7c400;
+        --yel: #f7c400;
+        --tabbar: #0a0f0f;
+        --line: rgba(255, 255, 255, 0.08);
+        --notice-bg: rgba(110, 199, 38, 0.13);
+        --notice-tx: #8fe33f;
+        --capsule-bg: rgba(12, 18, 18, 0.45);
+        --capsule-line: rgba(255, 255, 255, 0.22);
+        --capsule-ink: #ffffff;
+        --cnt-bg: #0c1212;
+        --cnt-tx: #6ec726;
+        --shadow: 0 10px 26px rgba(0, 0, 0, 0.4);
+      }
+      .phone {
+        width: 375px;
+        height: 760px;
+        background: var(--bg);
+        border-radius: 44px;
+        position: relative;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        flex: none;
+        color: var(--ink);
+        box-shadow:
+          0 30px 80px -20px rgba(0, 0, 0, 0.55),
+          0 0 0 10px #141210;
+        transition: background 0.5s;
+      }
+      .scroll {
+        flex: 1;
+        overflow-y: auto;
+        overscroll-behavior: contain;
+        scrollbar-width: none;
+      }
+      .scroll::-webkit-scrollbar {
+        display: none;
+      }
+      /* ============ 顶部（搜索 + 胶囊） ============ */
+      .top {
+        background: linear-gradient(165deg, var(--hd1), var(--hd2));
+        padding: 10px 16px 34px;
+        transition: background 0.5s;
+        position: relative;
+        overflow: hidden;
+      }
+      .top::after {
+        content: '';
+        position: absolute;
+        right: -46px;
+        top: -52px;
+        width: 150px;
+        height: 150px;
+        border-radius: 50%;
+        background: rgba(254, 230, 0, 0.14);
+      }
+      .statusbar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 13px;
+        font-weight: 700;
+        color: #fff;
+        padding: 4px 10px 0;
+        position: relative;
+        z-index: 2;
+      }
+      .navrow {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-top: 10px;
+        position: relative;
+        z-index: 2;
+      }
+      .loc {
+        display: flex;
+        align-items: center;
+        gap: 3px;
+        color: #fff;
+        font-size: 12.5px;
+        font-weight: 800;
+        flex-shrink: 0;
+        max-width: 104px;
+        background: rgba(255, 255, 255, 0.16);
+        border-radius: 999px;
+        padding: 7px 9px;
+      }
+      .loc b {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        font-weight: 800;
+      }
+      .loc svg {
+        flex-shrink: 0;
+      }
+      .search {
+        flex: 1;
+        height: 34px;
+        background: rgba(255, 255, 255, 0.95);
+        border-radius: 17px;
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        padding: 0 13px;
+        font-size: 12.5px;
+        color: #9a938a;
+      }
+      [data-theme='dark'] .search {
+        background: rgba(255, 255, 255, 0.14);
+        backdrop-filter: blur(8px);
+        color: rgba(255, 255, 255, 0.75);
+      }
+      .capsule {
+        width: 87px;
+        height: 32px;
+        flex: none;
+        border-radius: 16px;
+        background: var(--capsule-bg);
+        display: flex;
+        align-items: center;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.14);
+        transition: background 0.5s;
+      }
+      [data-theme='dark'] .capsule {
+        backdrop-filter: blur(8px);
+        border: 1px solid rgba(255, 255, 255, 0.25);
+        box-shadow: none;
+      }
+      .capsule .cell {
+        flex: 1;
+        display: grid;
+        place-items: center;
+        height: 100%;
+      }
+      .capsule .cell:first-child {
+        border-right: 1px solid var(--capsule-line);
+      }
+      /* ============ 主图（日夜双图切换） ============ */
+      .hero {
+        margin: -22px 14px 0;
+        border-radius: 18px;
+        overflow: hidden;
+        position: relative;
+        z-index: 3;
+        box-shadow: var(--shadow);
+        height: 136px;
+      }
+      .hero img {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        transition: opacity 0.6s;
+      }
+      .hero .img-d {
+        opacity: 0;
+      }
+      [data-theme='dark'] .hero .img-d {
+        opacity: 1;
+      }
+      [data-theme='dark'] .hero .img-l {
+        opacity: 0;
+      }
+      .hero .ov {
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(100deg, rgba(22, 19, 15, 0.6) 6%, transparent 60%);
+      }
+      .hero .tx {
+        position: absolute;
+        left: 15px;
+        top: 13px;
+        color: #fff;
+      }
+      .hero .tx .k {
+        display: inline-block;
+        background: var(--yel);
+        color: #16130f;
+        font-size: 10px;
+        font-weight: 900;
+        padding: 3px 7px;
+        border-radius: 6px;
+        letter-spacing: 0.06em;
+      }
+      .hero .tx h2 {
+        font-size: 19.5px;
+        font-weight: 900;
+        margin-top: 6px;
+        line-height: 1.3;
+        text-shadow: 0 2px 10px rgba(0, 0, 0, 0.4);
+      }
+      .hero .tx p {
+        font-size: 11px;
+        font-weight: 700;
+        opacity: 0.92;
+        margin-top: 3px;
+      }
+      /* 主题切换开关 */
+      .tswitch {
+        position: absolute;
+        right: 12px;
+        bottom: 12px;
+        z-index: 4;
+        border: none;
+        cursor: pointer;
+        font-family: inherit;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        border-radius: 999px;
+        padding: 8px 13px;
+        background: rgba(22, 19, 15, 0.55);
+        backdrop-filter: blur(8px);
+        color: #fff;
+        font-size: 11.5px;
+        font-weight: 800;
+        border: 1px solid rgba(255, 255, 255, 0.25);
+      }
+      /* ============ 公告（轻盈版） ============ */
+      .notice {
+        margin: 12px 14px 0;
+        height: 38px;
+        border-radius: 12px;
+        background: var(--notice-bg);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 0 13px;
+        overflow: hidden;
+        transition: background 0.5s;
+      }
+      .notice .lb {
+        flex: none;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        font-size: 11.5px;
+        font-weight: 900;
+        color: var(--notice-tx);
+      }
+      .notice .roll {
+        flex: 1;
+        min-width: 0;
+        overflow: hidden;
+        white-space: nowrap;
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--notice-tx);
+      }
+      .notice .roll-in {
+        display: inline-block;
+        animation: roll 22s linear infinite;
+        will-change: transform;
+      }
+      @keyframes roll {
+        from {
+          transform: translateX(0);
+        }
+        to {
+          transform: translateX(-50%);
+        }
+      }
+      /* ============ 秒杀（减重版） ============ */
+      .sk {
+        margin: 12px 14px 0;
+        background: var(--card);
+        border-radius: 18px;
+        padding: 13px 13px 12px;
+        box-shadow: var(--shadow);
+        transition: background 0.5s;
+      }
+      .sk-hd {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+      .sk-hd h3 {
+        font-size: 16.5px;
+        font-weight: 900;
+        color: var(--ink);
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .sk-hd h3 svg {
+        color: var(--promo);
+      }
+      .sk-hd h3 em {
+        font-style: normal;
+        font-size: 10px;
+        font-weight: 900;
+        color: #fff;
+        background: var(--promo);
+        border-radius: 5px;
+        padding: 2px 6px;
+        letter-spacing: 0.06em;
+      }
+      .cnt {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        font-size: 10.5px;
+        font-weight: 700;
+        color: var(--mut);
+      }
+      .cnt b {
+        background: var(--cnt-bg);
+        color: var(--cnt-tx);
+        border-radius: 5px;
+        padding: 3px 6px;
+        font-size: 11.5px;
+        font-weight: 900;
+      }
+      .sk-rail {
+        display: flex;
+        gap: 10px;
+        margin-top: 11px;
+        overflow-x: auto;
+        scrollbar-width: none;
+      }
+      .sk-rail::-webkit-scrollbar {
+        display: none;
+      }
+      .sk-card {
+        flex: none;
+        width: 112px;
+        border-radius: 13px;
+        overflow: hidden;
+        border: 1px solid var(--line);
+        background: var(--card);
+      }
+      .sk-card img {
+        width: 100%;
+        height: 80px;
+        object-fit: cover;
+        display: block;
+      }
+      .sk-bd {
+        padding: 7px 9px 9px;
+      }
+      .sk-nm {
+        font-size: 11.5px;
+        font-weight: 800;
+        line-height: 1.35;
+        height: 30px;
+        overflow: hidden;
+        color: var(--ink);
+      }
+      .sk-pr {
+        margin-top: 4px;
+        display: flex;
+        align-items: baseline;
+        gap: 5px;
+      }
+      .sk-pr b {
+        color: var(--promo);
+        font-size: 16px;
+        font-weight: 900;
+      }
+      .sk-pr s {
+        font-size: 10px;
+        color: var(--mut);
+      }
+      .sk-bar {
+        height: 12px;
+        border-radius: 6px;
+        background: color-mix(in srgb, var(--promo) 12%, transparent);
+        margin-top: 6px;
+        position: relative;
+        overflow: hidden;
+      }
+      .sk-bar i {
+        position: absolute;
+        inset: 0;
+        right: auto;
+        background: linear-gradient(90deg, var(--hot), var(--promo));
+        border-radius: 6px;
+      }
+      .sk-bar span {
+        position: absolute;
+        inset: 0;
+        text-align: center;
+        font-size: 8.5px;
+        font-weight: 900;
+        color: #fff;
+        line-height: 12px;
+        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+      }
+      /* ============ 分类 ============ */
+      .cats {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 12px 8px;
+        padding: 16px 14px 2px;
+      }
+      .cat {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 7px;
+        cursor: pointer;
+        transition: transform 0.15s;
+      }
+      .cat:active {
+        transform: scale(0.92);
+      }
+      .badge {
+        width: 56px;
+        height: 56px;
+        border-radius: 19px;
+        overflow: hidden;
+        box-shadow: var(--shadow);
+      }
+      .badge img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+      }
+      .badge.duo {
+        display: grid;
+        place-items: center;
+      }
+      .cat span {
+        font-size: 11.5px;
+        font-weight: 800;
+        color: var(--ink);
+      }
+      /* ============ 分区货架 ============ */
+      .aisle {
+        margin: 16px 14px 0;
+      }
+      .aisle-hd {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 2px 4px 11px;
+      }
+      .aisle-hd h3 {
+        font-size: 17px;
+        font-weight: 900;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: var(--ink);
+      }
+      .aisle-hd h3 .chip-ic {
+        width: 22px;
+        height: 22px;
+        border-radius: 7px;
+        display: grid;
+        place-items: center;
+        color: #fff;
+      }
+      .aisle-hd a {
+        font-size: 11.5px;
+        font-weight: 800;
+        text-decoration: none;
+      }
+      .aisle-hd a.c-grn {
+        color: #009146;
+      }
+      .aisle-hd a.c-blu {
+        color: #1a6fc4;
+      }
+      .phone[data-theme='dark'] .aisle-hd a.c-grn {
+        color: #6ec726;
+      }
+      .phone[data-theme='dark'] .aisle-hd a.c-blu {
+        color: #5ea8f0;
+      }
+      .aisle-bd {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+      }
+      .pd {
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        overflow: hidden;
+        box-shadow: var(--shadow);
+        transition: background 0.5s;
+      }
+      .pd img {
+        width: 100%;
+        height: 100px;
+        object-fit: cover;
+        display: block;
+      }
+      .pd-bd {
+        padding: 8px 10px 10px;
+      }
+      .pd-nm {
+        font-size: 13px;
+        font-weight: 800;
+        line-height: 1.4;
+        color: var(--ink);
+      }
+      .pd-tg {
+        display: inline-block;
+        font-size: 9.5px;
+        font-weight: 800;
+        border-radius: 5px;
+        padding: 2px 6px;
+        margin-top: 4px;
+      }
+      .pd-row {
+        display: flex;
+        align-items: flex-end;
+        justify-content: space-between;
+        margin-top: 6px;
+      }
+      .pr {
+        color: var(--promo);
+        font-weight: 900;
+        font-size: 11px;
+      }
+      .pr b {
+        font-size: 20px;
+        letter-spacing: -0.02em;
+      }
+      .pr sup {
+        font-size: 10.5px;
+        font-weight: 900;
+      }
+      .pr s {
+        color: var(--mut);
+        font-size: 10px;
+        font-weight: 600;
+        margin-left: 4px;
+      }
+      .pbtn {
+        width: 34px;
+        height: 34px;
+        border-radius: 50%;
+        border: none;
+        cursor: pointer;
+        display: grid;
+        place-items: center;
+        background: linear-gradient(145deg, #19b26b, var(--green, #009146));
+        background: linear-gradient(
+          145deg,
+          color-mix(in srgb, var(--accent) 70%, #3dff8f),
+          var(--accent)
+        );
+        box-shadow:
+          0 6px 13px color-mix(in srgb, var(--accent) 40%, transparent),
+          inset 0 1.5px 0 rgba(255, 255, 255, 0.35);
+        transition: transform 0.12s;
+      }
+      .pbtn:active {
+        transform: scale(0.86);
+      }
+      /* ============ 团购 ============ */
+      .tg {
+        margin: 14px 14px 0;
+        background: var(--card);
+        border-radius: 18px;
+        padding: 14px;
+        box-shadow: var(--shadow);
+        transition: background 0.5s;
+      }
+      .tg-hd {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      .tg-hd h3 {
+        font-size: 16.5px;
+        font-weight: 900;
+        color: var(--ink);
+      }
+      .tg-hd em {
+        font-style: normal;
+        background: linear-gradient(135deg, #ff8a3d, var(--hot, #eb6325));
+        color: #fff;
+        font-size: 10.5px;
+        font-weight: 900;
+        border-radius: 7px;
+        padding: 4px 9px;
+      }
+      .tg-it {
+        display: flex;
+        gap: 12px;
+        margin-top: 11px;
+        align-items: center;
+      }
+      .tg-it img {
+        width: 66px;
+        height: 66px;
+        border-radius: 13px;
+        object-fit: cover;
+      }
+      .tg-it .t {
+        flex: 1;
+      }
+      .tg-it .t b {
+        font-size: 14px;
+        font-weight: 800;
+        color: var(--ink);
+      }
+      .tg-it .t p {
+        font-size: 11px;
+        color: var(--mut);
+        font-weight: 600;
+        margin-top: 3px;
+      }
+      .tg-go {
+        border: none;
+        border-radius: 999px;
+        font-size: 12.5px;
+        font-weight: 900;
+        padding: 11px 16px;
+        font-family: inherit;
+        cursor: pointer;
+        white-space: nowrap;
+        color: #fff;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        background: linear-gradient(135deg, #ff5d3a, var(--promo));
+        box-shadow:
+          0 7px 15px color-mix(in srgb, var(--promo) 40%, transparent),
+          inset 0 1.5px 0 rgba(255, 255, 255, 0.3);
+      }
+      .tg-bar {
+        height: 9px;
+        border-radius: 5px;
+        background: var(--line);
+        margin-top: 11px;
+        overflow: hidden;
+      }
+      .tg-bar i {
+        display: block;
+        height: 100%;
+        width: 74%;
+        background: linear-gradient(90deg, var(--yel), var(--hot));
+        border-radius: 5px;
+      }
+      .tg-ft {
+        font-size: 11px;
+        font-weight: 700;
+        color: var(--mut);
+        margin-top: 7px;
+      }
+      .tg-ft b {
+        color: var(--accent);
+      }
+      .foot-note {
+        text-align: center;
+        font-size: 10.5px;
+        letter-spacing: 0.24em;
+        font-weight: 800;
+        color: var(--mut);
+        padding: 20px 0 14px;
+        opacity: 0.7;
+      }
+      /* ============ Tabbar ============ */
+      /* ============ 瀑布流推荐 ============ */
+      .wf {
+        margin: 20px 14px 0;
+      }
+      .wf-hd {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        padding: 0 0 13px;
+        color: var(--ink);
+      }
+      .wf-hd::before,
+      .wf-hd::after {
+        content: '';
+        width: 30px;
+        height: 1px;
+        background: var(--mut);
+        opacity: 0.45;
+      }
+      .wf-hd h3 {
+        font-size: 16px;
+        font-weight: 900;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .wf-hd h3 svg {
+        color: var(--hot);
+      }
+      .wf-bd {
+        display: flex;
+        gap: 10px;
+        align-items: flex-start;
+      }
+      .wf-col {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        min-width: 0;
+      }
+      .wf-it {
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        overflow: hidden;
+        box-shadow: var(--shadow);
+        transition: background 0.5s;
+        animation: wfIn 0.45s ease both;
+      }
+      @keyframes wfIn {
+        from {
+          opacity: 0;
+          transform: translateY(14px);
+        }
+        to {
+          opacity: 1;
+          transform: none;
+        }
+      }
+      .wf-it img {
+        width: 100%;
+        object-fit: cover;
+        display: block;
+      }
+      .wf-it .pd-bd {
+        padding: 8px 10px 10px;
+      }
+      .wf-load {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        padding: 14px 0 4px;
+        font-size: 11.5px;
+        font-weight: 700;
+        color: var(--mut);
+      }
+      .wf-load i {
+        width: 14px;
+        height: 14px;
+        border-radius: 50%;
+        border: 2px solid var(--line);
+        border-top-color: var(--accent);
+        animation: spin 0.8s linear infinite;
+      }
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+      .wf-end {
+        text-align: center;
+        padding: 16px 0 4px;
+        font-size: 11.5px;
+        font-weight: 700;
+        color: var(--mut);
+      }
+      .tabbar {
+        flex: none;
+        height: 72px;
+        background: var(--tabbar);
+        border-top: 1px solid var(--line);
+        display: grid;
+        grid-template-columns: repeat(5, 1fr);
+        padding: 7px 4px 15px;
+        transition: background 0.5s;
+      }
+      .tab {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 3px;
+        font-size: 10.5px;
+        font-weight: 700;
+        color: var(--mut);
+        padding-top: 5px;
+        position: relative;
+      }
+      .tab.on {
+        color: var(--accent);
+      }
+      [data-theme='dark'] .tab.on svg {
+        filter: drop-shadow(0 0 9px rgba(110, 199, 38, 0.9));
+      }
+      .tab .bdg {
+        position: absolute;
+        top: 2px;
+        right: calc(50% - 20px);
+        min-width: 16px;
+        height: 16px;
+        border-radius: 8px;
+        background: var(--promo);
+        color: #fff;
+        font-size: 9px;
+        font-weight: 900;
+        display: grid;
+        place-items: center;
+        padding: 0 4px;
+        border: 1.5px solid var(--tabbar);
+      }
+      .fu {
+        opacity: 0;
+        transform: translateY(16px);
+        transition:
+          opacity 0.6s ease,
+          transform 0.6s ease;
+      }
+      .fu.in {
+        opacity: 1;
+        transform: none;
+      }
+      @media (max-width: 480px) {
+        body {
+          padding: 0;
+        }
+        .phone {
+          width: 100%;
+          height: 100vh;
+          border-radius: 0;
+          box-shadow: none;
+        }
+        .cap {
+          display: none;
+        }
+      }
 
-  a.tab{text-decoration:none}
-  .ptitle{color:#fff;font-size:19px;font-weight:900;letter-spacing:.02em;flex:1}
-  .pick{margin:12px 14px 0;background:linear-gradient(135deg,var(--hd1),var(--hd2));border-radius:16px;padding:13px 14px;color:#fff;display:flex;align-items:center;gap:10px;box-shadow:var(--shadow)}
-  .pick .pi{width:36px;height:36px;border-radius:11px;background:rgba(255,255,255,.18);display:grid;place-items:center;flex:none}
-  .pick .pt{flex:1;min-width:0}
-  .pick .pt b{font-size:13.5px;font-weight:900;display:block}
-  .pick .pt p{font-size:10.5px;font-weight:700;opacity:.85;margin-top:2px}
-  .pick a{flex:none;color:#fff;font-size:11px;font-weight:800;text-decoration:none;background:rgba(255,255,255,.18);border-radius:999px;padding:7px 11px}
-  .cj{margin:11px 14px 0;background:var(--notice-bg);color:var(--notice-tx);border-radius:12px;padding:10px 13px;font-size:11.5px;font-weight:800;display:flex;align-items:center;gap:8px;transition:background .5s}
-  .cj .bar{flex:1;height:5px;border-radius:3px;background:rgba(0,0,0,.08);overflow:hidden}
-  .cj .bar i{display:block;height:100%;width:70%;border-radius:3px;background:currentColor}
-  .clist{margin:12px 14px 0;display:flex;flex-direction:column;gap:10px}
-  .crow{display:flex;gap:10px;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:11px;box-shadow:var(--shadow);align-items:center;transition:background .5s}
-  .crow img{width:72px;height:72px;border-radius:12px;object-fit:cover;flex:none}
-  .crow .ci{flex:1;min-width:0}
-  .crow .ci .nm{font-size:13.5px;font-weight:800;color:var(--ink)}
-  .crow .ci .sp{font-size:10.5px;font-weight:700;color:var(--mut);margin-top:3px}
-  .crow .ci .bot{display:flex;align-items:center;justify-content:space-between;margin-top:8px}
-  .step{display:flex;align-items:center;gap:2px;background:var(--bg);border-radius:999px;padding:3px}
-  .step button{width:24px;height:24px;border:none;border-radius:50%;background:var(--card);color:var(--ink);font-size:14px;font-weight:900;display:grid;place-items:center;cursor:pointer;box-shadow:var(--shadow)}
-  .step b{min-width:26px;text-align:center;font-size:13px;font-weight:900;color:var(--ink)}
-  .paybar{flex:none;display:flex;align-items:center;gap:11px;background:var(--tabbar);border-top:1px solid var(--line);padding:10px 14px 8px;transition:background .5s}
-  .paybar .sum{flex:1;min-width:0}
-  .paybar .sum p{font-size:10px;font-weight:700;color:var(--mut)}
-  .paybar .sum .t{font-size:12px;font-weight:900;color:var(--ink)}
-  .paybar .sum .t b{color:var(--promo);font-size:21px}
-  .paybtn{border:none;border-radius:999px;background:linear-gradient(135deg,#f7563c,#e8253f);color:#fff;font-size:14px;font-weight:900;padding:12px 26px;cursor:pointer;box-shadow:0 6px 16px rgba(232,37,63,.35)}
-.phone.no-tr,.phone.no-tr *{transition:none!important}
-  /* ===== 小满 AI 入口 ===== */
-  .maifab{position:absolute;right:12px;bottom:92px;width:52px;height:52px;border-radius:50%;background:rgba(255,255,255,.96);border:1px solid var(--line);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:30;text-decoration:none;box-shadow:0 8px 20px rgba(22,19,15,.16),0 0 0 4px rgba(0,200,130,.10);animation:maipulse 2.8s ease-in-out infinite}
-  .maifab img{width:31px;height:31px}
-  .maifab em{font-style:normal;font-size:8.5px;font-weight:900;color:#16130f;margin-top:1px}
-  .phone[data-theme="dark"] .maifab{background:rgba(20,26,24,.94)}
-  .phone[data-theme="dark"] .maifab em{color:#f6f2e5}
-  @keyframes maipulse{0%,100%{box-shadow:0 8px 20px rgba(22,19,15,.16),0 0 0 4px rgba(0,200,130,.12)}50%{box-shadow:0 8px 22px rgba(22,19,15,.18),0 0 0 9px rgba(0,200,130,.04)}}
-  .maitoast{position:absolute;left:50%;bottom:158px;transform:translateX(-50%) translateY(14px);background:rgba(22,19,15,.92);color:#fff;font-size:11.5px;font-weight:700;border-radius:12px;padding:10px 15px;max-width:290px;text-align:center;line-height:1.6;opacity:0;pointer-events:none;transition:.3s;z-index:40}
-  .maitoast.show{opacity:1;transform:translateX(-50%) translateY(0)}
-</style></style>
-</head>
-<body>
-<svg width="0" height="0" style="position:absolute"><defs>
-  <g id="x-search"><circle cx="11" cy="11" r="6.5" fill="none" stroke-width="2.2"/><path d="m16 16 4.2 4.2" stroke-width="2.2" stroke-linecap="round"/></g>
-  <g id="x-flash"><path d="M13.2 2.5 5 13.8h5.6l-1.3 7.7 8.2-11.3h-5.6z"/></g>
-  <g id="x-plus"><path d="M12 5.5v13M5.5 12h13" fill="none" stroke-width="3" stroke-linecap="round"/></g>
-  <g id="x-arrow"><path d="M4 12h13m-5-5 5 5-5 5" fill="none" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></g>
-  <g id="x-mega"><path d="M3.5 10.2 12 6.5l8.5 3.7v3.6a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2z"/><path d="M12 6.5V4.5" stroke-linecap="round"/></g>
-  <g id="x-sun"><circle cx="12" cy="12" r="4.6"/><path d="M12 2.5v2.4M12 19.1v2.4M2.5 12h2.4M19.1 12h2.4M5.2 5.2l1.7 1.7M17.1 17.1l1.7 1.7M18.8 5.2l-1.7 1.7M6.9 17.1l-1.7 1.7" fill="none" stroke-width="2.2" stroke-linecap="round"/></g>
-  <g id="x-moon"><path d="M20.5 14.5A8.5 8.5 0 1 1 9.5 3.5a7 7 0 0 0 11 11z"/></g>
-  <g id="f-wheat"><path d="M11 3.2c.5 1.8.5 3.4 0 5.1-.5-1.7-.5-3.3 0-5.1zm2 0c-.5 1.8-.5 3.4 0 5.1.5-1.7.5-3.3 0-5.1z"/><path d="M8.6 6.2c1.5 1.1 2.4 2.6 2.7 4.4-1.8-.4-3.2-1.4-4.1-3zm6.8 0c-1.5 1.1-2.4 2.6-2.7 4.4 1.8-.4 3.2-1.4 4.1-3zM8.6 11c1.5 1.1 2.4 2.6 2.7 4.4-1.8-.4-3.2-1.4-4.1-3zm6.8 0c-1.5 1.1-2.4 2.6-2.7 4.4 1.8-.4 3.2-1.4 4.1-3z" opacity=".75"/><path d="M11.2 13.5h1.6v7.3h-1.6z"/></g>
-  <g id="f-group"><circle cx="9" cy="8" r="3.4"/><circle cx="16.3" cy="9.3" r="2.7" opacity=".7"/><path d="M3.2 19.5c.6-3.6 2.8-5.6 5.8-5.6s5.2 2 5.8 5.6z"/><path d="M14.9 14.6c2.6.3 4.4 2.1 4.9 4.9h-4.4c-.3-2-1.2-3.7-2.6-4.8.7-.1 1.4-.2 2.1-.1z" opacity=".7"/></g>
-  <g id="f-bill"><path d="M6.5 3h11a1.5 1.5 0 0 1 1.5 1.5v15a1.5 1.5 0 0 1-1.5 1.5h-11a1.5 1.5 0 0 1-1.5-1.5v-15A1.5 1.5 0 0 1 6.5 3z"/><path d="M8.5 8h7M8.5 11.5h7M8.5 15h4.5" stroke="#fff" stroke-width="1.8" stroke-linecap="round" fill="none"/></g>
-  <g id="f-cut"><path d="M19.5 4.6 9.9 14.2l1.7 1.7 9.6-9.6a1.2 1.2 0 0 0-1.7-1.7zM4.6 19.5l7.4-7.4 1.7 1.7-7.4 7.4a1.2 1.2 0 0 1-1.7-1.7z"/><circle cx="7" cy="6.8" r="2.9" fill="none" stroke-width="2.2"/><circle cx="7" cy="17.2" r="2.9" fill="none" stroke-width="2.2"/></g>
-  <g id="f-home"><path d="M12 4 4 10.6V20a1 1 0 0 0 1 1h4.6v-5.6h4.8V21H19a1 1 0 0 0 1-1v-9.4z"/></g>
-  <g id="f-shop"><path d="M4.6 8.6 6 4h12l1.4 4.6zM4 9.8h16V20a1 1 0 0 1-1 1h-5v-5.4h-4V21H5a1 1 0 0 1-1-1z"/><path d="M4 9.8h16v1a2.6 2.6 0 0 1-5.3 0 2.7 2.7 0 0 1-5.4 0 2.6 2.6 0 0 1-5.3 0z" opacity=".72"/></g>
-  <g id="f-chat"><path d="M6.5 4h11A2.5 2.5 0 0 1 20 6.5v6.8a2.5 2.5 0 0 1-2.5 2.5h-7.8l-4.5 3.6a.6.6 0 0 1-1-.5V6.5A2.5 2.5 0 0 1 6.5 4z"/><circle cx="9.2" cy="10" r="1.3" fill="#fff"/><circle cx="13.4" cy="10" r="1.3" fill="#fff"/><circle cx="17" cy="10" r="1.3" fill="#fff" opacity=".6"/></g>
-  <g id="f-cart"><path d="M3.6 4.4h2.3l.7 3.2H21l-1.7 7.2a1.6 1.6 0 0 1-1.6 1.3H8.7a1.6 1.6 0 0 1-1.6-1.3L5.4 6.6l-.4-1.4H3.6z"/><circle cx="9.3" cy="19.6" r="1.7"/><circle cx="16.8" cy="19.6" r="1.7"/></g>
-  <g id="f-me"><circle cx="12" cy="8.2" r="4"/><path d="M4.4 20.4c1-4.2 3.9-6.4 7.6-6.4s6.6 2.2 7.6 6.4a1 1 0 0 1-1 1.2H5.4a1 1 0 0 1-1-1.2z"/></g>
-  <g id="cap-more"><circle cx="4.5" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="19.5" cy="12" r="1.7"/></g>
-  <g id="f-leaf"><path d="M12 21.2c-5.2 0-8.3-3.3-8.3-8.2 0-5.7 4.7-8.8 9.3-9.3-.6 5-1 8.5 1.5 10.9 2.1 2.1 3.6 4.1 3.6 5.7-1.9.7-4 1-6.1 1z"/><path d="M7.3 17.4c2.1-3.1 5.2-6.2 8.8-8.8" fill="none" stroke="#fff" stroke-width="1.9" stroke-linecap="round"/></g>
-  <g id="f-egg"><path d="M12 3.5c-3.9 0-7.2 4.3-7.2 9.3 0 4.4 3 7.7 7.2 7.7s7.2-3.3 7.2-7.7c0-5-3.3-9.3-7.2-9.3z"/><ellipse cx="9.6" cy="9.4" rx="1.7" ry="2.6" fill="#fff" opacity=".55" transform="rotate(-14 9.6 9.4)"/></g>
-  <g id="cap-target"><circle cx="12" cy="12" r="6.4" fill="none" stroke-width="2"/><circle cx="12" cy="12" r="2.4"/></g>
+      a.tab {
+        text-decoration: none;
+      }
+      .ptitle {
+        color: #fff;
+        font-size: 19px;
+        font-weight: 900;
+        letter-spacing: 0.02em;
+        flex: 1;
+      }
+      .pick {
+        margin: 12px 14px 0;
+        background: linear-gradient(135deg, var(--hd1), var(--hd2));
+        border-radius: 16px;
+        padding: 13px 14px;
+        color: #fff;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        box-shadow: var(--shadow);
+      }
+      .pick .pi {
+        width: 36px;
+        height: 36px;
+        border-radius: 11px;
+        background: rgba(255, 255, 255, 0.18);
+        display: grid;
+        place-items: center;
+        flex: none;
+      }
+      .pick .pt {
+        flex: 1;
+        min-width: 0;
+      }
+      .pick .pt b {
+        font-size: 13.5px;
+        font-weight: 900;
+        display: block;
+      }
+      .pick .pt p {
+        font-size: 10.5px;
+        font-weight: 700;
+        opacity: 0.85;
+        margin-top: 2px;
+      }
+      .pick a {
+        flex: none;
+        color: #fff;
+        font-size: 11px;
+        font-weight: 800;
+        text-decoration: none;
+        background: rgba(255, 255, 255, 0.18);
+        border-radius: 999px;
+        padding: 7px 11px;
+      }
+      .cj {
+        margin: 11px 14px 0;
+        background: var(--notice-bg);
+        color: var(--notice-tx);
+        border-radius: 12px;
+        padding: 10px 13px;
+        font-size: 11.5px;
+        font-weight: 800;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        transition: background 0.5s;
+      }
+      .cj .bar {
+        flex: 1;
+        height: 5px;
+        border-radius: 3px;
+        background: rgba(0, 0, 0, 0.08);
+        overflow: hidden;
+      }
+      .cj .bar i {
+        display: block;
+        height: 100%;
+        width: 70%;
+        border-radius: 3px;
+        background: currentColor;
+      }
+      .clist {
+        margin: 12px 14px 0;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+      .crow {
+        display: flex;
+        gap: 10px;
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        padding: 11px;
+        box-shadow: var(--shadow);
+        align-items: center;
+        transition: background 0.5s;
+      }
+      .crow img {
+        width: 72px;
+        height: 72px;
+        border-radius: 12px;
+        object-fit: cover;
+        flex: none;
+      }
+      .crow .ci {
+        flex: 1;
+        min-width: 0;
+      }
+      .crow .ci .nm {
+        font-size: 13.5px;
+        font-weight: 800;
+        color: var(--ink);
+      }
+      .crow .ci .sp {
+        font-size: 10.5px;
+        font-weight: 700;
+        color: var(--mut);
+        margin-top: 3px;
+      }
+      .crow .ci .bot {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-top: 8px;
+      }
+      .step {
+        display: flex;
+        align-items: center;
+        gap: 2px;
+        background: var(--bg);
+        border-radius: 999px;
+        padding: 3px;
+      }
+      .step button {
+        width: 24px;
+        height: 24px;
+        border: none;
+        border-radius: 50%;
+        background: var(--card);
+        color: var(--ink);
+        font-size: 14px;
+        font-weight: 900;
+        display: grid;
+        place-items: center;
+        cursor: pointer;
+        box-shadow: var(--shadow);
+      }
+      .step b {
+        min-width: 26px;
+        text-align: center;
+        font-size: 13px;
+        font-weight: 900;
+        color: var(--ink);
+      }
+      .paybar {
+        flex: none;
+        display: flex;
+        align-items: center;
+        gap: 11px;
+        background: var(--tabbar);
+        border-top: 1px solid var(--line);
+        padding: 10px 14px 8px;
+        transition: background 0.5s;
+      }
+      .paybar .sum {
+        flex: 1;
+        min-width: 0;
+      }
+      .paybar .sum p {
+        font-size: 10px;
+        font-weight: 700;
+        color: var(--mut);
+      }
+      .paybar .sum .t {
+        font-size: 12px;
+        font-weight: 900;
+        color: var(--ink);
+      }
+      .paybar .sum .t b {
+        color: var(--promo);
+        font-size: 21px;
+      }
+      .paybtn {
+        border: none;
+        border-radius: 999px;
+        background: linear-gradient(135deg, #f7563c, #e8253f);
+        color: #fff;
+        font-size: 14px;
+        font-weight: 900;
+        padding: 12px 26px;
+        cursor: pointer;
+        box-shadow: 0 6px 16px rgba(232, 37, 63, 0.35);
+      }
+      .phone.no-tr,
+      .phone.no-tr * {
+        transition: none !important;
+      }
+      /* ===== 小满 AI 入口 ===== */
+      .maifab {
+        position: absolute;
+        right: 12px;
+        bottom: 92px;
+        width: 52px;
+        height: 52px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.96);
+        border: 1px solid var(--line);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        z-index: 30;
+        text-decoration: none;
+        box-shadow:
+          0 8px 20px rgba(22, 19, 15, 0.16),
+          0 0 0 4px rgba(0, 200, 130, 0.1);
+        animation: maipulse 2.8s ease-in-out infinite;
+      }
+      .maifab img {
+        width: 31px;
+        height: 31px;
+      }
+      .maifab em {
+        font-style: normal;
+        font-size: 8.5px;
+        font-weight: 900;
+        color: #16130f;
+        margin-top: 1px;
+      }
+      .phone[data-theme='dark'] .maifab {
+        background: rgba(20, 26, 24, 0.94);
+      }
+      .phone[data-theme='dark'] .maifab em {
+        color: #f6f2e5;
+      }
+      @keyframes maipulse {
+        0%,
+        100% {
+          box-shadow:
+            0 8px 20px rgba(22, 19, 15, 0.16),
+            0 0 0 4px rgba(0, 200, 130, 0.12);
+        }
+        50% {
+          box-shadow:
+            0 8px 22px rgba(22, 19, 15, 0.18),
+            0 0 0 9px rgba(0, 200, 130, 0.04);
+        }
+      }
+      .maitoast {
+        position: absolute;
+        left: 50%;
+        bottom: 158px;
+        transform: translateX(-50%) translateY(14px);
+        background: rgba(22, 19, 15, 0.92);
+        color: #fff;
+        font-size: 11.5px;
+        font-weight: 700;
+        border-radius: 12px;
+        padding: 10px 15px;
+        max-width: 290px;
+        text-align: center;
+        line-height: 1.6;
+        opacity: 0;
+        pointer-events: none;
+        transition: 0.3s;
+        z-index: 40;
+      }
+      .maitoast.show {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+      }
+    </style>
+  </head>
+  <body>
+    <svg width="0" height="0" style="position: absolute">
+      <defs>
+        <g id="x-search">
+          <circle cx="11" cy="11" r="6.5" fill="none" stroke-width="2.2" />
+          <path d="m16 16 4.2 4.2" stroke-width="2.2" stroke-linecap="round" />
+        </g>
+        <g id="x-flash"><path d="M13.2 2.5 5 13.8h5.6l-1.3 7.7 8.2-11.3h-5.6z" /></g>
+        <g id="x-plus">
+          <path d="M12 5.5v13M5.5 12h13" fill="none" stroke-width="3" stroke-linecap="round" />
+        </g>
+        <g id="x-arrow">
+          <path
+            d="M4 12h13m-5-5 5 5-5 5"
+            fill="none"
+            stroke-width="2.6"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+        </g>
+        <g id="x-mega">
+          <path d="M3.5 10.2 12 6.5l8.5 3.7v3.6a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2z" />
+          <path d="M12 6.5V4.5" stroke-linecap="round" />
+        </g>
+        <g id="x-sun">
+          <circle cx="12" cy="12" r="4.6" />
+          <path
+            d="M12 2.5v2.4M12 19.1v2.4M2.5 12h2.4M19.1 12h2.4M5.2 5.2l1.7 1.7M17.1 17.1l1.7 1.7M18.8 5.2l-1.7 1.7M6.9 17.1l-1.7 1.7"
+            fill="none"
+            stroke-width="2.2"
+            stroke-linecap="round"
+          />
+        </g>
+        <g id="x-moon"><path d="M20.5 14.5A8.5 8.5 0 1 1 9.5 3.5a7 7 0 0 0 11 11z" /></g>
+        <g id="f-wheat">
+          <path
+            d="M11 3.2c.5 1.8.5 3.4 0 5.1-.5-1.7-.5-3.3 0-5.1zm2 0c-.5 1.8-.5 3.4 0 5.1.5-1.7.5-3.3 0-5.1z"
+          />
+          <path
+            d="M8.6 6.2c1.5 1.1 2.4 2.6 2.7 4.4-1.8-.4-3.2-1.4-4.1-3zm6.8 0c-1.5 1.1-2.4 2.6-2.7 4.4 1.8-.4 3.2-1.4 4.1-3zM8.6 11c1.5 1.1 2.4 2.6 2.7 4.4-1.8-.4-3.2-1.4-4.1-3zm6.8 0c-1.5 1.1-2.4 2.6-2.7 4.4 1.8-.4 3.2-1.4 4.1-3z"
+            opacity=".75"
+          />
+          <path d="M11.2 13.5h1.6v7.3h-1.6z" />
+        </g>
+        <g id="f-group">
+          <circle cx="9" cy="8" r="3.4" />
+          <circle cx="16.3" cy="9.3" r="2.7" opacity=".7" />
+          <path d="M3.2 19.5c.6-3.6 2.8-5.6 5.8-5.6s5.2 2 5.8 5.6z" />
+          <path
+            d="M14.9 14.6c2.6.3 4.4 2.1 4.9 4.9h-4.4c-.3-2-1.2-3.7-2.6-4.8.7-.1 1.4-.2 2.1-.1z"
+            opacity=".7"
+          />
+        </g>
+        <g id="f-bill">
+          <path
+            d="M6.5 3h11a1.5 1.5 0 0 1 1.5 1.5v15a1.5 1.5 0 0 1-1.5 1.5h-11a1.5 1.5 0 0 1-1.5-1.5v-15A1.5 1.5 0 0 1 6.5 3z"
+          />
+          <path
+            d="M8.5 8h7M8.5 11.5h7M8.5 15h4.5"
+            stroke="#fff"
+            stroke-width="1.8"
+            stroke-linecap="round"
+            fill="none"
+          />
+        </g>
+        <g id="f-cut">
+          <path
+            d="M19.5 4.6 9.9 14.2l1.7 1.7 9.6-9.6a1.2 1.2 0 0 0-1.7-1.7zM4.6 19.5l7.4-7.4 1.7 1.7-7.4 7.4a1.2 1.2 0 0 1-1.7-1.7z"
+          />
+          <circle cx="7" cy="6.8" r="2.9" fill="none" stroke-width="2.2" />
+          <circle cx="7" cy="17.2" r="2.9" fill="none" stroke-width="2.2" />
+        </g>
+        <g id="f-home">
+          <path d="M12 4 4 10.6V20a1 1 0 0 0 1 1h4.6v-5.6h4.8V21H19a1 1 0 0 0 1-1v-9.4z" />
+        </g>
+        <g id="f-shop">
+          <path
+            d="M4.6 8.6 6 4h12l1.4 4.6zM4 9.8h16V20a1 1 0 0 1-1 1h-5v-5.4h-4V21H5a1 1 0 0 1-1-1z"
+          />
+          <path
+            d="M4 9.8h16v1a2.6 2.6 0 0 1-5.3 0 2.7 2.7 0 0 1-5.4 0 2.6 2.6 0 0 1-5.3 0z"
+            opacity=".72"
+          />
+        </g>
+        <g id="f-chat">
+          <path
+            d="M6.5 4h11A2.5 2.5 0 0 1 20 6.5v6.8a2.5 2.5 0 0 1-2.5 2.5h-7.8l-4.5 3.6a.6.6 0 0 1-1-.5V6.5A2.5 2.5 0 0 1 6.5 4z"
+          />
+          <circle cx="9.2" cy="10" r="1.3" fill="#fff" />
+          <circle cx="13.4" cy="10" r="1.3" fill="#fff" />
+          <circle cx="17" cy="10" r="1.3" fill="#fff" opacity=".6" />
+        </g>
+        <g id="f-cart">
+          <path
+            d="M3.6 4.4h2.3l.7 3.2H21l-1.7 7.2a1.6 1.6 0 0 1-1.6 1.3H8.7a1.6 1.6 0 0 1-1.6-1.3L5.4 6.6l-.4-1.4H3.6z"
+          />
+          <circle cx="9.3" cy="19.6" r="1.7" />
+          <circle cx="16.8" cy="19.6" r="1.7" />
+        </g>
+        <g id="f-me">
+          <circle cx="12" cy="8.2" r="4" />
+          <path
+            d="M4.4 20.4c1-4.2 3.9-6.4 7.6-6.4s6.6 2.2 7.6 6.4a1 1 0 0 1-1 1.2H5.4a1 1 0 0 1-1-1.2z"
+          />
+        </g>
+        <g id="cap-more">
+          <circle cx="4.5" cy="12" r="1.7" />
+          <circle cx="12" cy="12" r="1.7" />
+          <circle cx="19.5" cy="12" r="1.7" />
+        </g>
+        <g id="f-leaf">
+          <path
+            d="M12 21.2c-5.2 0-8.3-3.3-8.3-8.2 0-5.7 4.7-8.8 9.3-9.3-.6 5-1 8.5 1.5 10.9 2.1 2.1 3.6 4.1 3.6 5.7-1.9.7-4 1-6.1 1z"
+          />
+          <path
+            d="M7.3 17.4c2.1-3.1 5.2-6.2 8.8-8.8"
+            fill="none"
+            stroke="#fff"
+            stroke-width="1.9"
+            stroke-linecap="round"
+          />
+        </g>
+        <g id="f-egg">
+          <path
+            d="M12 3.5c-3.9 0-7.2 4.3-7.2 9.3 0 4.4 3 7.7 7.2 7.7s7.2-3.3 7.2-7.7c0-5-3.3-9.3-7.2-9.3z"
+          />
+          <ellipse
+            cx="9.6"
+            cy="9.4"
+            rx="1.7"
+            ry="2.6"
+            fill="#fff"
+            opacity=".55"
+            transform="rotate(-14 9.6 9.4)"
+          />
+        </g>
+        <g id="cap-target">
+          <circle cx="12" cy="12" r="6.4" fill="none" stroke-width="2" />
+          <circle cx="12" cy="12" r="2.4" />
+        </g>
 
-  <g id="x-pin"><path d="M12 21s-6.5-5.4-6.5-10.3A6.5 6.5 0 0 1 12 4a6.5 6.5 0 0 1 6.5 6.7C18.5 15.6 12 21 12 21z"/><circle cx="12" cy="10.6" r="2.4" fill="#fff"/></g>
-</defs></svg>
+        <g id="x-pin">
+          <path
+            d="M12 21s-6.5-5.4-6.5-10.3A6.5 6.5 0 0 1 12 4a6.5 6.5 0 0 1 6.5 6.7C18.5 15.6 12 21 12 21z"
+          />
+          <circle cx="12" cy="10.6" r="2.4" fill="#fff" />
+        </g>
+      </defs>
+    </svg>
 
-<div class="cap"><h1>乐趣生活 · 购物车</h1><p>自提点 + 满减进度 + 数量加减实时算价</p></div>
+    <div class="cap">
+      <h1>乐趣生活 · 购物车</h1>
+      <p>自提点 + 满减进度 + 数量加减实时算价</p>
+    </div>
 
-<div class="phone" id="app">
-  <div class="scroll">
-    <div class="top">
-      <div class="statusbar"><span>9:41</span>
-        <span style="display:flex;gap:5px;align-items:center">
-          <svg width="16" height="11" viewBox="0 0 17 12" fill="#fff"><rect x="0" y="7" width="3" height="5" rx="1"/><rect x="4.5" y="5" width="3" height="7" rx="1"/><rect x="9" y="2.5" width="3" height="9.5" rx="1"/><rect x="13.5" y="0" width="3" height="12" rx="1"/></svg>
-          <svg width="23" height="11" viewBox="0 0 25 12"><rect x="0.5" y="0.5" width="20" height="11" rx="3" fill="none" stroke="#fff"/><rect x="2.5" y="2.5" width="14" height="7" rx="1.5" fill="#fff"/><path d="M23 4v4" stroke="#fff" stroke-width="1.6" stroke-linecap="round"/></svg>
-        </span>
+    <div class="phone" id="app">
+      <div class="scroll">
+        <div class="top">
+          <div class="statusbar">
+            <span>9:41</span>
+            <span style="display: flex; gap: 5px; align-items: center">
+              <svg width="16" height="11" viewBox="0 0 17 12" fill="#fff">
+                <rect x="0" y="7" width="3" height="5" rx="1" />
+                <rect x="4.5" y="5" width="3" height="7" rx="1" />
+                <rect x="9" y="2.5" width="3" height="9.5" rx="1" />
+                <rect x="13.5" y="0" width="3" height="12" rx="1" />
+              </svg>
+              <svg width="23" height="11" viewBox="0 0 25 12">
+                <rect x="0.5" y="0.5" width="20" height="11" rx="3" fill="none" stroke="#fff" />
+                <rect x="2.5" y="2.5" width="14" height="7" rx="1.5" fill="#fff" />
+                <path d="M23 4v4" stroke="#fff" stroke-width="1.6" stroke-linecap="round" />
+              </svg>
+            </span>
+          </div>
+          <div class="navrow">
+            <div class="ptitle">购物车</div>
+            <div class="capsule">
+              <div class="cell">
+                <svg
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="var(--capsule-ink)"
+                  style="transition: 0.5s"
+                >
+                  <use href="#cap-more" />
+                </svg>
+              </div>
+              <div class="cell">
+                <svg
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="var(--capsule-ink)"
+                  style="transition: 0.5s"
+                >
+                  <use href="#cap-target" />
+                </svg>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="pick fu">
+          <div class="pi">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+              <use href="#x-pin" />
+            </svg>
+          </div>
+          <div class="pt">
+            <b>幸福里 3 号楼自提点</b>
+            <p>今日 16:00 后可取 · 距您 120 米</p>
+          </div>
+          <a href="address.html">更换</a>
+        </div>
+        <div class="cj fu">
+          高温关怀券
+          <div class="bar"><i></i></div>
+          再买 ¥12.2 立减 8 元
+        </div>
+        <div class="clist">
+          <div class="crow fu" data-p="19.9">
+            <img src="../assets/img/p-prawn.jpg" alt="" />
+            <div class="ci">
+              <a
+                class="nm"
+                href="detail.html?t=goods&id=sk1"
+                style="text-decoration: none; color: inherit"
+                >鲜活基围虾</a
+              >
+              <div class="sp">500g · 今日秒杀</div>
+              <div class="bot">
+                <div class="pr">¥<b>19</b><sup>.9</sup></div>
+                <div class="step">
+                  <button class="minus">−</button><b class="qty">1</b
+                  ><button class="plus">+</button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="crow fu" data-p="9.9">
+            <img src="../assets/img/p-eggs.jpg" alt="" />
+            <div class="ci">
+              <a
+                class="nm"
+                href="detail.html?t=goods&id=sk2"
+                style="text-decoration: none; color: inherit"
+                >散养土鸡蛋</a
+              >
+              <div class="sp">30 枚 · 可溯源</div>
+              <div class="bot">
+                <div class="pr">¥<b>9</b><sup>.9</sup></div>
+                <div class="step">
+                  <button class="minus">−</button><b class="qty">2</b
+                  ><button class="plus">+</button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="crow fu" data-p="6.9">
+            <img src="../assets/img/p-tomato.jpg" alt="" />
+            <div class="ci">
+              <a
+                class="nm"
+                href="detail.html?t=goods&id=sk3"
+                style="text-decoration: none; color: inherit"
+                >沙瓤番茄</a
+              >
+              <div class="sp">3 斤 · 自然熟</div>
+              <div class="bot">
+                <div class="pr">¥<b>6</b><sup>.9</sup></div>
+                <div class="step">
+                  <button class="minus">−</button><b class="qty">1</b
+                  ><button class="plus">+</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div style="height: 10px"></div>
       </div>
-      <div class="navrow"><div class="ptitle">购物车</div>
-        <div class="capsule">
-          <div class="cell"><svg width="20" height="20" viewBox="0 0 24 24" fill="var(--capsule-ink)" style="transition:.5s"><use href="#cap-more"/></svg></div>
-          <div class="cell"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--capsule-ink)" style="transition:.5s"><use href="#cap-target"/></svg></div>
-        </div></div>
+      <div class="paybar">
+        <div class="sum">
+          <p>共 <span id="pc">4</span> 件 · 已含优惠</p>
+          <div class="t">合计：<b id="pt">¥46.6</b></div>
+        </div>
+        <a
+          class="paybtn"
+          href="checkout.html"
+          style="text-decoration: none; display: grid; place-items: center"
+          >去结算</a
+        >
+      </div>
+      <div class="tabbar">
+        <a class="tab" href="index.html"
+          ><svg width="23" height="23" viewBox="0 0 24 24" fill="currentColor">
+            <use href="#f-home" /></svg
+          >首页</a
+        >
+        <a class="tab" href="mall.html"
+          ><svg width="23" height="23" viewBox="0 0 24 24" fill="currentColor">
+            <use href="#f-shop" /></svg
+          >商城</a
+        >
+        <a class="tab" href="quan.html"
+          ><svg width="23" height="23" viewBox="0 0 24 24" fill="currentColor">
+            <use href="#f-chat" /></svg
+          >生活圈</a
+        >
+        <a class="tab on" href="cart.html"
+          ><svg width="23" height="23" viewBox="0 0 24 24" fill="currentColor">
+            <use href="#f-cart" /></svg
+          >购物车<span class="bdg">3</span></a
+        >
+        <a class="tab" href="me.html"
+          ><svg width="23" height="23" viewBox="0 0 24 24" fill="currentColor">
+            <use href="#f-me" /></svg
+          >我的</a
+        >
+      </div>
+      <a class="maifab" id="maifab" href="mai.html" aria-label="小满AI"
+        ><img src="../assets/icons/mai.png" alt="小满" /><em>小满</em></a
+      >
     </div>
 
-    <div class="pick fu">
-      <div class="pi"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><use href="#x-pin"/></svg></div>
-      <div class="pt"><b>幸福里 3 号楼自提点</b><p>今日 16:00 后可取 · 距您 120 米</p></div>
-      <a href="address.html">更换</a>
-    </div>
-    <div class="cj fu">高温关怀券<div class="bar"><i></i></div>再买 ¥12.2 立减 8 元</div>
-    <div class="clist">
-        <div class="crow fu" data-p="19.9"><img src="../assets/img/p-prawn.jpg" alt="">
-          <div class="ci"><a class="nm" href="detail.html?t=goods&id=sk1" style="text-decoration:none;color:inherit">鲜活基围虾</a><div class="sp">500g · 今日秒杀</div>
-            <div class="bot"><div class="pr">¥<b>19</b><sup>.9</sup></div>
-              <div class="step"><button class="minus">−</button><b class="qty">1</b><button class="plus">+</button></div></div></div></div>
-        <div class="crow fu" data-p="9.9"><img src="../assets/img/p-eggs.jpg" alt="">
-          <div class="ci"><a class="nm" href="detail.html?t=goods&id=sk2" style="text-decoration:none;color:inherit">散养土鸡蛋</a><div class="sp">30 枚 · 可溯源</div>
-            <div class="bot"><div class="pr">¥<b>9</b><sup>.9</sup></div>
-              <div class="step"><button class="minus">−</button><b class="qty">2</b><button class="plus">+</button></div></div></div></div>
-        <div class="crow fu" data-p="6.9"><img src="../assets/img/p-tomato.jpg" alt="">
-          <div class="ci"><a class="nm" href="detail.html?t=goods&id=sk3" style="text-decoration:none;color:inherit">沙瓤番茄</a><div class="sp">3 斤 · 自然熟</div>
-            <div class="bot"><div class="pr">¥<b>6</b><sup>.9</sup></div>
-              <div class="step"><button class="minus">−</button><b class="qty">1</b><button class="plus">+</button></div></div></div></div>
-    </div>
-    <div style="height:10px"></div>
-  </div>
-  <div class="paybar">
-    <div class="sum"><p>共 <span id="pc">4</span> 件 · 已含优惠</p><div class="t">合计：<b id="pt">¥46.6</b></div></div>
-    <a class="paybtn" href="checkout.html" style="text-decoration:none;display:grid;place-items:center">去结算</a>
-  </div>
-<div class="tabbar">
-    <a class="tab" href="index.html"><svg width="23" height="23" viewBox="0 0 24 24" fill="currentColor"><use href="#f-home"/></svg>首页</a>
-    <a class="tab" href="mall.html"><svg width="23" height="23" viewBox="0 0 24 24" fill="currentColor"><use href="#f-shop"/></svg>商城</a>
-    <a class="tab" href="quan.html"><svg width="23" height="23" viewBox="0 0 24 24" fill="currentColor"><use href="#f-chat"/></svg>生活圈</a>
-    <a class="tab on" href="cart.html"><svg width="23" height="23" viewBox="0 0 24 24" fill="currentColor"><use href="#f-cart"/></svg>购物车<span class="bdg">3</span></a>
-    <a class="tab" href="me.html"><svg width="23" height="23" viewBox="0 0 24 24" fill="currentColor"><use href="#f-me"/></svg>我的</a>
-  </div>
-  <a class="maifab" id="maifab" href="mai.html" aria-label="小满AI"><img src="../assets/icons/mai.png" alt="小满"><em>小满</em></a>
-</div>
-
-<script>
-  var app=document.getElementById('app');
-  if(location.search.indexOf('theme=dark')>-1){app.classList.add('no-tr');app.setAttribute('data-theme','dark');requestAnimationFrame(function(){requestAnimationFrame(function(){app.classList.remove('no-tr');});});}
-  document.querySelectorAll('.tabbar a').forEach(function(a){if(app.getAttribute('data-theme')==='dark')a.href+=(a.href.indexOf('?')>-1?'&':'?')+'theme=dark';});
-  if(location.search.indexOf('snap=1')>-1)document.querySelectorAll('.fu').forEach(function(el){el.style.transition='none';el.classList.add('in');});
-  var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target);}});},{root:document.querySelector('.scroll'),threshold:.06});
-  document.querySelectorAll('.fu').forEach(function(el){io.observe(el);});
-  setTimeout(function(){var lim=document.querySelector('.scroll').clientHeight*1.6;document.querySelectorAll('.fu').forEach(function(el){if(el.offsetTop<lim)el.classList.add('in');});},120);
-  function fmt(x){return '¥'+x.toFixed(1);}
-  function recalc(){
-    var t=0,c=0;
-    document.querySelectorAll('.crow').forEach(function(r){
-      var q=parseInt(r.querySelector('.qty').textContent,10);
-      t+=parseFloat(r.getAttribute('data-p'))*q; c+=q;
-    });
-    document.getElementById('pt').textContent=fmt(t);
-    document.getElementById('pc').textContent=c;
-  }
-  document.querySelectorAll('.crow').forEach(function(r){
-    r.querySelector('.plus').addEventListener('click',function(){var q=r.querySelector('.qty');q.textContent=parseInt(q.textContent,10)+1;recalc();});
-    r.querySelector('.minus').addEventListener('click',function(){var q=r.querySelector('.qty');var v=parseInt(q.textContent,10);if(v>1){q.textContent=v-1;recalc();}});
-  });
-  recalc();
-</script>
-</body>
+    <script>
+      var app = document.getElementById('app');
+      if (location.search.indexOf('theme=dark') > -1) {
+        app.classList.add('no-tr');
+        app.setAttribute('data-theme', 'dark');
+        requestAnimationFrame(function () {
+          requestAnimationFrame(function () {
+            app.classList.remove('no-tr');
+          });
+        });
+      }
+      document.querySelectorAll('.tabbar a').forEach(function (a) {
+        if (app.getAttribute('data-theme') === 'dark')
+          a.href += (a.href.indexOf('?') > -1 ? '&' : '?') + 'theme=dark';
+      });
+      if (location.search.indexOf('snap=1') > -1)
+        document.querySelectorAll('.fu').forEach(function (el) {
+          el.style.transition = 'none';
+          el.classList.add('in');
+        });
+      var io = new IntersectionObserver(
+        function (es) {
+          es.forEach(function (e) {
+            if (e.isIntersecting) {
+              e.target.classList.add('in');
+              io.unobserve(e.target);
+            }
+          });
+        },
+        { root: document.querySelector('.scroll'), threshold: 0.06 },
+      );
+      document.querySelectorAll('.fu').forEach(function (el) {
+        io.observe(el);
+      });
+      setTimeout(function () {
+        var lim = document.querySelector('.scroll').clientHeight * 1.6;
+        document.querySelectorAll('.fu').forEach(function (el) {
+          if (el.offsetTop < lim) el.classList.add('in');
+        });
+      }, 120);
+      function fmt(x) {
+        return '¥' + x.toFixed(1);
+      }
+      function recalc() {
+        var t = 0,
+          c = 0;
+        document.querySelectorAll('.crow').forEach(function (r) {
+          var q = parseInt(r.querySelector('.qty').textContent, 10);
+          t += parseFloat(r.getAttribute('data-p')) * q;
+          c += q;
+        });
+        document.getElementById('pt').textContent = fmt(t);
+        document.getElementById('pc').textContent = c;
+      }
+      document.querySelectorAll('.crow').forEach(function (r) {
+        r.querySelector('.plus').addEventListener('click', function () {
+          var q = r.querySelector('.qty');
+          q.textContent = parseInt(q.textContent, 10) + 1;
+          recalc();
+        });
+        r.querySelector('.minus').addEventListener('click', function () {
+          var q = r.querySelector('.qty');
+          var v = parseInt(q.textContent, 10);
+          if (v > 1) {
+            q.textContent = v - 1;
+            recalc();
+          }
+        });
+      });
+      recalc();
+    </script>
+  </body>
 </html>

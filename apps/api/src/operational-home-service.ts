@@ -64,12 +64,22 @@ export function createOperationalHomeService(
                JOIN conversations conversation ON conversation.tenant_id=notification.tenant_id
                  AND conversation.id=notification.conversation_id
                WHERE notification.tenant_id=$1 AND ($2::uuid[] IS NULL OR conversation.store_id=ANY($2))
-                 AND notification.status IN ('PENDING','FAILED')) AS notification_count
+                 AND notification.status IN ('PENDING','FAILED')) AS notification_count,
+             (SELECT mp.legal_subject_name FROM merchant_profiles mp WHERE mp.tenant_id=$1 LIMIT 1) AS merchant_legal_name,
+             CASE WHEN $2::uuid[] IS NULL THEN NULL ELSE (
+               SELECT string_agg(s.store_name,' · ' ORDER BY s.store_name,s.id)
+               FROM stores s WHERE s.tenant_id=$1 AND s.id=ANY($2)
+             ) END AS assigned_store_names
            FROM context`,
           [identity.tenantId, stores, identity.userId],
         );
         const row = result.rows[0];
         if (!row) throw new OperationalHomeAuthorizationError();
+        const scopeType: 'TENANT' | 'ASSIGNED' = stores === null ? 'TENANT' : 'ASSIGNED';
+        const storeScopeLabel =
+          scopeType === 'TENANT'
+            ? ((row.merchant_legal_name as string) ?? 'TENANT')
+            : (row.assigned_store_names as string) || 'ASSIGNED';
         const metrics = {
           ordersCreated: count(row.orders_created),
           paidAmountCents: count(row.paid_amount_cents),
@@ -113,13 +123,15 @@ export function createOperationalHomeService(
             start: new Date(row.day_start as string | Date).toISOString(),
             end: new Date(row.day_end as string | Date).toISOString(),
           },
-          storeScope: stores === null ? 'TENANT' : 'ASSIGNED',
+          scopeType,
+          storeScope: storeScopeLabel,
           metrics,
           todos: definitions
             .filter(([, , itemCount]) => itemCount > 0)
             .map(([kind, label, itemCount, priority, route]) => ({
               kind,
               label,
+              title: label,
               count: itemCount,
               priority,
               route,

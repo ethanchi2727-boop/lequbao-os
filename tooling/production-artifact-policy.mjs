@@ -35,13 +35,13 @@ const policies = {
   },
   lifeWeb: {
     entry: 'index.html',
-    allowedExtensions: new Set(['.css', '.html', '.js', '.png', '.svg', '.webp']),
+    allowedExtensions: new Set(['.css', '.html', '.jpeg', '.jpg', '.js', '.png', '.svg', '.webp']),
     maximumFiles: 250,
     maximumBytes: 8 * 1024 * 1024,
   },
   baoMobile: {
     entry: 'index.html',
-    allowedExtensions: new Set(['.css', '.html', '.js', '.png', '.svg', '.webp']),
+    allowedExtensions: new Set(['.css', '.html', '.jpeg', '.jpg', '.js', '.png', '.svg', '.webp']),
     maximumFiles: 250,
     maximumBytes: 8 * 1024 * 1024,
   },
