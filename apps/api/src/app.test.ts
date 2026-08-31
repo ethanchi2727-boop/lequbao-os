@@ -91,9 +91,10 @@ describe('platform API shell', () => {
   it('serves the today operating view only through the authorized employee context', async () => {
     const getToday = vi.fn().mockResolvedValue({
       timezone: 'Asia/Shanghai',
-      storeScope: 'TENANT',
+      scopeType: 'TENANT',
+      storeScope: '南京拾味餐饮管理有限公司',
       metrics: { ordersCreated: 1 },
-      todos: [],
+      todos: [{ kind: 'MERCHANT_CONFIRM', label: '支付账户授权', title: '支付账户授权' }],
     });
     app = await buildApp({
       ...authFor(financialIdentity),

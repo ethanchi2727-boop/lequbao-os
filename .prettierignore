@@ -9,3 +9,4 @@ V6_1_BASELINE.md
 database/*.sql
 database/migrations/*.sql
 pnpm-lock.yaml
+design/prototype/assets

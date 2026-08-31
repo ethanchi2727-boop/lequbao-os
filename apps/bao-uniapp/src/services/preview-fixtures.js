@@ -8,24 +8,68 @@ const clone = (value) => JSON.parse(JSON.stringify(value));
 
 const PREVIEW_GET_FIXTURES = Object.freeze({
   '/api/v1/operational-home/today': {
+    scopeType: 'ASSIGNED',
     storeScope: '拾味小馆 · 新街口店',
     todos: [
-      { kind: 'MERCHANT_CONFIRM', title: '商家关键确认 · 支付账户授权' },
-      { kind: 'REFUND', title: '退款待确认 · 订单 20260828007' },
-      { kind: 'CUSTOMER_HANDOFF', title: '客户转人工 · 发票开具咨询' },
+      {
+        kind: 'MERCHANT_CONFIRM',
+        label: '商家关键确认 · 支付账户授权',
+        title: '商家关键确认 · 支付账户授权',
+      },
+      {
+        kind: 'REFUND',
+        label: '退款待确认 · 订单 20260828007',
+        title: '退款待确认 · 订单 20260828007',
+      },
+      {
+        kind: 'CUSTOMER_HANDOFF',
+        label: '客户转人工 · 发票开具咨询',
+        title: '客户转人工 · 发票开具咨询',
+      },
     ],
     metrics: { ordersCreated: 7 },
   },
   '/api/v1/merchant-operations/profile': {
     status: 'ACTIVE',
+    legalSubjectName: '南京拾味餐饮管理有限公司',
     merchantName: '南京拾味餐饮管理有限公司',
   },
   '/api/v1/merchant-operations/stores': [
-    { id: 'store-sw-001', storeName: '拾味小馆 · 新街口店', regionCodes: ['320102'], version: 3, status: 'ACTIVE' },
-    { id: 'store-yf-002', storeName: '云峰会所 · 河西店', regionCodes: ['320105'], version: 1, status: 'ACTIVE' },
-    { id: 'store-jn-003', storeName: '江南小馆 · 夫子庙店', regionCodes: ['320104'], version: 2, status: 'ACTIVE' },
-    { id: 'store-yz-004', storeName: '叶子花店 · 仙林店', regionCodes: [], version: 1, status: 'PENDING' },
-    { id: 'store-qy-005', storeName: '七月茶饮 · 江宁店', regionCodes: ['320115'], version: 4, status: 'ACTIVE' },
+    {
+      id: 'store-sw-001',
+      storeName: '拾味小馆 · 新街口店',
+      regionCodes: ['320102'],
+      version: 3,
+      status: 'ACTIVE',
+    },
+    {
+      id: 'store-yf-002',
+      storeName: '云峰会所 · 河西店',
+      regionCodes: ['320105'],
+      version: 1,
+      status: 'ACTIVE',
+    },
+    {
+      id: 'store-jn-003',
+      storeName: '江南小馆 · 夫子庙店',
+      regionCodes: ['320104'],
+      version: 2,
+      status: 'ACTIVE',
+    },
+    {
+      id: 'store-yz-004',
+      storeName: '叶子花店 · 仙林店',
+      regionCodes: [],
+      version: 1,
+      status: 'PENDING',
+    },
+    {
+      id: 'store-qy-005',
+      storeName: '七月茶饮 · 江宁店',
+      regionCodes: ['320115'],
+      version: 4,
+      status: 'ACTIVE',
+    },
   ],
   '/api/v1/revenue-operations/summary': {
     distributableCents: 4373600,
@@ -42,12 +86,35 @@ const PREVIEW_GET_FIXTURES = Object.freeze({
     { refundNo: 'RF20260828007', amountCents: 3200, status: 'PENDING_CONFIRM' },
   ],
   '/api/v1/customer-service/conversations': [
-    { id: 'conv-8f2a11c9e001', storeId: 'store-sw-001', riskLevel: 'NORMAL', status: 'HUMAN_QUEUED' },
+    {
+      id: 'conv-8f2a11c9e001',
+      storeId: 'store-sw-001',
+      riskLevel: 'NORMAL',
+      status: 'HUMAN_QUEUED',
+    },
     { id: 'conv-8f2a11c9e002', storeId: 'store-yf-002', riskLevel: 'HIGH', status: 'HUMAN_QUEUED' },
   ],
   '/api/v1/customer-service-operations/tasks': [
-    { id: 'task-cs-1001', summary: '发票开具咨询回复', taskType: 'INVOICE', storeName: '拾味小馆 · 新街口店', storeId: 'store-sw-001', priority: 'HIGH', status: 'OPEN', version: 1 },
-    { id: 'task-cs-1002', summary: '会员退款进度跟进', taskType: 'REFUND_FOLLOW', storeName: '云峰会所 · 河西店', storeId: 'store-yf-002', priority: 'NORMAL', status: 'ASSIGNED', version: 2 },
+    {
+      id: 'task-cs-1001',
+      summary: '发票开具咨询回复',
+      taskType: 'INVOICE',
+      storeName: '拾味小馆 · 新街口店',
+      storeId: 'store-sw-001',
+      priority: 'HIGH',
+      status: 'OPEN',
+      version: 1,
+    },
+    {
+      id: 'task-cs-1002',
+      summary: '会员退款进度跟进',
+      taskType: 'REFUND_FOLLOW',
+      storeName: '云峰会所 · 河西店',
+      storeId: 'store-yf-002',
+      priority: 'NORMAL',
+      status: 'ASSIGNED',
+      version: 2,
+    },
   ],
   '/api/v1/context': {
     tenantId: '10000000-0000-4000-8000-000000000001',

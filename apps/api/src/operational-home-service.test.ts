@@ -44,17 +44,31 @@ describe('operational home service', () => {
       delivery_exception_count: '0',
       agent_attention_count: '1',
       notification_count: '0',
+      merchant_legal_name: '拾味餐饮有限公司',
+      assigned_store_names: '拾味小馆 · 新街口店',
     });
     const result = await fx.service.getToday(identity);
     expect(result).toMatchObject({
       timezone: 'Asia/Shanghai',
-      storeScope: 'ASSIGNED',
+      scopeType: 'ASSIGNED',
+      storeScope: '拾味小馆 · 新街口店',
       metrics: { ordersCreated: 5, paidAmountCents: 9900, customerHandoffs: 3 },
       todos: [
-        { kind: 'CUSTOMER_HANDOFF', count: 3, route: '/bao/page-099?status=HUMAN_QUEUED' },
-        { kind: 'REFUND', count: 1 },
-        { kind: 'FULFILLMENT', count: 2 },
-        { kind: 'AGENT_ATTENTION', count: 1 },
+        {
+          kind: 'CUSTOMER_HANDOFF',
+          label: '待接管客户会话',
+          title: '待接管客户会话',
+          count: 3,
+          route: '/bao/page-099?status=HUMAN_QUEUED',
+        },
+        { kind: 'REFUND', label: '待处理退款', title: '待处理退款', count: 1 },
+        { kind: 'FULFILLMENT', label: '待履约订单', title: '待履约订单', count: 2 },
+        {
+          kind: 'AGENT_ATTENTION',
+          label: 'Agent 待确认或失败任务',
+          title: 'Agent 待确认或失败任务',
+          count: 1,
+        },
       ],
     });
     const aggregate = fx.statements.find(({ sql }) => sql.startsWith('WITH context'));
@@ -67,11 +81,14 @@ describe('operational home service', () => {
       timezone: 'Asia/Shanghai',
       day_start: '2026-08-18T16:00:00.000Z',
       day_end: '2026-08-19T16:00:00.000Z',
+      merchant_legal_name: '拾味餐饮有限公司',
+      assigned_store_names: null,
     });
     await expect(
       fx.service.getToday({ ...identity, accessScopes: ['TENANT'] }),
     ).resolves.toMatchObject({
-      storeScope: 'TENANT',
+      scopeType: 'TENANT',
+      storeScope: '拾味餐饮有限公司',
     });
     expect(fx.statements.find(({ sql }) => sql.startsWith('WITH context'))?.values?.[1]).toBeNull();
   });

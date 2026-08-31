@@ -54,7 +54,11 @@ describe('merchant operations read model', () => {
       ],
     });
     const result = await createMerchantOperationsService(db.pool).getMerchantProfile(identity);
-    expect(result).toMatchObject({ legalSubjectName: '拾味餐饮有限公司', status: 'VERIFIED' });
+    expect(result).toMatchObject({
+      legalSubjectName: '拾味餐饮有限公司',
+      merchantName: '拾味餐饮有限公司',
+      status: 'VERIFIED',
+    });
     expect(JSON.stringify(result)).not.toMatch(/ciphertext|object.?key/iu);
   });
 
