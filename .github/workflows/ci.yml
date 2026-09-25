@@ -146,6 +146,12 @@ jobs:
           psql -d lequ_v6_restored -v ON_ERROR_STOP=1 -f database/migrations/0030_checkout_reward_customer_scope.sql
           test "$(psql -d lequ_v6_restored -v ON_ERROR_STOP=1 -Atc 'SELECT count(*) FROM schema_migrations')" = '30'
           psql -d lequ_v6_restored -v ON_ERROR_STOP=1 -f database/tests/checkout-reward-0030-existing-data-check.sql
+          psql -d lequ_v6_restored -v ON_ERROR_STOP=1 -c "INSERT INTO orders(id,tenant_id,order_no,store_id,customer_id,source_channel,status,order_type,payment_status,goods_amount_cents,payable_amount_cents) VALUES ('57000000-0000-4000-8000-000000000014','57000000-0000-4000-8000-000000000001','EXPOSURE-TEST','57000000-0000-4000-8000-000000000002','57000000-0000-4000-8000-000000000003','LEQU_LIFE','CANCELLED','STORE_PICKUP','FAILED',1000,1000)"
+          psql -d lequ_v6_restored -v ON_ERROR_STOP=1 -c "UPDATE platform_checkout_reward_redemptions SET status='SETTLED',order_id='57000000-0000-4000-8000-000000000014' WHERE id='57000000-0000-4000-8000-000000000012'"
+          psql -d lequ_v6_restored -v ON_ERROR_STOP=1 -c "UPDATE reward_grants SET redeemed_amount_cents=500 WHERE id='57000000-0000-4000-8000-000000000011'"
+          exposure="$(psql -d lequ_v6_restored -v ON_ERROR_STOP=1 -qAt -f database/preflight/checkout-reward-financial-exposure.sql)"
+          echo "Synthetic settled-redemption exposure: $exposure"
+          test "$exposure" = '1|1|500|1|0|1|1'
           test "$(psql -d lequ_v6_migration -v ON_ERROR_STOP=1 -Atc 'SELECT count(*) FROM schema_migrations')" = '28'
           psql -d lequ_v6_migration -v ON_ERROR_STOP=1 -f database/preflight/checkout-reward-upgrade.sql
           psql -d lequ_v6_migration -v ON_ERROR_STOP=1 -c "INSERT INTO platform_consumer_accounts(id,union_identifier_hash) VALUES ('57000000-0000-4000-8000-000000000013',repeat('8',64))"
