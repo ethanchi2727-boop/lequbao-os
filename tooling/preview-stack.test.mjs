@@ -18,6 +18,19 @@ describe('public preview stack', () => {
     expect(migration).toContain('--file=/opt/lequ-database/development-seed.sql');
   });
 
+  it('builds shared runtime packages before container API and Worker builds', async () => {
+    const dockerfile = await read('deploy/Dockerfile');
+    const sharedBuild =
+      'pnpm --filter @lequ/contracts --filter @lequ/harness-adapter --filter @lequ/tool-gateway build';
+    expect(dockerfile.indexOf(sharedBuild)).toBeGreaterThan(dockerfile.indexOf('FROM node:'));
+    expect(dockerfile.indexOf(sharedBuild)).toBeLessThan(
+      dockerfile.indexOf('FROM source AS api-build'),
+    );
+    expect(dockerfile.indexOf(sharedBuild)).toBeLessThan(
+      dockerfile.indexOf('FROM source AS preview'),
+    );
+  });
+
   it('smokes the PC intake write path through the combined preview topology', async () => {
     const workflow = parseYaml(await read('.github/workflows/ci.yml'));
     const commands = workflow.jobs['bao-preview-stack'].steps
