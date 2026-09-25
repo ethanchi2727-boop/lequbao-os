@@ -6,7 +6,7 @@ const source = (file) => readFile(new URL(file, import.meta.url), 'utf8');
 describe('结算页代金券抵扣与团购详情契约', () => {
   it('结算确认页接入代金券抵扣并以服务端核价为准', async () => {
     const journey = await source('components/LifeJourneyPage.vue');
-    expect(journey).toContain("import { fetchLifeVouchers, groupVouchers }");
+    expect(journey).toContain('import { fetchLifeVouchers, groupVouchers }');
     expect(journey).toContain('voucher-apply-card');
     expect(journey).toContain('voucher-apply-head');
     expect(journey).toContain('vopt');

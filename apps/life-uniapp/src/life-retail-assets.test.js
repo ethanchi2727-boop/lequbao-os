@@ -36,22 +36,20 @@ describe('乐趣生活 V6.3 official retail assets', () => {
     },
   );
 
-  it('binds the official high-density composition to authoritative product data', async () => {
+  it('renders the retail layout with authoritative product data and no hidden asset anchors', async () => {
     const page = await readFile(new URL('pages/life/index.vue', import.meta.url), 'utf8');
-    // ===== 官方 sprite 资产预算绑定（kimi 真理资产 runtime 源码引用） =====
-    expect(page).toContain('../../assets/v63-retail/summer-festival.webp');
-    expect(page).toContain('../../assets/v63-retail/category-sprite.webp');
-    expect(page).toContain('../../assets/v63-retail/product-sprite.webp');
+    expect(page).not.toContain('v-if="0"');
+    expect(page).not.toContain('__officialSummer');
     expect(page).toContain('retailCategories');
     // ===== kimi 真理首页 class 结构锚点（concept-f index.html 真实 class：一个都不能自创） =====
-    expect(page).toMatch(/class="[^"]*\btop\b/);               // 顶部渐变头（定位+搜索+bell+胶囊）
-    expect(page).toMatch(/class="[^"]*\bbans\b/);              // 三图轮播横幅（充值/大牌/出行）
-    expect(page).toMatch(/class="[^"]*\bod\b/);                // 进行中订单（.od-hd/.od-it/.oic/.ot/.ob）
-    expect(page).toMatch(/class="[^"]*\bgw\b/);                // 金刚位 5 列 gic 3D PNG 真图
-    expect(page).toMatch(/class="[^"]*\bnotice\b/);            // 优惠公告横向滚
-    expect(page).toMatch(/class="[^"]*\bnow\b/);               // 此刻推荐 3 宫格
-    expect(page).toMatch(/class="[^"]*\baisle\b/);             // 分区货架×5（吃喝/服务/出行/娱乐/定制）
-    expect(page).toMatch(/class="[^"]*\bwf\b/);                // 精选瀑布流 2 列
+    expect(page).toMatch(/class="[^"]*\btop\b/); // 顶部渐变头（定位+搜索+bell+胶囊）
+    expect(page).toMatch(/class="[^"]*\bbans\b/); // 三图轮播横幅（充值/大牌/出行）
+    expect(page).toMatch(/class="[^"]*\bod\b/); // 进行中订单（.od-hd/.od-it/.oic/.ot/.ob）
+    expect(page).toMatch(/class="[^"]*\bgw\b/); // 金刚位 5 列 gic 3D PNG 真图
+    expect(page).toMatch(/class="[^"]*\bnotice\b/); // 优惠公告横向滚
+    expect(page).toMatch(/class="[^"]*\bnow\b/); // 此刻推荐 3 宫格
+    expect(page).toMatch(/class="[^"]*\baisle\b/); // 分区货架×5（吃喝/服务/出行/娱乐/定制）
+    expect(page).toMatch(/class="[^"]*\bwf\b/); // 精选瀑布流 2 列
     // ===== 真实 API/字段（kimi JS chunk 真理：lifeSession cart/items PUT + 价格库存） =====
     expect(page).toContain('product.salePriceCents');
     expect(page).toContain('product.availableQuantity');
@@ -84,18 +82,18 @@ describe('乐趣生活 V6.3 official retail assets', () => {
       expect(page).not.toContain('style="display:none"');
     }
     // ===== kimi 真理 mall=绿 ramp（index/mall/me 统一绿；community=蓝 ramp）不是旧 V6.1 theme-color 伪属性 =====
-    expect(mall).toContain('--hd1:#009146');
-    expect(mall).toContain('--hd2:#006b36');
-    expect(mall).toMatch(/class="[^"]*\bbans\b/);   // mall.html 三图轮播
-    expect(mall).toMatch(/class="[^"]*\bsk\b/);     // mall.html 秒杀减重版
-    expect(mall).toMatch(/class="[^"]*\bcats\b/);   // mall.html 4 列金刚 badge
-    expect(mall).toMatch(/class="[^"]*\btg\b/);     // mall.html 团购进度
-    expect(mall).toMatch(/class="[^"]*\bwf\b/);     // mall.html 瀑布流
-    expect(community).toContain('--hd1:#1a4fb0');
-    expect(community).toContain('--hd2:#0c2a80');
-    expect(community).toMatch(/class="[^"]*\bbans\b/);    // quan.html 三图（团购/丽人/亲子）
-    expect(community).toMatch(/class="[^"]*\bqic\b/);     // quan.html 场景 4 宫格
-    expect(community).toMatch(/class="[^"]*\bshops\b/);   // quan.html 附近门店密列表
-    expect(community).toMatch(/class="[^"]*\bdeals\b/);   // quan.html 团购卡片列表
+    expect(mall).toMatch(/--hd1:\s*#009146/u);
+    expect(mall).toMatch(/--hd2:\s*#006b36/u);
+    expect(mall).toMatch(/class="[^"]*\bbans\b/); // mall.html 三图轮播
+    expect(mall).toMatch(/class="[^"]*\bsk\b/); // mall.html 秒杀减重版
+    expect(mall).toMatch(/class="[^"]*\bcats\b/); // mall.html 4 列金刚 badge
+    expect(mall).toMatch(/class="[^"]*\btg\b/); // mall.html 团购进度
+    expect(mall).toMatch(/class="[^"]*\bwf\b/); // mall.html 瀑布流
+    expect(community).toMatch(/--hd1:\s*#1a4fb0/u);
+    expect(community).toMatch(/--hd2:\s*#0c2a80/u);
+    expect(community).toMatch(/class="[^"]*\bbans\b/); // quan.html 三图（团购/丽人/亲子）
+    expect(community).toMatch(/class="[^"]*\bqic\b/); // quan.html 场景 4 宫格
+    expect(community).toMatch(/class="[^"]*\bshops\b/); // quan.html 附近门店密列表
+    expect(community).toMatch(/class="[^"]*\bdeals\b/); // quan.html 团购卡片列表
   });
 });

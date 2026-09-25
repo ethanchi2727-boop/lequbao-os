@@ -94,7 +94,9 @@ onShow(load);
         >
       </view>
 
-      <view v-if="loading" class="card vrec-empty"><text class="vrec-empty-text">明细加载中…</text></view>
+      <view v-if="loading" class="card vrec-empty"
+        ><text class="vrec-empty-text">明细加载中…</text></view
+      >
       <view v-else-if="error" class="card vrec-empty" @click="load">
         <text class="vrec-empty-text">加载失败，点击重试</text>
       </view>
@@ -105,10 +107,7 @@ onShow(load);
       <view v-else class="card vrec-list">
         <view v-for="voucher in records" :key="voucher.id" class="vr">
           <view class="vic" :style="{ background: toneOf(voucher.statusKey).bg }">
-            <view
-              class="vic-dot"
-              :style="{ borderColor: toneOf(voucher.statusKey).fg }"
-            ></view>
+            <view class="vic-dot" :style="{ borderColor: toneOf(voucher.statusKey).fg }"></view>
           </view>
           <view class="vr-copy">
             <text class="vr-title">{{ recordTitle(voucher) }}</text>

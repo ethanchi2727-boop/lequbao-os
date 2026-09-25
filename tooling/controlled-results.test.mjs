@@ -86,7 +86,7 @@ function semanticFixture(artifact, binding) {
     tempBytes: 0,
     deadlocks: 0,
     estimatedLiveRows: 1,
-    tableCount: 164,
+    tableCount: 165,
     migrationVersions: requiredDatabaseMigrationVersions,
     messageBacklog: { activeCount: 0, deadCount: 0, oldestActiveSeconds: 0 },
   };

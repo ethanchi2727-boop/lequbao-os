@@ -15,7 +15,7 @@ const rows = () => ({
     temp_bytes: '0',
     deadlocks: '0',
   },
-  tables: { estimated_live_rows: '200', table_count: 164 },
+  tables: { estimated_live_rows: '200', table_count: 165 },
   outbox: { active_count: 1, dead_count: 0, oldest_active_seconds: 0.5 },
   migrations: requiredDatabaseMigrationVersions.map((version) => ({ version })),
 });
@@ -31,10 +31,10 @@ const database = (values) => ({
 
 describe('performance database snapshot', () => {
   it('derives the exact candidate migration inventory from repository SQL', () => {
-    expect(requiredDatabaseMigrationVersions).toHaveLength(27);
+    expect(requiredDatabaseMigrationVersions).toHaveLength(28);
     expect(requiredDatabaseMigrationVersions.at(0)).toBe('0001_baseline');
     expect(requiredDatabaseMigrationVersions.at(-1)).toBe(
-      '0027_platform_consumer_identity_exchange',
+      '0028_platform_checkout_reward_redemption',
     );
   });
 
@@ -43,7 +43,7 @@ describe('performance database snapshot', () => {
       capturedAt: expect.stringMatching(/Z$/u),
       databaseRefHash: 'bfa064f377d805b4dbd0e84d8d0edc01fcb7efa45612eab8915eb771fb9c68e6',
       sizeBytes: 1024,
-      tableCount: 164,
+      tableCount: 165,
       migrationVersions: requiredDatabaseMigrationVersions,
       messageBacklog: { activeCount: 1, deadCount: 0, oldestActiveSeconds: 0.5 },
     });

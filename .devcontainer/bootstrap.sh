@@ -44,8 +44,15 @@ if [[ "$migration_count" == "26" ]]; then
   migration_count="$(psql --tuples-only --no-align --set=ON_ERROR_STOP=1 \
     --command='SELECT count(*) FROM schema_migrations')"
 fi
-if [[ "$migration_count" != "27" ]]; then
-  echo "Expected 27 V6.1 migrations, found $migration_count; refusing an ambiguous database" >&2
+if [[ "$migration_count" == "27" ]]; then
+  echo "Applying expand-only checkout reward redemption migration"
+  psql --set=ON_ERROR_STOP=1 \
+    --file=database/migrations/0028_platform_checkout_reward_redemption.sql
+  migration_count="$(psql --tuples-only --no-align --set=ON_ERROR_STOP=1 \
+    --command='SELECT count(*) FROM schema_migrations')"
+fi
+if [[ "$migration_count" != "28" ]]; then
+  echo "Expected 28 V6.1 migrations, found $migration_count; refusing an ambiguous database" >&2
   exit 1
 fi
 

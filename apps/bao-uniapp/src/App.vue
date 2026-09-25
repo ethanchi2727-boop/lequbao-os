@@ -52,10 +52,10 @@ uni-app {
   --bao-mobile-danger-500: #d5342c;
   --bao-mobile-line: rgba(22, 19, 15, 0.09);
   --bao-mobile-line-strong: rgba(22, 19, 15, 0.16);
-  --bao-mobile-shadow-card: 0 2rpx 6rpx rgba(22, 19, 15, 0.05),
-    0 16rpx 40rpx rgba(22, 19, 15, 0.12);
-  --bao-mobile-shadow-float: 0 4rpx 12rpx rgba(22, 19, 15, 0.06),
-    0 24rpx 56rpx rgba(22, 19, 15, 0.18);
+  --bao-mobile-shadow-card:
+    0 2rpx 6rpx rgba(22, 19, 15, 0.05), 0 16rpx 40rpx rgba(22, 19, 15, 0.12);
+  --bao-mobile-shadow-float:
+    0 4rpx 12rpx rgba(22, 19, 15, 0.06), 0 24rpx 56rpx rgba(22, 19, 15, 0.18);
   --bao-mobile-jade-glow: 0 12rpx 30rpx rgba(0, 107, 54, 0.3);
   --bao-mobile-radius-xl: 44rpx;
   --bao-mobile-radius-card: 36rpx;
@@ -72,11 +72,7 @@ uni-app {
     #0e3a26 58%,
     #07231a
   );
-  --bao-mobile-gradient-dark: linear-gradient(
-    160deg,
-    var(--bao-mobile-ink-950),
-    #0e3a26
-  );
+  --bao-mobile-gradient-dark: linear-gradient(160deg, var(--bao-mobile-ink-950), #0e3a26);
   --bao-mobile-gradient-ai: linear-gradient(
     135deg,
     var(--bao-mobile-ai-700),
@@ -92,7 +88,9 @@ button::after {
   border: 0;
 }
 button {
-  transition: transform 0.18s cubic-bezier(0.2, 0, 0, 1), opacity 0.18s;
+  transition:
+    transform 0.18s cubic-bezier(0.2, 0, 0, 1),
+    opacity 0.18s;
 }
 button:not([disabled]):active {
   transform: scale(0.97);
@@ -195,11 +193,7 @@ button:not([disabled]):active {
   width: 220rpx;
   height: 220rpx;
   border-radius: 50%;
-  background: radial-gradient(
-    closest-side,
-    rgba(255, 255, 255, 0.22),
-    rgba(255, 255, 255, 0)
-  );
+  background: radial-gradient(closest-side, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0));
   content: '';
 }
 .m-context text {
@@ -596,11 +590,7 @@ button:not([disabled]):active {
   width: 280rpx;
   height: 280rpx;
   border-radius: 50%;
-  background: radial-gradient(
-    closest-side,
-    rgba(110, 199, 38, 0.35),
-    rgba(110, 199, 38, 0)
-  );
+  background: radial-gradient(closest-side, rgba(110, 199, 38, 0.35), rgba(110, 199, 38, 0));
   content: '';
 }
 .m-progress-hero > view:first-child {
@@ -753,11 +743,7 @@ button:not([disabled]):active {
   width: 300rpx;
   height: 300rpx;
   border-radius: 50%;
-  background: radial-gradient(
-    closest-side,
-    rgba(110, 199, 38, 0.3),
-    rgba(110, 199, 38, 0)
-  );
+  background: radial-gradient(closest-side, rgba(110, 199, 38, 0.3), rgba(110, 199, 38, 0));
   content: '';
 }
 .income-hero::after {
@@ -767,11 +753,7 @@ button:not([disabled]):active {
   width: 120rpx;
   height: 120rpx;
   border-radius: 50%;
-  background: radial-gradient(
-    closest-side,
-    rgba(116, 208, 175, 0.16),
-    rgba(116, 208, 175, 0)
-  );
+  background: radial-gradient(closest-side, rgba(116, 208, 175, 0.16), rgba(116, 208, 175, 0));
   content: '';
 }
 .income-hero > text {
@@ -1070,7 +1052,9 @@ button:not([disabled]):active {
 /* —— 在线状态呼吸点 —— */
 .status-chip,
 .timeline-step.active > text:first-child {
-  animation: bao-rise 0.45s both, bao-ping 2.4s 0.6s ease-out infinite;
+  animation:
+    bao-rise 0.45s both,
+    bao-ping 2.4s 0.6s ease-out infinite;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -1267,7 +1251,8 @@ uni-app {
 .m-composer text:last-child {
   width: 63rpx;
   height: 63rpx;
-  box-shadow: 0 7rpx 17rpx -3rpx rgba(0, 107, 54, 0.45),
+  box-shadow:
+    0 7rpx 17rpx -3rpx rgba(0, 107, 54, 0.45),
     inset 0 2rpx 0 rgba(255, 255, 255, 0.3);
 }
 .m-composer text:last-child::before {
@@ -1561,8 +1546,7 @@ uni-app {
   content: '';
   transform: translateX(-50%);
 }
-.uni-tabbar-bottom
-  .uni-tabbar__label[style*='rgb(0, 107, 54)'] {
+.uni-tabbar-bottom .uni-tabbar__label[style*='rgb(0, 107, 54)'] {
   font-weight: 800 !important;
 }
 /* #endif */
@@ -1772,7 +1756,8 @@ uni-app {
   border-radius: 50%;
   color: var(--bao-mobile-paper);
   background: var(--bao-mobile-gradient-brand);
-  box-shadow: 0 7rpx 17rpx -3rpx rgba(0, 107, 54, 0.45),
+  box-shadow:
+    0 7rpx 17rpx -3rpx rgba(0, 107, 54, 0.45),
     inset 0 2rpx 0 rgba(255, 255, 255, 0.3);
   font-size: 0;
 }
@@ -1858,7 +1843,8 @@ uni-app {
   border-radius: 30rpx;
   color: var(--bao-mobile-paper);
   background: var(--bao-mobile-gradient-brand);
-  box-shadow: 0 14rpx 31rpx -14rpx rgba(0, 107, 54, 0.55),
+  box-shadow:
+    0 14rpx 31rpx -14rpx rgba(0, 107, 54, 0.55),
     inset 0 3rpx 0 rgba(255, 255, 255, 0.28);
   font-size: 37rpx;
   font-weight: 900;

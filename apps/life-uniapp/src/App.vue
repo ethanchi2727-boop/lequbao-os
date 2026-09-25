@@ -224,7 +224,9 @@ button::after {
 .fu {
   opacity: 0;
   transform: translateY(26rpx);
-  transition: opacity 520ms ease, transform 520ms cubic-bezier(0.22, 1, 0.36, 1);
+  transition:
+    opacity 520ms ease,
+    transform 520ms cubic-bezier(0.22, 1, 0.36, 1);
   will-change: transform, opacity;
 }
 .fu.in {
@@ -247,7 +249,12 @@ button::after {
   content: '';
   inset: 0;
   border-radius: 30rpx;
-  background: radial-gradient(circle at 50% 44%, rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.2) 56%, rgba(255, 255, 255, 0) 74%);
+  background: radial-gradient(
+    circle at 50% 44%,
+    rgba(255, 255, 255, 0.9),
+    rgba(255, 255, 255, 0.2) 56%,
+    rgba(255, 255, 255, 0) 74%
+  );
 }
 .gic::after {
   position: absolute;
@@ -279,7 +286,9 @@ button::after {
   align-items: center;
   justify-content: center;
   overflow: hidden;
-  background: radial-gradient(circle at 50% 42%, rgba(255, 255, 255, 0.92), rgba(255, 255, 255, 0) 62%), var(--c2, #fff2df);
+  background:
+    radial-gradient(circle at 50% 42%, rgba(255, 255, 255, 0.92), rgba(255, 255, 255, 0) 62%),
+    var(--c2, #fff2df);
 }
 .oic .mono {
   position: relative;
@@ -302,7 +311,9 @@ button::after {
   gap: 12rpx;
   color: #063d28;
   background: linear-gradient(135deg, #ffe27a, #ffb14c 60%, #ff6d3a);
-  box-shadow: 0 16rpx 36rpx rgba(255, 122, 52, 0.35), 0 2rpx 0 rgba(255, 255, 255, 0.8) inset;
+  box-shadow:
+    0 16rpx 36rpx rgba(255, 122, 52, 0.35),
+    0 2rpx 0 rgba(255, 255, 255, 0.8) inset;
   animation: maipulse 2.8s ease-in-out infinite;
 }
 .maifab .mai-ava {
@@ -325,8 +336,19 @@ button::after {
   letter-spacing: 0.5rpx;
 }
 @keyframes maipulse {
-  0%, 100% { transform: translateY(0) scale(1); box-shadow: 0 16rpx 36rpx rgba(255, 122, 52, 0.35), 0 2rpx 0 rgba(255, 255, 255, 0.8) inset; }
-  50% { transform: translateY(-4rpx) scale(1.02); box-shadow: 0 22rpx 46rpx rgba(255, 122, 52, 0.45), 0 2rpx 0 rgba(255, 255, 255, 0.9) inset; }
+  0%,
+  100% {
+    transform: translateY(0) scale(1);
+    box-shadow:
+      0 16rpx 36rpx rgba(255, 122, 52, 0.35),
+      0 2rpx 0 rgba(255, 255, 255, 0.8) inset;
+  }
+  50% {
+    transform: translateY(-4rpx) scale(1.02);
+    box-shadow:
+      0 22rpx 46rpx rgba(255, 122, 52, 0.45),
+      0 2rpx 0 rgba(255, 255, 255, 0.9) inset;
+  }
 }
 /* 通用分区标题（+更多按钮） */
 .sec-h {

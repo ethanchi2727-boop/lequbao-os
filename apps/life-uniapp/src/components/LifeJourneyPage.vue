@@ -85,7 +85,8 @@ const groupDiscountText = computed(() => {
   return ((sale / market) * 10).toFixed(1).replace(/\.0$/u, '');
 });
 const voucherRuleUrl = computed(
-  () => `/pages/voucher/rule/index?amt=${(Number(detail.value?.salePriceCents || 0) / 100).toFixed(2)}`,
+  () =>
+    `/pages/voucher/rule/index?amt=${(Number(detail.value?.salePriceCents || 0) / 100).toFixed(2)}`,
 );
 const filteredOrders = computed(() => {
   const filtered =
@@ -321,7 +322,10 @@ function fulfillmentChoices() {
 async function quote(redemption) {
   const rewardRedemption =
     redemption && typeof redemption === 'object' && typeof redemption.action === 'string'
-      ? { action: redemption.action, ...(redemption.rewardGrantIds ? { rewardGrantIds: redemption.rewardGrantIds } : {}) }
+      ? {
+          action: redemption.action,
+          ...(redemption.rewardGrantIds ? { rewardGrantIds: redemption.rewardGrantIds } : {}),
+        }
       : null;
   if (deliveryMode.value === 'PHYSICAL_DELIVERY' && !selectedAddressId.value)
     return uni.showToast({ title: '请选择配送地址', icon: 'none' });
@@ -520,8 +524,7 @@ onShow(load);
             >限时 {{ groupDiscountText }} 折</text
           ><text v-else class="group-price-tag">服务端实时成交价</text></view
         ><text class="group-title">{{ detail.title }}</text
-        ><view class="drules"
-          ><text>随时退</text><text>过期自动退</text><text>免预约</text></view
+        ><view class="drules"><text>随时退</text><text>过期自动退</text><text>免预约</text></view
         ><text class="group-store">{{ detail.storeName || '适用门店以核价结果为准' }}</text
         ><navigator class="voucher-banner" :url="voucherRuleUrl" hover-class="none"
           ><view class="voucher-banner-icon"><text>券</text></view
@@ -545,12 +548,11 @@ onShow(load);
           ><view><text>履约</text><text>到店核销</text></view></view
         ><view class="group-know-card"
           ><text class="group-know-title">购买须知</text
+          ><view class="mrow"><text>有效期</text><text>以订单核销页展示为准</text></view
+          ><view class="mrow"><text>预约</text><text>免预约，高峰期建议提前到店</text></view
           ><view class="mrow"
-            ><text>有效期</text><text>以订单核销页展示为准</text></view
-          ><view class="mrow"
-            ><text>预约</text><text>免预约，高峰期建议提前到店</text></view
-          ><view class="mrow"
-            ><text>退款</text><text class="mrow-accent">未核销可申请退款 · 售后以服务端规则为准</text></view
+            ><text>退款</text
+            ><text class="mrow-accent">未核销可申请退款 · 售后以服务端规则为准</text></view
           ></view
         ><text class="group-notice">成交前服务端会再次校验价格、库存与适用门店。</text></view
       ><view class="group-buy-bar"
@@ -560,8 +562,7 @@ onShow(load);
           :disabled="detail.availableQuantity < 1"
           @click="addToCart(detail)"
         >
-          加入购物车
-        </button
+          加入购物车</button
         ><button
           class="primary group-buy-button"
           :loading="busy"
@@ -711,8 +712,12 @@ onShow(load);
             @click="toggleVoucher(voucher)"
             ><view class="vopt-copy"
               ><text class="vopt-name">通用代金券 {{ money(voucher.amountCents) }}</text
-              ><text class="vopt-desc">{{ voucher.descLine || '无门槛 · 以服务端核价为准' }}</text></view
-            ><text class="vopt-action">{{ selectedVoucherId === voucher.id ? '已选 ✓' : '选择' }}</text></view
+              ><text class="vopt-desc">{{
+                voucher.descLine || '无门槛 · 以服务端核价为准'
+              }}</text></view
+            ><text class="vopt-action">{{
+              selectedVoucherId === voucher.id ? '已选 ✓' : '选择'
+            }}</text></view
           ></view
         ><view v-else class="voucher-apply-empty"
           >暂无本单可用代金券 · 下单消费可按规则获得</view
@@ -1293,7 +1298,6 @@ onShow(load);
   flex: 1;
 }
 .jrow > view {
- (feat(life): 结算页代金券抵扣全链路——quote APPLY/SKIP 记账、submit 核销 reward_grants、团购详情按确认概念改版)
   display: flex;
   min-width: 0;
   flex: 1;

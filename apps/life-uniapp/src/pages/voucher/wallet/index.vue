@@ -97,7 +97,11 @@ onShow(load);
         <view v-if="!visibleVouchers.length" class="vempty">
           <view class="vempty-ticket"></view>
           <text class="vempty-text">{{ VOUCHER_EMPTY_TEXT[activeTab] }}</text>
-          <navigator class="vempty-go" url="/pages/life/index" open-type="switchTab" hover-class="none"
+          <navigator
+            class="vempty-go"
+            url="/pages/life/index"
+            open-type="switchTab"
+            hover-class="none"
             >去逛逛 →</navigator
           >
         </view>
@@ -105,24 +109,33 @@ onShow(load);
           v-for="voucher in visibleVouchers"
           :key="voucher.id"
           class="cpn"
-          :class="{ 'cpn-frozen': voucher.statusKey === 'frozen', 'cpn-void': voucher.statusKey === 'void' }"
+          :class="{
+            'cpn-frozen': voucher.statusKey === 'frozen',
+            'cpn-void': voucher.statusKey === 'void',
+          }"
           :url="
-            voucher.statusKey === 'frozen'
-              ? '/pages/voucher/detail/index'
-              : '/pages/mall/index'
+            voucher.statusKey === 'frozen' ? '/pages/voucher/detail/index' : '/pages/mall/index'
           "
           :open-type="voucher.statusKey === 'frozen' ? 'navigate' : 'switchTab'"
           hover-class="none"
         >
           <view class="cl">
-            <text class="cl-amount"><text class="cl-currency">¥</text>{{ formatCents(voucher.amountCents) }}</text>
-            <text class="cl-cond">{{ voucher.statusKey === 'frozen' ? '分期发放' : '无门槛' }}</text>
+            <text class="cl-amount"
+              ><text class="cl-currency">¥</text>{{ formatCents(voucher.amountCents) }}</text
+            >
+            <text class="cl-cond">{{
+              voucher.statusKey === 'frozen' ? '分期发放' : '无门槛'
+            }}</text>
           </view>
           <view class="cr">
             <text class="cr-title">通用代金券</text>
             <text class="cr-desc">{{ voucher.descLine }}</text>
             <text class="cuse" :class="{ 'cuse-gray': voucher.statusKey !== 'active' }">{{
-              voucher.statusKey === 'frozen' ? '待到账' : voucher.statusKey === 'void' ? '已失效' : '去使用'
+              voucher.statusKey === 'frozen'
+                ? '待到账'
+                : voucher.statusKey === 'void'
+                  ? '已失效'
+                  : '去使用'
             }}</text>
           </view>
         </navigator>

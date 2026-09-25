@@ -30,19 +30,19 @@ describe('乐趣生活 UniApp 架构', () => {
     // ===== 5 个一级 tab 全部使用 kimi 真理最外层 class .phone + 375px 基准 =====
     for (const page of [lifePage, mallPage, communityPage, cartPage, mePage]) {
       expect(page).toContain('class="phone"');
-      expect(page).toContain('--bg:#f6f1e6');
-      expect(page).toContain('[data-theme="dark"]');
+      expect(page).toMatch(/--bg:\s*#f6f1e6/u);
+      expect(page).toMatch(/\[data-theme=['"]dark['"]\]/u);
       expect(page).toContain('class="tabbar"');
       // ===== 严禁 display:none 锚点作弊 =====
       expect(page).not.toContain('style="display:none"');
     }
     // ===== kimi 真理主题 ramp 绑定（concept-f index.html L15 / mall L15 / community 对应） =====
-    expect(lifePage).toContain('--hd1:#009146');
-    expect(lifePage).toContain('--hd2:#006b36');
-    expect(mallPage).toContain('--hd1:#009146');
-    expect(mallPage).toContain('--hd2:#006b36');
-    expect(communityPage).toContain('--hd1:#1a4fb0');
-    expect(communityPage).toContain('--hd2:#0c2a80');
+    expect(lifePage).toMatch(/--hd1:\s*#009146/u);
+    expect(lifePage).toMatch(/--hd2:\s*#006b36/u);
+    expect(mallPage).toMatch(/--hd1:\s*#009146/u);
+    expect(mallPage).toMatch(/--hd2:\s*#006b36/u);
+    expect(communityPage).toMatch(/--hd1:\s*#1a4fb0/u);
+    expect(communityPage).toMatch(/--hd2:\s*#0c2a80/u);
   });
 
   it('uses the platform consumer audience and keeps preview data behind build-time flags', async () => {

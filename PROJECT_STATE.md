@@ -2,7 +2,9 @@
 
 ## Active branch
 
-`main`
+`fix/life-route-regression`（当前修复工作分支，基于远程 `main` 的 `ea885916a48a2bd380f0bfcb79507e66bb2312dc`）
+
+2026-09-25 本地检查点：恢复乐趣生活正式路由中的发现、搜索、商品、团购及其他业务组件入口；修复全仓格式、测试依赖、锁文件/SBOM 与 `0028` 增量迁移脚本/证据契约漂移。移除首页永不显示的图片锚点，H5 产物降至 7,561,233 字节。当前工作树 `pnpm check` 全绿，详情见 `docs/release/life-route-regression-repair.md`。本机无 PostgreSQL/Docker，真实迁移、RLS、交易/支付、微信真机与受控发布仍需在对应环境验收，不能视作已上线。
 
 The V5 rollback baseline remains preserved in Git history at `f70b4674c82f99db8424bba8854aeb8a7a11d362`. Remote `main` contains the merged V6.1 candidate application at merge commit `bb59cad44747ad3c1ecb607bf0f2de51937ab058`; production activation remains gated separately.
 

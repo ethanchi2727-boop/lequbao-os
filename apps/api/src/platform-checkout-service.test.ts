@@ -461,16 +461,21 @@ describe('platform checkout quote', () => {
   });
 
   it('keeps reward redemption off when the request explicitly skips it', async () => {
-    const fx = fixture({ rewardGrants: [{ id: '7c000000-0000-4000-8000-000000000032', availableCents: 500 }] });
+    const fx = fixture({
+      rewardGrants: [{ id: '7c000000-0000-4000-8000-000000000032', availableCents: 500 }],
+    });
     const quote = (await fx.service.quote({
       identity,
       idempotencyKey: 'quote-reward-skip',
       body: { cartVersion: 3, rewardRedemption: { action: 'SKIP' } },
     })) as { rewardRedemptionStatus: string; rewardRedemptionCents: number };
-    expect(quote).toMatchObject({ rewardRedemptionStatus: 'NOT_APPLIED', rewardRedemptionCents: 0 });
-    expect(
-      fx.query.mock.calls.some(([sql]) => String(sql).includes('FROM reward_grants')),
-    ).toBe(false);
+    expect(quote).toMatchObject({
+      rewardRedemptionStatus: 'NOT_APPLIED',
+      rewardRedemptionCents: 0,
+    });
+    expect(fx.query.mock.calls.some(([sql]) => String(sql).includes('FROM reward_grants'))).toBe(
+      false,
+    );
   });
 
   it('debits redeemed reward amounts when the applied quote submits into orders', async () => {

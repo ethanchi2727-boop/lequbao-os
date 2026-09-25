@@ -72,11 +72,7 @@ onShow(load);
 </script>
 
 <template>
-  <BaoSurface
-    eyebrow="在线 · 自动保存"
-    title="乐趣宝"
-    detail="通过对话推进经营、交付和确认事项。"
-  >
+  <BaoSurface eyebrow="在线 · 自动保存" title="乐趣宝" detail="通过对话推进经营、交付和确认事项。">
     <!-- 问候 · 概念稿 M1 -->
     <view class="m-greet">
       <text>老板，{{ greetWord }}。</text>
@@ -104,7 +100,8 @@ onShow(load);
     <!-- 进行中 · 概念稿任务行 -->
     <view v-if="today?.todos.length" class="panel">
       <view class="panel-head"
-        ><text>进行中 · {{ today.todos.length }}</text><text>全部 ›</text></view
+        ><text>进行中 · {{ today.todos.length }}</text
+        ><text>全部 ›</text></view
       >
       <view class="task-list">
         <view

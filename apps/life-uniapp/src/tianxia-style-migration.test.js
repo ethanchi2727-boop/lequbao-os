@@ -24,9 +24,10 @@ describe('天下摄影消费视觉迁移', () => {
   it('把分类胶囊、品类横幅和排序货架接到现有发现接口', async () => {
     const page = await source('pages/page-201/index.vue');
     expect(page).toContain('lifeCategories');
-    expect(page).toContain('chiprow');
-    expect(page).toContain('l-hero');
-    expect(page).toContain('grid2');
+    expect(page).toContain('category-tabs');
+    expect(page).toContain('category-banner');
+    expect(page).toContain('product-grid');
+    expect(page).toContain('LifeRetailProductCard');
     expect(page).toContain('/api/v1/life/discovery/products');
     expect(page).toContain('/api/v1/life/cart/items');
   });
@@ -59,12 +60,13 @@ describe('天下摄影消费视觉迁移', () => {
       source('pages/page-203/index.vue'),
       source('pages/page-204/index.vue'),
     ]);
-    expect(search).toContain('sbox');
-    expect(search).toContain('搜索历史');
+    expect(search).toContain('search-form');
+    expect(search).toContain('历史搜索');
     expect(search).toContain('热门搜索');
     expect(search).toContain('recentLifeSearches');
-    expect(results).toContain('sbox');
-    expect(results).toContain('grid2');
+    expect(results).toContain('result-search');
+    expect(results).toContain('result-list');
+    expect(results).toContain('LifeRetailProductCard');
     expect(results).toContain('/api/v1/life/discovery/products?limit=100');
     expect(results).toContain('/api/v1/life/discovery/stores?limit=100');
   });
@@ -79,14 +81,14 @@ describe('天下摄影消费视觉迁移', () => {
     expect(cart).not.toContain('amount-lines');
     expect(cart).not.toContain('🛒');
     // ===== cart.html 真实结构（一个都不能少、一个都不能自创） =====
-    expect(cart).toMatch(/class="[^"]*\bpi\b/);       // 自提/配送图标区（cart.html Lx）
-    expect(cart).toMatch(/class="[^"]*\bpt\b/);       // 总览标题文案（件数/库存核验）
-    expect(cart).toMatch(/class="[^"]*\bbar\b/);      // 满减进度条
-    expect(cart).toMatch(/class="[^"]*\bclist\b/);    // 商品行容器
-    expect(cart).toMatch(/class="[^"]*\bci\b/);       // 单个商品行（图/标题/规格/价格/step）
-    expect(cart).toMatch(/class="[^"]*\bbot\b/);      // 履约选择+配送地址
-    expect(cart).toMatch(/class="[^"]*\bpaybar\b/);   // 底部结算条（合计+提交CTA）
-    expect(cart).toMatch(/class="[^"]*\bsum\b/);      // 合计金额区块
+    expect(cart).toMatch(/class="[^"]*\bpi\b/); // 自提/配送图标区（cart.html Lx）
+    expect(cart).toMatch(/class="[^"]*\bpt\b/); // 总览标题文案（件数/库存核验）
+    expect(cart).toMatch(/class="[^"]*\bbar\b/); // 满减进度条
+    expect(cart).toMatch(/class="[^"]*\bclist\b/); // 商品行容器
+    expect(cart).toMatch(/class="[^"]*\bci\b/); // 单个商品行（图/标题/规格/价格/step）
+    expect(cart).toMatch(/class="[^"]*\bbot\b/); // 履约选择+配送地址
+    expect(cart).toMatch(/class="[^"]*\bpaybar\b/); // 底部结算条（合计+提交CTA）
+    expect(cart).toMatch(/class="[^"]*\bsum\b/); // 合计金额区块
     // ===== 真实后端核价链路（kimi JS chunk 契约：quote / actions/submit 幂等） =====
     expect(cart).toContain('/api/v1/life/checkouts/quote');
     expect(cart).toContain('/actions/submit');
@@ -136,8 +138,8 @@ describe('天下摄影消费视觉迁移', () => {
     expect(trace).toContain('trace-seal');
     expect(trace).toContain('evidence-node');
     expect(trace).toContain('/trace-report');
-    // ===== kimi 真理 deals.html（page-213 团购套餐列表，无旧 V6.1 event-banner 锚点）=====
-    expect(event).toContain('chiprow');
+    expect(event).toContain('event-banner');
+    expect(event).toContain('event-grid');
     expect(event).toContain('LifeRetailProductCard');
     expect(event).toContain('productType=GROUP_BUY');
   });

@@ -8,9 +8,6 @@
     "start": "node production-server.mjs",
     "build": "node build.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "vitest run"
-  },
-  "devDependencies": {
-    "vitest": "^4.1.11"
+    "test": "node ../../node_modules/vitest/vitest.mjs run"
   }
 }

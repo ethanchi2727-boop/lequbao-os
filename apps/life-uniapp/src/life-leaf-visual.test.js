@@ -10,7 +10,9 @@ describe('乐趣生活 V6.3 high-traffic leaves', () => {
     );
     expect(category).toContain('/static/v63-');
     expect(category).toContain('lifeCategories');
-    expect(detail).toContain('/static/v63-img/');
+    expect(detail).toContain('product-image');
+    expect(detail).toContain('/api/v1/life/discovery/products/');
+    expect(detail).toContain("state === 'empty'");
     expect(detail).toContain('salePriceCents');
     expect(detail).toContain('available');
     expect(detail).toContain("lifeSession.request('/api/v1/life/cart/items'");
@@ -37,10 +39,12 @@ describe('乐趣生活 V6.3 high-traffic leaves', () => {
         'components/LifeJourneyPage.vue',
       ].map((file) => readFile(new URL(file, import.meta.url), 'utf8')),
     );
-    expect(categoryResults).toContain('grid2');
-    expect(searchResults).toContain('grid2');
-    expect(searchResults).toContain('/static/v63-img/');
-    expect(search).toContain('搜索历史');
+    expect(categoryResults).toContain('product-grid');
+    expect(categoryResults).toContain('LifeRetailProductCard');
+    expect(searchResults).toContain('result-list');
+    expect(searchResults).toContain('LifeRetailProductCard');
+    expect(searchResults).toContain('/api/v1/life/discovery/stores?limit=100');
+    expect(search).toContain('历史搜索');
     expect(journey).toContain('order-truth-grid');
     expect(journey).toContain('detail.fulfillmentStatus');
     expect(journey).toContain('detail.aftercareStatus');

@@ -62,8 +62,7 @@ export function shapeVoucher(reward, now = Date.now()) {
   const statusKey = voucherStatusKey(reward, now);
   const orderId = typeof reward?.orderId === 'string' && reward.orderId ? reward.orderId : null;
   const availableDay = formatMonthDay(reward?.availableAt);
-  const sourceLabel =
-    FUNDING_SOURCE_LABELS[String(reward?.fundingSource ?? '')] ?? '消费奖励';
+  const sourceLabel = FUNDING_SOURCE_LABELS[String(reward?.fundingSource ?? '')] ?? '消费奖励';
   const descParts = [];
   if (orderId) descParts.push(`订单#${orderId.slice(0, 12)}`);
   if (statusKey === 'active' && availableDay) descParts.push(`${availableDay} 到账`);
@@ -73,8 +72,7 @@ export function shapeVoucher(reward, now = Date.now()) {
   return {
     id: String(reward?.id ?? ''),
     statusKey,
-    merchantTenantId:
-      typeof reward?.merchantTenantId === 'string' ? reward.merchantTenantId : '',
+    merchantTenantId: typeof reward?.merchantTenantId === 'string' ? reward.merchantTenantId : '',
     amountCents:
       statusKey === 'active'
         ? asCents(reward?.availableAmountCents)
