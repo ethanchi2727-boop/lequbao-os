@@ -88,6 +88,8 @@ jobs:
         run: psql -v ON_ERROR_STOP=1 -f database/tests/platform-consumer-cart.sql
       - name: Prove platform checkout address, quote and group account isolation
         run: psql -v ON_ERROR_STOP=1 -f database/tests/platform-checkout.sql
+      - name: Prove checkout reward redemption scope and RLS
+        run: psql -v ON_ERROR_STOP=1 -f database/tests/platform-checkout-reward-redemption.sql
       - name: Prove sales evidence, contract, collection and subscription dual control
         run: psql -v ON_ERROR_STOP=1 -f database/tests/sales-and-subscription-lifecycle.sql
       - name: Prove distribution dispute isolation and immutable request evidence
@@ -131,6 +133,9 @@ jobs:
           psql -d lequ_v6_migration -v ON_ERROR_STOP=1 -f database/migrations/0025_customer_service_operations.sql
           psql -d lequ_v6_migration -v ON_ERROR_STOP=1 -f database/migrations/0026_platform_control_plane.sql
           psql -d lequ_v6_migration -v ON_ERROR_STOP=1 -f database/migrations/0027_platform_consumer_identity_exchange.sql
+          psql -d lequ_v6_migration -v ON_ERROR_STOP=1 -f database/migrations/0028_platform_checkout_reward_redemption.sql
+          test "$(psql -d lequ_v6_migration -v ON_ERROR_STOP=1 -Atc 'SELECT count(*) FROM schema_migrations')" = '28'
+          psql -d lequ_v6_migration -v ON_ERROR_STOP=1 -f database/tests/platform-checkout-reward-redemption.sql
       - name: Prove development seed opt-in, idempotency and financial emptiness
         run: |
           createdb lequ_v6_development

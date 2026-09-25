@@ -72,6 +72,24 @@ describe('cloud development workspace', () => {
     expect(step.run).toContain('database/development-seed-verify.sql');
   });
 
+  it('proves migration 0028 from the package baseline with redemption isolation', async () => {
+    const workflow = parseYaml(await read('.github/workflows/ci.yml'));
+    const steps = workflow.jobs['postgres-contract'].steps;
+    const migration = steps.find((step) =>
+      step.name?.startsWith('Prove incremental migrations from the 73-table package baseline'),
+    );
+    expect(migration?.run).toContain(
+      'database/migrations/0028_platform_checkout_reward_redemption.sql',
+    );
+    expect(migration?.run).toContain('SELECT count(*) FROM schema_migrations');
+    expect(migration?.run).toContain('database/tests/platform-checkout-reward-redemption.sql');
+    expect(
+      steps.some((step) =>
+        step.run?.includes('database/tests/platform-checkout-reward-redemption.sql'),
+      ),
+    ).toBe(true);
+  });
+
   it('boots and smokes the complete development stack in an isolated CI job', async () => {
     const workflow = parseYaml(await read('.github/workflows/ci.yml'));
     const job = workflow.jobs['development-stack'];
