@@ -58,8 +58,15 @@ if [[ "$migration_count" == "28" ]]; then
   migration_count="$(psql --tuples-only --no-align --set=ON_ERROR_STOP=1 \
     --command='SELECT count(*) FROM schema_migrations')"
 fi
-if [[ "$migration_count" != "29" ]]; then
-  echo "Expected 29 V6.1 migrations, found $migration_count; refusing an ambiguous database" >&2
+if [[ "$migration_count" == "29" ]]; then
+  echo "Applying checkout reward customer scope migration"
+  psql --set=ON_ERROR_STOP=1 \
+    --file=database/migrations/0030_checkout_reward_customer_scope.sql
+  migration_count="$(psql --tuples-only --no-align --set=ON_ERROR_STOP=1 \
+    --command='SELECT count(*) FROM schema_migrations')"
+fi
+if [[ "$migration_count" != "30" ]]; then
+  echo "Expected 30 V6.1 migrations, found $migration_count; refusing an ambiguous database" >&2
   exit 1
 fi
 

@@ -31,9 +31,9 @@ const database = (values) => ({
 
 describe('performance database snapshot', () => {
   it('derives the exact candidate migration inventory from repository SQL', () => {
-    expect(requiredDatabaseMigrationVersions).toHaveLength(29);
+    expect(requiredDatabaseMigrationVersions).toHaveLength(30);
     expect(requiredDatabaseMigrationVersions.at(0)).toBe('0001_baseline');
-    expect(requiredDatabaseMigrationVersions.at(-1)).toBe('0029_checkout_reward_redemption_scope');
+    expect(requiredDatabaseMigrationVersions.at(-1)).toBe('0030_checkout_reward_customer_scope');
   });
 
   it('normalizes complete PostgreSQL statistics without precision loss', async () => {

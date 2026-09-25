@@ -37,7 +37,8 @@ describe('cloud development workspace', () => {
     expect(bootstrap).toContain('0027_platform_consumer_identity_exchange.sql');
     expect(bootstrap).toContain('0028_platform_checkout_reward_redemption.sql');
     expect(bootstrap).toContain('0029_checkout_reward_redemption_scope.sql');
-    expect(bootstrap).toContain('Expected 29 V6.1 migrations');
+    expect(bootstrap).toContain('0030_checkout_reward_customer_scope.sql');
+    expect(bootstrap).toContain('Expected 30 V6.1 migrations');
     expect(bootstrap).toContain('Refusing a partially initialized database');
 
     const start = await read('.devcontainer/start-development.sh');
@@ -73,7 +74,7 @@ describe('cloud development workspace', () => {
     expect(step.run).toContain('database/development-seed-verify.sql');
   });
 
-  it('proves migrations 0028 and 0029 from the package baseline with redemption isolation', async () => {
+  it('proves migrations 0028 through 0030 from the package baseline with redemption isolation', async () => {
     const workflow = parseYaml(await read('.github/workflows/ci.yml'));
     const steps = workflow.jobs['postgres-contract'].steps;
     const migration = steps.find((step) =>
@@ -85,8 +86,9 @@ describe('cloud development workspace', () => {
     expect(migration?.run).toContain(
       'database/migrations/0029_checkout_reward_redemption_scope.sql',
     );
+    expect(migration?.run).toContain('database/migrations/0030_checkout_reward_customer_scope.sql');
     expect(migration?.run).toContain('database/tests/checkout-reward-0028-existing-data.sql');
-    expect(migration?.run).toContain('database/tests/checkout-reward-0029-existing-data-check.sql');
+    expect(migration?.run).toContain('database/tests/checkout-reward-0030-existing-data-check.sql');
     expect(migration?.run).toContain('SELECT count(*) FROM schema_migrations');
     expect(migration?.run).toContain('database/tests/platform-checkout-reward-redemption.sql');
     expect(

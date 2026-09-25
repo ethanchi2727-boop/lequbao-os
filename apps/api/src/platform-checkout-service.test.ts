@@ -119,8 +119,8 @@ function fixture(
         id: `redemption-${redemptionRows.length + 1}`,
         checkout_group_id: values?.[1],
         merchant_tenant_id: values?.[3],
-        reward_grant_id: values?.[4],
-        amount_cents: values?.[5],
+        reward_grant_id: values?.[5],
+        amount_cents: values?.[6],
         status: 'RESERVED',
         order_id: null,
       });
@@ -441,6 +441,8 @@ describe('platform checkout quote', () => {
         rewardRedemption: { action: 'APPLY' },
       },
     })) as {
+      id: string;
+      groups: Array<{ id: string }>;
       payableAmountCents: number;
       rewardRedemptionStatus: string;
       rewardRedemptionCents: number;
@@ -457,7 +459,15 @@ describe('platform checkout quote', () => {
     const redemptionInsert = fx.query.mock.calls.find(([sql]) =>
       String(sql).includes('INSERT INTO platform_checkout_reward_redemptions'),
     );
-    expect(redemptionInsert?.[1]).toEqual(expect.arrayContaining([grantId, 900]));
+    expect(redemptionInsert?.[1]).toEqual([
+      quote.id,
+      quote.groups[0]?.id,
+      accountId,
+      tenantId,
+      customerId,
+      grantId,
+      900,
+    ]);
   });
 
   it('keeps reward redemption off when the request explicitly skips it', async () => {
