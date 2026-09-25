@@ -6,6 +6,7 @@ RUN corepack enable && corepack prepare pnpm@11.19.0 --activate
 WORKDIR /workspace
 COPY . .
 RUN pnpm install --frozen-lockfile
+RUN pnpm --filter @lequ/contracts --filter @lequ/harness-adapter --filter @lequ/tool-gateway build
 
 FROM source AS preview
 ENV NODE_ENV=development
@@ -14,8 +15,7 @@ ENV VITE_LEQU_DEVELOPMENT_MOCKS=1
 ENV VITE_LEQU_PREVIEW_DATA=1
 ENV HOST=0.0.0.0
 ENV PORT=8080
-RUN pnpm --filter @lequ/contracts build \
- && pnpm --filter @lequ/life-uniapp build:h5 \
+RUN pnpm --filter @lequ/life-uniapp build:h5 \
  && pnpm --filter @lequ/bao-uniapp build:h5
 USER node
 EXPOSE 8080
@@ -24,13 +24,11 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
 CMD ["bash", "deploy/start-bao-preview.sh"]
 
 FROM source AS api-build
-RUN pnpm --filter @lequ/contracts build \
- && pnpm --filter @lequ/api build \
+RUN pnpm --filter @lequ/api build \
  && pnpm --filter @lequ/api deploy --prod --legacy /opt/lequ
 
 FROM source AS worker-build
-RUN pnpm --filter @lequ/contracts build \
- && pnpm --filter @lequ/worker build \
+RUN pnpm --filter @lequ/worker build \
  && pnpm --filter @lequ/worker deploy --prod --legacy /opt/lequ
 
 FROM source AS web-build

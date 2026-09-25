@@ -5,7 +5,7 @@ if (!process.env.DATABASE_URL) throw new Error('DATABASE_URL is required');
 const database = new pg.Pool({ connectionString: process.env.DATABASE_URL, max: 2 });
 try {
   const snapshot = await capturePerformanceDatabaseSnapshot(database);
-  if (snapshot.tableCount < 164) throw new Error('performance snapshot database is incomplete');
+  if (snapshot.tableCount < 165) throw new Error('performance snapshot database is incomplete');
   if (!Number.isFinite(snapshot.messageBacklog.oldestActiveSeconds))
     throw new Error('performance snapshot Outbox age is invalid');
   console.log(

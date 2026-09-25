@@ -57,6 +57,15 @@ const platformControlMigration = await read('database/migrations/0026_platform_c
 const platformConsumerIdentityMigration = await read(
   'database/migrations/0027_platform_consumer_identity_exchange.sql',
 );
+const checkoutRewardRedemptionMigration = await read(
+  'database/migrations/0028_platform_checkout_reward_redemption.sql',
+);
+const checkoutRewardScopeMigration = await read(
+  'database/migrations/0029_checkout_reward_redemption_scope.sql',
+);
+const checkoutRewardCustomerMigration = await read(
+  'database/migrations/0030_checkout_reward_customer_scope.sql',
+);
 const pageStats = JSON.parse(
   await read('docs/v6.1/source-package/02_完整PRD页面树与状态机/页面树与页面契约/页面树统计.json'),
 );
@@ -66,7 +75,7 @@ const events = await read(
 
 const failures = [];
 const tableCount = [
-  ...`${schema}\n${identityMigration}\n${rightsGovernanceMigration}\n${deliveryMigration}\n${miniProgramMigration}\n${customerServiceMigration}\n${commerceMigration}\n${geoPluginReportMigration}\n${operationsMigration}\n${eventRuntimeMigration}\n${platformConsumerCartMigration}\n${platformCheckoutMigration}\n${merchantMiniCheckoutMigration}\n${consumerEvidenceMigration}\n${salesLifecycleMigration}\n${distributionDisputeMigration}\n${employeeAgentRuntimeMigration}\n${productPublicationMigration}\n${customerServiceOperationsMigration}\n${platformControlMigration}`.matchAll(
+  ...`${schema}\n${identityMigration}\n${rightsGovernanceMigration}\n${deliveryMigration}\n${miniProgramMigration}\n${customerServiceMigration}\n${commerceMigration}\n${geoPluginReportMigration}\n${operationsMigration}\n${eventRuntimeMigration}\n${platformConsumerCartMigration}\n${platformCheckoutMigration}\n${merchantMiniCheckoutMigration}\n${consumerEvidenceMigration}\n${salesLifecycleMigration}\n${distributionDisputeMigration}\n${employeeAgentRuntimeMigration}\n${productPublicationMigration}\n${customerServiceOperationsMigration}\n${platformControlMigration}\n${checkoutRewardRedemptionMigration}`.matchAll(
     /^CREATE TABLE\s+([a-z_][a-z0-9_]*)\s*\(/gim,
   ),
 ].length;
@@ -74,7 +83,7 @@ const sourceTableCount = [...sourceSchema.matchAll(/^CREATE TABLE\s+([a-z_][a-z0
   .length;
 if (sourceTableCount !== 73)
   failures.push(`expected 73 source-package tables, found ${sourceTableCount}`);
-if (tableCount !== 164) failures.push(`expected 164 audited target tables, found ${tableCount}`);
+if (tableCount !== 165) failures.push(`expected 165 audited target tables, found ${tableCount}`);
 if (pageStats.total_nodes !== 307)
   failures.push(`expected 307 page nodes, found ${pageStats.total_nodes}`);
 if (pageStats.leaf_pages !== 197)
@@ -150,6 +159,16 @@ if (!schema.includes('\\ir migrations/0021_sales_and_subscription_lifecycle.sql'
   failures.push('clean schema does not include migration 0021');
 if (!schema.includes('\\ir migrations/0027_platform_consumer_identity_exchange.sql'))
   failures.push('clean schema does not include migration 0027');
+if (!schema.includes('\\ir migrations/0028_platform_checkout_reward_redemption.sql'))
+  failures.push('clean schema does not include migration 0028');
+if (!schema.includes('\\ir migrations/0029_checkout_reward_redemption_scope.sql'))
+  failures.push('clean schema does not include migration 0029');
+if (!schema.includes('\\ir migrations/0030_checkout_reward_customer_scope.sql'))
+  failures.push('clean schema does not include migration 0030');
+if (!checkoutRewardScopeMigration.includes('FORCE ROW LEVEL SECURITY'))
+  failures.push('checkout reward redemption account isolation is missing');
+if (!checkoutRewardCustomerMigration.includes('redemptions_grant_customer_fk'))
+  failures.push('checkout reward grant customer isolation is missing');
 if (!eventRuntimeMigration.includes('CREATE TABLE event_dead_letters'))
   failures.push('event dead-letter evidence table missing');
 if (!eventRuntimeMigration.includes('CREATE TABLE event_consumer_offsets'))
@@ -192,6 +211,6 @@ if (failures.length > 0) {
   process.exitCode = 1;
 } else {
   console.log(
-    'V6 contracts verified: 73 source tables, 164 audited target tables, 307 nodes, 197 leaves, 46 domain events, RLS and audit guards.',
+    'V6 contracts verified: 73 source tables, 165 audited target tables, 307 nodes, 197 leaves, 46 domain events, RLS and audit guards.',
   );
 }

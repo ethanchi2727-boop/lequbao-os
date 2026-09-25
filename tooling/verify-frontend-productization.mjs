@@ -240,6 +240,44 @@ export async function verifyFrontendProductization({ write = false } = {}) {
   const expected = createFrontendMatrix(pageTree);
   if (expected.pages.length !== 197)
     failures.push(`frontend matrix expected 197 leaves, found ${expected.pages.length}`);
+  const journeyLeaves = new Set([
+    '218',
+    '221',
+    '224',
+    '228',
+    '229',
+    '231',
+    '232',
+    '235',
+    '237',
+    '239',
+  ]);
+  const serviceLeaves = new Set(['242', '248', '250', '254', '255', '258', '259', '262', '264']);
+  const directLeaves = new Map([
+    ['201', '/api/v1/life/discovery/products'],
+    ['203', 'recentLifeSearches'],
+    ['204', '/api/v1/life/discovery/products?limit=100'],
+    ['209', '/api/v1/life/discovery/products/'],
+    ['213', '/api/v1/life/discovery/products?productType=GROUP_BUY'],
+  ]);
+  for (const row of expected.pages.filter((page) => page.product === '乐趣生活')) {
+    const id = row.pageId.slice(5);
+    const source = await readFile(`apps/life-uniapp/src/pages/page-${id}/index.vue`, 'utf8');
+    if (/概念演示|概念版|\/pages\/#\/index/u.test(source))
+      failures.push(`${row.pageId} contains concept-only content or a dead route`);
+    const component = journeyLeaves.has(id)
+      ? 'LifeJourneyPage'
+      : serviceLeaves.has(id)
+        ? 'LifeServicePage'
+        : null;
+    if (component && !source.includes(`<${component} page-id="${id}"`))
+      failures.push(`${row.pageId} does not render its authoritative business component`);
+    if (
+      directLeaves.has(id) &&
+      (!source.includes(directLeaves.get(id)) || !source.includes('LifeSurface'))
+    )
+      failures.push(`${row.pageId} does not render its authoritative data surface`);
+  }
   if (write) await writeFile(matrixPath, `${JSON.stringify(expected, null, 2)}\n`);
   else {
     try {

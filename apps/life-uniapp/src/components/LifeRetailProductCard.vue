@@ -60,16 +60,21 @@ const effectivePromo = computed(
         class="gplus"
         :class="{ disabled: product.availableQuantity < 1 }"
         @click.stop="emit('add', product)"
-      >＋</view>
+        >＋</view
+      >
     </view>
     <view class="gt">
       <text class="product-title">{{ product.title }}</text>
       <text class="product-detail">{{ product.variantTitle || '默认规格' }}</text>
       <view class="grow">
-        <text class="gp">¥{{ money(product.salePriceCents) }}<text
-          v-if="Number(product.marketPriceCents) > Number(product.salePriceCents)"
-          class="gp-was"
-        >¥{{ money(product.marketPriceCents) }}</text></text>
+        <text class="gp"
+          >¥{{ money(product.salePriceCents)
+          }}<text
+            v-if="Number(product.marketPriceCents) > Number(product.salePriceCents)"
+            class="gp-was"
+            >¥{{ money(product.marketPriceCents) }}</text
+          ></text
+        >
         <text class="stock-tx">{{
           product.availableQuantity > 0 ? `库存 ${product.availableQuantity}` : '售罄'
         }}</text>
@@ -95,7 +100,10 @@ const effectivePromo = computed(
   text-decoration: none;
   color: var(--ink, #16130f);
   box-shadow: var(--shadow, 0 10px 26px rgba(22, 19, 15, 0.09));
-  transition: transform 260ms ease, box-shadow 260ms ease, background 0.5s;
+  transition:
+    transform 260ms ease,
+    box-shadow 260ms ease,
+    background 0.5s;
 }
 .dimgbox {
   position: relative;

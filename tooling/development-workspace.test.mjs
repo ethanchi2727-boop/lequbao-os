@@ -28,12 +28,17 @@ describe('cloud development workspace', () => {
 
     const bootstrap = await read('.devcontainer/bootstrap.sh');
     expect(bootstrap).toContain('pnpm install --frozen-lockfile');
-    expect(bootstrap).toContain('pnpm --filter @lequ/contracts build');
+    expect(bootstrap).toContain(
+      'pnpm --filter @lequ/contracts --filter @lequ/harness-adapter --filter @lequ/tool-gateway build',
+    );
     expect(bootstrap).toContain('--file=database/schema.sql');
     expect(bootstrap).toContain('--set=development_seed=enabled');
     expect(bootstrap).toContain('--file=database/development-seed-verify.sql');
     expect(bootstrap).toContain('0027_platform_consumer_identity_exchange.sql');
-    expect(bootstrap).toContain('Expected 27 V6.1 migrations');
+    expect(bootstrap).toContain('0028_platform_checkout_reward_redemption.sql');
+    expect(bootstrap).toContain('0029_checkout_reward_redemption_scope.sql');
+    expect(bootstrap).toContain('0030_checkout_reward_customer_scope.sql');
+    expect(bootstrap).toContain('Expected 30 V6.1 migrations');
     expect(bootstrap).toContain('Refusing a partially initialized database');
 
     const start = await read('.devcontainer/start-development.sh');
@@ -69,6 +74,30 @@ describe('cloud development workspace', () => {
     expect(step.run).toContain('database/development-seed-verify.sql');
   });
 
+  it('proves migrations 0028 through 0030 from the package baseline with redemption isolation', async () => {
+    const workflow = parseYaml(await read('.github/workflows/ci.yml'));
+    const steps = workflow.jobs['postgres-contract'].steps;
+    const migration = steps.find((step) =>
+      step.name?.startsWith('Prove incremental migrations from the 73-table package baseline'),
+    );
+    expect(migration?.run).toContain(
+      'database/migrations/0028_platform_checkout_reward_redemption.sql',
+    );
+    expect(migration?.run).toContain(
+      'database/migrations/0029_checkout_reward_redemption_scope.sql',
+    );
+    expect(migration?.run).toContain('database/migrations/0030_checkout_reward_customer_scope.sql');
+    expect(migration?.run).toContain('database/tests/checkout-reward-0028-existing-data.sql');
+    expect(migration?.run).toContain('database/tests/checkout-reward-0030-existing-data-check.sql');
+    expect(migration?.run).toContain('SELECT count(*) FROM schema_migrations');
+    expect(migration?.run).toContain('database/tests/platform-checkout-reward-redemption.sql');
+    expect(
+      steps.some((step) =>
+        step.run?.includes('database/tests/platform-checkout-reward-redemption.sql'),
+      ),
+    ).toBe(true);
+  });
+
   it('boots and smokes the complete development stack in an isolated CI job', async () => {
     const workflow = parseYaml(await read('.github/workflows/ci.yml'));
     const job = workflow.jobs['development-stack'];
@@ -79,6 +108,11 @@ describe('cloud development workspace', () => {
     expect(commands).toContain('docker compose -f .devcontainer/compose.yaml up --detach --build');
     expect(commands).toContain('chown --recursive node:node /workspaces/lequ-life-platform');
     expect(commands).toContain('node tooling/development-stack-smoke.mjs');
+    const smoke = await read('tooling/development-stack-smoke.mjs');
+    expect(smoke).toContain('/api/v1/life/cart/items');
+    expect(smoke).toContain('/api/v1/life/checkouts/quote');
+    expect(smoke).toContain('/actions/submit');
+    expect(smoke).toContain('/api/v1/life/orders');
     expect(commands).toContain('SELECT count(*) FROM user_sessions');
     expect(commands).toContain('down --volumes --remove-orphans');
   });

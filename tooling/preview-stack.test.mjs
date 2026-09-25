@@ -14,7 +14,24 @@ describe('public preview stack', () => {
       'service_completed_successfully',
     );
     expect(migration).toContain('0027_platform_consumer_identity_exchange');
+    expect(migration).toContain('0028_platform_checkout_reward_redemption');
+    expect(migration).toContain('0029_checkout_reward_redemption_scope');
+    expect(migration).toContain('0030_checkout_reward_customer_scope');
+    expect(migration).toContain('--file=/opt/lequ-database/preflight/checkout-reward-upgrade.sql');
     expect(migration).toContain('--file=/opt/lequ-database/development-seed.sql');
+  });
+
+  it('builds shared runtime packages before container API and Worker builds', async () => {
+    const dockerfile = await read('deploy/Dockerfile');
+    const sharedBuild =
+      'pnpm --filter @lequ/contracts --filter @lequ/harness-adapter --filter @lequ/tool-gateway build';
+    expect(dockerfile.indexOf(sharedBuild)).toBeGreaterThan(dockerfile.indexOf('FROM node:'));
+    expect(dockerfile.indexOf(sharedBuild)).toBeLessThan(
+      dockerfile.indexOf('FROM source AS api-build'),
+    );
+    expect(dockerfile.indexOf(sharedBuild)).toBeLessThan(
+      dockerfile.indexOf('FROM source AS preview'),
+    );
   });
 
   it('smokes the PC intake write path through the combined preview topology', async () => {

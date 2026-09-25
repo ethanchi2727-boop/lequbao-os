@@ -564,7 +564,7 @@ export const controlledJsonEvidenceReviewRules = Object.freeze({
   'performance-report.json': [
     'core-read, customer-message-write and core-write use the frozen P95/error thresholds and reconcile every request',
     'all acknowledged messages persist and dead Outbox count does not increase',
-    'before/after database snapshots contain the complete 164-table candidate schema and non-negative counters',
+    'before/after database snapshots contain the complete 165-table candidate schema and non-negative counters',
   ],
 });
 
@@ -1464,8 +1464,8 @@ function validatePerformanceSnapshot(artifact, pathName, snapshot, failures) {
   ])
     if (!Number.isSafeInteger(snapshot[fieldName]) || snapshot[fieldName] < 0)
       failures.push(`${artifact} ${pathName}.${fieldName} must be a non-negative integer`);
-  if (snapshot.tableCount !== 164)
-    failures.push(`${artifact} ${pathName}.tableCount must equal the 164-table candidate schema`);
+  if (snapshot.tableCount !== 165)
+    failures.push(`${artifact} ${pathName}.tableCount must equal the 165-table candidate schema`);
   if (
     !Array.isArray(snapshot.migrationVersions) ||
     JSON.stringify(snapshot.migrationVersions) !== JSON.stringify(requiredDatabaseMigrationVersions)

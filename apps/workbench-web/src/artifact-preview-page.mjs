@@ -136,7 +136,8 @@ const decisionStatusLabels = Object.freeze({
   CONFLICT: '冲突',
   REVIEW: '待核对',
 });
-const decisionStatusLabel = (status) => decisionStatusLabels[String(status ?? '').toUpperCase()] ?? '待核对';
+const decisionStatusLabel = (status) =>
+  decisionStatusLabels[String(status ?? '').toUpperCase()] ?? '待核对';
 const intakeSessionStatusLabels = Object.freeze({
   READY_FOR_REVIEW: '待人工审查',
   PROCESSING: '识别处理中',

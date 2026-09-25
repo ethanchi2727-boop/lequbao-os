@@ -84,7 +84,8 @@ onShow(load);
         <view
           ><text>{{ order.orderNo }}</text
           ><text
-            >¥{{ (order.payableAmountCents / 100).toFixed(2) }} · {{ orderStatusLabel(order.status) }}</text
+            >¥{{ (order.payableAmountCents / 100).toFixed(2) }} ·
+            {{ orderStatusLabel(order.status) }}</text
           ></view
         >
         <text>{{ index < completedCount ? '完成' : '处理中' }}</text>

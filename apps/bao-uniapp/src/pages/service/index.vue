@@ -4,11 +4,7 @@ import { onShow } from '@dcloudio/uni-app';
 import BaoSurface from '../../components/BaoSurface.vue';
 import BaoTaskDirectory from '../../components/BaoTaskDirectory.vue';
 import { baoSession } from '../../services/bao-session.js';
-import {
-  priorityLabel,
-  riskLevelLabel,
-  taskTypeLabel,
-} from '../../services/display-labels.js';
+import { priorityLabel, riskLevelLabel, taskTypeLabel } from '../../services/display-labels.js';
 
 const loading = ref(false);
 const error = ref(false);
@@ -147,7 +143,8 @@ onShow(load);
           <view
             ><text>{{ task.summary || taskTypeLabel(task.taskType) }}</text
             ><text
-              >{{ task.storeName || storeNameOf(task.storeId) }} · {{ priorityLabel(task.priority) }}优先级</text
+              >{{ task.storeName || storeNameOf(task.storeId) }} ·
+              {{ priorityLabel(task.priority) }}优先级</text
             ></view
           >
           <button

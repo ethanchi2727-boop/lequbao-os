@@ -22,6 +22,38 @@ if [[ "$applied" = "0" ]]; then
   "${psql_base[@]}" --file=/opt/lequ-database/migrations/0027_platform_consumer_identity_exchange.sql
 fi
 
+applied="$(${psql_base[@]} --tuples-only --no-align --command="
+  SELECT count(*) FROM schema_migrations
+   WHERE version='0028_platform_checkout_reward_redemption'
+")"
+if [[ "$applied" = "0" ]]; then
+  "${psql_base[@]}" --file=/opt/lequ-database/migrations/0028_platform_checkout_reward_redemption.sql
+fi
+
+applied_scope="$(${psql_base[@]} --tuples-only --no-align --command="
+  SELECT count(*) FROM schema_migrations
+   WHERE version IN ('0029_checkout_reward_redemption_scope','0030_checkout_reward_customer_scope')
+")"
+if [[ "$applied_scope" != "2" ]]; then
+  "${psql_base[@]}" --file=/opt/lequ-database/preflight/checkout-reward-upgrade.sql
+fi
+
+applied="$(${psql_base[@]} --tuples-only --no-align --command="
+  SELECT count(*) FROM schema_migrations
+   WHERE version='0029_checkout_reward_redemption_scope'
+")"
+if [[ "$applied" = "0" ]]; then
+  "${psql_base[@]}" --file=/opt/lequ-database/migrations/0029_checkout_reward_redemption_scope.sql
+fi
+
+applied="$(${psql_base[@]} --tuples-only --no-align --command="
+  SELECT count(*) FROM schema_migrations
+   WHERE version='0030_checkout_reward_customer_scope'
+")"
+if [[ "$applied" = "0" ]]; then
+  "${psql_base[@]}" --file=/opt/lequ-database/migrations/0030_checkout_reward_customer_scope.sql
+fi
+
 "${psql_base[@]}" \
   --set=development_seed=enabled \
   --file=/opt/lequ-database/development-seed.sql

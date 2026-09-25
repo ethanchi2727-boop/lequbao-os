@@ -211,12 +211,13 @@ describe('sales lifecycle', () => {
             opportunityId,
             planCode: 'MERCHANT_898',
             quotedPriceCents: 99900,
-            validUntil: '2026-09-19T08:00:00+08:00',
+            validUntil: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
           },
           'quote-key',
         ),
       ),
     ).rejects.toBeInstanceOf(SalesLifecycleStateError);
+    expect(fx.statements.some(({ sql }) => sql.startsWith('SELECT list_price_cents'))).toBe(true);
     expect(fx.statements.some(({ sql }) => sql.startsWith('INSERT INTO sales_quotes'))).toBe(false);
   });
 

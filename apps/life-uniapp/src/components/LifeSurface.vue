@@ -72,10 +72,12 @@ function markFuAnimate() {
     try {
       if (inst && inst.proxy) {
         const q = uni.createSelectorQuery().in(inst.proxy);
-        q.selectAll('.fu').boundingClientRect((rects) => {
-          // 小程序端此处不能直接 classList.add('in') → 交给全局 CSS nth-of-type 动画完成视觉
-          void rects;
-        }).exec();
+        q.selectAll('.fu')
+          .boundingClientRect((rects) => {
+            // 小程序端此处不能直接 classList.add('in') → 交给全局 CSS nth-of-type 动画完成视觉
+            void rects;
+          })
+          .exec();
       }
     } catch {
       /* noop */

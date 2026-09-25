@@ -785,6 +785,7 @@ export function createPlatformCheckoutService(
         const rewardRedemptions = [] as Array<{
           groupId: string;
           merchantTenantId: string;
+          customerId: string;
           rewardGrantId: string;
           amountCents: number;
         }>;
@@ -830,6 +831,7 @@ export function createPlatformCheckoutService(
                 rewardRedemptions.push({
                   groupId: group.id,
                   merchantTenantId: group.merchantTenantId,
+                  customerId: group.customerId,
                   rewardGrantId: grant.id,
                   amountCents,
                 });
@@ -889,13 +891,14 @@ export function createPlatformCheckoutService(
         for (const redemption of rewardRedemptions)
           await client.query(
             `INSERT INTO platform_checkout_reward_redemptions(
-               checkout_id,checkout_group_id,account_id,merchant_tenant_id,reward_grant_id,amount_cents
-             ) VALUES ($1,$2,$3,$4,$5,$6)`,
+               checkout_id,checkout_group_id,account_id,merchant_tenant_id,customer_id,reward_grant_id,amount_cents
+             ) VALUES ($1,$2,$3,$4,$5,$6,$7)`,
             [
               checkoutId,
               redemption.groupId,
               command.identity.accountId,
               redemption.merchantTenantId,
+              redemption.customerId,
               redemption.rewardGrantId,
               redemption.amountCents,
             ],

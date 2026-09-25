@@ -97,7 +97,9 @@ onShow(loadContext);
         <view v-if="context" class="task-row"
           ><view
             ><text>{{ context.roleCodes.map(roleLabel).join(' · ') }}</text
-            ><text>{{ context.storeIds.length ? `${context.storeIds.length} 家门店在授权范围` : '租户级范围' }}</text></view
+            ><text>{{
+              context.storeIds.length ? `${context.storeIds.length} 家门店在授权范围` : '租户级范围'
+            }}</text></view
           ><text class="status-chip">在线</text></view
         >
         <button v-if="context" class="m-primary" :loading="busy" @click="logout">

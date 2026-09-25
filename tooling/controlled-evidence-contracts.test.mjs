@@ -738,7 +738,7 @@ describe('controlled JSON evidence contracts', () => {
         before: {
           capturedAt: '2026-08-19T01:02:00.000Z',
           databaseRefHash: 'd'.repeat(64),
-          tableCount: 164,
+          tableCount: 165,
           migrationVersions: [...requiredDatabaseMigrationVersions].reverse(),
         },
         after: {

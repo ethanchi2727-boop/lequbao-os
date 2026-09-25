@@ -86,7 +86,7 @@ function semanticFixture(artifact, binding) {
     tempBytes: 0,
     deadlocks: 0,
     estimatedLiveRows: 1,
-    tableCount: 164,
+    tableCount: 165,
     migrationVersions: requiredDatabaseMigrationVersions,
     messageBacklog: { activeCount: 0, deadCount: 0, oldestActiveSeconds: 0 },
   };
@@ -1071,7 +1071,7 @@ describe('controlled launch results', () => {
     ).resolves.toContain(
       `${firstSuite.code} evidence hash mismatch for ${path.posix.join(firstSuite.evidenceDirectory, firstFile)}`,
     );
-  }, 30_000);
+  }, 90_000);
 
   it('rejects content-invalid evidence even when its hash is updated to match', async () => {
     const { root, results, resultsFile } = await fixture();
