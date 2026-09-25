@@ -272,6 +272,10 @@ jobs:
             psql --username=postgres --dbname=lequ_v6 --tuples-only --no-align \
             --command="SELECT count(*) FROM user_sessions WHERE tenant_id='10000000-0000-4000-8000-000000000001'")"
           test "$session_count" = "1"
+          payment_intent_count="$(docker compose -f .devcontainer/compose.yaml exec --no-TTY postgres \
+            psql --username=postgres --dbname=lequ_v6 --tuples-only --no-align \
+            --command="SELECT count(*) FROM payment_intents")"
+          test "$payment_intent_count" = "0"
           docker compose -f .devcontainer/compose.yaml exec --no-TTY workspace \
             bash .devcontainer/stop-development.sh
 

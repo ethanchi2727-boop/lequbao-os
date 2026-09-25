@@ -155,6 +155,17 @@ assert.equal(submitted.response.status, 202);
 assert.equal(submitted.body.status, 'ORDERS_CREATED');
 const orderId = submitted.body.groups[0]?.orderId;
 assert.match(orderId, /^[0-9a-f-]{36}$/u);
+const paymentAttempt = await fetch('http://127.0.0.1:4173/api/v1/life/payment-intents', {
+  method: 'POST',
+  headers: {
+    ...lifeHeaders,
+    'content-type': 'application/json',
+    'idempotency-key': 'development-smoke-payment-intent-v1',
+  },
+  body: JSON.stringify({ orderId, provider: 'SANDBOX' }),
+});
+assert.equal(paymentAttempt.status, 409);
+assert.deepEqual(await paymentAttempt.json(), { code: 'INVALID_COMMERCE_STATE' });
 const orders = await json('http://127.0.0.1:4173/api/v1/life/orders', {
   headers: lifeHeaders,
 });
@@ -165,5 +176,5 @@ assert.equal(page.ok, true, `Workbench page returned HTTP ${page.status}`);
 assert.match(await page.text(), /<div id="app"><\/div>/u);
 
 console.log(
-  'Development stack smoke passed with employee intake and Life PostgreSQL login, cart, quote and order.',
+  'Development stack smoke passed with employee intake, Life order creation and unconfirmed payment account denial.',
 );
