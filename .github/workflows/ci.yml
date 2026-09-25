@@ -135,6 +135,18 @@ jobs:
           psql -d lequ_v6_migration -v ON_ERROR_STOP=1 -f database/migrations/0027_platform_consumer_identity_exchange.sql
           psql -d lequ_v6_migration -v ON_ERROR_STOP=1 -f database/migrations/0028_platform_checkout_reward_redemption.sql
           psql -d lequ_v6_migration -v ON_ERROR_STOP=1 -f database/tests/checkout-reward-0028-existing-data.sql
+          test "$(psql -d lequ_v6_migration -v ON_ERROR_STOP=1 -Atc 'SELECT count(*) FROM schema_migrations')" = '28'
+          pg_dump --format=custom --no-owner --no-acl --file="$RUNNER_TEMP/checkout-0028.dump" lequ_v6_migration
+          test -s "$RUNNER_TEMP/checkout-0028.dump"
+          createdb lequ_v6_restored
+          pg_restore --exit-on-error --no-owner --no-acl --dbname=lequ_v6_restored "$RUNNER_TEMP/checkout-0028.dump"
+          test "$(psql -d lequ_v6_restored -v ON_ERROR_STOP=1 -Atc 'SELECT count(*) FROM schema_migrations')" = '28'
+          psql -d lequ_v6_restored -v ON_ERROR_STOP=1 -f database/preflight/checkout-reward-upgrade.sql
+          psql -d lequ_v6_restored -v ON_ERROR_STOP=1 -f database/migrations/0029_checkout_reward_redemption_scope.sql
+          psql -d lequ_v6_restored -v ON_ERROR_STOP=1 -f database/migrations/0030_checkout_reward_customer_scope.sql
+          test "$(psql -d lequ_v6_restored -v ON_ERROR_STOP=1 -Atc 'SELECT count(*) FROM schema_migrations')" = '30'
+          psql -d lequ_v6_restored -v ON_ERROR_STOP=1 -f database/tests/checkout-reward-0030-existing-data-check.sql
+          test "$(psql -d lequ_v6_migration -v ON_ERROR_STOP=1 -Atc 'SELECT count(*) FROM schema_migrations')" = '28'
           psql -d lequ_v6_migration -v ON_ERROR_STOP=1 -f database/preflight/checkout-reward-upgrade.sql
           psql -d lequ_v6_migration -v ON_ERROR_STOP=1 -c "INSERT INTO platform_consumer_accounts(id,union_identifier_hash) VALUES ('57000000-0000-4000-8000-000000000013',repeat('8',64))"
           psql -d lequ_v6_migration -v ON_ERROR_STOP=1 -c "UPDATE platform_checkout_reward_redemptions SET account_id='57000000-0000-4000-8000-000000000013' WHERE id='57000000-0000-4000-8000-000000000012'"
