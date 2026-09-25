@@ -110,6 +110,7 @@ for (const marker of [
   '0028_platform_checkout_reward_redemption',
   '0029_checkout_reward_redemption_scope',
   '0030_checkout_reward_customer_scope',
+  '--file=/opt/lequ-database/preflight/checkout-reward-upgrade.sql',
   '--file=/opt/lequ-database/development-seed.sql',
   '--file=/opt/lequ-database/development-seed-verify.sql',
 ])

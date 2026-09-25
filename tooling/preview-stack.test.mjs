@@ -17,6 +17,7 @@ describe('public preview stack', () => {
     expect(migration).toContain('0028_platform_checkout_reward_redemption');
     expect(migration).toContain('0029_checkout_reward_redemption_scope');
     expect(migration).toContain('0030_checkout_reward_customer_scope');
+    expect(migration).toContain('--file=/opt/lequ-database/preflight/checkout-reward-upgrade.sql');
     expect(migration).toContain('--file=/opt/lequ-database/development-seed.sql');
   });
 
