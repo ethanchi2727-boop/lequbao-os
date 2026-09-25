@@ -6,6 +6,8 @@
 
 2026-09-25 本地检查点：恢复乐趣生活正式路由中的发现、搜索、商品、团购及其他业务组件入口；修复全仓格式、测试依赖、锁文件/SBOM 与 `0028` 增量迁移脚本/证据契约漂移。移除首页永不显示的图片锚点，H5 产物降至 7,561,233 字节。当前工作树 `pnpm check` 全绿，详情见 `docs/release/life-route-regression-repair.md`。本机无 PostgreSQL/Docker，真实迁移、RLS、交易/支付、微信真机与受控发布仍需在对应环境验收，不能视作已上线。
 
+同日远程检查点：`2ba538654e76781285314b2cbc738c55bac0c8f1` 的五项 CI 全绿；真实 PostgreSQL 开发栈完成登录、发现、加购、核价、提交订单和查询待支付订单。订单支付、旧库增量迁移与恢复、微信真机和供应商回调仍按交付记录的后续验收表执行。
+
 The V5 rollback baseline remains preserved in Git history at `f70b4674c82f99db8424bba8854aeb8a7a11d362`. Remote `main` contains the merged V6.1 candidate application at merge commit `bb59cad44747ad3c1ecb607bf0f2de51937ab058`; production activation remains gated separately.
 
 ## Current objective
