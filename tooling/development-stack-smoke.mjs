@@ -117,10 +117,53 @@ assert.equal(
   true,
 );
 
+const fruit = lifeProducts.body.find((product) => product.productType === 'PHYSICAL');
+assert.ok(fruit?.variantId, 'development fruit variant was not discovered');
+const cart = await json('http://127.0.0.1:4173/api/v1/life/cart/items', {
+  method: 'PUT',
+  headers: { ...lifeHeaders, 'content-type': 'application/json' },
+  body: JSON.stringify({
+    merchantTenantId: fruit.merchantTenantId,
+    storeId: fruit.storeId,
+    variantId: fruit.variantId,
+    quantity: 1,
+  }),
+});
+assert.equal(cart.body.itemCount, 1);
+assert.equal(cart.body.groups[0].items[0].available, true);
+const quote = await json('http://127.0.0.1:4173/api/v1/life/checkouts/quote', {
+  method: 'POST',
+  headers: {
+    ...lifeHeaders,
+    'content-type': 'application/json',
+    'idempotency-key': 'development-smoke-checkout-quote-v1',
+  },
+  body: JSON.stringify({ cartVersion: cart.body.version, rewardRedemption: { action: 'SKIP' } }),
+});
+assert.equal(quote.response.status, 201);
+assert.equal(quote.body.status, 'QUOTED');
+assert.equal(quote.body.goodsAmountCents, 3990);
+assert.equal(quote.body.payableAmountCents, 3990);
+const submitted = await json(
+  `http://127.0.0.1:4173/api/v1/life/checkouts/${encodeURIComponent(quote.body.id)}/actions/submit`,
+  {
+    method: 'POST',
+    headers: { ...lifeHeaders, 'idempotency-key': 'development-smoke-checkout-submit-v1' },
+  },
+);
+assert.equal(submitted.response.status, 202);
+assert.equal(submitted.body.status, 'ORDERS_CREATED');
+const orderId = submitted.body.groups[0]?.orderId;
+assert.match(orderId, /^[0-9a-f-]{36}$/u);
+const orders = await json('http://127.0.0.1:4173/api/v1/life/orders', {
+  headers: lifeHeaders,
+});
+assert.equal(orders.body.find((order) => order.id === orderId)?.status, 'PENDING_PAYMENT');
+
 const page = await fetch('http://127.0.0.1:4173/bao/page-014');
 assert.equal(page.ok, true, `Workbench page returned HTTP ${page.status}`);
 assert.match(await page.text(), /<div id="app"><\/div>/u);
 
 console.log(
-  'Development stack smoke passed with employee intake and Life consumer PostgreSQL identity.',
+  'Development stack smoke passed with employee intake and Life PostgreSQL login, cart, quote and order.',
 );

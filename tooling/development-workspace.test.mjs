@@ -82,6 +82,11 @@ describe('cloud development workspace', () => {
     expect(commands).toContain('docker compose -f .devcontainer/compose.yaml up --detach --build');
     expect(commands).toContain('chown --recursive node:node /workspaces/lequ-life-platform');
     expect(commands).toContain('node tooling/development-stack-smoke.mjs');
+    const smoke = await read('tooling/development-stack-smoke.mjs');
+    expect(smoke).toContain('/api/v1/life/cart/items');
+    expect(smoke).toContain('/api/v1/life/checkouts/quote');
+    expect(smoke).toContain('/actions/submit');
+    expect(smoke).toContain('/api/v1/life/orders');
     expect(commands).toContain('SELECT count(*) FROM user_sessions');
     expect(commands).toContain('down --volumes --remove-orphans');
   });
