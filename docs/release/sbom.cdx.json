@@ -1,7 +1,7 @@
 {
   "bomFormat": "CycloneDX",
   "specVersion": "1.6",
-  "serialNumber": "urn:uuid:2ed24ca2-9040-44a8-8b74-117247de7eb5",
+  "serialNumber": "urn:uuid:a91ea60a-a5cc-4b79-89f7-64b6a7072926",
   "version": 1,
   "metadata": {
     "component": {
@@ -12,7 +12,7 @@
     "properties": [
       {
         "name": "lequ:pnpm-lock-sha256",
-        "value": "2ed24ca2904084a85b74117247de7eb5befbf93d0033930f377f1e62bee45adc"
+        "value": "a91ea60aa5cceb79f9f764b6a70729269507d390cbb2f11dfbc66d48686624a6"
       }
     ]
   },
@@ -2361,8 +2361,8 @@
     {
       "type": "library",
       "name": "adm-zip",
-      "version": "0.6.0",
-      "bom-ref": "pkg:npm/adm-zip@0.6.0"
+      "version": "0.6.1",
+      "bom-ref": "pkg:npm/adm-zip@0.6.1"
     },
     {
       "type": "library",
@@ -3039,14 +3039,14 @@
     {
       "type": "library",
       "name": "fast-uri",
-      "version": "3.1.5",
-      "bom-ref": "pkg:npm/fast-uri@3.1.5"
+      "version": "3.1.6",
+      "bom-ref": "pkg:npm/fast-uri@3.1.6"
     },
     {
       "type": "library",
       "name": "fast-uri",
-      "version": "4.1.2",
-      "bom-ref": "pkg:npm/fast-uri@4.1.2"
+      "version": "4.1.3",
+      "bom-ref": "pkg:npm/fast-uri@4.1.3"
     },
     {
       "type": "library",

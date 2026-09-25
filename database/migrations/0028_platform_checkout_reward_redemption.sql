@@ -2,6 +2,9 @@ BEGIN;
 
 -- 结算代金券抵扣快照：quote 阶段登记 RESERVED 抵扣意图，submit 成单后置为 SETTLED 并核销 reward_grants。
 -- 金额事实仍以 reward_grants(redeemed_amount_cents) 与不可变账本为准，本表仅为结算链路投影。
+ALTER TABLE reward_grants
+  ADD CONSTRAINT reward_grants_tenant_id_id_unique UNIQUE (tenant_id, id);
+
 CREATE TABLE platform_checkout_reward_redemptions (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   checkout_id uuid NOT NULL REFERENCES platform_checkout_sessions(id) ON DELETE CASCADE,
