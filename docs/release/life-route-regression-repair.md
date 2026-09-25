@@ -37,6 +37,8 @@
 
 2026-09-25 只读取 GitHub `controlled-preproduction` 环境的配置名称：所需 30 个 Secret 中已有 10 个，所需 26 个变量中已有 2 个，名称类型无额外项；阶段 50 另需受控结果文件。该盘点没有读取 Secret 值，也没有验证变量内容、外部服务或审批人，因此受控预检尚不具备启动条件。
 
+阶段 47–50 的最新逐项名称缺口和接入顺序见 `docs/release/controlled-preproduction-config-gap.md`。资金链路 P0 阻断见 `docs/release/checkout-reward-financial-gap.md`；两者解除前，自动化全绿仍不构成受控发布验收。
+
 ## 后续开工与验收顺序
 
 资金链路复核发现带奖励抵扣的订单可能按未扣抵扣的应付金额发起支付，且支付失败/退款缺少旧奖励抵扣冲正；这是独立的 P0 发布阻断项。证据、影响范围和待确认资金口径见 `docs/release/checkout-reward-financial-gap.md`。
