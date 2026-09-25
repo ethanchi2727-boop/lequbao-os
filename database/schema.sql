@@ -2018,3 +2018,4 @@ COMMIT;
 \ir migrations/0026_platform_control_plane.sql
 \ir migrations/0027_platform_consumer_identity_exchange.sql
 \ir migrations/0028_platform_checkout_reward_redemption.sql
+\ir migrations/0029_checkout_reward_redemption_scope.sql

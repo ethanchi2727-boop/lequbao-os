@@ -60,6 +60,9 @@ const platformConsumerIdentityMigration = await read(
 const checkoutRewardRedemptionMigration = await read(
   'database/migrations/0028_platform_checkout_reward_redemption.sql',
 );
+const checkoutRewardScopeMigration = await read(
+  'database/migrations/0029_checkout_reward_redemption_scope.sql',
+);
 const pageStats = JSON.parse(
   await read('docs/v6.1/source-package/02_完整PRD页面树与状态机/页面树与页面契约/页面树统计.json'),
 );
@@ -155,6 +158,10 @@ if (!schema.includes('\\ir migrations/0027_platform_consumer_identity_exchange.s
   failures.push('clean schema does not include migration 0027');
 if (!schema.includes('\\ir migrations/0028_platform_checkout_reward_redemption.sql'))
   failures.push('clean schema does not include migration 0028');
+if (!schema.includes('\\ir migrations/0029_checkout_reward_redemption_scope.sql'))
+  failures.push('clean schema does not include migration 0029');
+if (!checkoutRewardScopeMigration.includes('FORCE ROW LEVEL SECURITY'))
+  failures.push('checkout reward redemption account isolation is missing');
 if (!eventRuntimeMigration.includes('CREATE TABLE event_dead_letters'))
   failures.push('event dead-letter evidence table missing');
 if (!eventRuntimeMigration.includes('CREATE TABLE event_consumer_offsets'))
